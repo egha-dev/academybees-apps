@@ -91,7 +91,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | Slice | Branch | Tasks | State |
 | --- | --- | --- | --- |
 | S0 | `p0/bootstrap` | plan update, 0.1, minimal CI | ✅ |
-| S1 | `p0/governance` | 0.18 files + `apply-governance.sh` (applied when the paid plan is active, OD-19) | ✅ files merged; script not yet applied (needs paid plan, OD-19) |
+| S1 | `p0/governance` | 0.18 files + `apply-governance.sh` (applied when the paid plan is active, OD-19) | ✅ (#3); script applied on the free plan 2026-09-30 — ruleset, secret scanning, production environment skipped (C-44) |
 | S2 | `p0/infra-local` | 0.2 | ⬜ |
 | S3 | `p0/contracts` | 0.3 | ⬜ |
 | S4 | `p0/database-testing` | 0.4, 0.11 | ⬜ |
