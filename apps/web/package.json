@@ -1,0 +1,43 @@
+{
+  "name": "@academybee/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AcademyBee web: marketing, academy experiences, Family Hub, console and PWA (Next.js App Router).",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "eslint .",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@academybee/contracts": "workspace:*",
+    "@academybee/i18n": "workspace:*",
+    "@academybee/ui": "workspace:*",
+    "@fontsource-variable/inter": "catalog:",
+    "@serwist/turbopack": "catalog:",
+    "@serwist/window": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "esbuild": "catalog:",
+    "next": "catalog:",
+    "next-intl": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "server-only": "catalog:",
+    "serwist": "catalog:",
+    "use-intl": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@academybee/config": "workspace:*",
+    "@next/eslint-plugin-next": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

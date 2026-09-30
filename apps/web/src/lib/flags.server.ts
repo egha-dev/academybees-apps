@@ -1,0 +1,25 @@
+import 'server-only';
+
+import { type FeatureFlagKey } from '@academybee/contracts';
+
+import { serverEnv } from './env';
+import { type FlagsResponse, isFlagOn } from './flags';
+
+/**
+ * Evaluate a release flag on the server via the API (ADR-041). Network or API errors → off,
+ * so unfinished work stays hidden rather than leaking.
+ */
+export async function flagEnabled(key: FeatureFlagKey, host: string): Promise<boolean> {
+  const env = serverEnv();
+  try {
+    const res = await fetch(new URL('/api/v1/flags', env.API_ORIGIN), {
+      headers: { 'x-forwarded-host': host, 'x-ab-proxy-secret': env.TRUSTED_PROXY_SECRET },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(3_000),
+    });
+    if (!res.ok) return false;
+    return isFlagOn((await res.json()) as FlagsResponse, key);
+  } catch {
+    return false;
+  }
+}

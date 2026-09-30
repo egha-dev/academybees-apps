@@ -15,6 +15,7 @@ permissions:
 env:
   APP_ENV: ci
   TURBO_TELEMETRY_DISABLED: 1
+  NEXT_TELEMETRY_DISABLED: 1
 
 jobs:
   # Required checks (ADR-041). Later Phase 0 slices add integration, drift, build and e2e.

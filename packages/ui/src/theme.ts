@@ -115,6 +115,12 @@ export function createAcademyBeeTheme(): Theme {
           notchedOutline: { borderColor: color.neutral[300] },
         },
       },
+      // 16 px phone gutters, 24 px from sm (UX §7; the 4-pt spacing unit would give MUI's default 8 px).
+      MuiContainer: {
+        styleOverrides: {
+          root: { paddingInline: 16, '@media (min-width: 600px)': { paddingInline: 24 } },
+        },
+      },
       MuiCard: {
         defaultProps: { elevation: 0 },
         styleOverrides: {
