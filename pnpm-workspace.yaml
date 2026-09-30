@@ -1,0 +1,66 @@
+engineStrict: true
+
+packages:
+  - apps/*
+  - packages/*
+
+# One version per dependency across the repo (ADR-041). Reference with "catalog:".
+catalog:
+  # toolchain
+  turbo: 2.11.5
+  typescript: 5.9.3
+  '@types/node': 24.19.0
+  prettier: 3.9.9
+  lefthook: 2.1.15
+  lint-staged: 17.6.0
+  '@commitlint/cli': 21.2.3
+  '@commitlint/config-conventional': 21.2.3
+  # lint
+  eslint: 9.39.5
+  '@eslint/js': 9.39.5
+  typescript-eslint: 8.71.0
+  eslint-plugin-boundaries: 7.2.0
+  eslint-import-resolver-typescript: 4.4.5
+  eslint-config-prettier: 10.1.8
+  globals: 17.12.0
+  # test
+  vitest: 5.0.3
+  '@vitest/coverage-v8': 5.0.3
+  unplugin-swc: 2.0.0
+  '@swc/core': 1.16.13
+
+# Dependencies allowed to run install scripts (pnpm blocks all others).
+allowBuilds:
+  '@swc/core': true
+  esbuild: true
+  lefthook: true
+  unrs-resolver: false
+
+minimumReleaseAgeExclude:
+  - lefthook-darwin-arm64@2.1.15
+  - lefthook-darwin-x64@2.1.15
+  - lefthook-freebsd-arm64@2.1.15
+  - lefthook-freebsd-x64@2.1.15
+  - lefthook-linux-arm64@2.1.15
+  - lefthook-linux-x64@2.1.15
+  - lefthook-openbsd-arm64@2.1.15
+  - lefthook-openbsd-x64@2.1.15
+  - lefthook-windows-arm64@2.1.15
+  - lefthook-windows-x64@2.1.15
+  - lefthook@2.1.15
+  - '@swc/core-darwin-arm64@1.16.13'
+  - '@swc/core-darwin-x64@1.16.13'
+  - '@swc/core-linux-arm-gnueabihf@1.16.13'
+  - '@swc/core-linux-arm64-gnu@1.16.13'
+  - '@swc/core-linux-arm64-musl@1.16.13'
+  - '@swc/core-linux-ppc64-gnu@1.16.13'
+  - '@swc/core-linux-s390x-gnu@1.16.13'
+  - '@swc/core-linux-x64-gnu@1.16.13'
+  - '@swc/core-linux-x64-musl@1.16.13'
+  - '@swc/core-win32-arm64-msvc@1.16.13'
+  - '@swc/core-win32-ia32-msvc@1.16.13'
+  - '@swc/core-win32-x64-msvc@1.16.13'
+  - '@swc/core@1.16.13'
+  - '@vitest/mocker@5.0.3'
+  - '@vitest/spy@5.0.3'
+  - vitest@5.0.3
