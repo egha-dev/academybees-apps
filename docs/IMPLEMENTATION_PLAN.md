@@ -91,8 +91,8 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | Slice | Branch | Tasks | State |
 | --- | --- | --- | --- |
 | S0 | `p0/bootstrap` | plan update, 0.1, minimal CI | ✅ |
-| S1 | `p0/governance` | 0.18 files + `apply-governance.sh` (applied when the paid plan is active, OD-19) | ✅ files merged; script not yet applied (needs paid plan, OD-19) |
-| S2 | `p0/infra-local` | 0.2 | ⬜ |
+| S1 | `p0/governance` | 0.18 files + `apply-governance.sh` (applied when the paid plan is active, OD-19) | ✅ (#3); script applied on the free plan 2026-09-30 — ruleset, secret scanning, production environment skipped (C-44) |
+| S2 | `p0/infra-local` | 0.2 | ✅ (local S3 = SeaweedFS, C-45) |
 | S3 | `p0/contracts` | 0.3 | ⬜ |
 | S4 | `p0/database-testing` | 0.4, 0.11 | ⬜ |
 | S5 | `p0/api-core` | 0.5 | ⬜ |
@@ -141,7 +141,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 - Design system page reviewed against UX §4–6 by PO.
 - Pseudo-locale and +40% long-text builds show no hard-coded strings or broken layouts in the shell and design-system page; `formatMoney(10000000, 'INR')` → `₹1,00,000.00` and with `{ compact: true }` → `₹1,00,000` (C-40); a Tamil name (`ஆரவ்`) and a Hindi name (`आरव`) pass validation and round-trip through the API unchanged (G-08, G-32).
 - Analytics: event with an email/phone property is rejected by the PII guard test (G-09).
-- Repository: a direct push to `main` is rejected; a PR with a failing check cannot merge; a green PR auto-merges and deploys to staging; a release flag hides an unfinished screen on staging (ADR-041).
+- Repository: a direct push to `main` is rejected; a PR with a failing check cannot merge; a green PR auto-merges and deploys to staging; a release flag hides an unfinished screen on staging (ADR-041). *(C-44: while on the free GitHub plan, the first two items are waived by the PO and evidenced by the C-43 merge process.)*
 
 ---
 

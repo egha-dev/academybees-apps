@@ -36,5 +36,7 @@ jobs:
       - run: pnpm test
       - name: governance script (shellcheck + dry run)
         run: |
-          shellcheck scripts/github/*.sh
+          shellcheck scripts/*/*.sh infra/postgres/init/*.sh
           scripts/github/apply-governance.sh --dry-run
+      - name: compose file is valid
+        run: docker compose -f infra/docker-compose.yml config -q

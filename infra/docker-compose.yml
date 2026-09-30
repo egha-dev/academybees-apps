@@ -1,0 +1,82 @@
+# Local development infrastructure (ADR-030). Start with `pnpm infra:up`.
+# Credentials here are for local development only; never reuse them anywhere else.
+name: academybee
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d academybee']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:v1.31
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # web UI http://localhost:8025
+    healthcheck:
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # S3-compatible object storage (C-45; staging/production use Cloudflare R2).
+  s3:
+    image: chrislusf/seaweedfs:4.48
+    command:
+      ['server', '-dir=/data', '-s3', '-s3.config=/etc/seaweedfs/s3.json', '-ip.bind=0.0.0.0']
+    ports:
+      - '8333:8333' # S3 API
+      - '8888:8888' # filer UI (browse buckets)
+    volumes:
+      - s3-data:/data
+      - ./seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:8333/healthz || exit 1']
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  s3-init:
+    image: chrislusf/seaweedfs:4.48
+    depends_on:
+      s3:
+        condition: service_healthy
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        if echo 's3.bucket.list' | weed shell -master=s3:9333 | grep -q academybee-local; then
+          echo 'bucket academybee-local already exists'
+        else
+          echo 's3.bucket.create -name academybee-local' | weed shell -master=s3:9333
+        fi
+    restart: 'no'
+
+volumes:
+  postgres-data:
+  redis-data:
+  s3-data:

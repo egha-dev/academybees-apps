@@ -16,7 +16,12 @@
     "test:integration": "turbo run test:integration --concurrency=1",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait postgres redis mailpit s3 && docker compose -f infra/docker-compose.yml run --rm s3-init",
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "infra:reset": "docker compose -f infra/docker-compose.yml down -v && pnpm infra:up",
+    "infra:logs": "docker compose -f infra/docker-compose.yml logs -f",
+    "env:init": "scripts/dev/init-env.sh"
   },
   "devDependencies": {
     "@academybee/config": "workspace:*",
