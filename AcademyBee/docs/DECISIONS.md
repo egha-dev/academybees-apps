@@ -1,0 +1,249 @@
+# AcademyBee — Decisions Log
+
+> Three registers: **(A) Conflict Register** — where source documents disagree and how we resolved it; **(B) Open Decisions** — items needing Product Owner confirmation (each has a safe default so work is not blocked); **(C) Architecture Decision Records (ADRs)**.
+> Rule (CLAUDE.md §15): never silently choose. Anything that changes scope, security, finance, tenant isolation or UX gets an entry here before the code lands.
+
+Status legend: `Accepted` · `Proposed` · `Superseded by ADR-x` · `Open (default applied)`
+
+---
+
+## A. Conflict Register
+
+| ID | Conflict | Sources | Resolution | Status |
+| --- | --- | --- | --- | --- |
+| C-00 | Source files contain several versions (PRD v2.0 + v2.1 §18 + v3.0 + v3.1 addendum; UX v1.0 + v1.1 addendum; footers still say v3.0/v1.0) | PRD, UX | Latest version wins section-by-section: PRD v3.1 addendum > v3.0 > v2.1 > v2.0; UX v1.1 addendum > v1.0. Citation convention in ARCHITECTURE §0. | Accepted |
+| C-01 | Five different build orders: PRD v2 §14, PRD v3 §32, CLAUDE-3 §20, Build Prompt phases, UX §34 | All four docs | **The Product Owner's 17-phase order (Phase 0–16, 2026-09-29) governs**, recorded in CLAUDE.md §4 and IMPLEMENTATION_PLAN. Recommend PO records it as PRD v3.2 per PRD v3 "change control". | Accepted |
+| C-02 | Super Admin is Phase 14, but Phase 3 provisioning requires a Super Admin "Create Academy" console (PRD v3.1 §B, §I) and PRD v3 §32 puts Super Admin 2nd | PO order vs PRD v3.1 | **Pull forward a "Provisioning Console slice"** into Phase 3: console login, Create Academy, Provisioning Success, Academies list/detail (overview + domain), suspend/reactivate/archive, domain change. The full platform console (dashboard, analytics, users, plans UI, support, impersonation, audit viewer) remains Phase 14. First Super Admin is created by CLI in Phase 2. | Accepted |
+| C-03 | SaaS Billing is Phase 13, but provisioning must "apply plan/entitlements" (PRD v3.1 §B) and plan limits/feature flags are needed from the first tenant (PRD v3 §20) | PO order vs PRD v3.1 | **Plan + PlanEntitlement + Subscription(TRIAL) + EntitlementService** land in Phase 3 (plans seeded, not editable in UI). Billing lifecycle, payments, dunning, plan UI, upgrade/downgrade in Phase 13. Until then trials do not expire automatically (flag `billing.enforce=false`). | Accepted |
+| C-04 | Communication is Phase 10, but: invites/password reset need email (Ph 2); attendance must notify parents after sync (PRD v3 §18/v2 §18, Ph 6); fee reminders (Ph 7); MVP requires "In-app/push foundation" (PRD v3 §8) | PO order vs PRD | **Communication foundation pulled forward**: transactional email adapter in Phase 2; outbox + NotificationIntent + in-app notifications in Phase 6; fee-reminder intents in Phase 7 (delivered in-app). Phase 10 adds templates UI, composer, announcements, push, SMS, WhatsApp and routes existing intents to them. | Accepted |
+| C-05 | Parent portal is Phase 11 but PRD v3 §8 MVP contract requires Parent portal and UX §29 lists Parent Home as Tier 1 | PO order vs PRD MVP | Plan follows PO order. Consequence: a pilot academy cannot give parents access until Phase 11. **Raised as OD-01** (option to pull "Parent Core" forward to right after Phase 7). | Superseded by C-21 (Phase 7P) |
+| C-06 | No dedicated Teacher Portal phase in PO order (PRD v2 §21 and v3 §32 have one) | PO order vs PRD | Teacher PWA is delivered **with the capabilities it serves**: shell + Today + Classes + Attendance + Students in Phase 6; Learning tab in Phase 9; batch announcements in Phase 10. | Accepted |
+| C-07 | Multi-branch, Expenses, Certificates & Events are in PRD roadmaps but absent from PO order | PRD v2 §14, v3 §30 | **Branch is modelled from Phase 1** (default branch per tenant, `branchId` on branch-scoped tables, BRANCH scope in RBAC) so no retrofit is needed. Branch management UI, Expenses, Certificates & Events are **deferred backlog** (post-Phase 16 or inserted by PO). Raised as OD-05. | Open (default: deferred) |
+| C-08 | Onboarding step order differs: PRD v3.1 §H (course → batch → teacher → students → timetable → fees), UX v1.1 §5 (course → teacher → batch → students → timetable), UX §22 (no teacher step) | PRD v3.1 vs UX v1.1 | Use **UX v1.1 order** (teacher before batch because a batch needs a teacher) and append PRD's **optional Fee Setup** step after Timetable once Finance exists (Phase 7). All steps skippable except Profile and Type. PRD defines *what*, UX defines *how* — both satisfied. | Accepted |
+| C-09 | Onboarding (Phase 3) creates courses, teachers, batches, students, timetable — modules scheduled for Phases 4–5 | PO order | Phase 3 designs the **full schema** for People and Scheduling entities and implements their **minimal create commands** used by onboarding. Phases 4–5 build the full workspaces, lists, edits and rules on the same schema (no destructive migrations). | Accepted |
+| C-10 | Lead pipeline: v2 `New→Contacted→Trial→Interested→Admission→Lost` vs v3/UX `New→Contacted→Trial Scheduled→Trial Completed→Interested→Admission→Lost` | PRD v2 §23 vs v3 §6, UX §17 | v3/UX pipeline. | Accepted |
+| C-11 | Academy lifecycle: v3 `Draft→Pending Approval→Active→Suspended→Archived` vs v3.1 `setup, active, suspended, archived` | PRD v3 §6 vs v3.1 §E | Enum `SETUP, ACTIVE, SUSPENDED, ARCHIVED` (+ `PENDING_APPROVAL` reserved for future self-serve signup). No `DRAFT`: creation is atomic. `SETUP → ACTIVE` when onboarding completes or Super Admin activates. | Accepted |
+| C-12 | Student lifecycle v3 `Enquiry→Trial→Active→On Hold→Completed/Left` overlaps the Lead/Trial model | PRD v3 §6 | Enquiry/Trial live on `Lead`/`Trial`; admission creates `Student` with `ACTIVE`. Student statuses: `ACTIVE, ON_HOLD, COMPLETED, LEFT`. Student 360 shows the lead/trial history via link, so the lifecycle is still visible end-to-end. | Accepted |
+| C-13 | Journey "Academy signup → verification → onboarding" (PRD v3 §7, §19) vs "Super Admin creates academy" (PRD v3.1 §B) | PRD v3 vs v3.1 | Phase 3 implements Super Admin provisioning. Self-serve signup + trial is designed to reuse the same `ProvisioningService` and is scheduled with SaaS Billing (Phase 13). OD-06. | Open (default applied) |
+| C-14 | "Limited cash recording offline" (PRD v2 §7) vs Teacher role having no fee access (PRD v2 §4) | PRD | Capability `payment.record_cash` exists for Owner/Admin/Accountant by default; **Teacher/Receptionist off by default, grantable per tenant**. Offline cash available only to holders. | Accepted |
+| C-15 | Build Prompt: "stop and explain conflicts"; CLAUDE-3: "use safest interpretation and document" | Build prompt vs CLAUDE-3 | Document every conflict here; **stop only** when the choice materially affects scope/security/finance/tenant isolation/UX and no safe default exists (→ Open Decisions). | Accepted |
+| C-16 | PRD v2 §14 Phase 1 = Super Admin incl. subscription payments and analytics before any academy exists | PRD v2 vs v3/PO | Superseded by C-01/C-02. | Accepted |
+| C-17 | UX §12 "Mark All Present then modify exceptions" vs possible "unmarked" state for late roll-calls | UX | States: `PRESENT, ABSENT, LATE, LEAVE`; unmarked = no row. "Mark all present" fills only unmarked students; saving with unmarked students asks for confirmation. | Accepted |
+| C-18 | "Payment states Initiated → Pending → Confirmed/Failed/Refunded" vs partial refunds and offline cash | PRD v3 §6, UX §13 | Keep the five PRD states, add `PARTIALLY_REFUNDED` (a refinement of Refunded). Cash/offline-recorded payments are created as `CONFIRMED` **by the server** when accepted; before acceptance the client shows "Pending sync", which is not a server payment state. | Accepted |
+| C-19 | Invoice lifecycle lists "Overdue" as a state, but overdue is time-dependent and can co-exist with Partially Paid | PRD v3 §6 | Overdue is **derived** (`dueDate < today ∧ balance > 0`) and materialised nightly (`overdueSince`); UI shows it as a status badge. Avoids a state that must flip back and forth. | Accepted |
+| C-20 | UI library: "Material UI or chosen design system" (PRD) vs "do not replace the design system with generic components" (CLAUDE-3) and premium bespoke look (UX) | PRD §28, CLAUDE-3, UX §4 | MUI as the primitive engine, fully themed; application code imports only `@academybee/ui` (lint-enforced). ADR-014. | Accepted |
+| C-21 | Parent access at Phase 11 vs MVP/pilot needing parents (was OD-01) | PRD v3 §8, §25 vs PO order | **Resolved by PRD v3.2 §1**: new **Phase 7P — Pilot Readiness Pack** (Parent Core, basic help, consent in use, activation dashboard, demo academy, pilot runbook). Phase 11 completes parent + student experiences. | Accepted |
+| C-22 | Student import was in deferred backlog, but onboarding time-to-value (PRD v3 §19) needs it | Plan v1.0 vs PRD v3 §19 | **PRD v3.2 G-02**: import + opening balances move into Phases 4 and 7; onboarding offers "Import from spreadsheet". | Accepted |
+| C-23 | Support tickets only in Phase 14, but pilot academies need help from day one | Plan v1.0 vs PRD v3 §25 | **PRD v3.2 G-10**: basic help/contact/feedback in Phase 7P; full ticketing stays Phase 14. | Accepted |
+| C-24 | PRD "UPI/online gateway" (v2 §19) doesn't say whose account receives fees; a platform-collects model risks RBI payment-aggregator rules | PRD v2 §19 | **PRD v3.2 G-01**: academies connect their own gateway account; AcademyBee never holds fee money; UPI-ID/QR + manual record for academies without a gateway. Legal confirmation tracked in OD-13. | Accepted (legal check pending) |
+| C-25 | Owner 2FA not specified; console 2FA only in Phase 14 | PRD v3 §13 | **PRD v3.2 G-11**: optional TOTP for tenant users in Phase 2 (strongly prompted for Owner/Accountant); console stays CLI + IP allow-list until mandatory TOTP in Phase 14. | Accepted |
+| C-26 | Gateway accounts and keys (OD-02, OD-13) are not ready, but the product needs working payments for the pilot | PO direction 2026-09-29 | **PRD v3.2 G-30**: all payment features built and enabled now (staff-recorded methods, parent-reported UPI with staff verification, manual refunds, provider interface + simulator for tests); real gateway connected later in **Phase G — Gateway Activation**. ADR-038. | Accepted |
+| C-27 | Families using several academies would need one login/app per academy under ADR-003/ADR-006 (tenant-bound sessions, no cross-academy SSO) | PO direction 2026-09-29 vs ADR-006 | **PRD v3.2 G-31**: Family Hub on `app.academybee.com` with a user-bound session for Parent/Student roles; data fetched per academy under that academy's tenant context. ADR-006 amended by ADR-039; staff sessions stay tenant-bound. | Accepted |
+| C-28 | G-08 left regional languages as a vague post-Phase-11 backlog item; the PO now requires multilingual support as a planned capability | PO direction 2026-09-29 vs PRD v3.2 G-08 | **PRD v3.2 G-32**: foundations (catalogue, locale resolution, Unicode, logical CSS, font strategy, per-language templates/legal/PDF) built in Phases 0, 2, 3, 7, 10; languages delivered in **Phase L — Multilingual Rollout**. ADR-040 extends ADR-031. | Accepted |
+
+---
+
+## B. Open Decisions (Product Owner)
+
+Each has a default so engineering proceeds; changing the default later has the stated cost.
+
+| ID | Question | Default applied | Cost of changing later | Needed by |
+| --- | --- | --- | --- | --- |
+| OD-02 | Payment gateway for academy fees and SaaS billing | Razorpay behind `PaymentProvider` interface (UPI, cards, payment links, subscriptions; INR). **Not integrated in this release (C-26)**; build the adapter in Phase G | Low (adapter only; everything else is built) | Before Phase G |
+| OD-03 | Hosting & DNS for wildcard `*.academybee.com` and data region | Web on Vercel (wildcard domain requires Vercel nameservers); API + worker on a managed container host; managed PostgreSQL + Redis in an India region (Mumbai) for latency and DPDP posture; Cloudflare R2 for files | Medium once live (DNS move, data migration) | End of Phase 0 (staging) |
+| OD-04 | Parent (and student) login method | Invite link → email + password; phone captured and verified later. **Phone OTP login added in Phase 10** when the SMS provider exists | Low (identity model already supports phone) | Phase 10 |
+| OD-05 | Placement of Multi-branch UI, Expenses, Certificates & Events | Deferred backlog after Phase 16; data model is branch-ready | Low | Before Phase 12 (reports need branch filters if multi-branch is imminent) |
+| OD-06 | Self-serve academy signup with free trial | Deferred to Phase 13 (reuses ProvisioningService) | Low | Phase 13 |
+| OD-07 | Domain ownership & environments: is `academybee.com` registered and controlled? Staging domain? | Assume `academybee.com` (prod) and `*.staging.academybee.com` (staging); local `*.localhost` | Blocking for staging wildcard TLS | End of Phase 1 |
+| OD-08 | Student logins enabled by default? (UX §16 "if enabled") | Off per tenant; Owner can enable | None | Phase 11 |
+| OD-09 | Data retention & deletion policy, tenant offboarding export (PRD v3 §28) | Keep all data while tenant exists; archived tenant data retained 180 days then deletion workflow with export offered; audit/finance retained 8 years | Legal review required before launch | Phase 15 |
+| OD-10 | GST / tax on academy invoices (India) — non-goal says no tax suite, but many academies must print GSTIN and tax lines | Optional tenant tax config: GSTIN on invoice header, one configurable tax rate line, inclusive/exclusive flag; no filing/returns | Low if decided before Phase 7 | Start of Phase 7 |
+| OD-11 | Attendance edit window for teachers and offline acceptance window | Teacher may edit until 48 h after session end; offline ops accepted up to 7 days after session date; beyond → needs `attendance.edit_past` | None (tenant settings) | Phase 6 |
+| OD-12 | Plans & limits for seeded plans (names, student/staff caps, features) | PRD v3.2 G-25 hypothesis: Trial (30 days, 100 students, Growth features), Starter (100/5), Growth (300/15), Pro (1,000/40); limits enforced from Phase 3, billing off until Phase 13 | None until Phase 13 | Phase 3 (seed), Phase 13 (prices, validated by pilot) |
+| OD-13 | Legal confirmation of the fee-collection model (academy's own gateway account; AcademyBee never holds funds) and whether Razorpay partner/OAuth onboarding or per-tenant API keys are used | Per-tenant API key + webhook secret, stored encrypted (ADR-033); partner OAuth later if Razorpay approves AcademyBee as a partner | Low (adapter), but must be settled before any real parent pays online **through a gateway** (not needed for the UPI/manual flows in G-30) | Before Phase G |
+| OD-14 | Product analytics tool | PostHog behind an `Analytics` port, server-side events, no PII (ADR-032); internal `ProductEvent` table if the privacy review rejects third-party processing | Low | Phase 0 |
+| OD-15 | WhatsApp sender strategy | One AcademyBee-managed number with academy name in template body; academy-owned number as Pro option (G-07) | Medium (template re-approval) | Phase 10 |
+| OD-16 | Pilot academies and pilot agreement terms (free period, feedback cadence, data terms) | Two academies (one tuition, one activity), free during pilot + 3 months, weekly 30-min feedback call | None | Before Phase 7P |
+| OD-18 | First languages and translation workflow (launch is English only) | Hindi + the pilot region's main language; translations as JSON catalogues in the repo, reviewed by native speakers via pull requests; adopt a translation-management tool (e.g. Tolgee, Crowdin) when there are ≥3 languages | Low | Before Phase L |
+
+### B.1 Closed decisions
+
+| ID | Question | Decision | Date |
+| --- | --- | --- | --- |
+| OD-01 | Pull Parent Core forward before the pilot? | Yes, Phase 7P (C-21, PRD v3.2 §1) | 2026-09-29 |
+| OD-17 | Family Hub hostname and branding | **`app.academybee.com`**, AcademyBee chrome with the selected academy's logo/accent applied inside; academy URLs redirect parents and students to the hub (G-31, ADR-039) | 2026-09-29 |
+
+---
+
+## C. Architecture Decision Records
+
+Format: **Context → Decision → Consequences**. Status `Accepted` unless noted.
+
+### ADR-000 — Document authority and precedence
+**Context.** Four instruction sources, several internal versions. **Decision.** PRD (latest addendum first — `docs/PRD_ADDENDUM_v3.2.md` > v3.1 addendum > v3.0 > v2.x) → UX (latest addendum first) → CLAUDE.md → ARCHITECTURE.md → DECISIONS.md → code. PO directions given in conversation are recorded here and in CLAUDE.md and then carry PRD-level authority for ordering. **Consequences.** Every deviation must cite a C- or ADR entry.
+
+### ADR-001 — Modular monolith in a pnpm + Turborepo monorepo
+**Context.** PRD v3 §29 mandates a modular monolith; three deployables (web, api, worker) share contracts. **Decision.** pnpm workspaces, Turborepo task graph and remote cache, `apps/{web,api,worker}`, `packages/{config,contracts,database,auth,tenant,sync,ui,testing}`. Module boundaries enforced with `eslint-plugin-boundaries`. **Consequences.** One PR can change contract + API + UI atomically; extraction of Notifications/Payments/Reporting later is a deployment change, not a rewrite.
+
+### ADR-002 — Runtime and core versions
+**Decision.** Node.js 24 LTS; TypeScript `strict` + `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`; Next.js App Router (current stable major pinned at scaffold); NestJS (current stable major, Express adapter); Prisma ORM (current stable, multi-file schema); PostgreSQL 16+ (17 preferred); Redis 7+; BullMQ; Dexie 4; Serwist; MUI (current stable) + Emotion via `@mui/material-nextjs`. Exact versions are pinned in `package.json` and recorded in Phase 0 exit notes. **Consequences.** Upgrades are explicit PRs with changelog review.
+
+### ADR-003 — Hostname-based tenancy with a separate console origin
+**Context.** PRD v3.1 requires `{slug}.academybee.com`; Super Admin must be explicit and audited. **Decision.** Tenant = subdomain (later custom domains) resolved via `TenantDomain`; console lives on `console.academybee.com`; apex is marketing. Reserved slug list in `packages/tenant`. Slug change keeps old host as 301 `REDIRECT` and permanently reserves it. **Consequences.** Each academy is its own browser origin → cookie, SW, cache and IndexedDB isolation for free; console cookies can never be sent to a tenant host.
+
+### ADR-004 — Same-origin API via `/api` path; host-only cookies
+**Context.** A separate `api.academybee.com` would need `Domain=.academybee.com` cookies or credentialed CORS for thousands of origins. **Decision.** Every host serves `/api/*` routed to NestJS; API trusts `X-Forwarded-Host` only from the proxy; cookies are host-only (never a `Domain=` attribute) and Secure — access/CSRF cookies use the `__Host-` prefix, the path-restricted refresh cookie uses `__Secure-`. (Chromium treats `*.localhost` as a secure context, so the same cookie flags work in local dev.) **Consequences.** No cross-tenant cookie leakage; simpler CSRF; one extra proxy hop (negligible) — if it becomes material, the load balancer can path-route `/api` directly.
+
+### ADR-005 — Tenant isolation in depth, including PostgreSQL RLS
+**Context.** Tenant isolation is a release blocker (PRD v3 §31). **Decision.** (1) TenantContext via `nestjs-cls` from resolved host; (2) auth requires `token.tid == resolved tenant`; (3) tenant-bound Prisma client extension injects `tenantId` and runs each operation in a transaction starting with `set_config('app.tenant_id', …, true)`; (4) RLS `FORCE`d on all tenant tables for role `ab_app`; (5) cross-tenant platform access only through a separate `ab_platform` client confined to `platform/**` (lint) and audited; (6) generated cross-tenant test matrix in CI. **Consequences.** Slight per-query overhead (benchmarked in Phase 1; budget < 2 ms p95); a missing tenant context fails closed. Fallback if Prisma/RLS proves unworkable is recorded as a superseding ADR, never done silently.
+
+### ADR-006 — Global identity with tenant memberships
+*Amended by ADR-039 (Family Hub) — staff sessions remain tenant-bound; parent/student sessions are hub-bound.*
+**Context.** PRD v2 §26 lists `User` and `TenantUser`; a parent may use two academies. **Decision.** `User` (global, email/phone unique) + `Membership` (per tenant) + roles; sessions are bound to one tenant or the console; no cross-academy SSO. Teacher/Parent/Student domain profiles link to `userId`. **Consequences.** One password per person; academies cannot see each other's memberships; switching academy = signing in on that academy's URL.
+
+### ADR-007 — Session tokens
+**Decision.** 15-min JWT access token (asymmetric signing, `kid` rotation) + 30-day rotating opaque refresh token (hashed, family reuse detection), both in host-only httpOnly Secure cookies (`__Host-ab_at`, `__Secure-ab_rt` scoped to `/api/v1/auth`); double-submit CSRF token; argon2id password hashing; Redis-backed rate limits and progressive lockout; capabilities loaded per request (cached by `permissionsVersion`), not embedded in JWT. **Consequences.** Instant role revocation; stateless API instances; offline PWA keeps queued work across token expiry and re-auth.
+
+### ADR-008 — Capability-based RBAC with scope policies
+**Decision.** Capability catalogue in `@academybee/contracts`; system role templates copied into each tenant at provisioning; scopes `TENANT | BRANCH | ASSIGNED | LINKED | SELF` implemented as per-resource policy functions returning both a Prisma `where` fragment and a record check. UI uses the same catalogue to show/hide, never to secure. Out-of-scope record access returns `404 NOT_FOUND` (no existence leak). **Consequences.** Custom roles later need only UI; list and detail endpoints can't drift apart.
+
+### ADR-009 — UUIDv7 identifiers generated in application code
+**Context.** Offline creates need client-side IDs; attendance volume benefits from time-ordered keys. **Decision.** UUIDv7 for all primary keys (`uuid` column), generated by the app (API and client), never auto-increment for public IDs. Human-readable numbers (admission no., invoice no.) are separate columns. **Consequences.** Index locality for time-ordered inserts; IDs are safe to expose and unguessable enough to not be the only protection (authorization still required).
+
+### ADR-010 — Money as integer minor units
+**Decision.** `amountMinor Int` + `currency Char(3)` (INR default; per-tenant currency); aggregates in SQL as `bigint`; rounding rules centralised in `finance/domain/money.ts` (banker's rounding not used; half-up at line level, totals are sums of lines). **Consequences.** No floating-point drift; the maximum single amount (~₹2.1 crore) comfortably exceeds any academy invoice.
+
+### ADR-011 — Time and dates
+**Decision.** Instants stored as `timestamptz` UTC; calendar facts (`sessionDate`, `dueDate`, DOB) stored as `date` in the tenant's timezone; `Tenant.timezone` (IANA, default `Asia/Kolkata`) drives "today", schedules, overdue, reports. Every report declares timezone, range and scope (PRD v3 §21). **Consequences.** Future tenants in other timezones need no schema change.
+
+### ADR-012 — Zod as the single contract language
+**Decision.** `@academybee/contracts` holds Zod schemas for DTOs, enums, error codes, permissions, sync ops and offline payloads; NestJS validates with a global Zod pipe; OpenAPI 3.1 generated from the same schemas; web forms reuse them via React Hook Form resolver. **Consequences.** No class-validator/DTO duplication; client and server validation can't diverge.
+
+### ADR-013 — Error contract
+**Decision.** Envelope `{ error: { code, message, details?, requestId } }`, stable `ErrorCode` enum, human-safe messages, `NOT_FOUND` for out-of-scope, `INVALID_STATE_TRANSITION` for domain transitions. Global exception filter maps Prisma errors (P2002 → `CONFLICT` with field, etc.) and never leaks internals. **Consequences.** UI can map codes to precise, friendly states (UX §24).
+
+### ADR-014 — Design system: MUI themed behind `@academybee/ui`
+**Decision.** Tokens from UX §5–6 implemented as a MUI theme + CSS variables; AcademyBee components wrap MUI primitives; app code may import only `@academybee/ui` (ESLint `no-restricted-imports`). A `/dev/design-system` route (non-production) is the living board. Tenant branding may tint identity surfaces only; status colours are never overridden; brand colour contrast validated on save. **Consequences.** Accessible primitives and speed from MUI without a generic "Material" look; the visual language can evolve centrally.
+
+### ADR-015 — PWA with Serwist and per-tenant manifest
+**Decision.** Serwist (Workbox-based) service worker: precache app shell and static assets, runtime cache for fonts/images/branding, offline fallback page; **no personal data in Cache Storage** (Dexie holds data). Dynamic `manifest.ts` per tenant (name, icons, theme colour). Update flow: new SW waits, UI prompts "Update available" (never mid-attendance). **Consequences.** Each academy installs as its own branded app for **staff**; parents and students install the single Family Hub app from `app.academybee.com` (ADR-039), which has its own AcademyBee manifest.
+
+### ADR-016 — Offline data and sync engine
+**Decision.** Dexie per origin+user; custom AcademyBee Sync Engine (no Dexie Cloud, PRD v2 §8); op-based push with client `opId` idempotency ledger (`SyncOperation`) and per-`entityKey` ordering; watermark-based pull of the role's working set with tombstones; foreground triggers (no Background Sync API dependence); Web Locks for single runner; offline-capable mutations always go through the queue, even online. **Consequences.** One code path for online/offline; duplicates structurally impossible; iOS-compatible.
+
+### ADR-017 — Attendance conflict rule
+**Decision.** Record per (session, student) with `version`. Stale-base edits by the same user apply; stale-base edits that change a value last set by a different user return `CONFLICT` for explicit resolution; identical values are no-ops. Server validates teacher assignment on the session date, session not cancelled, and acceptance window (OD-11). Parent notifications fire only after server commit (outbox). **Consequences.** Satisfies PRD v3 §11 "domain-specific conflict handling" without blocking the common single-teacher case.
+
+### ADR-018 — Financial domain safeguards
+**Decision.** Explicit state machines (ARCHITECTURE §12); server-generated invoice/receipt numbers via row-locked `NumberSequence` per tenant/kind/fiscal year; `Idempotency-Key` on all financial writes; `UNIQUE(tenantId, clientRef)` for offline cash; gateway confirmation only via verified webhook or server-side status fetch, stored in `GatewayEvent (UNIQUE providerEventId)`; allocations under invoice row lock; append-only audit for every financial mutation; reconciliation job; refunds online-only with `payment.refund`. Subscription (SaaS) billing uses separate tables and number series from academy finance (PRD v3 §20). **Consequences.** Retries, double taps, webhook replays and offline re-sends cannot double-count money.
+
+### ADR-019 — Jobs via BullMQ with a transactional outbox
+**Decision.** State changes that trigger async work write `OutboxEvent` in the same transaction; worker relay uses `FOR UPDATE SKIP LOCKED` to enqueue BullMQ jobs; jobs carry tenant context and re-authorize; exponential backoff; failed-job visibility and replay (ops view in Phase 14). **Consequences.** No lost notifications when Redis is briefly down; at-least-once delivery handled by idempotent processors and dedupe keys.
+
+### ADR-020 — Provider-agnostic notification abstraction
+**Decision.** `NotificationIntent → recipients → channel adapters (in-app, email, push, SMS, WhatsApp) → MessageDelivery` with dedupe keys, per-tenant preferences and quiet hours, usage metering per tenant/channel. India specifics: SMS via DLT-registered templates; WhatsApp via Cloud API approved templates with opt-in. **Consequences.** Providers swappable (PRD v3 risk "WhatsApp dependency"); cost observable per tenant.
+
+### ADR-021 — Object storage with presigned access
+**Decision.** S3-compatible API (Cloudflare R2 default; MinIO locally); tenant-prefixed keys; presigned PUT with size/type limits + server confirm; presigned GET ≤ 5 minutes after authorization; image re-encoding to strip metadata. **Consequences.** No public buckets for personal files (PRD v3 §13).
+
+### ADR-022 — Testing stack and local subdomains
+**Decision.** Vitest (SWC) for unit/integration; Testcontainers for real Postgres (with RLS) and Redis; Playwright for E2E incl. offline (`setOffline`, reload, context restart) and axe accessibility; `*.localhost` hostnames for local/CI multi-tenant testing; generated cross-tenant security suite. **Consequences.** Tenant isolation is tested against the real database policies, not mocks.
+
+### ADR-023 — Observability baseline
+**Decision.** pino structured logs with redaction; Sentry for errors (web/api/worker) with releases; OpenTelemetry for metrics/traces (vendor chosen in Phase 15); `/health/live` + `/health/ready`; sync, webhook and queue metrics from their first phase. **Consequences.** PRD v3 §18 metrics exist before hardening, not retrofitted.
+
+### ADR-024 — Class-session materialisation
+**Decision.** `ScheduleRule` (weekday, start, end, teacher, effectiveFrom/To) per batch; worker materialises `ClassSession` rows for a rolling 28-day window daily (idempotent by `UNIQUE(tenantId, scheduleRuleId, sessionDate)`); sessions are independently cancellable/reschedulable (PRD v3 §9); rule edits regenerate only future, untouched (`origin=GENERATED`, no attendance, not modified) sessions; ad-hoc sessions have `origin=MANUAL`. **Consequences.** Attendance always binds to a concrete session (PRD v3 §9); offline teachers have concrete session IDs.
+
+### ADR-025 — Deletion and history
+**Decision.** Finance: never delete; cancel/void/refund transitions only. Operational entities with history (students, batches, enrolments, sessions, leads): status/archivedAt; enrolments are time-bounded (`startedOn`, `endedOn`). Pure configuration without references may be hard-deleted. Data-subject deletion (DPDP) is a separate, audited anonymisation workflow (Phase 15). **Consequences.** Historical reports stay correct (PRD v3 §9).
+
+### ADR-026 — Pagination and search
+**Decision.** Keyset cursor pagination for all high-volume lists; `pg_trgm` indexes for name/phone search in Phase 4; command palette uses a scope-aware `/search` endpoint with per-type limits. Dedicated search engine only if measured need. **Consequences.** Lists stay fast at 100K students without infra additions.
+
+### ADR-027 — Audit log
+**Decision.** `AuditLog` append-only (UPDATE/DELETE revoked from app role); fields: actor, actorType (USER/PLATFORM/SYSTEM), impersonatorId, tenantId, action, entityType/entityId, before/after (sensitive fields redacted), ip, userAgent, requestId, timestamp. Written in the same transaction as the change for finance and platform actions. Activity timelines (UX §9.3) are a separate, user-facing `ActivityEvent` projection. **Consequences.** Satisfies PRD v2 §16 and v3 §12/§13; timelines don't expose audit internals.
+
+### ADR-028 — Entitlements and feature flags
+**Decision.** `Plan` → `PlanEntitlement` (limits: students, staff, branches, storage, messages/month; features: crm, learning, whatsapp, reports_advanced, ai…) → tenant `Subscription` snapshot; `EntitlementService` with `@Feature()` / `@Limit()` guards and UI helpers; Super Admin overrides per tenant (audited). No plan-specific code branches (PRD v3 §20). Limits never block reading or exporting existing data. **Consequences.** Billing (Phase 13) plugs into an already-enforced model.
+
+### ADR-029 — Configurable terminology and academy types
+**Decision.** `academyType` drives defaults only (terminology dictionary, assessment templates, onboarding copy); `TenantSettings.terminology` overrides labels such as Batch/Class/Group, Course/Program, Teacher/Coach/Instructor. UI reads labels via a `useTerm()` helper; no academy-type conditionals in business logic (CLAUDE-3 "do not hard-code academy types"). **Consequences.** One codebase serves tuition, dance, karate, music and sports academies.
+
+### ADR-030 — Local development environment
+**Decision.** `infra/docker-compose.yml` with PostgreSQL, Redis, Mailpit (email capture) and MinIO (S3); `pnpm dev` runs web (3000), api (4000), worker; web rewrites `/api` to api; dev seed creates two tenants (`demo-a`, `demo-b`) with users for every role; seed data is never loaded outside `local`/`ci`. **Consequences.** Any engineer can reproduce multi-tenant and offline scenarios on one machine.
+
+### ADR-031 — Internationalisation and formatting from day one
+**Context.** PRD v3.2 G-08. **Decision.** `next-intl` (or equivalent ICU message catalogue) in `apps/web`, messages in `apps/web/messages/en-IN.json`, namespaced per feature; server-rendered emails/PDFs use the same catalogue via `packages/i18n` (created in Phase 0 inside `packages/ui` if small); all number/currency/date formatting through `Intl` helpers with tenant locale + timezone (`formatMoney`, `formatDate`, `formatTime`); lint rule flags string literals in JSX of Tier-1 screens. **Consequences.** Regional languages later are translation work, not refactoring. Indian grouping (₹1,00,000) correct everywhere. *Extended by ADR-040 (multilingual architecture).*
+
+### ADR-032 — Product analytics behind a port
+**Context.** PRD v3 §27 metrics, PRD v3.2 G-09, OD-14. **Decision.** `AnalyticsPort.track(event, props)` in API and worker (server-side, after commit, via outbox), a thin client tracker only for UI-only events (page views of Tier-1 screens); event names/props defined as Zod schemas in `@academybee/contracts/analytics`; identifiers hashed (tenant, user), no names/phones/emails; disabled in `ci`; per-tenant opt-out honoured. **Consequences.** Activation funnel available from the pilot; tool is swappable.
+
+### ADR-033 — Per-tenant payment gateway connections and secret encryption
+**Context.** PRD v3.2 G-01, OD-13. **Decision.** `TenantPaymentAccount` (tenantId, provider, accountId, mode test/live, status, encrypted credentials, webhookSecret encrypted, connectedAt, verifiedAt). Secrets use envelope encryption: data key per record encrypted by a master key held in the secret manager/KMS (`SECRETS_MASTER_KEY` locally); decrypted only inside the payment adapter at call time; never logged, never serialised. Webhooks: `POST /api/v1/webhooks/payments/:provider/:accountRef` → look up account → verify signature with that tenant's secret → idempotent `GatewayEvent`. AcademyBee's own SaaS gateway account is a separate platform configuration. **Consequences.** No commingling of funds; a compromised tenant key affects only that tenant; key rotation is a routine operation.
+
+### ADR-034 — Consent and legal acceptance records
+**Context.** PRD v3.2 G-06. **Decision.** `LegalDocument` (kind: TERMS | PRIVACY | DPA | ACADEMY_PRIVACY_TEMPLATE, version, publishedAt, contentUrl), `LegalAcceptance` (userId, tenantId?, documentId, acceptedAt, ip), `ConsentRecord` (tenantId, parentId, studentId, purposes[], noticeVersion, channel, grantedAt, withdrawnAt) — append-only (withdrawal is a new row state, not an update of history). Guard: parent membership activation requires a consent record; owner onboarding requires current Terms/Privacy/DPA acceptance. **Consequences.** Demonstrable consent for minors' data; version changes trigger re-acceptance.
+
+### ADR-035 — Client support matrix and performance budgets
+**Context.** PRD v3.2 G-24. **Decision.** Browserslist targets per G-24; Playwright projects for Chromium (Android emulation) and WebKit (iOS emulation); Lighthouse CI on Tier-1 screens with budgets (LCP < 2.5 s at 4G throttling, route JS < 200 KB gz for `/teach` and the Family Hub); bundle analyser in CI with budget failure. **Consequences.** Performance regressions fail PRs instead of surfacing in Phase 15.
+
+### ADR-036 — Bulk import pipeline
+**Context.** PRD v3.2 G-02. **Decision.** Upload file to object storage → `ImportJob` (tenantId, kind, status: UPLOADED → VALIDATING → PREVIEW_READY → COMMITTING → COMPLETED/FAILED, counts, errorReportKey) → worker parses (SheetJS/Papaparse, streaming), validates rows with the same Zod schemas as the API, dedupes, produces a preview; commit runs in chunks of 200 rows per transaction with deterministic row keys (`importId:rowNo`) for idempotency; error report CSV downloadable. **Consequences.** Imports reuse domain validation; re-runs never duplicate.
+
+### ADR-037 — Academy calendar in scheduling
+**Context.** PRD v3.2 G-03. **Decision.** `Holiday` (tenantId, branchId?, startDate, endDate, name, kind: HOLIDAY | CLOSURE). Session generation excludes holiday dates; creating a holiday over existing sessions returns an impact preview and, on confirm, cancels them with reason `HOLIDAY` and emits one notification intent per affected student per holiday. Make-up sessions link to `makeupForSessionId`. **Consequences.** Timetable, teacher Today and parent schedule stay truthful.
+
+### ADR-038 — Payments without a gateway: manual, parent-reported and simulated providers
+**Context.** PO decision: no gateway integration now, but every payment feature enabled (PRD v3.2 G-30, C-26). **Decision.**
+- `Payment.method`: `CASH | UPI | BANK_TRANSFER | CHEQUE | CARD_POS | ONLINE_GATEWAY`; `Payment.source`: `STAFF_RECORDED | PARENT_REPORTED | OWNER_REPORTED (SaaS) | GATEWAY`; `Payment.reference` (UTR, cheque no., txn id), `Payment.evidenceKey` (optional screenshot in object storage), `Payment.verifiedById/At`, `Payment.rejectionReason`.
+- State machine unchanged: reported or cheque payments enter `PENDING`; only a staff **verify/clear** action (capability `payment.verify`, new) or, later, a verified gateway webhook moves them to `CONFIRMED`; reject/bounce → `FAILED`.
+- `UNIQUE(tenantId, method, reference)` where reference is present (duplicate UTR guard) plus a soft warning across methods.
+- UPI deep link generated server-side from `TenantSettings.finance.upi` (`upi://pay?pa=<vpa>&pn=<name>&am=<amount>&cu=INR&tn=<invoiceNo>`); QR rendered from the same string. No external API.
+- `PaymentProvider` interface with `ManualProvider` (prod default), `SimulatorProvider` (blocked in production by config validation; used by CI/E2E/staging/demo), `RazorpayProvider` (Phase G). Provider selection per tenant via `TenantPaymentAccount`; absence ⇒ Manual.
+- SaaS billing reuses the same pattern with platform-level UPI/bank details and Super Admin verification.
+**Consequences.** Pilot academies get the complete money workflow now; the online pipeline (webhooks, idempotency, reconciliation, polling UI) is already tested via the simulator, so Phase G is an adapter plus configuration. The risk of verifying fake UTRs sits with academy staff, who see the reference and amount, as they do today.
+
+### ADR-039 — Family Hub: user-bound hub session with per-tenant fan-out
+**Context.** PRD v3.2 G-31, C-27. Parents and students may belong to several academies; each academy is a separate origin with tenant-bound sessions.
+**Decision.**
+- New host `app.academybee.com` (reserved; classified as `hub` by `packages/tenant`). Parent and Student experiences live **only** on the hub; academy URLs redirect those roles to the hub with the academy preselected.
+- New session audience `HUB`: a user-bound session (no `tid` claim) valid only on the hub host; tenant and console tokens are rejected there and vice versa. Cookies remain host-only (`__Host-` on `app.`).
+- Hub endpoints `/api/v1/hub/*` resolve the user's **ACTIVE Parent/Student memberships**, then for each academy call the same portal services inside `TenantContext.run(tenantId)` (tenant-bound Prisma client, RLS `app.tenant_id` set per tenant, membership + LINKED/SELF scope re-checked). The platform (`ab_platform`) client is **never** used for hub reads. Fan-out is parallel with per-academy timeouts; one unavailable academy degrades only its own card.
+- Per-academy endpoints are addressed explicitly: `/api/v1/hub/academies/:slug/...`. The slug is resolved to a tenant, then membership is verified; an unknown slug and a missing membership both return the same 404.
+- Linking: `AcademyLinkAttempt` (hashed identifier, tenantId, method QR/URL/INVITE, status, attempts; rate-limited per user, per IP and per tenant); `JoinRequest` (tenant-owned: requester userId, submitted parent/child details, status PENDING/APPROVED/REJECTED, reviewedBy) surfaced in the academy's **Join requests** queue (`parent.manage`); verification by one-time code to an identifier the academy already holds. Uniform responses prevent enumeration.
+- `HubChildGroup` (user-owned table outside tenant RLS, protected by a `user_id = app.user_id` policy): a parent-private grouping of `(tenantId, studentId)` pairs. It is never exposed to tenant APIs.
+- Offline: one Dexie DB on the hub origin per user; every row carries `tenantId`; pull runs per linked academy; logout wipes it. Push subscription registered once on the hub origin; payloads carry the academy name.
+- Notifications and links: parent-facing URLs are generated as `https://app.academybee.com/a/<slug>/...`.
+**Consequences.** One app and one login for families, with no weakening of tenant isolation: aggregation happens only for the signed-in user, after per-tenant authorization, and nothing crosses back to any academy. Academies lose per-academy branded PWAs for parents (they keep branded public page, login redirect and in-hub branding). Staff multi-academy launcher is backlog.
+
+### ADR-040 — Multilingual architecture
+**Context.** PRD v3.2 G-32, C-28. Languages ship later (Phase L), but retrofitting multilingual support is expensive.
+**Decision.**
+- **Locales & resolution:** BCP-47 locale codes (`en-IN`, `hi-IN`, `ta-IN`, …). `User.preferredLocale` (nullable), `Parent.preferredLocale` (for outbound messages to people without accounts), `TenantSettings.i18n = { defaultLocale, enabledLocales[], documentLocale | 'bilingual' }`. Resolution: user → tenant default → `Accept-Language` → `en-IN`; the result is placed in request context (API, worker jobs, emails, PDFs).
+- **Catalogues:** `packages/i18n` owns ICU message catalogues per namespace and locale (`messages/<locale>/<namespace>.json`), used by web (next-intl), API (error messages by `ErrorCode`), worker (emails, notifications, PDFs). Keys are stable semantic IDs; no string concatenation; ICU plural/select for counts and gender. English (`en-IN`) is the source of truth; missing keys fall back per key to `en-IN` with a logged warning.
+- **Tooling & CI:** key extraction and unused-key detection; CI fails on (a) hard-coded JSX strings in app code, (b) missing keys for any locale marked `complete` on Tier-1 namespaces, (c) ICU syntax errors. Pseudo-locale (`en-XA`, accented) and long-text locale (+40%) builds are run by Playwright visual checks on Tier-1 screens.
+- **URLs:** authenticated apps (academy URLs, Family Hub, console) do **not** put the locale in the path; the preference cookie/profile decides. Public SEO pages (marketing site, academy public page) use locale path prefixes (`/hi/…`) with `hreflang`.
+- **UI:** CSS logical properties only (stylelint rule); MUI configured so an RTL `dir` can be switched on later; icons that imply direction are mirrored via a helper. Font stack: Inter + script-specific Noto Sans families (Devanagari, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati, Gurmukhi, Odia) loaded per active locale with `next/font` subsets; script-aware line-height tokens.
+- **Data:** PostgreSQL UTF-8; names stored as entered (NFC-normalised); Unicode-aware Zod validators (`\p{L}\p{M}`) for names; search uses `pg_trgm` on NFC text plus an optional Latin transliteration column filled by the worker (so `Aarav` finds `आरव` later); ordering via ICU collations (`COLLATE "und-x-icu"`), client sorting via `Intl.Collator`.
+- **Translatable content:** `MessageTemplate`, `Announcement`, `LegalDocument`, `HelpArticle` and the academy public page store variants keyed by locale (`{ "en-IN": …, "ta-IN": … }`) with a required default; recipients get their locale or the default. WhatsApp and DLT template registrations are tracked per (template, locale). SMS in Indic scripts uses Unicode encoding (70 chars/segment), so the usage meter accounts for it.
+- **Documents:** receipts/invoices/exports are rendered from HTML templates to PDF by headless Chromium in the worker (correct complex-script shaping), with the embedded Noto fonts; `documentLocale` or bilingual layout per tenant.
+- **Adding a language** = catalogue files + font entry + template/legal/help translations + WhatsApp/DLT registrations + marking the locale `complete`; no code change (verified by an automated "locale completeness" report).
+**Phasing (PO, 2026-09-29): English-only launch.** Phases 0–16 implement only the invisible groundwork (catalogue with `en-IN`, no hard-coded strings, `Intl` helpers, `preferredLocale` columns + locale context fixed to `en-IN`, Unicode name validation, logical CSS, pseudo-locale CI, Chromium PDF with Noto fallback, locale-keyed storage shape with only `en-IN`). Switcher, language settings UI, per-language editors, per-language WhatsApp/DLT registrations, per-script fonts, bilingual documents, transliteration search and RTL are built in Phase L.
+**Consequences.** Launch scope stays English-simple; Phase L is mostly translation, review and QA work plus the deferred UI.
+
+### ADR-041 — Repository management: one monorepo, trunk-based slices, release flags
+**Context.** PO asked whether the repository setup scales. Options considered: (a) **polyrepo** (separate web / api / worker / packages repos): contract drift between repos, versioned internal packages to publish, several PRs per feature, and Claude Code loses whole-system context. (b) **Monorepo with pnpm + Turborepo** (current). (c) **Monorepo with Nx**: stronger project graph, generators and module-boundary tags, but heavier to operate.
+**Decision.** Keep **one private monorepo** (`academybee/academybee`) with pnpm + Turborepo, plus these governance rules from Phase 0:
+- **Trunk-based development in slices.** `main` is always deployable. Work lands through short-lived branches (`p<phase>/<slice>`, `fix/<x>`, `pilot-fix/<x>`, `chore/<x>`), each a slice of 1–5 related tasks merged by squash PR within a day or two. No long-lived phase branches. Unfinished user-visible work is hidden behind a **release flag**.
+- **Release flags ≠ entitlements.** `FeatureFlag` (key, default, per-environment and per-tenant overrides, owner, expiry date) for rollout and kill switches; ADR-028 entitlements stay for plan limits. Flags are removed within one phase of full rollout (a CI check lists expired flags).
+- **Protection (GitHub ruleset on `main`).** PR required; required checks (lint, typecheck, unit, integration, build, e2e, migration drift); linear history (squash only); no force-push or deletion; auto-merge allowed; head branches deleted after merge; conversation resolution required.
+- **Ownership & templates.** `CODEOWNERS` (PO for `docs/`, `infra/`, `packages/database/`, `.github/`; more owners as the team grows). PR template carrying the Definition of Done checklist. Issue templates for bugs, pilot feedback and decisions.
+- **Commits & versions.** Conventional Commits enforced (commitlint on PR titles). One product version (SemVer `vX.Y.Z`). release-please keeps `CHANGELOG.md` and a release PR. `phase-*` tags mark milestones only and never deploy.
+- **Environments.** Merge to `main` → deploy to **staging** automatically. A `v*` tag → **production** through a GitHub Environment that needs the PO's approval. If the GitHub plan in use doesn't support required reviewers on private-repo environments, production deploys run from a manual `workflow_dispatch` release job that only the PO can trigger. Protected branches on a private repo need a paid GitHub plan (Team). Migrations follow expand → migrate → contract.
+- **Dependencies.** pnpm **catalogs** give a single version per dependency across the repo. `packageManager` and `engines` are pinned. Renovate runs weekly with grouped PRs and auto-merge for patch updates that pass CI.
+- **Security.** Secret scanning with push protection, Dependabot alerts, and code scanning where the GitHub plan allows. `.env*` is gitignored except `.env.example`. No binaries or design exports in git (object storage or design tool instead).
+- **CI speed.** Turborepo remote cache. PR pipelines run only affected packages (`turbo run … --affected`). Each app deploys only when its own code or its dependencies change. A nightly full run catches anything the affected-only runs missed.
+- **Boundaries.** `eslint-plugin-boundaries` tags (app, feature module, package) and the rules in ARCHITECTURE §3, so the monorepo doesn't turn into a tangle.
+**Scale path.** This setup comfortably serves a solo founder with Claude Code up to a team of roughly 10–15 engineers. Triggers to revisit, recorded as a new ADR when hit: CI over 15 minutes despite caching, or several teams needing enforced ownership → consider adopting Nx on the same folder layout (a low-cost move). A separate product with its own release cycle (e.g. a native mobile app) → it still lives in `apps/`. Extracting services (Notifications, Payments, Reporting, AI, per PRD v3 §29) → new deployables in the same repo, not new repos. A new repo only for code that must be distributed separately (public SDK, open-source widget).
+**Consequences.** One PR can change contract, API and UI together, and Claude Code always sees the whole system. `main` stays releasable; production releases are deliberate and approved by the PO.
