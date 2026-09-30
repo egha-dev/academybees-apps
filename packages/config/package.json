@@ -14,6 +14,10 @@
     "./vitest": {
       "types": "./vitest/index.d.ts",
       "default": "./vitest/index.js"
+    },
+    "./eslint/react": {
+      "types": "./eslint/react.d.ts",
+      "default": "./eslint/react.js"
     }
   },
   "scripts": {
@@ -23,13 +27,16 @@
   },
   "dependencies": {
     "@eslint/js": "catalog:",
+    "@swc/core": "catalog:",
     "eslint-config-prettier": "catalog:",
     "eslint-import-resolver-typescript": "catalog:",
     "eslint-plugin-boundaries": "catalog:",
+    "eslint-plugin-jsx-a11y": "catalog:",
+    "eslint-plugin-react": "catalog:",
+    "eslint-plugin-react-hooks": "catalog:",
     "globals": "catalog:",
     "typescript-eslint": "catalog:",
-    "unplugin-swc": "catalog:",
-    "@swc/core": "catalog:"
+    "unplugin-swc": "catalog:"
   },
   "peerDependencies": {
     "eslint": "*",
