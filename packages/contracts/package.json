@@ -19,7 +19,8 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput"
   },
   "dependencies": {
     "uuid": "catalog:",

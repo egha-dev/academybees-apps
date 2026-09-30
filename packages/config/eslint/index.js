@@ -188,6 +188,10 @@ export function createConfig(options = {}) {
       rules: {
         'no-console': 'off',
         '@typescript-eslint/no-non-null-assertion': 'off',
+        // HTTP test clients (supertest) type response bodies as `any`.
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/no-unsafe-argument': 'off',
+        '@typescript-eslint/no-unsafe-assignment': 'off',
       },
     },
     prettier,
