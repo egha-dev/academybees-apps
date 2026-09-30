@@ -1,6 +1,7 @@
 /**
- * Log hygiene (ADR-023, CLAUDE.md §5): secrets are removed by pino `redact`; personal contact
- * data that slips into log objects is masked here. Logs must be useful without being a PII store.
+ * Privacy helpers shared by API and worker logging (ADR-023) and the analytics PII guard
+ * (ADR-032, G-09). Secrets are removed by pino `redact` (REDACT_PATHS); personal contact data
+ * that slips into log objects is masked. Logs must be useful without being a PII store.
  */
 const EMAIL = /([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*@([A-Za-z0-9])[A-Za-z0-9.-]*\.([A-Za-z]{2,})/g;
 // Indian and international phone numbers: 10+ digits with optional +, spaces or dashes.
@@ -57,3 +58,9 @@ export const REDACT_PATHS = [
   '*.apiKey',
   '*.otp',
 ];
+
+/** True when a string looks like an email address or a phone number. */
+export function looksLikeContactData(text: string): boolean {
+  if (UUID.test(text)) return false;
+  return maskString(text) !== text;
+}
