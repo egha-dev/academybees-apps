@@ -1,0 +1,36 @@
+{
+  "name": "@academybee/testing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Testcontainers helpers (Postgres with roles + migrations, Redis), Vitest global setup and factories.",
+  "exports": {
+    ".": {
+      "@academybee/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@academybee/contracts": "workspace:*",
+    "@testcontainers/postgresql": "catalog:",
+    "@testcontainers/redis": "catalog:",
+    "testcontainers": "catalog:"
+  },
+  "devDependencies": {
+    "@academybee/config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "vitest": "*"
+  }
+}
