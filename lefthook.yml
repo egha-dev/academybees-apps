@@ -1,4 +1,7 @@
 # Git hooks (installed by `pnpm install` via the "prepare" script).
+output:
+  - failure
+
 pre-commit:
   commands:
     lint-staged:
