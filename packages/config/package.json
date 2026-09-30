@@ -6,9 +6,15 @@
   "description": "Shared tsconfig bases, ESLint flat config, Prettier config and Vitest presets.",
   "exports": {
     "./tsconfig/*": "./tsconfig/*",
-    "./eslint": "./eslint/index.js",
+    "./eslint": {
+      "types": "./eslint/index.d.ts",
+      "default": "./eslint/index.js"
+    },
     "./prettier": "./prettier/index.js",
-    "./vitest": "./vitest/index.js"
+    "./vitest": {
+      "types": "./vitest/index.d.ts",
+      "default": "./vitest/index.js"
+    }
   },
   "scripts": {
     "lint": "eslint .",
