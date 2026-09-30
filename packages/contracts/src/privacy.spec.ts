@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { maskPii, maskString } from './pii-mask.js';
+import { looksLikeContactData, maskPii, maskString } from './privacy.js';
 
 describe('log PII masking', () => {
   it('masks emails', () => {
@@ -27,5 +27,14 @@ describe('log PII masking', () => {
       user: { email: 'a***@b***.io', phones: ['******3210'] },
       n: 5,
     });
+  });
+});
+
+describe('looksLikeContactData', () => {
+  it('detects emails and phones only', () => {
+    expect(looksLikeContactData('a@b.co')).toBe(true);
+    expect(looksLikeContactData('98765 43210')).toBe(true);
+    expect(looksLikeContactData('attendance.session_marked')).toBe(false);
+    expect(looksLikeContactData('0199a0a0-1234-7000-8000-123456789012')).toBe(false);
   });
 });
