@@ -6,3 +6,5 @@ dist/
 .next/
 coverage/
 **/prisma/migrations/**
+**/src/generated/**
+**/next-env.d.ts
