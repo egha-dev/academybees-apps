@@ -133,7 +133,7 @@ export function createConfig(options = {}) {
         ...(typeChecked
           ? {
               parserOptions: {
-                projectService: true,
+                projectService: { allowDefaultProject: ['*.config.ts', '*.config.mts'] },
                 ...(tsconfigRootDir ? { tsconfigRootDir } : {}),
               },
             }
