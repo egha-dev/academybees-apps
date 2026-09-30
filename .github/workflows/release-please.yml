@@ -1,0 +1,21 @@
+name: Release PR
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # One product version (SemVer vX.Y.Z) and CHANGELOG.md (ADR-041). Merging the release PR
+  # creates the v* tag; production deploys from v* tags only after PO approval.
+  release-please:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: googleapis/release-please-action@v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
