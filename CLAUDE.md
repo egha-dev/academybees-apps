@@ -85,7 +85,7 @@ Work on **one phase at a time**. Leave the repo green (lint, typecheck, tests, b
 
 ## 6. Stack (see ADR-001/002)
 
-pnpm workspaces + Turborepo · Node 24 LTS · TypeScript strict · Next.js App Router (web + PWA via Serwist) · NestJS (api, worker) · PostgreSQL + Prisma (+ RLS) · Redis + BullMQ · Dexie (IndexedDB) · Zod contracts · MUI themed behind `@academybee/ui` · TanStack Query · React Hook Form · Vitest · Testcontainers · Playwright · pino · Sentry · S3-compatible storage (R2; MinIO locally).
+pnpm workspaces + Turborepo · Node 24 LTS · TypeScript strict · Next.js App Router (web + PWA via Serwist) · NestJS (api, worker) · PostgreSQL + Prisma (+ RLS) · Redis + BullMQ · Dexie (IndexedDB) · Zod contracts · MUI themed behind `@academybee/ui` · TanStack Query · React Hook Form · Vitest · Testcontainers · Playwright · pino · Sentry · S3-compatible storage (R2; SeaweedFS locally, C-45).
 
 ## 7. Repository map
 
@@ -112,7 +112,7 @@ Boundaries: apps → packages only. API modules talk to each other through expor
 
 ```bash
 pnpm install
-pnpm infra:up            # postgres, redis, mailpit (http://localhost:8025), minio
+pnpm infra:up            # postgres, redis, mailpit (http://localhost:8025), seaweedfs S3 (C-45)
 pnpm db:migrate          # prisma migrate dev + RLS SQL
 pnpm db:seed             # dev tenants demo-a, demo-b, paused + one user per role
 pnpm dev                 # web :3000, api :4000, worker
