@@ -2,25 +2,12 @@
   "$schema": "https://turborepo.com/schema.json",
   "agentGuidance": false,
   "ui": "stream",
-  "globalDependencies": [
-    ".nvmrc",
-    "pnpm-workspace.yaml"
-  ],
-  "globalEnv": [
-    "APP_ENV",
-    "NODE_ENV",
-    "CI"
-  ],
+  "globalDependencies": [".nvmrc", "pnpm-workspace.yaml"],
+  "globalEnv": ["APP_ENV", "NODE_ENV", "CI"],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**",
-        ".next/**",
-        "!.next/cache/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "lint": {
       "outputs": []
@@ -29,21 +16,15 @@
       "outputs": []
     },
     "test": {
-      "outputs": [
-        "coverage/**"
-      ]
+      "outputs": ["coverage/**"]
     },
     "test:integration": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "outputs": [],
       "cache": false
     },
     "dev": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     }

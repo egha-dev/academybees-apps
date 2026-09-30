@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "AcademyBee NestJS application (legacy decorators + metadata for DI)",
+  "extends": "./node.json",
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "verbatimModuleSyntax": false,
+    "strictPropertyInitialization": false
+  }
+}

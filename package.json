@@ -18,6 +18,7 @@
     "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "@academybee/config": "workspace:*",
     "@commitlint/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
     "@types/node": "catalog:",
