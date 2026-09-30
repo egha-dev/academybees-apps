@@ -14,6 +14,8 @@ export function nodePreset(overrides = {}) {
     {
       resolve: { conditions: [SOURCE_CONDITION] },
       ssr: { resolve: { conditions: [SOURCE_CONDITION] } },
+      // Vitest runs globalSetup files in its own "__vitest__" environment.
+      environments: { __vitest__: { resolve: { conditions: [SOURCE_CONDITION] } } },
       test: {
         environment: 'node',
         include: ['src/**/*.spec.ts', 'test/**/*.spec.ts'],

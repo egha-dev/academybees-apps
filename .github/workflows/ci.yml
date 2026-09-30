@@ -40,3 +40,20 @@ jobs:
           scripts/github/apply-governance.sh --dry-run
       - name: compose file is valid
         run: docker compose -f infra/docker-compose.yml config -q
+
+  integration:
+    name: integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: pull container images
+        run: docker pull -q postgres:17-alpine && docker pull -q redis:7-alpine
+      # Testcontainers: real Postgres with the ab_* roles, migrations and grants (includes the drift check).
+      - run: pnpm test:integration

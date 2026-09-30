@@ -1,0 +1,63 @@
+{
+  "name": "@academybee/database",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Prisma schema, migrations, RLS/grant SQL, client factories and dev seeds (ADR-005).",
+  "exports": {
+    ".": {
+      "@academybee/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./platform": {
+      "@academybee/source": "./src/platform.ts",
+      "types": "./dist/platform.d.ts",
+      "default": "./dist/platform.js"
+    },
+    "./migrate": {
+      "@academybee/source": "./src/migrate.ts",
+      "types": "./dist/migrate.d.ts",
+      "default": "./dist/migrate.js"
+    },
+    "./seed": {
+      "@academybee/source": "./src/seed/flags.ts",
+      "types": "./dist/seed/flags.d.ts",
+      "default": "./dist/seed/flags.js"
+    }
+  },
+  "files": [
+    "dist",
+    "prisma"
+  ],
+  "scripts": {
+    "generate": "prisma generate",
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "db:migrate": "prisma migrate dev && tsx --conditions=@academybee/source src/cli/apply-sql.ts",
+    "db:deploy": "prisma migrate deploy && tsx --conditions=@academybee/source src/cli/apply-sql.ts",
+    "db:drift": "tsx --conditions=@academybee/source src/cli/drift.ts",
+    "db:seed": "tsx --conditions=@academybee/source src/seed/run.ts",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@academybee/contracts": "workspace:*",
+    "@prisma/adapter-pg": "catalog:",
+    "@prisma/client": "catalog:",
+    "pg": "catalog:"
+  },
+  "devDependencies": {
+    "@academybee/config": "workspace:*",
+    "@academybee/testing": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "eslint": "catalog:",
+    "prisma": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

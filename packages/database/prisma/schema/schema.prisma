@@ -1,0 +1,17 @@
+// Multi-file Prisma schema (ARCHITECTURE §8.1): one file per module.
+// Conventions: UUIDv7 ids generated in code (ADR-009); snake_case tables/columns;
+// timestamptz instants; tenant-owned tables carry tenant_id (RLS from Phase 1).
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../../src/generated/prisma"
+  moduleFormat           = "esm"
+  importFileExtension    = "js"
+  generatedFileExtension = "ts"
+  runtime                = "nodejs"
+  previewFeatures        = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
