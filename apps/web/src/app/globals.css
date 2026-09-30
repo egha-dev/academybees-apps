@@ -1,0 +1,13 @@
+/* Base layer only — all component styling comes from @academybee/ui tokens and theme. */
+:root {
+  --font-inter: 'Inter Variable';
+}
+
+html,
+body {
+  block-size: 100%;
+}
+
+body {
+  margin: 0;
+}
