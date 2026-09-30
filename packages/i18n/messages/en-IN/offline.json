@@ -1,0 +1,19 @@
+{
+  "banner": "You're offline. Attendance will sync automatically when you're back online.",
+  "sync": {
+    "synced": "All changes synced",
+    "syncedAt": "Synced {time}",
+    "justNow": "just now",
+    "offline": "Offline",
+    "pending": "{count, plural, one {Saved on this device — # record waiting to sync} other {Saved on this device — # records waiting to sync}}",
+    "syncing": "Syncing…",
+    "attention": "{count, plural, one {# item needs attention} other {# items need attention}}"
+  },
+  "onlineOnly": "Available when you're online",
+  "logoutGuard": {
+    "title": "Changes haven't synced",
+    "body": "{count, plural, one {# record hasn't synced.} other {# records haven't synced.}} Stay signed in until they sync, or sign out and lose them.",
+    "stay": "Stay signed in",
+    "signOut": "Sign out and lose them"
+  }
+}

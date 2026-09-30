@@ -1,0 +1,48 @@
+{
+  "title": "Design system",
+  "intro": "Every AcademyBee component and its states. Not available in production.",
+  "sections": {
+    "colors": "Colours",
+    "typography": "Typography",
+    "buttons": "Buttons",
+    "inputs": "Inputs",
+    "status": "Status badges",
+    "cards": "Cards",
+    "feedback": "Feedback",
+    "overlays": "Dialogs and sheets",
+    "shell": "App shell",
+    "offline": "Offline and sync",
+    "states": "Screen states",
+    "money": "Money and dates"
+  },
+  "samples": {
+    "studentName": "Student name",
+    "studentNamePlaceholder": "e.g. Aarav Sharma",
+    "batch": "Batch",
+    "batchOptions": {
+      "morning": "Morning Bharatanatyam",
+      "evening": "Evening Keyboard"
+    },
+    "paid": "Paid",
+    "overdue": "Overdue",
+    "pending": "Awaiting confirmation",
+    "present": "Present",
+    "absent": "Absent",
+    "emptyTitle": "No students yet",
+    "emptyBody": "Add your first student to start taking attendance and collecting fees.",
+    "emptyAction": "Add student",
+    "confirmTitle": "Cancel this class?",
+    "confirmBody": "Parents of 12 students will be told the class is cancelled.",
+    "confirmAction": "Cancel class",
+    "toast": "Attendance saved",
+    "cardTitle": "Today's classes",
+    "cardBody": "3 classes · 42 students",
+    "sheetTitle": "Filters",
+    "sheetBody": "Choose which batches to show.",
+    "primary": "Mark attendance",
+    "secondary": "View timetable",
+    "danger": "Remove",
+    "disabled": "Not available",
+    "textLink": "See all"
+  }
+}

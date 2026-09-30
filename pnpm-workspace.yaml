@@ -25,6 +25,10 @@ catalog:
   globals: 17.12.0
   # runtime
   zod: 4.6.5
+  use-intl: 4.14.8
+  next-intl: 4.14.8
+  '@formatjs/icu-messageformat-parser': 3.5.18
+  posthog-node: 5.54.1
   uuid: 14.0.2
   prisma: 7.10.0
   '@prisma/client': 7.10.0
