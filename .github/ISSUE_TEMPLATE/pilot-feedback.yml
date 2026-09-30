@@ -1,0 +1,37 @@
+name: Pilot feedback
+description: Feedback from a pilot academy (owner, teacher, parent or student).
+labels: [pilot-feedback]
+body:
+  - type: input
+    id: academy
+    attributes:
+      label: Academy (slug) and role of the person giving feedback
+      placeholder: e.g. sunrise-dance · Owner
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Which outcome does it affect? (CLAUDE.md §1)
+      options:
+        - Acquire students
+        - Run classes
+        - Collect money
+        - Communicate with parents
+        - Retain & grow
+    validations:
+      required: true
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Feedback in their words
+      description: Remove personal data about children or parents.
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Impact
+      options: [Blocks daily work, Workaround exists, Nice to have]
+    validations:
+      required: true

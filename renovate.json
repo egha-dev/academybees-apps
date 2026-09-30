@@ -1,0 +1,34 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits", "helpers:pinGitHubActionDigestsToSemver"],
+  "timezone": "Asia/Kolkata",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 5,
+  "rangeStrategy": "pin",
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "Weekly grouped non-major updates",
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "non-major dependencies"
+    },
+    {
+      "description": "Patch updates merge themselves when CI is green (ADR-041)",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Majors are one PR each and need changelog review (ADR-002)",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Toolchain majors held by C-42 until their ecosystems catch up",
+      "matchPackageNames": ["typescript", "eslint", "@eslint/js", "prisma", "@prisma/*"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ],
+  "vulnerabilityAlerts": { "enabled": true, "labels": ["security"] }
+}

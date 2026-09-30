@@ -1,0 +1,40 @@
+name: Bug
+description: Something in AcademyBee does not work as specified.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Include the screen, the host (academy URL, Family Hub or console) and the role you were signed in as. Never paste passwords, tokens or children's personal data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Open …\n2. Tap …"
+    validations:
+      required: true
+  - type: dropdown
+    id: env
+    attributes:
+      label: Environment
+      options: [local, staging, production]
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device / browser
+      placeholder: e.g. Android 13, Chrome 140, offline
+  - type: input
+    id: request-id
+    attributes:
+      label: Request ID (from the error message, if shown)

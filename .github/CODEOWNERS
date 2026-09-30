@@ -1,0 +1,7 @@
+# ADR-041: the Product Owner reviews docs, infrastructure, the database schema and repository automation.
+# Add owners here as the team grows.
+/docs/                @egha-dev
+/infra/               @egha-dev
+/packages/database/   @egha-dev
+/.github/             @egha-dev
+/CLAUDE.md            @egha-dev
