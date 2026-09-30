@@ -70,6 +70,7 @@ allowBuilds:
   cpu-features: false
   ssh2: false
   protobufjs: false
+  msgpackr-extract: false
   prisma: true
   '@prisma/engines': true
 
