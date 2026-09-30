@@ -29,6 +29,26 @@ catalog:
   next-intl: 4.14.8
   '@formatjs/icu-messageformat-parser': 3.5.18
   posthog-node: 5.54.1
+  # web / ui
+  react: 19.3.0
+  react-dom: 19.3.0
+  '@types/react': 19.3.0
+  '@types/react-dom': 19.3.0
+  '@mui/material': 9.4.0
+  '@mui/icons-material': 9.4.0
+  '@mui/material-nextjs': 9.4.0
+  '@emotion/react': 11.14.0
+  '@emotion/styled': 11.14.1
+  '@emotion/cache': 11.14.0
+  '@testing-library/react': 16.3.3
+  '@testing-library/dom': 10.4.2
+  '@testing-library/user-event': 14.6.7
+  axe-core: 4.13.0
+  jsdom: 30.1.1
+  '@vitejs/plugin-react': 6.1.1
+  eslint-plugin-react: 7.37.5
+  eslint-plugin-react-hooks: 7.1.1
+  eslint-plugin-jsx-a11y: 6.10.2
   uuid: 14.0.2
   prisma: 7.10.0
   '@prisma/client': 7.10.0

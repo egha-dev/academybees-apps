@@ -1,0 +1,24 @@
+// Curated icon set re-exported for apps (apps never import @mui/* directly, ADR-014).
+export { default as AddIcon } from '@mui/icons-material/AddRounded';
+export { default as ArrowBackIcon } from '@mui/icons-material/ArrowBackRounded';
+export { default as CalendarIcon } from '@mui/icons-material/CalendarMonthRounded';
+export { default as CheckCircleIcon } from '@mui/icons-material/CheckCircleRounded';
+export { default as ClassIcon } from '@mui/icons-material/EventNoteRounded';
+export { default as CloseIcon } from '@mui/icons-material/CloseRounded';
+export { default as CloudDoneIcon } from '@mui/icons-material/CloudDoneRounded';
+export { default as CloudOffIcon } from '@mui/icons-material/CloudOffRounded';
+export { default as CloudUploadIcon } from '@mui/icons-material/CloudUploadRounded';
+export { default as ErrorIcon } from '@mui/icons-material/ErrorRounded';
+export { default as FeesIcon } from '@mui/icons-material/CurrencyRupeeRounded';
+export { default as HomeIcon } from '@mui/icons-material/HomeRounded';
+export { default as InfoIcon } from '@mui/icons-material/InfoRounded';
+export { default as LockIcon } from '@mui/icons-material/LockRounded';
+export { default as MenuIcon } from '@mui/icons-material/MenuRounded';
+export { default as MoreIcon } from '@mui/icons-material/MoreHorizRounded';
+export { default as PeopleIcon } from '@mui/icons-material/PeopleAltRounded';
+export { default as RefreshIcon } from '@mui/icons-material/RefreshRounded';
+export { default as SyncIcon } from '@mui/icons-material/SyncRounded';
+export { default as SyncProblemIcon } from '@mui/icons-material/SyncProblemRounded';
+export { default as TodayIcon } from '@mui/icons-material/TodayRounded';
+export { default as WarningIcon } from '@mui/icons-material/WarningRounded';
+export { default as CircleIcon } from '@mui/icons-material/FiberManualRecordRounded';
