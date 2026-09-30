@@ -47,6 +47,9 @@ allowBuilds:
   esbuild: true
   lefthook: true
   unrs-resolver: false
+  cpu-features: false
+  ssh2: false
+  protobufjs: false
   prisma: true
   '@prisma/engines': true
 
