@@ -17,8 +17,13 @@ export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 /** Import specifiers of the platform (ab_platform, cross-tenant) Prisma client. */
 export const PLATFORM_CLIENT_IMPORTS = ['@academybee/database/platform'];
 
-/** Folders (relative to the repo root) allowed to use the platform client. */
-export const PLATFORM_ALLOWED_GLOBS = ['apps/api/src/platform/**', 'apps/worker/src/platform/**'];
+/** Folders (relative to the repo root) allowed to use the platform client. Tests may use it to set up and inspect data. */
+export const PLATFORM_ALLOWED_GLOBS = [
+  'apps/api/src/platform/**',
+  'apps/worker/src/platform/**',
+  'apps/*/test/**',
+  'packages/*/test/**',
+];
 
 const MUI_RESTRICTION = {
   group: ['@mui/*', '@mui/**'],

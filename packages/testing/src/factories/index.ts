@@ -14,7 +14,13 @@ export const buildAuditEntry = defineFactory(() => ({
   action: 'test.action',
 }));
 
-export const buildOutboxEvent = defineFactory(() => ({
+export type OutboxEventSeed = {
+  id: string;
+  type: string;
+  payload: Record<string, string | number | boolean | null>;
+};
+
+export const buildOutboxEvent = defineFactory<OutboxEventSeed>(() => ({
   id: newId(),
   type: 'test.event',
   payload: { hello: 'world' },
