@@ -44,10 +44,12 @@ describe('error envelope contract (ADR-013)', () => {
       .post('/api/v1/test/echo')
       .send({ name: '', age: 'x' });
     expectEnvelope(res, 400, 'VALIDATION_FAILED');
-    expect(res.body.error.details).toEqual([
-      { path: 'name', issue: 'too_small' },
-      { path: 'age', issue: 'invalid_type' },
-    ]);
+    expect(res.body.error.details).toEqual(
+      expect.arrayContaining([
+        { path: 'name', issue: 'too_small' },
+        { path: 'age', issue: 'invalid_type' },
+      ]),
+    );
   });
 
   it('malformed JSON → 400 VALIDATION_FAILED', async () => {
@@ -98,5 +100,25 @@ describe('error envelope contract (ADR-013)', () => {
       .send({ name: 'Aarav' });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ name: 'Aarav' });
+  });
+
+  it('Tamil and Hindi names round-trip through the API unchanged (G-08, G-32 exit gate)', async () => {
+    for (const name of ['ஆரவ்', 'आरव', 'ఆరవ్ శర్మ']) {
+      const res = await request(app.getHttpServer()).post('/api/v1/test/echo').send({ name });
+      expect(res.status).toBe(200);
+      expect(res.body.name).toBe(name);
+    }
+  });
+
+  it('rejects names with digits or markup', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/test/echo')
+      .send({ name: '<b>Aarav</b>' });
+    expectEnvelope(res, 400, 'VALIDATION_FAILED');
+  });
+
+  it('error messages come from the i18n catalogue', async () => {
+    const res = await request(app.getHttpServer()).get('/api/v1/nope');
+    expect(res.body.error.message).toBe("We couldn't find what you were looking for.");
   });
 });

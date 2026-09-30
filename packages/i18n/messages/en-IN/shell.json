@@ -1,0 +1,39 @@
+{
+  "offlinePage": {
+    "title": "You're offline",
+    "body": "AcademyBee will reconnect automatically. Anything you saved on this device is safe and will sync when you're back online.",
+    "retry": "Try again"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you're looking for doesn't exist or has moved."
+  },
+  "error": {
+    "title": "Something went wrong",
+    "body": "We couldn't load this page. Try again, or go back to the home page.",
+    "reference": "Reference: {requestId}"
+  },
+  "home": {
+    "title": "The operating system for coaching academies",
+    "body": "Manage your academy — students, classes, attendance, fees and parents — in one place. Works on any phone, even offline."
+  },
+  "pwa": {
+    "install": "Install AcademyBee",
+    "installBody": "Add AcademyBee to your home screen for quick access, even offline.",
+    "updateAvailable": "A new version of AcademyBee is available.",
+    "update": "Update now",
+    "later": "Later"
+  },
+  "flagProbe": {
+    "title": "Release flag probe",
+    "body": "This page is only visible when the p0-flag-probe release flag is on."
+  },
+  "nav": {
+    "today": "Today",
+    "students": "Students",
+    "classes": "Classes",
+    "fees": "Fees",
+    "more": "More",
+    "menu": "Menu"
+  }
+}

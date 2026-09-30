@@ -1,4 +1,5 @@
 import { newId } from '@academybee/contracts';
+import { PersonNameSchema } from '@academybee/i18n';
 import { type PrismaClient } from '@academybee/database';
 import { Body, Controller, Get, HttpCode, Inject, Module, Post } from '@nestjs/common';
 import { z } from 'zod';
@@ -10,7 +11,7 @@ import { Idempotent } from '../../src/core/idempotency/idempotent.js';
 import { createZodDto, ZodResponse } from '../../src/core/validation/zod-dto.js';
 
 export const EchoSchema = z.object({
-  name: z.string().min(1).max(100),
+  name: PersonNameSchema,
   age: z.number().int().optional(),
 });
 class EchoDto extends createZodDto(EchoSchema) {}

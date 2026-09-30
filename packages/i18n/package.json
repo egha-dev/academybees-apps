@@ -1,0 +1,42 @@
+{
+  "name": "@academybee/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Message catalogues (en-IN), locale context, ICU formatting, Intl money/date helpers and Unicode name rules (ADR-031, ADR-040, G-32).",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "@academybee/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./messages/*": "./messages/*"
+  },
+  "files": [
+    "dist",
+    "messages"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "i18n:check": "tsx --conditions=@academybee/source scripts/check.ts",
+    "i18n:pseudo": "tsx --conditions=@academybee/source scripts/pseudo.ts"
+  },
+  "dependencies": {
+    "@formatjs/icu-messageformat-parser": "catalog:",
+    "use-intl": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@academybee/config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

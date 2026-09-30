@@ -34,6 +34,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm i18n:check
       - name: governance script (shellcheck + dry run)
         run: |
           shellcheck scripts/*/*.sh infra/postgres/init/*.sh

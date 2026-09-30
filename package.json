@@ -26,7 +26,9 @@
     "db:deploy": "pnpm --filter @academybee/database db:deploy",
     "db:seed": "pnpm --filter @academybee/database db:seed",
     "db:drift": "pnpm --filter @academybee/database db:drift",
-    "db:generate": "turbo run generate"
+    "db:generate": "turbo run generate",
+    "i18n:check": "pnpm --filter @academybee/i18n i18n:check",
+    "i18n:pseudo": "pnpm --filter @academybee/i18n i18n:pseudo"
   },
   "devDependencies": {
     "@academybee/config": "workspace:*",
