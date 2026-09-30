@@ -26,6 +26,15 @@ catalog:
   # runtime
   zod: 4.6.5
   uuid: 14.0.2
+  prisma: 7.10.0
+  '@prisma/client': 7.10.0
+  '@prisma/adapter-pg': 7.10.0
+  pg: 8.23.0
+  '@types/pg': 8.23.1
+  tsx: 4.23.15
+  testcontainers: 12.2.0
+  '@testcontainers/postgresql': 12.2.0
+  '@testcontainers/redis': 12.2.0
   # test
   vitest: 5.0.3
   '@vitest/coverage-v8': 5.0.3
@@ -38,6 +47,8 @@ allowBuilds:
   esbuild: true
   lefthook: true
   unrs-resolver: false
+  prisma: true
+  '@prisma/engines': true
 
 minimumReleaseAgeExclude:
   - lefthook-darwin-arm64@2.1.15

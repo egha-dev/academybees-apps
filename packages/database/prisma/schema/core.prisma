@@ -1,0 +1,79 @@
+// Cross-cutting infrastructure tables (Phase 0, IMPLEMENTATION_PLAN 0.4).
+
+enum AuditActorType {
+  USER
+  PLATFORM_STAFF
+  SYSTEM
+
+  @@map("audit_actor_type")
+}
+
+/// Append-only audit trail (ADR-027). ab_app may INSERT and SELECT only (see prisma/sql).
+model AuditLog {
+  id         String         @id @db.Uuid
+  /// null for platform-level actions.
+  tenantId   String?        @map("tenant_id") @db.Uuid
+  actorType  AuditActorType @map("actor_type")
+  actorId    String?        @map("actor_id") @db.Uuid
+  action     String         @db.VarChar(100)
+  entityType String?        @map("entity_type") @db.VarChar(60)
+  entityId   String?        @map("entity_id") @db.VarChar(100)
+  requestId  String?        @map("request_id") @db.VarChar(100)
+  ip         String?        @db.VarChar(64)
+  userAgent  String?        @map("user_agent") @db.VarChar(300)
+  before     Json?
+  after      Json?
+  metadata   Json?
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([tenantId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_log")
+}
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  COMPLETED
+
+  @@map("idempotency_status")
+}
+
+/// Stored results of Idempotency-Key requests (ADR-013, ARCHITECTURE §9.1), kept ≥ 24 h.
+model IdempotencyRecord {
+  id             String            @id @db.Uuid
+  tenantId       String?           @map("tenant_id") @db.Uuid
+  /// Who and where the key belongs to, e.g. `tenant:<id>|user:<id>|POST /api/v1/payments`.
+  scope          String            @db.VarChar(300)
+  key            String            @db.VarChar(200)
+  requestHash    String            @map("request_hash") @db.Char(64)
+  status         IdempotencyStatus
+  responseStatus Int?              @map("response_status")
+  responseBody   Json?             @map("response_body")
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt      DateTime          @map("expires_at") @db.Timestamptz(3)
+
+  @@unique([scope, key])
+  @@index([expiresAt])
+  @@map("idempotency_record")
+}
+
+/// Transactional outbox (ADR-019): written in the same transaction as the change it describes,
+/// relayed to BullMQ by the worker. Undispatched rows are found via a partial index (prisma/sql).
+model OutboxEvent {
+  id           String    @id @db.Uuid
+  /// null for platform events.
+  tenantId     String?   @map("tenant_id") @db.Uuid
+  type         String    @db.VarChar(100)
+  payload      Json
+  requestId    String?   @map("request_id") @db.VarChar(100)
+  actor        Json?
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  availableAt  DateTime  @default(now()) @map("available_at") @db.Timestamptz(3)
+  dispatchedAt DateTime? @map("dispatched_at") @db.Timestamptz(3)
+  attempts     Int       @default(0)
+  lastError    String?   @map("last_error") @db.VarChar(1000)
+
+  @@index([tenantId, createdAt])
+  @@index([availableAt, id], map: "outbox_event_undispatched_idx", where: raw("dispatched_at IS NULL"))
+  @@map("outbox_event")
+}

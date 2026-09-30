@@ -1,0 +1,40 @@
+// Release flags (ADR-041). Definitions live in code (@academybee/contracts flags registry) and are
+// mirrored here so overrides can reference them; overrides are runtime kill switches / rollouts.
+
+/// One row per flag defined in the code registry (upserted by the seed / deploy step).
+model FeatureFlag {
+  key         String                @id @db.VarChar(80)
+  description String                @db.VarChar(300)
+  owner       String                @db.VarChar(80)
+  /// Remove the flag by this date (CI lists expired flags).
+  expiresOn   DateTime              @map("expires_on") @db.Date
+  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  overrides   FeatureFlagOverride[]
+
+  @@map("feature_flag")
+}
+
+/// Override for one environment and/or one tenant. Resolution (most specific wins):
+/// environment+tenant > tenant > environment > code default. FK to tenant + RLS arrive in
+/// Phase 1 (C-35). One override per (flag, environment, tenant) combination — partial unique
+/// indexes because NULL means "every".
+model FeatureFlagOverride {
+  id          String      @id @db.Uuid
+  flagKey     String      @map("flag_key") @db.VarChar(80)
+  flag        FeatureFlag @relation(fields: [flagKey], references: [key], onDelete: Cascade)
+  /// local | ci | staging | production; null = every environment.
+  environment String?     @db.VarChar(20)
+  /// null = every tenant.
+  tenantId    String?     @map("tenant_id") @db.Uuid
+  enabled     Boolean
+  reason      String?     @db.VarChar(300)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([flagKey, environment, tenantId], map: "ffo_env_tenant_key", where: raw("environment IS NOT NULL AND tenant_id IS NOT NULL"))
+  @@unique([flagKey, tenantId], map: "ffo_tenant_key", where: raw("environment IS NULL AND tenant_id IS NOT NULL"))
+  @@unique([flagKey, environment], map: "ffo_env_key", where: raw("environment IS NOT NULL AND tenant_id IS NULL"))
+  @@unique([flagKey], map: "ffo_global_key", where: raw("environment IS NULL AND tenant_id IS NULL"))
+  @@map("feature_flag_override")
+}
