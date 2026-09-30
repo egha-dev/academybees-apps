@@ -15,7 +15,8 @@
     "test": "turbo run test",
     "test:integration": "turbo run test:integration --concurrency=1",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
     "@academybee/config": "workspace:*",
