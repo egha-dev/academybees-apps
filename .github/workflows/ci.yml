@@ -19,7 +19,7 @@ env:
 jobs:
   # Required checks (ADR-041). Later Phase 0 slices add integration, drift, build and e2e.
   verify:
-    name: lint · typecheck · unit
+    name: verify
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -34,3 +34,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - name: governance script (shellcheck + dry run)
+        run: |
+          shellcheck scripts/github/*.sh
+          scripts/github/apply-governance.sh --dry-run
