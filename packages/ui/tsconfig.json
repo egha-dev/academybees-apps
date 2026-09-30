@@ -1,0 +1,5 @@
+{
+  "extends": "@academybee/config/tsconfig/react-lib.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "dist", "types": ["node"] },
+  "include": ["src"]
+}
