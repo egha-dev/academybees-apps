@@ -2,6 +2,9 @@ import { maskPii, REDACT_PATHS } from '@academybee/contracts';
 import { type DynamicModule, Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 
+import { AnalyticsHandler } from './analytics/analytics.handler.js';
+import { analyticsPortProvider } from './analytics/analytics.module.js';
+import { WorkerStartedEmitter } from './analytics/service-started.js';
 import { WORKER_CONFIG, type WorkerConfig } from './config/config.js';
 import { DomainEventsWorker } from './events/domain-events.worker.js';
 import { OutboxRelayService } from './platform/outbox-relay.service.js';
@@ -33,6 +36,9 @@ export class WorkerModule {
         SystemQueueService,
         DomainEventsWorker,
         OutboxRelayService,
+        analyticsPortProvider,
+        AnalyticsHandler,
+        WorkerStartedEmitter,
       ],
       exports: [DomainEventsWorker],
     };
