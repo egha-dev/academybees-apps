@@ -21,11 +21,11 @@
 
 ---
 
-## P-00 · Orientation (once, before Phase 0)  ☐
+## P-00 · Orientation (once, before Phase 0)  ☑ 2026-09-30 — decisions C-29…C-41, OD-14/19/20/21 in docs/DECISIONS.md
 
 **Terminal (you):**
 ```bash
-cd academybee
+cd ~/academybees-apps
 claude
 ```
 Press **Shift+Tab** until **plan mode** is on, then paste:

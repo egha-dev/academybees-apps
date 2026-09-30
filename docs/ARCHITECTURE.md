@@ -1,6 +1,6 @@
 # AcademyBee — Architecture
 
-> Status: **Baseline v1.4** (Phase 0 entry; incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; repository management ADR-041) · Owner: Principal Architect · Last updated: 2026-09-30
+> Status: **Baseline v1.5** (Phase 0 entry; incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; repository management ADR-041; P-00 orientation corrections C-29…C-41) · Owner: Principal Architect · Last updated: 2026-09-30
 > Governs: all engineering work. Subordinate to PRD v3.1 and UI/UX Spec v1.1 (see `CLAUDE.md` §2).
 > Every decision summarised here is recorded with rationale in `docs/DECISIONS.md` (ADR-xxx).
 
@@ -110,7 +110,7 @@ academybee/
 │   │   │   │   └── me/              student
 │   │   │   ├── manifest.ts          dynamic per-tenant manifest
 │   │   │   └── sw.ts                Serwist service worker
-│   │   ├── src/middleware.ts        host classification + rewrite
+│   │   ├── src/proxy.ts             host classification + rewrite ("middleware"; file name per pinned Next.js major, C-34)
 │   │   ├── src/features/<module>/   feature UI (components, hooks, queries)
 │   │   └── src/offline/             Dexie wiring, sync runner, sync UI
 │   ├── api/                     NestJS modular monolith
@@ -159,7 +159,7 @@ One private monorepo, trunk-based. Work lands in **slices** (short branches `p<p
 | `{slug}.localhost:3000` | Local development | `*.localhost` resolves to loopback in Chromium; no hosts-file edits |
 
 **Reserved slugs** (never provisionable), kept in `packages/tenant/src/reserved.ts`:
-`www, app, my, hub, family, parents, api, admin, console, platform, auth, login, logout, signup, register, account, accounts, mail, email, smtp, static, assets, cdn, media, files, img, images, docs, help, support, status, blog, news, billing, pay, payments, invoice, invoices, dev, staging, stage, test, qa, demo, sandbox, preview, internal, ops, root, system, security, academybee, bee, public, private, www2, m, mobile, ftp, ns1, ns2, localhost` plus anything < 3 chars.
+`www, app, my, hub, family, parents, api, admin, console, platform, auth, login, logout, signup, register, account, accounts, mail, email, smtp, static, assets, cdn, media, files, img, images, docs, help, support, status, blog, news, billing, pay, payments, invoice, invoices, dev, staging, stage, test, qa, demo, sandbox, preview, internal, ops, root, system, security, academybee, bee, public, private, www2, m, mobile, ftp, ns1, ns2, localhost` plus anything < 3 chars. Reserved slugs are refused by normal provisioning; only a **platform-owned tenant** (seed/CLI, audited) may use one — e.g. the sales demo academy `demo` (G-13, C-36).
 
 **Slug rules:** `^[a-z0-9](?:[a-z0-9-]{1,40}[a-z0-9])$`, no `--` (blocks punycode `xn--`), lower-cased, trimmed, profanity/impersonation list checked at provisioning.
 
@@ -291,7 +291,7 @@ Role                 id · tenantId (null = system template) · key · name · i
 RolePermission       roleId · capability
 MembershipRole       membershipId · roleId
 PlatformStaff        userId · platformRole: SUPER_ADMIN | SUPPORT | FINANCE_OPS · status
-AuthSession          id · userId · tenantId? (null for console) · audience: TENANT | CONSOLE
+AuthSession          id · userId · tenantId? (null for CONSOLE and HUB) · audience: TENANT | CONSOLE | HUB
                      refreshTokenHash · familyId · deviceLabel · ip · userAgent
                      createdAt · lastUsedAt · expiresAt · revokedAt · revokeReason
 Invitation           id · tenantId · email/phone · roleKeys[] · tokenHash · expiresAt · acceptedAt
@@ -307,7 +307,7 @@ PasswordResetToken   userId · tokenHash · expiresAt · usedAt
 
 | Token | Form | Lifetime | Storage |
 | --- | --- | --- | --- |
-| Access | JWT (EdDSA/ES256), claims `sub, tid, sid, aud, ver` | 15 min | `__Host-ab_at` cookie, httpOnly, Secure, SameSite=Lax, Path=/ |
+| Access | JWT (EdDSA/ES256), claims `sub, tid, sid, aud, ver` (`tid` only for `aud=TENANT`; absent for CONSOLE and HUB, C-32) | 15 min | `__Host-ab_at` cookie, httpOnly, Secure, SameSite=Lax, Path=/ |
 | Refresh | 256-bit opaque, SHA-256 hashed in DB | 30 days sliding (7 days for console) | `__Secure-ab_rt` cookie, host-only (no `Domain`), httpOnly, Secure, SameSite=Lax, Path=/api/v1/auth (`__Host-` requires Path=/, so `__Secure-` is used here) |
 | CSRF | random, double-submit | session | readable cookie + `X-CSRF-Token` header on all mutations |
 
@@ -429,6 +429,7 @@ CREATE POLICY tenant_isolation ON student
 | core/audit | `AuditLog` (append-only; actor, actorType, impersonatorId, tenantId, action, entityType, entityId, before, after, ip, requestId, at) | 0 |
 | core/idempotency | `IdempotencyRecord` (tenantId, key, scope, requestHash, status, responseSnapshot, expiresAt) | 0 |
 | core/outbox | `OutboxEvent` (id, tenantId, type, payload, occurredAt, dispatchedAt, attempts) | 0 |
+| core/flags | `FeatureFlag` (key, default, per-environment values, owner, expiresAt), `FeatureFlagOverride` (flagKey, tenantId?, value) — release flags, not entitlements (ADR-041); FK to `Tenant` + RLS on overrides added in Phase 1 (C-35) | 0 / 1 |
 | tenant | `Tenant`, `TenantDomain`, `TenantBranding`, `TenantSettings`, `Branch` | 1 |
 | auth/rbac | `User`, `UserCredential`, `Membership`, `Role`, `RolePermission`, `MembershipRole`, `PlatformStaff`, `AuthSession`, `Invitation`, `PasswordResetToken` | 2 |
 | provisioning | `TenantOnboarding`, `Plan`, `PlanEntitlement`, `Subscription` (TRIAL only until Ph 13), `ProvisioningRequest` | 3 |
@@ -570,7 +571,7 @@ Next.js App Router + React Server Components for shells and first paint; client 
 
 ### 10.2 Host → experience routing
 
-`middleware.ts` classifies the host (shared `@academybee/tenant` parser), calls the tenant-context endpoint (cached at the edge for 60s), and rewrites:
+The Next.js host-routing file (`proxy.ts` on Next.js 16+, formerly `middleware.ts`; C-34) classifies the host (shared `@academybee/tenant` parser), calls the tenant-context endpoint (cached at the edge for 60s), and rewrites:
 
 - apex → `/(marketing)`
 - `console.` → `/console/...`
@@ -628,6 +629,7 @@ Navigation items are rendered from a config filtered by capabilities **and** ent
 **Launch is English (`en-IN`) only.** The items below marked *(Phase L)* are not built before Phase L; everything else is built from Phase 0 so adding a language later needs no refactoring.
 
 - `packages/i18n`: ICU catalogues `messages/<locale>/<namespace>.json` shared by web, API (error messages per `ErrorCode`), worker (emails, notifications, PDFs); `en-IN` is the source; per-key fallback to `en-IN`.
+- Money formatting (C-40): `formatMoney` shows 2 decimals by default (`₹1,00,000.00` — invoices, receipts, payments, finance screens); `{ compact: true }` drops a zero fraction (`₹1,00,000`) for dashboards and summaries. Indian grouping in both.
 - Locale resolution: `User.preferredLocale` → `TenantSettings.i18n.defaultLocale` → `Accept-Language` → `en-IN`; carried in request context and job payloads. On the Family Hub, the user's locale applies across all academies; academy content variants use the user's locale when the academy provides it, otherwise the academy default.
 - *(Phase L)* Language switcher in profile/settings, showing `enabledLocales` only; academy language settings UI.
 - Authenticated apps: no locale in URL. *(Phase L)* Public pages (marketing, academy public page): `/<lang>/…` prefixes + `hreflang`.

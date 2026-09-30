@@ -23,8 +23,9 @@ Every feature must serve one of five outcomes: **acquire students · run classes
 
 ## 3. Current state
 
-- **Current phase:** Phase 0 — Foundation (see `docs/IMPLEMENTATION_PLAN.md` §1 tracker).
-- **Open decisions with defaults applied:** DECISIONS.md §B (OD-02 … OD-16 and OD-18; OD-01 and OD-17 closed). Do not re-litigate; follow the default until the PO changes it.
+- **Current phase:** Phase 0 — Foundation (see `docs/IMPLEMENTATION_PLAN.md` §1 tracker). P-00 orientation done 2026-09-30 (C-29…C-41).
+- **Open decisions with defaults applied:** DECISIONS.md §B (OD-02 … OD-13, OD-15, OD-16, OD-18). Closed: OD-01, OD-14, OD-17, OD-19, OD-20, OD-21. Do not re-litigate; follow the default until the PO changes it.
+- **Repository:** `egha-dev/academybees-apps` (OD-19). Development runs in WSL2 Ubuntu with the repo cloned inside Linux (OD-20).
 
 ## 4. Build order (Product Owner, 2026-09-29)
 

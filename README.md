@@ -1,6 +1,8 @@
 # 🐝 AcademyBee — Product & Engineering Pack
 
-Everything needed to build AcademyBee with Claude Code, in one folder. Copy the contents of this folder into the root of your new repository.
+**"The operating system for coaching academies." / "Manage Your Academy. Grow Together."** — SaaS for tuition, dance, music, karate, sports, fitness, language and other academies.
+
+Everything needed to build AcademyBee with Claude Code. This pack lives at the root of the repository (`egha-dev/academybees-apps`).
 
 ## Start here
 
@@ -12,17 +14,17 @@ Everything needed to build AcademyBee with Claude Code, in one folder. Copy the 
 | File | For | Purpose |
 | --- | --- | --- |
 | `README.md` | You | This index |
-| `PROMPTS.md` | You → Claude Code | All prompts in order: P-00 Orientation, then Kickoff → Build → Gate → Review → Close for Phases 0–16, 7P and G, plus helpers |
+| `PROMPTS.md` | You → Claude Code | All prompts in order: P-00 Orientation, then Kickoff → Build → Gate → Review → Close for Phases 0–16, 7P, L and G, plus helpers |
 | `CLAUDE.md` | Claude Code | Engineering rules, read automatically at the start of every session |
 | `docs/EXECUTION_GUIDE.md` | You | Step-by-step guide from today to launch |
-| `docs/PRD_ADDENDUM_v3.2.md` | Both | Product Owner corrections (G-01 … G-30), highest product authority |
+| `docs/PRD_ADDENDUM_v3.2.md` | Both | Product Owner corrections (G-01 … G-32), highest product authority |
 | `docs/IMPLEMENTATION_PLAN.md` | Both | Phase tracker, scope, tests and exit gate for every phase |
 | `docs/ARCHITECTURE.md` | Claude Code | System design: tenancy, auth, data, API, frontend, offline, finance, jobs, security |
 | `docs/DECISIONS.md` | Both | Conflict register, open decisions with defaults, architecture decision records |
 | `docs/source/PRD_v3.1.md` | Claude Code | Text copy of the original PRD (.docx) |
 | `docs/source/UX_SPEC_v1.1.md` | Claude Code | Text copy of the original UI/UX specification (.docx) |
 
-Put the original `.docx` files in `docs/source/` too, for the record.
+Optionally put the original `.docx` files in `docs/source/` too, for the record; the `.md` copies are the working sources (C-41).
 
 ## Build order
 
