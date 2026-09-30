@@ -43,7 +43,7 @@ Engineering will stall at Phases 7 and 10 without these. Start them all this wee
 | # | Task | Who helps | Needed by | Done |
 | --- | --- | --- | --- | --- |
 | A1 | Register or confirm the legal entity, PAN and a current bank account | CA | Razorpay KYC | ☐ |
-| A2 | Buy or confirm `academybee.com`. Move DNS to a provider that supports wildcard records (Vercel DNS or Cloudflare) | — | Phase 1 | ☐ |
+| A2 | Buy or confirm `academybee.com`. Move its DNS to **Vercel DNS** (point the domain's nameservers to Vercel): Vercel can only issue the wildcard `*.academybee.com` certificate when it runs the DNS (C-31) | — | Phase 1 | ☐ |
 | A3 | Apply for GST registration | CA | Razorpay, Phase 13 | ☐ |
 | A4 | Create an AcademyBee Razorpay account and start KYC. **Not needed for Phases 7–16** (payments work via UPI and manual recording, G-30); needed only when you run Phase G | — | Phase G | ☐ |
 | A5 | Brief a lawyer: Terms of Service, Privacy Policy, Data Processing Agreement, DPDP Act review (children's data, consent), and the fee-collection model (academies use their own gateway accounts, OD-13) | Lawyer | Terms: Phase 3 · Payments: Phase 7 | ☐ |
@@ -61,7 +61,7 @@ Engineering will stall at Phases 7 and 10 without these. Start them all this wee
 
 | Account | Purpose | Create before |
 | --- | --- | --- |
-| GitHub organisation `academybee` on the **Team** plan (protected branches and required checks on a private repository need a paid plan; check GitHub's current pricing) | Code, CI, pull requests, protected `main` | Phase 0 |
+| GitHub: the repository `egha-dev/academybees-apps` with a **paid plan** — GitHub **Pro** on the personal account (or **Team** if you later move it to an `academybee` organisation). Protected branches and required checks on a private repository need a paid plan; check GitHub's current pricing (OD-19) | Code, CI, pull requests, protected `main` | Phase 0 |
 | Anthropic / Claude plan with Claude Code access | The engineering team | Phase 0 |
 | Vercel | Hosts the web app with wildcard domains | Phase 0 (staging) |
 | API host (Render, Railway, Fly.io or AWS; pick one per OD-03) | Runs the API and worker | Phase 0 (staging) |
@@ -81,7 +81,13 @@ Engineering will stall at Phases 7 and 10 without these. Start them all this wee
 
 ## PART C — Set up your computer (once)
 
-Mac or Linux (on Windows, use WSL2 Ubuntu). Run each line in a terminal:
+Mac or Linux. **On Windows, use WSL2 Ubuntu (OD-20):**
+1. In an administrator PowerShell: `wsl --install -d Ubuntu`, restart, and create your Linux user.
+2. Install Docker Desktop for Windows and enable *Settings → Resources → WSL integration → Ubuntu*.
+3. Open the **Ubuntu** terminal and do everything below there. Clone the repository **inside Linux** (`cd ~ && gh repo clone egha-dev/academybees-apps`), not under `C:\` — it is much faster and the test tools expect it.
+4. Run Claude Code from that Ubuntu terminal, in `~/academybees-apps`.
+
+Run each line in a terminal:
 
 ```bash
 # 1. Git and GitHub CLI
@@ -111,6 +117,8 @@ claude --version
 
 ## PART D — Create the repository and add the docs (once)
 
+> **Already done (2026-09-30):** the repository exists as `egha-dev/academybees-apps` and the pack sits at its root (C-29). Just clone it inside WSL (Part C step 3). The commands below are kept for reference only.
+
 ```bash
 mkdir academybee && cd academybee
 git init -b main
@@ -123,8 +131,8 @@ git init -b main
 # Also copy the two original .docx files into docs/source/ for the record.
 
 git add . && git commit -m "docs: AcademyBee product and engineering baseline"
-# First create a free GitHub organisation called "academybee" at github.com/organizations/plan
-gh repo create academybee/academybee --private --source=. --push
+# Protected branches on a private repo need a paid GitHub plan (Part B, OD-19)
+gh repo create <owner>/<repo> --private --source=. --push
 ```
 
 You don't configure branch protection yourself: in Phase 0 Claude sets up the repository rules with `gh` (protected `main`, required checks, auto-merge, templates, release process — ADR-041). You'll only confirm the result in the Phase 0 checklist.
@@ -150,7 +158,7 @@ Why slices instead of one big branch per phase: `main` never drifts far from wha
 
 ### Starting Claude Code
 ```bash
-cd academybee
+cd ~/academybees-apps
 claude
 ```
 - Press **Shift+Tab** until the mode shows **plan mode** before pasting a Kickoff prompt. Claude will propose a plan without changing files.
@@ -167,7 +175,7 @@ claude
 For each phase: **Before you start** (your inputs) → **Kickoff** (the phase's prompts in `PROMPTS.md`) → **Your acceptance checklist** (what you personally click through) → **Done when**.
 
 ### Phase 0 — Foundation
-- **Before you start:** GitHub repo exists (Part D). Staging accounts from Part B (Vercel, API host, Postgres, Redis, Sentry). Decide OD-03 (hosting) and OD-14 (analytics); defaults are fine.
+- **Before you start:** toolchain installed in WSL2 (Part C, OD-20) and the repo cloned there. Paid GitHub plan active (OD-19) so Claude can protect `main`. Staging accounts from Part B (Vercel, API host, Postgres, Redis; Sentry optional). OD-03 default confirmed (Claude proposes the exact vendors in the P0-1 plan); OD-14 closed (PostHog, off until you add a key).
 - **Kickoff:** `PROMPTS.md` → P0-1.
 - **Your acceptance checklist:**
   - ☐ Claude shows you `pnpm dev` running; `http://localhost:3000` opens an AcademyBee page in the new colours (ivory background, gold accent).

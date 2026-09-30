@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.4** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041) · Last updated: 2026-09-30 · Current phase: **Phase 0 — Foundation (not started)**
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-09-30 · Current phase: **Phase 0 — Foundation (not started; P-00 orientation ✅ 2026-09-30)**
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -93,11 +93,11 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | 0.1 | Monorepo: pnpm workspaces, Turborepo, Node 24 `.nvmrc`, `packages/config` (tsconfig bases, ESLint flat config incl. boundaries + restricted `@mui/*` imports, Prettier), commit hooks (lint-staged), conventional commits | Root scripts `dev, lint, typecheck, test, build, e2e, db:*` |
 | 0.2 | `infra/docker-compose.yml`: Postgres 17, Redis 7, Mailpit, MinIO; `.env.example` for each app | `pnpm infra:up` |
 | 0.3 | `packages/contracts`: Zod setup, `ErrorCode` enum, error envelope schema, pagination schemas, permission catalogue skeleton, sync op base schema | Shared types build |
-| 0.4 | `packages/database`: Prisma multi-file schema, client factory, DB roles (`ab_migrator`, `ab_app`, `ab_platform`) bootstrap SQL, first migration with `AuditLog`, `IdempotencyRecord`, `OutboxEvent`; seed runner restricted to `local`/`ci` | `pnpm db:migrate`, `pnpm db:seed` |
+| 0.4 | `packages/database`: Prisma multi-file schema, client factory, DB roles (`ab_migrator`, `ab_app`, `ab_platform`) bootstrap SQL, first migration with `AuditLog`, `IdempotencyRecord`, `OutboxEvent`, `FeatureFlag`, `FeatureFlagOverride` (nullable `tenantId`; FK + RLS in Phase 1, C-35); seed runner restricted to `local`/`ci` | `pnpm db:migrate`, `pnpm db:seed` |
 | 0.5 | `apps/api` (NestJS): Zod-validated config (fail fast), pino logger + redaction, request ID middleware, global Zod pipe, exception filter (envelope + Prisma error mapping), `/health/live` `/health/ready`, OpenAPI at `/api/docs` (non-prod), `@Idempotent()` interceptor + store, `AuditService`, `OutboxService`, CLS module | API boots, contract tests pass |
 | 0.6 | `apps/worker`: NestJS standalone + BullMQ, `system` queue, heartbeat job, outbox relay (`SKIP LOCKED`), graceful shutdown | Worker processes a test outbox event |
 | 0.7 | `packages/ui`: tokens (UX §5–6), MUI theme, CSS variables, Inter via `next/font`; components: Button, IconButton, TextField, Select, Card, StatusBadge, EmptyState, Skeleton, Toast, ConfirmDialog, Drawer/BottomSheet, AppShell (sidebar/topbar/bottom-nav variants), OfflineBanner, SyncIndicator (stub states) | `/dev/design-system` page |
-| 0.8 | `apps/web` (Next.js App Router): MUI App Router cache provider, `/api` rewrite to API, route groups `(marketing)`, `(console)`, `(tenant)` with placeholder middleware (host classification stub), TanStack Query provider, error boundary + global error page in AcademyBee style | Web boots on `localhost:3000` |
+| 0.8 | `apps/web` (Next.js App Router): MUI App Router cache provider, `/api` rewrite to API, route groups `(marketing)`, `(console)`, `(tenant)`, `(hub)` with a placeholder host-routing file (`proxy.ts` on Next.js 16+, C-34; host classification stub), TanStack Query provider, error boundary + global error page in AcademyBee style | Web boots on `localhost:3000` |
 | 0.9 | PWA: Serwist SW (precache shell, runtime cache static/fonts, offline fallback page), static manifest (dynamic in Ph 1), install prompt handling, SW update prompt | Installable; offline fallback works |
 | 0.10 | `packages/sync`: Dexie DB class (v1 skeleton: `meta`, `syncQueue`, `syncLog`), connectivity detector (online/offline + API heartbeat), queue engine (enqueue, list, status transitions, backoff calculator), Web Lock runner shell, React hooks `useConnectivity`, `useSyncStatus` | Unit tests with `fake-indexeddb` |
 | 0.11 | `packages/testing`: Vitest presets (SWC), Testcontainers helpers (Postgres w/ roles, Redis), factories skeleton | `pnpm test` runs all |
@@ -119,7 +119,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 - Dexie queue test: items persist across DB close/reopen (simulated restart); backoff schedule correct.
 - PWA: Lighthouse installability passes; offline reload shows AcademyBee offline page.
 - Design system page reviewed against UX §4–6 by PO.
-- Pseudo-locale and +40% long-text builds show no hard-coded strings or broken layouts in the shell and design-system page; `formatMoney(10000000, 'INR')` → `₹1,00,000.00`; a Tamil name (`ஆரவ்`) and a Hindi name (`आरव`) pass validation and round-trip through the API unchanged (G-08, G-32).
+- Pseudo-locale and +40% long-text builds show no hard-coded strings or broken layouts in the shell and design-system page; `formatMoney(10000000, 'INR')` → `₹1,00,000.00` and with `{ compact: true }` → `₹1,00,000` (C-40); a Tamil name (`ஆரவ்`) and a Hindi name (`आरव`) pass validation and round-trip through the API unchanged (G-08, G-32).
 - Analytics: event with an email/phone property is rejected by the PII guard test (G-09).
 - Repository: a direct push to `main` is rejected; a PR with a failing check cannot merge; a green PR auto-merges and deploys to staging; a release flag hides an unfinished screen on staging (ADR-041).
 
@@ -134,7 +134,8 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 - DB: `Tenant`, `TenantDomain`, `TenantBranding`, `TenantSettings`, `Branch` (default branch auto-created) ⤴ C-07. RLS policy template + migration helper that applies it to every table flagged tenant-owned; `ab_app`/`ab_platform` grants.
 - `packages/tenant`: hostname normaliser/classifier, slug validator, reserved list — shared by web middleware and API (property-based tests).
 - API: `TenantResolverMiddleware` (Redis cache + negative cache), `TenantContext` (CLS), `TenantStatusGuard`, tenant-bound Prisma client extension (`set_config` + `tenantId` injection), platform Prisma client confined by lint to `platform/**`; public `GET /tenant/context`.
-- Web: real `middleware.ts` (classify host → rewrite to `/t/[slug]`, `/console`, `/hub` (Family Hub on `app.`), marketing; 301 for `REDIRECT` domains); dynamic per-tenant `manifest.ts` + favicon; tenant-branded placeholder shell; status pages **Unknown academy**, **Suspended**, **Archived**, **Setting up**, **Access denied** (UX v1.1 §7 — designed, not raw errors).
+- ⤴ C-35 `FeatureFlagOverride.tenantId` gets its FK to `Tenant` and RLS.
+- Web: real host-routing file (`proxy.ts`, C-34) (classify host → rewrite to `/t/[slug]`, `/console`, `/hub` (Family Hub on `app.`), marketing; 301 for `REDIRECT` domains); dynamic per-tenant `manifest.ts` + favicon; tenant-branded placeholder shell; status pages **Unknown academy**, **Suspended**, **Archived**, **Setting up**, **Access denied** (UX v1.1 §7 — designed, not raw errors).
 - ⤴ G-31 `app.` host reserved and classified as `hub` (placeholder hub page until Phase 7P); academy/console/hub host matrix tests.
 - Dev seed: tenants `demo-a` (ACTIVE), `demo-b` (ACTIVE), `paused` (SUSPENDED).
 - Benchmark: RLS + extension overhead (target < 2 ms p95 per simple query) — record in exit notes.
@@ -165,7 +166,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 - ⤴ G-32 (invisible): `User.preferredLocale` column and locale in session/request context, always `en-IN` for now (no switcher UI until Phase L); auth emails rendered from the i18n catalogue.
 - ⤴ G-31 / ADR-039: `HUB` session audience (user-bound, no `tid`) accepted only on `app.` host; Parent/Student logins on an academy URL are redirected to the hub; hub, tenant and console tokens are mutually rejected (security tests).
 - ⤴ G-11: optional TOTP 2FA (enrol, verify, recovery codes; tenant setting to require for Owner/Accountant, strong prompt by default), **Devices & sessions** page (sign out one / all), email alerts on new-device sign-in and password change.
-- Dev seed: one user per role in `demo-a`, one teacher also a member of `demo-b`.
+- Dev seed: one user per role in `demo-a`, one teacher also a member of `demo-b`. (Seeds are `local`/`ci` only; from the phase that adds `ConsentRecord`, every seeded active parent gets a consent record — C-37.)
 
 **Tests**
 - Unit: password policy, token rotation, capability resolution, scope policies.
@@ -281,7 +282,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 
 **Scope**
 - Fee plans (monthly/quarterly/half-yearly/annual/custom, components), student fee assignments with discounts (percent/fixed, validity), recurring invoice generation job + manual invoice, invoice issue/cancel, `NumberSequence` numbering, optional tax config (OD-10).
-- Payments (**G-30, ADR-038 — all enabled, no gateway**): staff-recorded Cash, UPI (UTR), Bank transfer, Cheque (pending → cleared/bounced), Card-on-POS; partial payments, allocations across invoices, receipts (worker PDF → storage → signed URL), payment history; **parent-reported UPI API** (used by the parent UI in 7P) with staff **Verify payments** queue (confirm/reject with reason) and duplicate-UTR detection; manual refunds (`payment.refund`, reason, method + reference); gateway-ready layer: `PaymentProvider` interface, `ManualProvider` (prod default), `SimulatorProvider` (non-prod only), `TenantPaymentAccount`, webhook endpoint, `GatewayEvent` idempotency, status polling, reconciliation job + exceptions list — all exercised via the simulator; **never client-confirmed**.
+- Payments (**G-30, ADR-038 — all enabled, no gateway**): staff-recorded Cash, UPI (UTR), Bank transfer, Cheque (pending → cleared/bounced), Card-on-POS; partial payments, allocations across invoices, receipts (worker PDF → storage → signed URL), payment history; **parent-reported UPI API** (domain service + hub route `/hub/academies/:slug/invoices/:id/reported-payments` behind a release flag, tested with a `HUB` session; the parent UI arrives in 7P — C-38) with staff **Verify payments** queue (confirm/reject with reason) and duplicate-UTR detection; manual refunds (`payment.refund`, reason, method + reference); gateway-ready layer: `PaymentProvider` interface, `ManualProvider` (prod default), `SimulatorProvider` (non-prod only), `TenantPaymentAccount`, webhook endpoint, `GatewayEvent` idempotency, status polling, reconciliation job + exceptions list — all exercised via the simulator; **never client-confirmed**.
 - Offline: Dexie v2 (`invoices` read cache for permitted roles, pending cash payments); `payment.recordCash` sync op with `clientRef = opId`; "Pending sync — receipt number assigned when synced" UI; over-payment → unallocated credit flagged (ADR-018/§11.5).
 - Overdue derivation job; **fee reminder intents** (in-app now) ⤴ C-04.
 - UI: **Finance Dashboard** (UX Tier 1: Collected · Pending · Overdue · trend · Needs attention), Invoices list, **Invoice workspace** (student, components, total, paid, balance, Collect/Send/Download), Collect Payment drawer, Payments list, Fee Plans, Student 360 **Fees** tab, Batch **Fees** tab, Owner Today financial pulse, Global Add (Invoice, Payment).
@@ -309,7 +310,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 - ⤴ C-21 / G-31 **Parent Core on the Family Hub** (`app.academybee.com`, ADR-039): one login for all linked academies; add academy by QR / typed URL or code / invite (verification code or join request; consent per academy); "All academies" Home (today's classes across academies tagged by academy, children cards, dues per academy, merged notifications) and single-academy mode with that academy's branding; My academies (consent, leave); sign-in via invite (with consent capture, G-06), child selector, **Parent Home** (child status, next class, attendance this month, dues, latest notifications), child attendance history, fees: invoices, receipts download/share, **Pay** via academy UPI (QR + one-tap `upi://` link → "I've paid" + UTR → "Awaiting academy confirmation" → confirmed + receipt; G-30), status of reported payments (pending / confirmed / rejected with reason), in-app notification centre (absence alerts, fee reminders from Phases 6–7), basic offline read cache with "Last updated".
 - ⤴ C-23 **Help & support** (G-10): Help entry in every shell, help centre (15 articles), Contact support (WhatsApp/email, prefilled academy + page context, no PII), feedback form with optional screenshot, What's new.
 - **Activation dashboard** (G-09): internal page on the console (platform-only) or PostHog dashboard showing per-academy funnel and pilot metrics (G-29).
-- **Demo academy** (G-13): `demo` tenant, realistic seed, role login panel, nightly reset job, messaging sink.
+- **Demo academy** (G-13): `demo` tenant (reserved slug, allowed only as a platform-owned tenant — C-36), realistic seed, role login panel, nightly reset job, messaging sink.
 - **Pilot runbook** in `docs/runbooks/pilot.md`: provisioning checklist, import session script, teacher training (15 min), parent invitation message templates, weekly feedback call agenda, triage rules (P0 fixed within 48 h), success criteria (G-29).
 - Production environment stood up (subset of Phase 15): production DB with automated backups, Sentry, uptime monitor, on-call phone for the founder, staging → production release process.
 
@@ -363,7 +364,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 
 ### Phase 11 — Parent + Student (complete)
 
-**Builds on Phase 7P Parent Core (Family Hub).** Adds everything not in the core, polishes offline, delivers the student experience on the hub, and completes G-31: parent-private **child grouping** across academies (suggested by name + DOB), unified schedule/calendar across academies, per-academy notification preferences, offline cache per academy with its own "Last updated".
+**Builds on Phase 7P Parent Core (Family Hub).** Adds everything not in the core, polishes offline, delivers the student experience on the hub, and completes G-31: parent-private **child grouping** across academies (suggested by name + DOB; needs a user-bound DB client setting `app.user_id` for the `HubChildGroup` RLS policy — new ADR, C-39), unified schedule/calendar across academies, per-academy notification preferences, offline cache per academy with its own "Last updated".
 
 **Goal.** Parents need no training: child status, next class, attendance, fees and homework at a glance; paying is safe and clear.
 **Refs.** PRD v2 §20, v3 §8, §10; UX §15–16, §25, §29; C-05; OD-01, OD-08.
@@ -513,6 +514,11 @@ P7 payment provider layer + simulator (ADR-038) ──────────�
 ---
 
 ## 6. Exit notes (fill in as phases complete)
+
+### P-00 Orientation (2026-09-30)
+- All docs read; contradictions/gaps recorded as C-29…C-41 and resolved by the PO; OD-14, OD-19, OD-20, OD-21 closed; OD-03 default confirmed (vendors proposed in P0-1).
+- Pack moved to the repository root (C-29).
+- Pre-Phase-0 blockers for the PO: toolchain in WSL2 (OD-20), paid GitHub plan for rulesets (OD-19), staging accounts (OD-03).
 
 ### Phase 0
 - Pinned versions: _tbd_
