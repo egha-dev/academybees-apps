@@ -95,7 +95,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | S2 | `p0/infra-local` | 0.2 | ✅ (local S3 = SeaweedFS, C-45) |
 | S3 | `p0/contracts` | 0.3 | ✅ |
 | S4 | `p0/database-testing` | 0.4, 0.11 | ✅ |
-| S5 | `p0/api-core` | 0.5 | ⬜ |
+| S5 | `p0/api-core` | 0.5 | ✅ |
 | S6 | `p0/worker` | 0.6 | ⬜ |
 | S7 | `p0/i18n-analytics` | 0.15 (core), 0.16 | ⬜ |
 | S8 | `p0/ui` | 0.7 + logical-CSS lint | ⬜ |
