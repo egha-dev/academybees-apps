@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-09-30 · Current phase: **Phase 0 — Foundation (not started; P-00 orientation ✅ 2026-09-30)**
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-09-30 · Current phase: **Phase 0 — Foundation (🟨 in progress; plan approved 2026-09-30 → `docs/plans/phase-0.md`)**
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -11,7 +11,7 @@
 
 | # | Phase | Status | Pulled-forward slices | Key decisions |
 | --- | --- | --- | --- | --- |
-| 0 | Foundation | ⬜ Not started | Outbox, audit, idempotency tables; English-only i18n foundation, multilingual-ready (G-08, G-32), analytics port, perf budgets (G-09, G-24) | ADR-001/002/012/013/014/015/016/022/030/031/032/035/040 |
+| 0 | Foundation | 🟨 In progress | Outbox, audit, idempotency tables; English-only i18n foundation, multilingual-ready (G-08, G-32), analytics port, perf budgets (G-09, G-24) | ADR-001/002/012/013/014/015/016/022/030/031/032/035/040 |
 | 1 | Multi-Tenant + Wildcard Domain | ⬜ | Default branch per tenant; `app.` Family Hub host reserved + classified (G-31) | ADR-003/004/005/039, C-07 |
 | 2 | Authentication + RBAC | ⬜ | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
 | 3 | Academy Provisioning + Onboarding | ⬜ | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, ADR-028/034 |
@@ -84,6 +84,26 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 ### Phase 0 — Foundation
 
 **Goal.** A working, tested, deployable skeleton with every cross-cutting convention in place, so later phases add domain code only.
+**Status.** 🟨 since 2026-09-30 (`phase-0-start` = `72a4078`). Approved slice plan: [`docs/plans/phase-0.md`](plans/phase-0.md).
+
+**Slices (each = one PR, ADR-041)**
+
+| Slice | Branch | Tasks | State |
+| --- | --- | --- | --- |
+| S0 | `p0/bootstrap` | plan update, 0.1, minimal CI | 🟨 |
+| S1 | `p0/governance` | 0.18 files + `apply-governance.sh` (applied when the paid plan is active, OD-19) | ⬜ |
+| S2 | `p0/infra-local` | 0.2 | ⬜ |
+| S3 | `p0/contracts` | 0.3 | ⬜ |
+| S4 | `p0/database-testing` | 0.4, 0.11 | ⬜ |
+| S5 | `p0/api-core` | 0.5 | ⬜ |
+| S6 | `p0/worker` | 0.6 | ⬜ |
+| S7 | `p0/i18n-analytics` | 0.15 (core), 0.16 | ⬜ |
+| S8 | `p0/ui` | 0.7 + logical-CSS lint | ⬜ |
+| S9 | `p0/web-shell` | 0.8, 0.9, 0.15 (web); release flag `p0-flag-probe` (owner PO, remove in Phase 1) | ⬜ |
+| S10 | `p0/sync` | 0.10 | ⬜ |
+| S11 | `p0/e2e-ci` | 0.12, 0.17, full 0.13 | ⬜ |
+| S12 | `p0/staging` | 0.14 (workflows off until `STAGING_ENABLED`) | ⬜ |
+| S13 | `p0/docs` | 0.19 | ⬜ |
 **Refs.** PRD v2 §15, v3 §14–18; UX §4–7, §24, §26; ARCHITECTURE §3, §4, §9.1, §10.5, §11, §15, §18–19.
 
 **Tasks**
