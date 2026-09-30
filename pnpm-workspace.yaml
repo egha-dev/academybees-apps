@@ -23,6 +23,9 @@ catalog:
   eslint-import-resolver-typescript: 4.4.5
   eslint-config-prettier: 10.1.8
   globals: 17.12.0
+  # runtime
+  zod: 4.6.5
+  uuid: 14.0.2
   # test
   vitest: 5.0.3
   '@vitest/coverage-v8': 5.0.3
