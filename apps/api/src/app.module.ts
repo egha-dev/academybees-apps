@@ -1,6 +1,7 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 
+import { AnalyticsModule } from './core/analytics/analytics.module.js';
 import { AuditModule } from './core/audit/audit.module.js';
 import { ConfigModule } from './core/config/config.module.js';
 import { type ApiConfig } from './core/config/config.schema.js';
@@ -30,6 +31,7 @@ export class AppModule {
         RedisModule,
         AuditModule,
         OutboxModule,
+        AnalyticsModule,
         IdempotencyModule,
         FlagsModule,
         HealthModule,

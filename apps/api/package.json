@@ -16,6 +16,7 @@
   "dependencies": {
     "@academybee/contracts": "workspace:*",
     "@academybee/database": "workspace:*",
+    "@academybee/i18n": "workspace:*",
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
     "@nestjs/platform-express": "catalog:",
