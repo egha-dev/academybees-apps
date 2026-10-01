@@ -14,11 +14,11 @@ export type RouteDecision =
   | { type: 'redirect'; location: string; status: 301 };
 
 /** App-level pages served the same way on every host (offline fallback, dev tools). */
-const SHARED_PREFIXES = ['/offline', '/dev/'];
+const SHARED_PREFIXES = ['/offline', '/dev'];
 const MANIFEST = '/manifest.webmanifest';
 
 /** Route-group folders only reachable through a rewrite, never by typing the URL. */
-const INTERNAL_PREFIXES = ['/t/', '/console', '/hub', '/status/'];
+const INTERNAL_PREFIXES = ['/t', '/console', '/hub', '/status'];
 
 const STATUS_HTTP: Record<StatusState, number> = {
   unknown: 404,
@@ -28,8 +28,9 @@ const STATUS_HTTP: Record<StatusState, number> = {
   unavailable: 503,
 };
 
+/** `path` is the segment `p` or below it — `/hub` and `/hub/x`, never `/hubs` (review L3). */
 const starts = (path: string, prefixes: readonly string[]) =>
-  prefixes.some((p) => path === p.replace(/\/$/, '') || path.startsWith(p));
+  prefixes.some((p) => path === p || path.startsWith(`${p}/`));
 
 export function statusRewrite(state: StatusState): RouteDecision {
   return { type: 'rewrite', path: `/status/${state}`, status: STATUS_HTTP[state] };
