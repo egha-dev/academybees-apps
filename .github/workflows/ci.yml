@@ -122,7 +122,21 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-1.63.0
       - name: install browsers
-        run: pnpm --filter @academybee/e2e exec playwright install --with-deps chromium webkit
+        # The Ubuntu mirror sometimes stalls mid-download and apt has no timeout, which hung
+        # the job until it was cancelled (2026-10-01). Give apt network timeouts and retries,
+        # bound each attempt and retry the whole install.
+        timeout-minutes: 15
+        run: |
+          printf 'Acquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::Retries "5";\n' \
+            | sudo tee /etc/apt/apt.conf.d/99-ci-network > /dev/null
+          for attempt in 1 2 3; do
+            timeout 300 pnpm --filter @academybee/e2e exec playwright install --with-deps chromium webkit && exit 0
+            echo "::warning::browser install attempt $attempt failed or timed out; retrying"
+            sudo pkill -f 'apt-get|dpkg' || true
+            sleep 10
+            sudo dpkg --configure -a || true
+          done
+          exit 1
       - name: Playwright (desktop, Android, iPhone, pseudo-locales)
         run: pnpm e2e:run
       - name: Lighthouse CI (LCP, CLS, accessibility budgets)
