@@ -44,6 +44,19 @@ export function tenantSpoofAttempts(victim: TenantRef): SpoofAttempt[] {
       name: 'X-Forwarded-Host with a wrong proxy secret',
       headers: { 'x-forwarded-host': victim.host, 'x-ab-proxy-secret': 'not-the-secret-000' },
     },
+    {
+      name: 'RFC 7239 Forwarded header',
+      headers: { forwarded: `host=${victim.host};for=203.0.113.9` },
+    },
+    {
+      name: 'forged x-ab-context (web proxy header)',
+      headers: {
+        'x-ab-context': encodeURIComponent(
+          JSON.stringify({ status: 'ACTIVE', slug: victim.slug, displayName: victim.name }),
+        ),
+      },
+    },
+    { name: 'X-Forwarded-For spoofing', headers: { 'x-forwarded-for': '203.0.113.9' } },
   ];
 }
 
