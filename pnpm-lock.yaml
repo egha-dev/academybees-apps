@@ -227,6 +227,9 @@ catalogs:
     '@prisma/client':
       specifier: 7.10.0
       version: 7.10.0
+    '@prisma/driver-adapter-utils':
+      specifier: 7.10.0
+      version: 7.10.0
     '@sentry/nextjs':
       specifier: 11.1.0
       version: 11.1.0
@@ -828,6 +831,9 @@ importers:
       '@prisma/client':
         specifier: 'catalog:'
         version: 7.10.0(prisma@7.10.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3))(typescript@5.9.3)
+      '@prisma/driver-adapter-utils':
+        specifier: 'catalog:'
+        version: 7.10.0
       pg:
         specifier: 'catalog:'
         version: 8.23.0

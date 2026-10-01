@@ -17,18 +17,47 @@ export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 /** Import specifiers of the platform (ab_platform, cross-tenant) Prisma client. */
 export const PLATFORM_CLIENT_IMPORTS = ['@academybee/database/platform'];
 
-/** Folders (relative to the repo root) allowed to use the platform client. Tests may use it to set up and inspect data. */
-export const PLATFORM_ALLOWED_GLOBS = [
-  'apps/api/src/platform/**',
-  'apps/worker/src/platform/**',
-  'apps/*/test/**',
-  'packages/*/test/**',
+/** Folders (relative to the repo root) allowed to use the platform client. */
+export const PLATFORM_ALLOWED_GLOBS = ['apps/api/src/platform/**', 'apps/worker/src/platform/**'];
+
+/**
+ * Folders allowed to create the raw app client (`createAppClient`): the database providers that
+ * wrap it in the tenant-bound client (ADR-005). Everything else uses the tenant-bound client.
+ */
+export const APP_CLIENT_ALLOWED_GLOBS = [
+  'apps/api/src/core/database/**',
+  'apps/worker/src/database/**',
 ];
+
+/** Tests may use any client to set up and inspect data. */
+export const TEST_GLOBS = ['apps/*/test/**', 'packages/*/test/**', 'e2e/**'];
 
 const MUI_RESTRICTION = {
   group: ['@mui/*', '@mui/**'],
   message: 'Import UI from @academybee/ui — @mui/* is only used inside packages/ui (ADR-014).',
 };
+
+const APP_CLIENT_RESTRICTION = {
+  name: '@academybee/database',
+  importNames: ['createAppClient'],
+  message:
+    'Use the tenant-bound client (TENANT_DB). The raw app client is created only by the database module (ADR-005).',
+};
+
+/**
+ * `no-restricted-imports` with the chosen restrictions.
+ * @param {{ mui?: boolean; platform?: boolean; appClient?: boolean }} [options]
+ * @returns {import('eslint').Linter.RuleEntry}
+ */
+function restrictImports({ mui = true, platform = true, appClient = true } = {}) {
+  return [
+    'error',
+    {
+      paths: appClient ? [APP_CLIENT_RESTRICTION] : [],
+      patterns: [...(mui ? [MUI_RESTRICTION] : []), ...(platform ? [PLATFORM_RESTRICTION] : [])],
+    },
+  ];
+}
 
 const PLATFORM_RESTRICTION = {
   group: PLATFORM_CLIENT_IMPORTS,
@@ -160,7 +189,7 @@ export function createConfig(options = {}) {
       },
       rules: {
         'boundaries/dependencies': ['error', { default: 'allow', policies: DEPENDENCY_POLICIES }],
-        'no-restricted-imports': ['error', { patterns: [MUI_RESTRICTION, PLATFORM_RESTRICTION] }],
+        'no-restricted-imports': restrictImports(),
         '@typescript-eslint/no-unused-vars': [
           'error',
           { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
@@ -177,13 +206,24 @@ export function createConfig(options = {}) {
       // packages/ui is the only place allowed to use MUI directly.
       basePath: rootDir,
       files: ['packages/ui/**'],
-      rules: { 'no-restricted-imports': ['error', { patterns: [PLATFORM_RESTRICTION] }] },
+      rules: { 'no-restricted-imports': restrictImports({ mui: false }) },
     },
     {
       // Platform code (console modules, platform jobs) may use the platform client.
       basePath: rootDir,
       files: PLATFORM_ALLOWED_GLOBS,
-      rules: { 'no-restricted-imports': ['error', { patterns: [MUI_RESTRICTION] }] },
+      rules: { 'no-restricted-imports': restrictImports({ platform: false }) },
+    },
+    {
+      // The database providers create the raw app client and wrap it (tenant-bound client).
+      basePath: rootDir,
+      files: APP_CLIENT_ALLOWED_GLOBS,
+      rules: { 'no-restricted-imports': restrictImports({ appClient: false }) },
+    },
+    {
+      basePath: rootDir,
+      files: TEST_GLOBS,
+      rules: { 'no-restricted-imports': restrictImports({ platform: false, appClient: false }) },
     },
     {
       files: ['**/*.js', '**/*.mjs', '**/*.cjs'],

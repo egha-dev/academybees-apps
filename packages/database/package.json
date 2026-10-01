@@ -42,12 +42,14 @@
     "db:drift": "tsx --conditions=@academybee/source src/cli/drift.ts",
     "db:seed": "prisma generate && tsx --conditions=@academybee/source src/seed/run.ts",
     "db:studio": "prisma studio",
+    "bench": "tsx --conditions=@academybee/source bench/rls-overhead.ts",
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@academybee/contracts": "workspace:*",
     "@prisma/adapter-pg": "catalog:",
     "@prisma/client": "catalog:",
+    "@prisma/driver-adapter-utils": "catalog:",
     "pg": "catalog:"
   },
   "devDependencies": {
