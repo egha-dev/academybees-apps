@@ -35,6 +35,11 @@
       "@academybee/source": "./src/provider.tsx",
       "types": "./dist/provider.d.ts",
       "default": "./dist/provider.js"
+    },
+    "./theme-script": {
+      "@academybee/source": "./src/theme-script.tsx",
+      "types": "./dist/theme-script.d.ts",
+      "default": "./dist/theme-script.js"
     }
   },
   "files": [

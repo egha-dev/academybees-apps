@@ -13,7 +13,6 @@ import {
 } from 'react';
 
 import { ErrorIcon, LockIcon } from '../icons.js';
-import { color } from '../tokens.js';
 import { Button } from './actions.js';
 import { Text } from './text.js';
 import { type ToastMessage, type ToastTone } from './toast-view.js';
@@ -118,7 +117,7 @@ export function ErrorState({
 }) {
   return (
     <StateLayout
-      icon={<ErrorIcon sx={{ fontSize: 40, color: color.danger }} aria-hidden />}
+      icon={<ErrorIcon sx={{ fontSize: 40, color: 'ab.status.danger.fg' }} aria-hidden />}
       title={title}
       body={body}
     >
@@ -147,7 +146,7 @@ export function PermissionState({
 }) {
   return (
     <StateLayout
-      icon={<LockIcon sx={{ fontSize: 40, color: color.neutral[500] }} aria-hidden />}
+      icon={<LockIcon sx={{ fontSize: 40, color: 'ab.textSecondary' }} aria-hidden />}
       title={title}
       body={body}
     >

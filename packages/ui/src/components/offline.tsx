@@ -1,5 +1,6 @@
 'use client';
 
+import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 
 import {
@@ -9,7 +10,7 @@ import {
   SyncIcon,
   SyncProblemIcon,
 } from '../icons.js';
-import { color, radius } from '../tokens.js';
+import { radius } from '../tokens.js';
 
 /** Global offline banner (ARCHITECTURE §11.6). Render only while offline. */
 export function OfflineBanner({ message }: { message: string }) {
@@ -22,8 +23,8 @@ export function OfflineBanner({ message }: { message: string }) {
       sx={{
         alignItems: 'center',
         gap: 2,
-        backgroundColor: color.ink,
-        color: color.ivory,
+        bgcolor: 'ab.inverse',
+        color: 'ab.onInverse',
         paddingInline: 4,
         paddingBlock: 2,
         fontSize: 14,
@@ -38,11 +39,11 @@ export function OfflineBanner({ message }: { message: string }) {
 export type SyncState = 'synced' | 'offline' | 'pending' | 'syncing' | 'attention';
 
 const SYNC = {
-  synced: { Icon: CloudDoneIcon, fg: color.text.success },
-  offline: { Icon: CloudOffIcon, fg: color.text.secondary },
-  pending: { Icon: CloudUploadIcon, fg: color.text.warning },
-  syncing: { Icon: SyncIcon, fg: color.text.info },
-  attention: { Icon: SyncProblemIcon, fg: color.text.danger },
+  synced: { Icon: CloudDoneIcon, fg: 'ab.status.success.fg' },
+  offline: { Icon: CloudOffIcon, fg: 'ab.textSecondary' },
+  pending: { Icon: CloudUploadIcon, fg: 'ab.status.warning.fg' },
+  syncing: { Icon: SyncIcon, fg: 'ab.status.info.fg' },
+  attention: { Icon: SyncProblemIcon, fg: 'ab.status.danger.fg' },
 } as const;
 
 /**
@@ -88,7 +89,11 @@ export function SyncIndicator({
         aria-hidden
       />
       <span>{label}</span>
-      {detail && <span style={{ color: color.text.secondary, fontWeight: 400 }}>{detail}</span>}
+      {detail && (
+        <Box component="span" sx={{ color: 'ab.textSecondary', fontWeight: 400 }}>
+          {detail}
+        </Box>
+      )}
     </Stack>
   );
 }

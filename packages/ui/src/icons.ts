@@ -22,3 +22,6 @@ export { default as SyncProblemIcon } from '@mui/icons-material/SyncProblemRound
 export { default as TodayIcon } from '@mui/icons-material/TodayRounded';
 export { default as WarningIcon } from '@mui/icons-material/WarningRounded';
 export { default as CircleIcon } from '@mui/icons-material/FiberManualRecordRounded';
+export { default as LightModeIcon } from '@mui/icons-material/LightModeRounded';
+export { default as DarkModeIcon } from '@mui/icons-material/DarkModeRounded';
+export { default as SystemModeIcon } from '@mui/icons-material/SettingsBrightnessRounded';

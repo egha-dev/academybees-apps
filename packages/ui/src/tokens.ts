@@ -48,6 +48,99 @@ export const color = {
 
 export type StatusTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 
+/** One status colour set: text/icon, tinted surface (badges, banners), solid fill + its text. */
+export type StatusRole = { fg: string; surface: string; solid: string; onSolid: string };
+
+/**
+ * Semantic colour roles (C-49). Components use roles, never raw hex, so both themes work.
+ * Every text-on-background pair is ≥ 4.5:1 (WCAG AA) in both palettes — see tokens.spec.ts.
+ */
+export type ThemePalette = {
+  background: string;
+  surface: string;
+  surfaceRaised: string;
+  /** Dividers and card outlines (decorative). */
+  border: string;
+  /** Input outlines and other control boundaries. */
+  borderStrong: string;
+  textPrimary: string;
+  textSecondary: string;
+  /** Bee Gold — accent only, never a dominant background. */
+  accent: string;
+  /** Selected / highlighted surface and the text on it. */
+  accentSoft: string;
+  onAccentSoft: string;
+  /** Primary button fill and its text. */
+  primary: string;
+  onPrimary: string;
+  /** High-emphasis inverse surface (offline banner, snackbars). */
+  inverse: string;
+  onInverse: string;
+  focus: string;
+  /** Hairline around the logo's ink square where it would vanish into the background (dark only). */
+  logoOutline: string;
+  status: Record<StatusTone, StatusRole>;
+};
+
+export const palettes: Record<'light' | 'dark', ThemePalette> = {
+  light: {
+    background: '#FAFAF7',
+    surface: '#FFFFFF',
+    surfaceRaised: '#ECEAE3',
+    border: '#DEDBD2',
+    borderStrong: '#8A867C',
+    textPrimary: '#171817',
+    textSecondary: '#5C5A54',
+    accent: '#E6B94A',
+    accentSoft: '#F5E7B8',
+    onAccentSoft: '#171817',
+    primary: '#171817',
+    onPrimary: '#FAFAF7',
+    inverse: '#171817',
+    onInverse: '#FAFAF7',
+    focus: '#3A63A6',
+    logoOutline: 'transparent',
+    status: {
+      success: { fg: '#1D7453', surface: '#E6F3EC', solid: '#1D7453', onSolid: '#FFFFFF' },
+      warning: { fg: '#8A5A12', surface: '#FBF0DC', solid: '#D99124', onSolid: '#171817' },
+      danger: { fg: '#B23B3B', surface: '#FBE7E7', solid: '#B23B3B', onSolid: '#FFFFFF' },
+      info: { fg: '#3A63A6', surface: '#E6EDF8', solid: '#3A63A6', onSolid: '#FFFFFF' },
+      neutral: { fg: '#5C5A54', surface: '#ECEAE3', solid: '#5C5A54', onSolid: '#FFFFFF' },
+    },
+  },
+  // Deep warm charcoal, never pure black; ivory text; Bee Gold stays the accent (C-49).
+  dark: {
+    background: '#191816',
+    surface: '#22211E',
+    surfaceRaised: '#2B2A26',
+    border: '#3A3833',
+    borderStrong: '#8C877C',
+    textPrimary: '#F3F1EA',
+    textSecondary: '#B8B3A7',
+    accent: '#E6B94A',
+    accentSoft: '#3A3222',
+    onAccentSoft: '#EBC664',
+    primary: '#F3F1EA',
+    onPrimary: '#171817',
+    inverse: '#F3F1EA',
+    onInverse: '#171817',
+    focus: '#86AEEE',
+    logoOutline: '#4A4741',
+    status: {
+      success: { fg: '#5BC796', surface: '#163126', solid: '#4DB585', onSolid: '#171817' },
+      warning: { fg: '#E9AE55', surface: '#33281A', solid: '#E9AE55', onSolid: '#171817' },
+      danger: { fg: '#F08A84', surface: '#3A1F1E', solid: '#E0625C', onSolid: '#171817' },
+      info: { fg: '#86AEEE', surface: '#1C2840', solid: '#7AA3E8', onSolid: '#171817' },
+      neutral: { fg: '#B8B3A7', surface: '#302E2A', solid: '#B8B3A7', onSolid: '#171817' },
+    },
+  },
+};
+
+/** Theme preference storage and the <html> attribute the inline script sets (no flash, C-49). */
+export const THEME_ATTRIBUTE = 'data-ab-theme';
+export const THEME_MODE_STORAGE_KEY = 'ab-theme-mode';
+export const THEME_SCHEME_STORAGE_KEY = 'ab-theme-scheme';
+
 /** Type scale (UX §6). Sizes in px; weights favour hierarchy over bold. */
 export const typography = {
   fontFamily:
