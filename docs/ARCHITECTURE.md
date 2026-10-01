@@ -419,9 +419,9 @@ CREATE POLICY tenant_isolation ON student
 ```
 
 - App connects as role `ab_app` (no `BYPASSRLS`). Migrations run as `ab_migrator`. Platform console queries that legitimately span tenants use role `ab_platform` via a separate Prisma client available **only** inside `apps/api/src/platform/**` and the worker's platform jobs (lint-enforced), and every such call is audited.
-- The tenant-bound Prisma client (client extension) wraps each operation in a transaction beginning with `SELECT set_config('app.tenant_id', $1, true)` — `SET LOCAL` semantics keep it safe with PgBouncer transaction pooling.
+- The tenant-bound Prisma client sets the context **in the pg driver adapter** (C-55): each statement outside a transaction runs as `BEGIN; SELECT set_config('app.tenant_id', $1, true); <statement>; COMMIT` on one pooled connection, and every Prisma transaction sets it right after `BEGIN` — `SET LOCAL` semantics keep it safe with PgBouncer transaction pooling. Resolution before a tenant is known uses the narrow `app.lookup_host` policy (C-51).
 - If `app.tenant_id` is unset, policies match nothing ⇒ fail closed.
-- The extension also injects `tenantId` into `where`/`data` so application code never hand-writes it (and a mismatch throws).
+- A Prisma client extension also injects `tenantId` into `where`/`data` so application code never hand-writes it (a mismatch throws), refuses tenant tables without a context, and routes `findUnique` through `findFirst` (Prisma batches same-tick `findUnique` calls, which would mix tenant contexts).
 
 ### 8.3 Entity map by module and phase
 

@@ -1,5 +1,5 @@
 {
   "extends": "@academybee/config/tsconfig/lib.json",
   "compilerOptions": { "rootDir": ".", "outDir": "dist" },
-  "include": ["src", "test"]
+  "include": ["src", "test", "bench"]
 }
