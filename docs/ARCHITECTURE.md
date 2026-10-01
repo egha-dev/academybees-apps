@@ -170,6 +170,7 @@ Every host serves `/api/*`, rewritten by the web tier (or the load balancer) to 
 - Cookies are **host-only** (no `Domain=` attribute) — a session on `abc.academybee.com` is never sent to `xyz.academybee.com` (ADR-004).
 - No wildcard CORS with credentials.
 - The API resolves the tenant from `X-Forwarded-Host`, which it trusts **only** from the configured proxy (trusted-proxy list; direct access to the API origin is firewalled or requires an internal shared secret header).
+- *As built (Phase 0, C-46):* `apps/web/src/proxy.ts` rewrites `/api/*` to `API_ORIGIN`, **overwriting** `X-Forwarded-Host` with the browser's host and adding `X-AB-Proxy-Secret`; the API accepts the forwarded host only with that secret (timing-safe compare) or from `TRUSTED_PROXY_IPS`, otherwise it uses `Host`. The effective host is stored in the request context for tenant resolution (Phase 1).
 
 ### 4.3 Deployables
 
@@ -851,10 +852,10 @@ domain event → NotificationIntent (type, tenant, subjects, data, dedupeKey)
 | Concern | Implementation |
 | --- | --- |
 | Logs | pino JSON, fields: `requestId, tenantId, userId, route, status, durationMs`; redaction list (passwords, tokens, phone/email masked) |
-| Errors | Sentry (web, api, worker) with release + environment tags; PII scrubbing |
+| Errors | Sentry (web, api, worker) with release + environment tags; PII scrubbing. *As built (C-48):* off unless a DSN is set; API/worker use `@sentry/node` for error capture only (no tracing yet), the web loads `@sentry/nextjs` lazily (zero bytes without a DSN); Sentry 11 `dataCollection` collects no user info, cookies, headers, bodies or query params |
 | Metrics | OpenTelemetry metrics → provider of choice; RED metrics per route, DB pool, queue depth/age, job failures, sync push results by status, webhook failures, reconciliation exceptions |
 | Tracing | OpenTelemetry traces (API → Prisma → Redis → jobs), sampling 10% prod |
-| Health | `/health/live` (process), `/health/ready` (DB, Redis) |
+| Health | `/api/v1/health/live` (process; reports the deployed `release`), `/api/v1/health/ready` (DB, Redis, 2 s timeouts, 503 when down); also served at `/api/health/*` for deploy checks; the worker's liveness is the `worker:heartbeat` key in Redis |
 | Audit | `AuditLog` for sensitive admin, all finance, auth events, platform actions, medical-note reads |
 | Product analytics | `AnalyticsPort` (ADR-032), server-side events after commit, hashed IDs, no PII; activation funnel dashboard from Phase 7P |
 | Alerts (Ph 15) | API 5xx rate, p95 latency, DB CPU/conn saturation, queue age, failed sync ratio, webhook failures, backup failure |
@@ -890,7 +891,9 @@ domain event → NotificationIntent (type, tenant, subjects, data, dedupeKey)
 ## 18. Delivery pipeline
 
 - **CI (GitHub Actions)** on every PR (affected packages only, Turborepo remote cache; full nightly run): install (pnpm, cached) → commitlint (PR title) → `lint` → `typecheck` → unit tests → integration tests (Testcontainers Postgres + Redis) → `prisma migrate diff` drift check → build all → Playwright E2E against built apps with `*.localhost` → upload traces on failure.
+- *As built (Phase 0):* required jobs `verify` (format, lint/typecheck/unit with `--affected` on PRs, i18n check, expired release flags, governance dry run), `integration` (Testcontainers incl. drift), `build` (+ route JS budget, G-24), `e2e` (Postgres/Redis, migrations, en-IN/en-XA/en-LONG web builds, Playwright on desktop Chromium, Android-emulated Chromium and iPhone-emulated WebKit, Lighthouse CI; artifacts always uploaded), `pr-title`; `nightly.yml` runs everything without `--affected`.
 - **CD**: `main` → staging automatically (migrations run as a separate pre-deploy job with `ab_migrator`); production via a `v*` release tag (release-please) through the `production` GitHub Environment with PO approval — `phase-*` tags never deploy; web via Vercel promotion; API/worker blue-green or rolling; migrations must be backward compatible for one release (expand → migrate → contract).
+- *As built (C-44, C-48):* `deploy-staging.yml` runs after green CI on `main` when `STAGING_ENABLED` is set: images to GHCR → migrate → Render deploy hooks → Vercel prebuilt deploy → smoke check that waits for the new `release`. On the free GitHub plan production is a **PO-only `workflow_dispatch`** of a `vX.Y.Z` tag (`deploy-production.yml`). Images run as non-root with `tini` as PID 1 for graceful SIGTERM. Runbook: `docs/runbooks/environments.md`.
 - **Rollback**: previous web deployment promotion; previous API image; migrations are forward-only, so contract steps ship one release later.
 
 ---

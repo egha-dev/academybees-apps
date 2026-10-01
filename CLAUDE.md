@@ -111,11 +111,13 @@ Boundaries: apps → packages only. API modules talk to each other through expor
 ## 8. Commands
 
 ```bash
-pnpm install
-pnpm infra:up            # postgres, redis, mailpit (http://localhost:8025), seaweedfs S3 (C-45)
-pnpm db:migrate          # prisma migrate dev + RLS SQL
-pnpm db:seed             # dev tenants demo-a, demo-b, paused + one user per role
-pnpm dev                 # web :3000, api :4000, worker
+pnpm install             # also installs git hooks (no commits/pushes on main)
+pnpm env:init            # .env files from the committed examples
+pnpm infra:up            # postgres, redis, mailpit (http://localhost:8025), seaweedfs S3 (C-45) — infra:down | infra:reset | infra:logs
+pnpm db:migrate          # prisma migrate dev + grants/RLS SQL (as ab_migrator) — db:deploy in CI/deploys
+pnpm db:seed             # local/ci only: release-flag definitions (Phase 1 adds tenants demo-a, demo-b, paused; Phase 2 one user per role)
+pnpm db:drift            # committed migrations == Prisma schema
+pnpm dev                 # web :3000, api :4000, worker (packages rebuild in watch mode)
 pnpm lint | pnpm typecheck | pnpm test | pnpm test:integration | pnpm build
 pnpm e2e                 # builds web (en-IN + en-XA + en-LONG) + API, then Playwright; needs infra:up + db:deploy
 pnpm e2e:run             # Playwright only, against existing builds
@@ -125,7 +127,7 @@ pnpm i18n:check | pnpm flags:check
 pnpm platform:create-admin --email you@example.com   # from Phase 2
 ```
 
-Local academies: `http://demo-a.localhost:3000`, `http://demo-b.localhost:3000` · Family Hub (parents/students): `http://app.localhost:3000` · Console: `http://console.localhost:3000`. (Keep these scripts accurate; update this section when they change.)
+Phase 0: web `http://localhost:3000` (design system at `/dev/design-system`), API `http://localhost:4000/api/docs`. From Phase 1: academies `http://demo-a.localhost:3000`, `http://demo-b.localhost:3000` · Family Hub (parents/students): `http://app.localhost:3000` · Console: `http://console.localhost:3000`. (Keep these scripts accurate; update this section when they change. Verified 2026-10-01.)
 
 ## 9. Backend conventions
 

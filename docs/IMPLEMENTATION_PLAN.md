@@ -90,20 +90,20 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 
 | Slice | Branch | Tasks | State |
 | --- | --- | --- | --- |
-| S0 | `p0/bootstrap` | plan update, 0.1, minimal CI | ✅ |
+| S0 | `p0/bootstrap` | plan update, 0.1, minimal CI | ✅ #2 |
 | S1 | `p0/governance` | 0.18 files + `apply-governance.sh` (applied when the paid plan is active, OD-19) | ✅ (#3); script applied on the free plan 2026-09-30 — ruleset, secret scanning, production environment skipped (C-44) |
-| S2 | `p0/infra-local` | 0.2 | ✅ (local S3 = SeaweedFS, C-45) |
-| S3 | `p0/contracts` | 0.3 | ✅ |
-| S4 | `p0/database-testing` | 0.4, 0.11 | ✅ |
-| S5 | `p0/api-core` | 0.5 | ✅ |
-| S6 | `p0/worker` | 0.6 | ✅ |
-| S7 | `p0/i18n-analytics` | 0.15 (core), 0.16 | ✅ |
-| S8 | `p0/ui` | 0.7 + logical-CSS lint | ✅ |
-| S9 | `p0/web-shell` | 0.8, 0.9, 0.15 (web); release flag `p0-flag-probe` (owner PO, remove in Phase 1) | ✅ |
-| S10 | `p0/sync` | 0.10 | ✅ |
-| S11 | `p0/e2e-ci` | 0.12, 0.17, full 0.13 | ✅ |
-| S12 | `p0/staging` | 0.14 (workflows off until `STAGING_ENABLED`) | ✅ merged; staging goes live when the accounts exist (runbook) |
-| S13 | `p0/docs` | 0.19 | ⬜ |
+| S2 | `p0/infra-local` | 0.2 | ✅ #4 (local S3 = SeaweedFS, C-45) |
+| S3 | `p0/contracts` | 0.3 | ✅ #6 |
+| S4 | `p0/database-testing` | 0.4, 0.11 | ✅ #7 |
+| S5 | `p0/api-core` | 0.5 | ✅ #8 |
+| S6 | `p0/worker` | 0.6 | ✅ #9 |
+| S7 | `p0/i18n-analytics` | 0.15 (core), 0.16 | ✅ #10 |
+| S8 | `p0/ui` | 0.7 + logical-CSS lint | ✅ #11 |
+| S9 | `p0/web-shell` | 0.8, 0.9, 0.15 (web); release flag `p0-flag-probe` (owner PO, remove in Phase 1) | ✅ #12 |
+| S10 | `p0/sync` | 0.10 | ✅ #13 |
+| S11 | `p0/e2e-ci` | 0.12, 0.17, full 0.13 | ✅ #14 |
+| S12 | `p0/staging` | 0.14 (workflows off until `STAGING_ENABLED`) | ✅ #15 merged; staging goes live when the accounts exist (runbook) |
+| S13 | `p0/docs` | 0.19 | ✅ #16 |
 **Refs.** PRD v2 §15, v3 §14–18; UX §4–7, §24, §26; ARCHITECTURE §3, §4, §9.1, §10.5, §11, §15, §18–19.
 
 **Tasks**
@@ -142,6 +142,41 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 - Pseudo-locale and +40% long-text builds show no hard-coded strings or broken layouts in the shell and design-system page; `formatMoney(10000000, 'INR')` → `₹1,00,000.00` and with `{ compact: true }` → `₹1,00,000` (C-40); a Tamil name (`ஆரவ்`) and a Hindi name (`आरव`) pass validation and round-trip through the API unchanged (G-08, G-32).
 - Analytics: event with an email/phone property is rejected by the PII guard test (G-09).
 - Repository: a direct push to `main` is rejected; a PR with a failing check cannot merge; a green PR auto-merges and deploys to staging; a release flag hides an unfinished screen on staging (ADR-041). *(C-44: while on the free GitHub plan, the first two items are waived by the PO and evidenced by the C-43 merge process.)*
+
+
+**Exit notes (2026-10-01, all slices merged — for the P0-3 gate; status stays 🟨 until PO acceptance)**
+
+*Pinned toolchain (pnpm catalog, C-42).* Node 24.21 (`.nvmrc` 24) · pnpm 12.8.1 · Turborepo 2.11.5 · TypeScript 5.9.3 · ESLint 9.39.5 · Vitest 5.0.3 · Next.js 16.3.8 (`proxy.ts`, C-34) · React 19.3 · MUI 9.4 · next-intl 4.14.8 · TanStack Query 5.104 · Serwist 9.5.12 (`@serwist/turbopack`) · NestJS 12.1.2 (ESM) · Prisma 7.10.0 (pg adapter) · Zod 4.6.5 · BullMQ 6.3.10 · ioredis 6.0 · pino 10.3 · Dexie 4.4.6 · Sentry 11.1 · Playwright 1.63 · axe-core 4.13 · Lighthouse CI 0.15.1 (Lighthouse 12.6) · Testcontainers 12.2 · images `postgres:17-alpine`, `redis:7-alpine`, `axllent/mailpit:v1.31`, `chrislusf/seaweedfs:4.48`, runtime `node:24-alpine`.
+
+*Deviations from the plan, each recorded before coding.* C-42 toolchain majors (NestJS 12 ⇒ all-ESM; source export condition `@academybee/source`) · C-43 merge only after all required checks · C-44 stay on the free GitHub plan (ruleset, secret scanning and production environment skipped; repository gate items waived) · C-45 SeaweedFS instead of MinIO locally · C-46 Serwist on Turbopack, `/api` proxy with shared secret in `proxy.ts`, self-hosted Inter · C-47 installability via Chromium in Playwright, Lighthouse for LCP/CLS/a11y, own route-JS budget script · C-48 staging deploy mechanics (GHCR, Render hooks, migrate-before-deploy, Vercel CLI) and Sentry wiring.
+
+*Release flags.* `p0-flag-probe` — owner PO — off in every environment — expires 2026-12-31 — **remove in Phase 1** (`pnpm flags:check` fails CI after expiry).
+
+*Evidence for the exit gate (P0-3 re-runs all of it).*
+
+| Gate item | Evidence |
+| --- | --- |
+| Clean clone → infra → migrate → dev | README "Local setup (WSL2)"; `pnpm dev` verified 2026-10-01 (web, API via proxy, worker heartbeat in ≈55 s); timed clean clone is P0-3 |
+| CI green | PRs #2–#16, all required checks green before merge |
+| Staging serves `/api/health/ready` | **Open** — workflows merged off; needs the OD-03 accounts (`docs/runbooks/environments.md`) |
+| Error envelope | `apps/api/test/contract/error-envelope.int.spec.ts` |
+| Idempotency | `apps/api/test/integration/idempotency.int.spec.ts` |
+| Outbox | `apps/worker/test/integration/outbox-relay.int.spec.ts`, `worker.int.spec.ts` |
+| Dexie restart + backoff | `packages/sync/src/queue.spec.ts`, `backoff.spec.ts`, `runner.spec.ts` |
+| PWA installable + offline page | `e2e/specs/pwa.spec.ts` (Chromium installability + offline reload) |
+| Design system reviewed by PO | `/dev/design-system`; screenshots in CI artifact `e2e-artifacts` (`screenshots/design-system-*.png`) — **PO review pending** |
+| Pseudo-locale, long text, money, names | `e2e/specs/i18n-pseudo.spec.ts`; `packages/i18n/src/format.spec.ts`, `name.spec.ts`; Tamil/Hindi round trip in `error-envelope.int.spec.ts` |
+| Analytics PII guard | `apps/api/src/core/analytics/pii-guard.spec.ts`, `packages/contracts/src/analytics/pii-guard.spec.ts` |
+| Repository rules | Push to `main` / failing-PR block **waived (C-44)**; green PRs merged by the C-43 process; flag hides `/flag-probe` (`e2e/specs/flag.spec.ts`; staging smoke check once live) |
+| Budgets (G-24) | `pnpm perf:budget` shell 196 KB / 200 KB; Lighthouse LCP 1.9 s, a11y 100 (local, mobile 4G) |
+
+*Open items and follow-ups.*
+- **PO:** staging accounts + `STAGING_ENABLED` (runbook); design-system review; release PR #5 (first version, `v0.1.0`) is yours to merge when you want a version tag; optional GitHub Pro → `scripts/github/apply-governance.sh`.
+- **Phase 1:** remove `p0-flag-probe`; FK to `Tenant` + RLS on `feature_flag_override` (C-35); real host routing replaces the `proxy.ts` stub; dynamic manifest.
+- **Phase 15:** trim API/worker images (~730 MB: `@prisma/client`'s peer pulls the Prisma CLI, Studio and TypeScript into production deps); total blocking time ≈ 350 ms on simulated mobile (Lighthouse warning only); OpenTelemetry tracing.
+- **Watch:** the shell has ≈4 KB of route-JS headroom (React DOM + Next router ≈ 114 KB); teacher/hub screens in Phases 6–7P must import from `@academybee/ui/components/*` and lazy-load heavy UI.
+
+Phase 1 is **not** started.
 
 ---
 
