@@ -16,8 +16,8 @@ model FeatureFlag {
 }
 
 /// Override for one environment and/or one tenant. Resolution (most specific wins):
-/// environment+tenant > tenant > environment > code default. FK to tenant + RLS arrive in
-/// Phase 1 (C-35). One override per (flag, environment, tenant) combination — partial unique
+/// environment+tenant > tenant > environment > code default. FK to tenant + RLS since Phase 1
+/// (C-35, C-53). One override per (flag, environment, tenant) combination — partial unique
 /// indexes because NULL means "every".
 model FeatureFlagOverride {
   id          String      @id @db.Uuid
@@ -27,6 +27,7 @@ model FeatureFlagOverride {
   environment String?     @db.VarChar(20)
   /// null = every tenant.
   tenantId    String?     @map("tenant_id") @db.Uuid
+  tenant      Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   enabled     Boolean
   reason      String?     @db.VarChar(300)
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
