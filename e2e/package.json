@@ -1,0 +1,22 @@
+{
+  "name": "@academybee/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Playwright end-to-end specs (ADR-022, ADR-035).",
+  "scripts": {
+    "e2e": "playwright test",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@academybee/config": "workspace:*",
+    "@axe-core/playwright": "catalog:",
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "eslint": "catalog:",
+    "pg": "catalog:",
+    "typescript": "catalog:"
+  }
+}

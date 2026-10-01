@@ -3,6 +3,7 @@ engineStrict: true
 packages:
   - apps/*
   - packages/*
+  - e2e
 
 # One version per dependency across the repo (ADR-041). Reference with "catalog:".
 catalog:
@@ -60,6 +61,9 @@ catalog:
   server-only: 0.0.1
   dexie: 4.4.6
   fake-indexeddb: 6.2.5
+  '@playwright/test': 1.63.0
+  '@axe-core/playwright': 4.13.0
+  '@lhci/cli': 0.15.1
   uuid: 14.0.2
   prisma: 7.10.0
   '@prisma/client': 7.10.0

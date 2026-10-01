@@ -1,0 +1,5 @@
+{
+  "extends": "@academybee/config/tsconfig/node.json",
+  "compilerOptions": { "noEmit": true, "lib": ["ES2024", "DOM", "DOM.Iterable"] },
+  "include": ["specs", "support"]
+}
