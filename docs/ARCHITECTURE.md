@@ -172,7 +172,7 @@ Every host serves `/api/*`, rewritten by the web tier (or the load balancer) to 
 - Cookies are **host-only** (no `Domain=` attribute) — a session on `abc.academybees.com` is never sent to `xyz.academybees.com` (ADR-004).
 - No wildcard CORS with credentials.
 - The API resolves the tenant from `X-Forwarded-Host`, which it trusts **only** from the configured proxy (trusted-proxy list; direct access to the API origin is firewalled or requires an internal shared secret header).
-- *As built (Phase 0, C-46):* `apps/web/src/proxy.ts` rewrites `/api/*` to `API_ORIGIN`, **overwriting** `X-Forwarded-Host` with the browser's host and adding `X-AB-Proxy-Secret`; the API accepts the forwarded host only with that secret (timing-safe compare) or from `TRUSTED_PROXY_IPS`, otherwise it uses `Host`. The effective host is stored in the request context for tenant resolution (Phase 1).
+- *As built (Phase 0, C-46; review M1 in Phase 1):* `apps/web/src/proxy.ts` rewrites `/api/*` to `API_ORIGIN`. It drops every client-sent `X-Forwarded-For`, `Forwarded`, `X-Real-IP` and `x-ab-*` header. It sets `X-Forwarded-For` only from the platform header named in `TRUSTED_CLIENT_IP_HEADER` (Vercel: `x-real-ip`), **overwrites** `X-Forwarded-Host` with the browser's host, and adds `X-AB-Proxy-Secret`; the API accepts the forwarded host only with that secret (timing-safe compare) or from `TRUSTED_PROXY_IPS`, otherwise it uses `Host`. The effective host is stored in the request context for tenant resolution (Phase 1).
 
 ### 4.3 Deployables
 

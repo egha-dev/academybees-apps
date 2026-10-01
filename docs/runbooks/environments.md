@@ -66,6 +66,7 @@ Both services: **Deploy an existing image** from `ghcr.io/egha-dev/academybee-<a
 | `TRUSTED_PROXY_SECRET` | random ≥ 32 chars; **same value** as on Vercel |
 | `TRUSTED_PROXY_IPS` | empty (the secret header is used instead) |
 | `PLATFORM_ROOT_DOMAIN` | `staging.academybees.com` (C-52) |
+| `CUSTOM_DOMAINS_ENABLED` | `false` until custom domains ship (same as the web) |
 | `ANALYTICS_HASH_SALT` | random ≥ 32 chars |
 | `POSTHOG_API_KEY`, `POSTHOG_HOST` | optional (no-op adapter when empty) |
 | `SENTRY_DSN` | optional (off when empty) |
@@ -92,6 +93,8 @@ Both services: **Deploy an existing image** from `ghcr.io/egha-dev/academybee-<a
 | `API_ORIGIN` | the Render API URL, e.g. `https://academybee-api-staging.onrender.com` |
 | `TRUSTED_PROXY_SECRET` | same value as the API |
 | `PLATFORM_ROOT_DOMAIN` | `staging.academybees.com` (C-52) |
+| `TRUSTED_CLIENT_IP_HEADER` | `x-real-ip` (Vercel overwrites it with the real client IP; review M1) |
+| `CUSTOM_DOMAINS_ENABLED` | `false` (same as the API) |
 | `NEXT_PUBLIC_APP_ENV` | `staging` |
 | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN` | optional (off when empty; the browser DSN is fixed at build time) |
 
@@ -109,7 +112,8 @@ Every academy, the Family Hub (`app.`) and the console (`console.`) are subdomai
    - `SELECT set_config('app.tenant_id', '<uuid>', true)` first (FORCE RLS applies to the owner too);
    - then `tenant`, `tenant_domain` (PRIMARY SUBDOMAIN, **label only** — C-52), `tenant_branding`, `tenant_settings` and the default `branch`.
 5. **Check:** `https://demo-a.staging.academybees.com` shows the academy home with a valid certificate. `https://nope.staging.academybees.com` shows "We couldn't find this academy" (404). `curl -sI https://demo-a.staging.academybees.com/manifest.webmanifest` returns `application/manifest+json`.
-6. **Supabase transaction pooler:** the tenant context is transaction-local (`set_config(…, true)`, C-55), so pooling is safe. Never switch the app to session-level `SET`.
+6. **Same region:** run the API/worker in the same region as the database before measuring or going live (C-55: each extra round trip is paid three times per query).
+7. **Supabase transaction pooler:** the tenant context is transaction-local (`set_config(…, true)`, C-55), so pooling is safe. Never switch the app to session-level `SET`.
 
 ## Supabase (staging)
 
