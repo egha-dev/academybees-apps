@@ -38,6 +38,15 @@ export const ApiConfigSchema = z
     /** Tenant resolution cache (ARCHITECTURE §5.2): hits and misses (unknown hosts). */
     TENANT_CACHE_MS: z.coerce.number().int().min(0).max(600_000).default(60_000),
     TENANT_NEGATIVE_CACHE_MS: z.coerce.number().int().min(0).max(600_000).default(30_000),
+    /**
+     * Resolve verified custom domains (PRD v3.1 §G). Off until the custom-domain feature ships:
+     * other dotted hosts are then "unknown" without a lookup, so junk Host headers cost nothing
+     * (review M3).
+     */
+    CUSTOM_DOMAINS_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((v) => v === 'true'),
     /** Payment providers enabled in this deployment (ADR-038). */
     PAYMENT_PROVIDERS: csv.pipe(z.array(z.enum(PAYMENT_PROVIDERS)).min(1)).default(['manual']),
     /** Release-flag override cache; 0 in E2E so a flipped flag applies immediately. */

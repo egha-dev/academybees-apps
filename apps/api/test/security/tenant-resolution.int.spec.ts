@@ -62,7 +62,13 @@ describe('tenant resolution', () => {
         `pending.${active.slug}.example.com`,
       ],
     );
-    app = await createTestApp(testConfig({ TENANT_CACHE_MS: '0', TENANT_NEGATIVE_CACHE_MS: '0' }));
+    app = await createTestApp(
+      testConfig({
+        TENANT_CACHE_MS: '0',
+        TENANT_NEGATIVE_CACHE_MS: '0',
+        CUSTOM_DOMAINS_ENABLED: 'true',
+      }),
+    );
   });
   afterAll(async () => {
     await app.close();
@@ -158,6 +164,18 @@ describe('tenant resolution', () => {
       .set('X-Forwarded-Host', `${other.slug}.localhost`)
       .set('X-AB-Proxy-Secret', SECRET);
     expect(proxied.body.tenantId).toBe(other.id);
+  });
+
+  it('custom domains are unknown without a lookup while the feature is off (review M3)', async () => {
+    const off = await createTestApp(testConfig());
+    try {
+      const res = await request(off.getHttpServer())
+        .get('/api/v1/tenant/context')
+        .set('Host', `www.${active.slug}.example.com`);
+      expect(res.status).toBe(404);
+    } finally {
+      await off.close();
+    }
   });
 
   it('health checks do not depend on the host', async () => {

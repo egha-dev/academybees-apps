@@ -25,6 +25,8 @@ export type ContextFetchConfig = {
   proxySecret: string;
   /** Disable the in-memory cache (tests, E2E against freshly changed data). */
   cacheMs?: { hit: number; miss: number };
+  /** Cache size (LRU); tests use a small one. */
+  maxEntries?: number;
 };
 
 export async function lookupTenantContext(
@@ -33,8 +35,12 @@ export async function lookupTenantContext(
 ): Promise<ContextLookup> {
   const ttl = config.cacheMs ?? { hit: HIT_MS, miss: MISS_MS };
   const cached = cache.get(host);
-  if (cached && Date.now() - cached.at < (cached.value.found ? ttl.hit : ttl.miss))
+  if (cached && Date.now() - cached.at < (cached.value.found ? ttl.hit : ttl.miss)) {
+    // LRU: re-insert so a busy academy stays cached while junk hosts age out (review M3).
+    cache.delete(host);
+    cache.set(host, cached);
     return cached.value;
+  }
 
   let res: Response;
   try {
@@ -54,7 +60,9 @@ export async function lookupTenantContext(
     value = { found: true, context: parsed.data };
   } else throw new TenantContextUnavailableError(`status ${res.status}`);
 
-  if (cache.size >= MAX_ENTRIES) cache.clear();
+  cache.delete(host);
+  while (cache.size >= (config.maxEntries ?? MAX_ENTRIES))
+    cache.delete(cache.keys().next().value as string);
   cache.set(host, { at: Date.now(), value });
   return value;
 }
