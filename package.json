@@ -28,17 +28,31 @@
     "db:drift": "pnpm --filter @academybee/database db:drift",
     "db:generate": "turbo run generate",
     "i18n:check": "pnpm --filter @academybee/i18n i18n:check",
-    "i18n:pseudo": "pnpm --filter @academybee/i18n i18n:pseudo"
+    "i18n:pseudo": "pnpm --filter @academybee/i18n i18n:pseudo",
+    "e2e": "pnpm build && pnpm --filter @academybee/web build:pseudo && pnpm --filter @academybee/e2e e2e",
+    "e2e:run": "pnpm --filter @academybee/e2e e2e",
+    "perf:budget": "node scripts/perf/bundle-budget.mjs",
+    "perf:lighthouse": "lhci autorun --config=lighthouserc.cjs",
+    "flags:check": "pnpm --filter @academybee/contracts flags:check"
   },
   "devDependencies": {
     "@academybee/config": "workspace:*",
     "@commitlint/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
+    "@lhci/cli": "catalog:",
     "@types/node": "catalog:",
     "lefthook": "catalog:",
     "lint-staged": "catalog:",
     "prettier": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:"
-  }
+  },
+  "browserslist": [
+    "chrome >= 109",
+    "and_chr >= 109",
+    "edge >= 109",
+    "firefox >= 128",
+    "safari >= 16.4",
+    "ios_saf >= 16.4"
+  ]
 }

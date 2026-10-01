@@ -20,7 +20,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput"
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "flags:check": "tsx scripts/check-flags.ts"
   },
   "dependencies": {
     "uuid": "catalog:",
@@ -30,6 +31,7 @@
     "@academybee/config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

@@ -101,7 +101,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | S8 | `p0/ui` | 0.7 + logical-CSS lint | ✅ |
 | S9 | `p0/web-shell` | 0.8, 0.9, 0.15 (web); release flag `p0-flag-probe` (owner PO, remove in Phase 1) | ✅ |
 | S10 | `p0/sync` | 0.10 | ✅ |
-| S11 | `p0/e2e-ci` | 0.12, 0.17, full 0.13 | ⬜ |
+| S11 | `p0/e2e-ci` | 0.12, 0.17, full 0.13 | ✅ |
 | S12 | `p0/staging` | 0.14 (workflows off until `STAGING_ENABLED`) | ⬜ |
 | S13 | `p0/docs` | 0.19 | ⬜ |
 **Refs.** PRD v2 §15, v3 §14–18; UX §4–7, §24, §26; ARCHITECTURE §3, §4, §9.1, §10.5, §11, §15, §18–19.

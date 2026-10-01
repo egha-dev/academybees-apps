@@ -1,35 +1,22 @@
 'use client';
 
-import { ToastProvider, UiProvider } from '@academybee/ui';
+import { ToastProvider } from '@academybee/ui/components/feedback';
 import { AppRouterCacheProvider } from '@academybee/ui/next';
+import { UiProvider } from '@academybee/ui/provider';
 import { SerwistProvider } from '@serwist/turbopack/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-  type AbstractIntlMessages,
-  type Locale,
-  NextIntlClientProvider,
-  useTranslations,
-} from 'next-intl';
 import { type ReactNode, useState } from 'react';
 
 import { PwaPrompts } from './pwa-prompts';
-
-function WithToasts({ children }: { children: ReactNode }) {
-  const t = useTranslations('common.actions');
-  return <ToastProvider closeLabel={t('close')}>{children}</ToastProvider>;
-}
+import { type ShellLabels, ShellLabelsProvider } from './shell-labels';
 
 export function Providers({
   children,
-  locale,
-  timeZone,
-  messages,
+  labels,
   serviceWorker,
 }: {
   children: ReactNode;
-  locale: Locale;
-  timeZone: string;
-  messages: AbstractIntlMessages;
+  labels: ShellLabels;
   serviceWorker: boolean;
 }) {
   // One QueryClient per browser session (TanStack Query, ARCHITECTURE §10.7).
@@ -39,7 +26,7 @@ export function Providers({
   return (
     <AppRouterCacheProvider options={{ key: 'ab' }}>
       <UiProvider>
-        <NextIntlClientProvider locale={locale} timeZone={timeZone} messages={messages}>
+        <ShellLabelsProvider labels={labels}>
           <QueryClientProvider client={queryClient}>
             <SerwistProvider
               swUrl="/serwist/sw.js"
@@ -47,13 +34,13 @@ export function Providers({
               options={{ scope: '/' }}
               reloadOnOnline={false}
             >
-              <WithToasts>
+              <ToastProvider closeLabel={labels.close}>
                 {children}
                 {serviceWorker && <PwaPrompts />}
-              </WithToasts>
+              </ToastProvider>
             </SerwistProvider>
           </QueryClientProvider>
-        </NextIntlClientProvider>
+        </ShellLabelsProvider>
       </UiProvider>
     </AppRouterCacheProvider>
   );

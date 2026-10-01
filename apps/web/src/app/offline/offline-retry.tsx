@@ -1,6 +1,8 @@
 'use client';
 
-import { CloudOffIcon, color, EmptyState } from '@academybee/ui';
+import { EmptyState } from '@academybee/ui/components/feedback';
+import { CloudOffIcon } from '@academybee/ui/icons';
+import { color } from '@academybee/ui/tokens';
 
 export function OfflineRetry({
   title,

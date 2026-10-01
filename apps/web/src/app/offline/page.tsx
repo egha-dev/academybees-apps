@@ -1,4 +1,4 @@
-import { Container } from '@academybee/ui';
+import { Container } from '@academybee/ui/components/layout';
 import { getTranslations } from 'next-intl/server';
 
 import { OfflineRetry } from './offline-retry';

@@ -8,3 +8,5 @@ coverage/
 **/prisma/migrations/**
 **/src/generated/**
 **/next-env.d.ts
+.next-xa/
+.next-long/

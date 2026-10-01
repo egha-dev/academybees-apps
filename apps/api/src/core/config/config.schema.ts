@@ -31,6 +31,8 @@ export const ApiConfigSchema = z
     TRUSTED_PROXY_SECRET: z.string().min(16, 'must be at least 16 characters'),
     /** Payment providers enabled in this deployment (ADR-038). */
     PAYMENT_PROVIDERS: csv.pipe(z.array(z.enum(PAYMENT_PROVIDERS)).min(1)).default(['manual']),
+    /** Release-flag override cache; 0 in E2E so a flipped flag applies immediately. */
+    FLAGS_CACHE_MS: z.coerce.number().int().min(0).max(300_000).default(30_000),
     POSTHOG_API_KEY: z.string().optional(),
     POSTHOG_HOST: z.url().default('https://eu.i.posthog.com'),
     ANALYTICS_HASH_SALT: z.string().min(8),

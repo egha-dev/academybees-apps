@@ -10,7 +10,8 @@
     "start": "next start -p 3000",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:pseudo": "NEXT_PUBLIC_LOCALE_OVERRIDE=en-XA NEXT_DIST_DIR=.next-xa next build && NEXT_PUBLIC_LOCALE_OVERRIDE=en-LONG NEXT_DIST_DIR=.next-long next build"
   },
   "dependencies": {
     "@academybee/contracts": "workspace:*",
