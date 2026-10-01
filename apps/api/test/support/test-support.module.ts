@@ -1,13 +1,16 @@
 import { newId } from '@academybee/contracts';
 import { PersonNameSchema } from '@academybee/i18n';
-import { type PrismaClient } from '@academybee/database';
+import { type TenantBoundClient } from '@academybee/database';
 import { Body, Controller, Get, HttpCode, Inject, Module, Post } from '@nestjs/common';
+import { ClsService } from 'nestjs-cls';
 import { z } from 'zod';
 
 import { Audited } from '../../src/core/audit/audited.js';
-import { APP_DB } from '../../src/core/database/database.module.js';
+import { TENANT_DB } from '../../src/core/database/database.module.js';
+import { type RequestContext } from '../../src/core/context/request-context.js';
 import { DomainError } from '../../src/core/errors/domain-error.js';
 import { Idempotent } from '../../src/core/idempotency/idempotent.js';
+import { AnyHost, TenantHost } from '../../src/core/tenant/host-policy.js';
 import { createZodDto, ZodResponse } from '../../src/core/validation/zod-dto.js';
 
 export const EchoSchema = z.object({
@@ -24,14 +27,24 @@ export const executions = { count: 0 };
 
 /** Test-only routes. Never imported by src/ — only by the test harness. */
 @Controller({ path: 'test', version: '1' })
+@AnyHost()
 class TestSupportController {
-  constructor(@Inject(APP_DB) private readonly db: PrismaClient) {}
+  constructor(
+    @Inject(TENANT_DB) private readonly db: TenantBoundClient,
+    private readonly cls: ClsService<RequestContext>,
+  ) {}
 
   @Post('echo')
   @HttpCode(200)
   @ZodResponse(EchoSchema)
   echo(@Body() body: EchoDto) {
     return { ...body, internalSecret: 'stripped by the response schema' };
+  }
+
+  /** What the request-context middleware stored (client IP and effective host). */
+  @Get('request-context')
+  requestContext() {
+    return { ip: this.cls.get('ip') ?? null, host: this.cls.get('host') ?? null };
   }
 
   @Get('domain-error')
@@ -75,5 +88,35 @@ class TestSupportController {
   }
 }
 
-@Module({ controllers: [TestSupportController] })
+/**
+ * An operational academy route with the default host policy (academy host, SETUP/ACTIVE): what
+ * every domain endpoint looks like from Phase 2 on. Echoes what the server decided.
+ */
+@Controller({ path: 'test/academy', version: '1' })
+class TestAcademyController {
+  constructor(
+    @Inject(TENANT_DB) private readonly db: TenantBoundClient,
+    private readonly cls: ClsService<RequestContext>,
+  ) {}
+
+  @Get('probe')
+  async probe() {
+    const branches = await this.db.branch.findMany({ select: { tenantId: true, name: true } });
+    return { tenantId: this.cls.get('tenantId'), branches };
+  }
+
+  @Post('probe')
+  @HttpCode(200)
+  async probeWrite(@Body() _body: unknown) {
+    return this.probe();
+  }
+
+  @Get('any-status')
+  @TenantHost('SETUP', 'ACTIVE', 'SUSPENDED', 'ARCHIVED')
+  anyStatus() {
+    return { tenantId: this.cls.get('tenantId') };
+  }
+}
+
+@Module({ controllers: [TestSupportController, TestAcademyController] })
 export class TestSupportModule {}

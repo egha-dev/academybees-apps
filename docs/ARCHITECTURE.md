@@ -236,6 +236,8 @@ Request Host ──▶ normalise (lower-case, strip port, reject IP / punycode /
 
 Hostname is **candidate identification only** — authorization comes from the authenticated membership (PRD v3.1 §C).
 
+*As built (Phase 1):* resolution is the first global guard (`apps/api/src/core/tenant/tenant.guard.ts`). It classifies the effective host with `@academybee/tenant`, looks it up via `TenantResolver` (Redis cache, `TENANT_CACHE_MS` / `TENANT_NEGATIVE_CACHE_MS`, `invalidateHost` / `invalidateTenant`; falls back to the database when Redis is down), and stores `resolvedHost` + `tenantId` in CLS. The tenant-bound client (`TENANT_DB`) reads `tenantId` from there. Each route declares a host policy: the default is an academy host in SETUP/ACTIVE; `@TenantHost(...statuses)`, `@AnyHost()` (flags, `/tenant/context`) and `@NoHostResolution()` (health, docs) are opt-ins. Non-academy and unknown hosts get `404 NOT_FOUND`; other statuses get `403 TENANT_UNAVAILABLE`. `TenantContext.run(tenantId, fn)` runs work under an explicit academy, awaiting inside the scope because Prisma queries run when awaited. `GET /api/v1/tenant/context` returns `{status: SETUP|ACTIVE, slug, displayName, timezone, locale, branding}`, `{status: SUSPENDED, displayName}`, `{status: ARCHIVED}` or `{status: REDIRECT, host}`; it never includes IDs.
+
 ### 5.3 Tenant status behaviour
 
 | Status | Public context API | Login | Operational APIs | UI |

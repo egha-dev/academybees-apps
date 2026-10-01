@@ -205,8 +205,8 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | --- | --- | --- | --- |
 | S1 | `p1/tenant-package` | 1.1 plan + decisions, 1.2 `packages/tenant` (host/slug/reserved, property tests) | ✅ #21 |
 | S2 | `p1/tenant-schema` | 1.3 tenant tables + migration, 1.4 RLS applier + coverage test, 1.5 seeds + factories | ✅ #22 |
-| S3 | `p1/tenant-client` | 1.6 tenant-bound Prisma client + lint, 1.7 isolation suite, 1.8 RLS benchmark | 🟨 |
-| S4 | `p1/tenant-api` | 1.9 resolver + context, 1.10 guards + `GET /tenant/context`, 1.11 security tests, M4, cross-tenant scaffold | ⬜ |
+| S3 | `p1/tenant-client` | 1.6 tenant-bound Prisma client + lint, 1.7 isolation suite, 1.8 RLS benchmark | ✅ #23 |
+| S4 | `p1/tenant-api` | 1.9 resolver + context, 1.10 guards + `GET /tenant/context`, 1.11 security tests, M4, cross-tenant scaffold | 🟨 |
 | S5 | `p1/web-routing` | 1.12 `proxy.ts` routing, 1.13 status pages | ⬜ |
 | S6 | `p1/web-branding` | 1.14 branding + manifest + icons (flag `p1-tenant-home`), 1.15 hub/console + remove `p0-flag-probe` (flag `p1-hub-placeholder`), 1.16 E2E + analytics | ⬜ |
 | S7 | `p1/docs` | 1.17 as-built docs | ⬜ |

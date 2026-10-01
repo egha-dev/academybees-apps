@@ -5,7 +5,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AuditService } from '../../src/core/audit/audit.service.js';
-import { APP_DB } from '../../src/core/database/database.module.js';
+import { TENANT_DB } from '../../src/core/database/database.module.js';
 import { OutboxService } from '../../src/core/outbox/outbox.service.js';
 import { createTestApp } from '../support/test-app.js';
 
@@ -15,7 +15,7 @@ describe('audit and outbox services', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    db = app.get(APP_DB);
+    db = app.get(TENANT_DB);
   });
   afterAll(async () => {
     await app.close();
