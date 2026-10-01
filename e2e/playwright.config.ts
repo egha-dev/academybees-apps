@@ -22,6 +22,7 @@ const API_ENV = {
   TRUSTED_PROXY_SECRET: 'local-proxy-secret',
   ANALYTICS_HASH_SALT: 'e2e-analytics-salt',
   FLAGS_CACHE_MS: '0',
+  PLATFORM_ROOT_DOMAIN: 'localhost',
 };
 
 const WEB_ENV = {

@@ -475,6 +475,9 @@ importers:
       '@academybee/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@academybee/tenant':
+        specifier: workspace:*
+        version: link:../../packages/tenant
       '@nestjs/common':
         specifier: 'catalog:'
         version: 12.1.2(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0)
@@ -536,6 +539,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.0
+      '@types/pg':
+        specifier: 'catalog:'
+        version: 8.23.1
       '@types/supertest':
         specifier: 'catalog:'
         version: 7.2.1
@@ -545,6 +551,9 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 9.39.5(jiti@2.6.1)(supports-color@7.2.0)
+      pg:
+        specifier: 'catalog:'
+        version: 8.23.0
       pino-pretty:
         specifier: 'catalog:'
         version: 13.1.3

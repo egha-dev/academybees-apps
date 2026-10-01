@@ -4,7 +4,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
 import { type RequestContext } from '../context/request-context.js';
-import { APP_DB } from '../database/database.module.js';
+import { TENANT_DB } from '../database/database.module.js';
 
 export type AuditEntry = {
   /** `area.verb`, e.g. `invoice.cancel`, `auth.login_failed`. */
@@ -25,7 +25,7 @@ export type AuditEntry = {
 @Injectable()
 export class AuditService {
   constructor(
-    @Inject(APP_DB) private readonly db: PrismaClient,
+    @Inject(TENANT_DB) private readonly db: PrismaClient,
     private readonly cls: ClsService<RequestContext>,
   ) {}
 

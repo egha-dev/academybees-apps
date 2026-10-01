@@ -3,8 +3,9 @@ import { Controller, Get, HttpCode, Inject, Res, VERSION_NEUTRAL } from '@nestjs
 import { type Response } from 'express';
 import { type Redis } from 'ioredis';
 
-import { APP_DB } from '../database/database.module.js';
+import { TENANT_DB } from '../database/database.module.js';
 import { REDIS } from '../redis/redis.module.js';
+import { NoHostResolution } from '../tenant/host-policy.js';
 
 type Check = 'up' | 'down';
 
@@ -30,9 +31,10 @@ async function probe(fn: () => Promise<unknown>): Promise<Check> {
 /** Liveness (process up) and readiness (dependencies reachable) for load balancers and deploys. */
 // Served at /api/v1/health/* and /api/health/* (deploy smoke checks use the latter).
 @Controller({ path: 'health', version: ['1', VERSION_NEUTRAL] })
+@NoHostResolution()
 export class HealthController {
   constructor(
-    @Inject(APP_DB) private readonly db: PrismaClient,
+    @Inject(TENANT_DB) private readonly db: PrismaClient,
     @Inject(REDIS) private readonly redis: Redis,
   ) {}
 

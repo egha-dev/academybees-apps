@@ -65,6 +65,7 @@ Both services: **Deploy an existing image** from `ghcr.io/egha-dev/academybee-<a
 | `REDIS_URL` | Upstash `rediss://…` |
 | `TRUSTED_PROXY_SECRET` | random ≥ 32 chars; **same value** as on Vercel |
 | `TRUSTED_PROXY_IPS` | empty (the secret header is used instead) |
+| `PLATFORM_ROOT_DOMAIN` | `staging.academybee.com` (C-52) |
 | `ANALYTICS_HASH_SALT` | random ≥ 32 chars |
 | `POSTHOG_API_KEY`, `POSTHOG_HOST` | optional (no-op adapter when empty) |
 | `SENTRY_DSN` | optional (off when empty) |
