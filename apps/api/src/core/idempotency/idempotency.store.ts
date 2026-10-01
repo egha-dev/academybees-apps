@@ -2,7 +2,7 @@ import { newId } from '@academybee/contracts';
 import { Prisma, type PrismaClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
 
-import { APP_DB } from '../database/database.module.js';
+import { TENANT_DB } from '../database/database.module.js';
 
 export type Claim =
   | { kind: 'claimed'; id: string }
@@ -19,7 +19,7 @@ function isUniqueViolation(error: unknown): boolean {
 /** IdempotencyRecord persistence. The (scope, key) unique index makes the claim atomic. */
 @Injectable()
 export class IdempotencyStore {
-  constructor(@Inject(APP_DB) private readonly db: PrismaClient) {}
+  constructor(@Inject(TENANT_DB) private readonly db: PrismaClient) {}
 
   async claim(input: {
     scope: string;

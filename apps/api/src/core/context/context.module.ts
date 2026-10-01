@@ -4,7 +4,7 @@ import { type Request, type Response } from 'express';
 import { type ClsMiddlewareOptions, ClsModule, ClsService } from 'nestjs-cls';
 
 import { type ApiConfig } from '../config/config.schema.js';
-import { effectiveHost, PROXY_SECRET_HEADER } from '../proxy/effective-host.js';
+import { clientIp, effectiveHost, PROXY_SECRET_HEADER } from '../proxy/effective-host.js';
 import { REQUEST_ID_HEADER, type RequestContext, resolveRequestId } from './request-context.js';
 
 /**
@@ -22,18 +22,19 @@ export function clsMiddlewareOptions(config: ApiConfig): ClsMiddlewareOptions {
       const requestId = cls.getId();
       cls.set('requestId', requestId);
       res.setHeader('X-Request-Id', requestId);
-      if (req.ip) cls.set('ip', req.ip);
       const ua = req.headers['user-agent'];
       if (ua) cls.set('userAgent', ua.slice(0, 300));
-      const host = effectiveHost(
-        {
-          remoteAddress: req.socket.remoteAddress,
-          hostHeader: req.headers.host,
-          forwardedHost: req.headers['x-forwarded-host'],
-          proxySecret: req.headers[PROXY_SECRET_HEADER],
-        },
-        { trustedIps: config.TRUSTED_PROXY_IPS, secret: config.TRUSTED_PROXY_SECRET },
-      );
+      const input = {
+        remoteAddress: req.socket.remoteAddress,
+        hostHeader: req.headers.host,
+        forwardedHost: req.headers['x-forwarded-host'],
+        proxySecret: req.headers[PROXY_SECRET_HEADER],
+        forwardedFor: req.headers['x-forwarded-for'],
+      };
+      const trust = { trustedIps: config.TRUSTED_PROXY_IPS, secret: config.TRUSTED_PROXY_SECRET };
+      const ip = clientIp(input, trust);
+      if (ip) cls.set('ip', ip);
+      const host = effectiveHost(input, trust);
       if (host) cls.set('host', host);
     },
   };

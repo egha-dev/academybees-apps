@@ -29,6 +29,15 @@ export const ApiConfigSchema = z
     REDIS_URL: z.url({ protocol: /^rediss?$/ }),
     TRUSTED_PROXY_IPS: csv,
     TRUSTED_PROXY_SECRET: z.string().min(16, 'must be at least 16 characters'),
+    /** Root domain academy subdomains live under (C-52); defaults to `localhost` in local/ci only. */
+    PLATFORM_ROOT_DOMAIN: z
+      .string()
+      .trim()
+      .regex(/^[a-z0-9.-]+$/i, 'must be a hostname')
+      .optional(),
+    /** Tenant resolution cache (ARCHITECTURE §5.2): hits and misses (unknown hosts). */
+    TENANT_CACHE_MS: z.coerce.number().int().min(0).max(600_000).default(60_000),
+    TENANT_NEGATIVE_CACHE_MS: z.coerce.number().int().min(0).max(600_000).default(30_000),
     /** Payment providers enabled in this deployment (ADR-038). */
     PAYMENT_PROVIDERS: csv.pipe(z.array(z.enum(PAYMENT_PROVIDERS)).min(1)).default(['manual']),
     /** Release-flag override cache; 0 in E2E so a flipped flag applies immediately. */
@@ -39,6 +48,13 @@ export const ApiConfigSchema = z
     SENTRY_DSN: z.union([z.url(), z.literal('')]).optional(),
   })
   .superRefine((cfg, ctx) => {
+    if (!cfg.PLATFORM_ROOT_DOMAIN && cfg.APP_ENV !== 'local' && cfg.APP_ENV !== 'ci') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['PLATFORM_ROOT_DOMAIN'],
+        message: 'is required outside local/ci',
+      });
+    }
     // ADR-038 / CLAUDE.md §5: the simulator is never allowed in production.
     if (cfg.APP_ENV === 'production' && cfg.PAYMENT_PROVIDERS.includes('simulator')) {
       ctx.addIssue({
@@ -57,6 +73,11 @@ export const ApiConfigSchema = z
   });
 
 export type ApiConfig = z.infer<typeof ApiConfigSchema>;
+
+/** The platform root domain for host classification (C-52). */
+export function platformRootDomain(config: ApiConfig): string {
+  return config.PLATFORM_ROOT_DOMAIN ?? 'localhost';
+}
 
 export class InvalidConfigError extends Error {
   constructor(readonly issues: string[]) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MODEL_KINDS, scopeArgs, TenantMismatchError } from './tenant.js';
+import { MODEL_KINDS, scopeArgs, TenantMismatchError, uniqueToFirstArgs } from './tenant.js';
 
 const A = '01a0f76f-f6b7-7509-a8c2-25059adb97fb';
 const B = '01a0f76f-f745-76ee-8122-37ac4c53af4c';
@@ -78,6 +78,20 @@ describe('scopeArgs', () => {
   it('leaves global models alone', () => {
     expect(scopeArgs('FeatureFlag', 'findMany', { where: { key: 'k' } }, A)).toEqual({
       where: { key: 'k' },
+    });
+  });
+});
+
+describe('uniqueToFirstArgs', () => {
+  it('flattens compound unique selectors and keeps everything else', () => {
+    expect(
+      uniqueToFirstArgs({
+        where: { scope_key: { scope: 's', key: 'k' }, tenantId: A },
+        select: { id: true },
+      }),
+    ).toEqual({ where: { scope: 's', key: 'k', tenantId: A }, select: { id: true } });
+    expect(uniqueToFirstArgs({ where: { id: 'x', name: { equals: 'n' } } })).toEqual({
+      where: { id: 'x', name: { equals: 'n' } },
     });
   });
 });

@@ -16,6 +16,7 @@ export {
   TenantContextMissingError,
   type TenantIdSource,
   TenantMismatchError,
+  uniqueToFirstArgs,
 } from './tenant.js';
 export { uniqueIndexFields } from './unique-constraints.js';
 export * from './generated/prisma/enums.js';

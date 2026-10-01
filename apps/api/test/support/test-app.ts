@@ -14,7 +14,7 @@ export function testConfig(overrides: Record<string, string> = {}): ApiConfig {
   return loadApiConfig({
     APP_ENV: 'ci',
     NODE_ENV: 'test',
-    LOG_LEVEL: 'silent',
+    LOG_LEVEL: process.env.TEST_LOG_LEVEL ?? 'silent',
     DATABASE_URL: urls.app,
     REDIS_URL: inject('redisUrl'),
     TRUSTED_PROXY_SECRET: 'test-proxy-secret-0123',

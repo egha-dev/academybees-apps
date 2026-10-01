@@ -154,6 +154,24 @@ function requireTenantFor(model: string, operation: string, tenantId: string | u
     throw new TenantContextMissingError(model, operation);
 }
 
+/**
+ * `findUnique` arguments → equivalent `findFirst` arguments: compound unique selectors
+ * (`scope_key: { scope, key }`, Prisma joins field names with `_`) become plain field filters.
+ */
+export function uniqueToFirstArgs(args: unknown): Args {
+  const a = { ...((args ?? {}) as Args) };
+  const where = (a.where ?? {}) as Args;
+  const flat: Args = {};
+  for (const [key, value] of Object.entries(where)) {
+    const compound =
+      key.includes('_') && value !== null && typeof value === 'object' && !Array.isArray(value);
+    if (compound) Object.assign(flat, value);
+    else flat[key] = value;
+  }
+  a.where = flat;
+  return a;
+}
+
 /** Statements the driver runs around a tenant-scoped query (ADR-005). */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STATEMENT = (sql: string): SqlQuery => ({ sql, args: [], argTypes: [] });
@@ -271,13 +289,13 @@ export function createTenantBoundClient(
   url: string,
   getTenantId: TenantIdSource,
   options: DatabaseClientOptions = {},
-) {
+): TenantBoundClient {
   const adapter = new PrismaPg({ connectionString: url, max: options.maxConnections ?? 10 });
   const base = new PrismaClient({
     adapter: tenantScopedAdapterFactory(adapter, getTenantId),
     log: options.log ?? [],
   });
-  return base.$extends({
+  const bound = base.$extends({
     name: 'tenant-bound',
     model: {
       // Prisma batches findUnique calls made in the same tick into one query, which would run
@@ -288,7 +306,7 @@ export function createTenantBoundClient(
           const ctx = Prisma.getExtensionContext(this) as unknown as {
             findFirst: (a: unknown) => Prisma.PrismaPromise<Prisma.Result<T, A, 'findUnique'>>;
           };
-          return ctx.findFirst(args);
+          return ctx.findFirst(uniqueToFirstArgs(args));
         },
         findUniqueOrThrow<T, A>(
           this: T,
@@ -299,7 +317,7 @@ export function createTenantBoundClient(
               a: unknown,
             ) => Prisma.PrismaPromise<Prisma.Result<T, A, 'findUniqueOrThrow'>>;
           };
-          return ctx.findFirstOrThrow(args);
+          return ctx.findFirstOrThrow(uniqueToFirstArgs(args));
         },
       },
     },
@@ -338,9 +356,16 @@ export function createTenantBoundClient(
       },
     },
   });
+  return bound as unknown as TenantBoundClient;
 }
 
-export type TenantBoundClient = ReturnType<typeof createTenantBoundClient>;
+/**
+ * The extensions change behaviour, not signatures, so the client is typed as a PrismaClient (its
+ * transactions are ordinary `Prisma.TransactionClient`s) plus the host lookup.
+ */
+export type TenantBoundClient = PrismaClient & {
+  $lookupTenantDomain(lookupKey: string): Promise<ResolvedDomainRow | null>;
+};
 
 export type ResolvedDomainRow = {
   tenantId: string;

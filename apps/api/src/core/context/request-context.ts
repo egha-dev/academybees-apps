@@ -1,3 +1,4 @@
+import { type TenantStatus } from '@academybee/contracts';
 import { type ClsStore } from 'nestjs-cls';
 
 /** Who performed a request or job (filled by auth in Phase 2). */
@@ -6,13 +7,28 @@ export type Actor =
   | { type: 'PLATFORM_STAFF'; id: string }
   | { type: 'SYSTEM'; id?: undefined };
 
-/** Per-request context in CLS (AsyncLocalStorage). Tenant context arrives in Phase 1. */
+/** How the request host was resolved (ARCHITECTURE §5.2); set by the TenantGuard. */
+export type ResolvedHost =
+  | { kind: 'marketing' | 'console' | 'hub' | 'invalid' | 'unknown' }
+  | {
+      kind: 'tenant';
+      tenant: { id: string; slug: string; status: TenantStatus };
+      domainRole: 'PRIMARY' | 'ALIAS';
+    }
+  | { kind: 'redirect'; tenantId: string; host: string };
+
+/** Per-request context in CLS (AsyncLocalStorage). */
 export interface RequestContext extends ClsStore {
   requestId: string;
-  /** Effective host after the trusted-proxy check (used for tenant resolution in Phase 1). */
+  /** Effective host after the trusted-proxy check (C-46); the only input to tenant resolution. */
   host?: string;
   ip?: string;
   userAgent?: string;
+  resolvedHost?: ResolvedHost;
+  /**
+   * The resolved academy. Set only from the request host (never from client input), read by the
+   * tenant-bound database client (RLS) and by audit/outbox/idempotency.
+   */
   tenantId?: string;
   actor?: Actor;
 }

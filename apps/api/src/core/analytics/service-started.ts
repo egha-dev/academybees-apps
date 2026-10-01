@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger, type OnApplicationBootstrap } from '@nestjs
 
 import { API_CONFIG } from '../config/config.module.js';
 import { type ApiConfig } from '../config/config.schema.js';
-import { APP_DB } from '../database/database.module.js';
+import { TENANT_DB } from '../database/database.module.js';
 import { AnalyticsService } from './analytics.service.js';
 
 /** Emits `system.service_started` once per boot — the first event visible in dev (task 0.16). */
@@ -13,7 +13,7 @@ export class ServiceStartedEmitter implements OnApplicationBootstrap {
 
   constructor(
     private readonly analytics: AnalyticsService,
-    @Inject(APP_DB) private readonly db: PrismaClient,
+    @Inject(TENANT_DB) private readonly db: PrismaClient,
     @Inject(API_CONFIG) private readonly config: ApiConfig,
   ) {}
 

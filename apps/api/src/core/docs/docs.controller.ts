@@ -1,10 +1,12 @@
 import { Controller, Get, VERSION_NEUTRAL } from '@nestjs/common';
 import { DiscoveryService, MetadataScanner } from '@nestjs/core';
 
+import { NoHostResolution } from '../tenant/host-policy.js';
 import { buildOpenApi } from './openapi.js';
 
 /** Registered only when APP_ENV is not production (see AppModule). */
 @Controller({ path: 'docs', version: VERSION_NEUTRAL })
+@NoHostResolution()
 export class DocsController {
   private doc: ReturnType<typeof buildOpenApi> | undefined;
 
