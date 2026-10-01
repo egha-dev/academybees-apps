@@ -11,7 +11,7 @@ describe('effectiveHost', () => {
         {
           remoteAddress: '203.0.113.9',
           hostHeader: 'api.internal:4000',
-          forwardedHost: 'victim-academy.academybee.com',
+          forwardedHost: 'victim-academy.academybees.com',
           proxySecret: undefined,
         },
         trust,
@@ -37,10 +37,10 @@ describe('effectiveHost', () => {
     const base = {
       remoteAddress: '198.51.100.1',
       hostHeader: 'api',
-      forwardedHost: 'a.academybee.com',
+      forwardedHost: 'a.academybees.com',
     };
     expect(effectiveHost({ ...base, proxySecret: 'proxy-secret-0123456789' }, trust)).toBe(
-      'a.academybee.com',
+      'a.academybees.com',
     );
     expect(effectiveHost({ ...base, proxySecret: 'proxy-secret-wrong' }, trust)).toBe('api');
   });
@@ -51,12 +51,12 @@ describe('effectiveHost', () => {
         {
           remoteAddress: '10.0.0.5',
           hostHeader: 'api',
-          forwardedHost: 'a.academybee.com, evil.com',
+          forwardedHost: 'a.academybees.com, evil.com',
           proxySecret: undefined,
         },
         trust,
       ),
-    ).toBe('a.academybee.com');
+    ).toBe('a.academybees.com');
   });
 });
 

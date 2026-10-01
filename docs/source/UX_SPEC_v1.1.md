@@ -658,11 +658,11 @@ Purpose: align the visual/product experience with the AcademyBee multi-tenant ar
 
 Every academy receives a dedicated AcademyBee URL:
 
-gurushethra.academybee.com
+gurushethra.academybees.com
 
-abcacademy.academybee.com
+abcacademy.academybees.com
 
-xyzacademy.academybee.com
+xyzacademy.academybees.com
 
 The URL should feel like the academy's own digital workspace. Once the tenant is resolved, the interface should automatically apply the academy's name, logo, favicon and approved brand configuration.
 

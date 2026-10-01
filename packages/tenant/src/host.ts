@@ -45,7 +45,7 @@ export function normalizeHost(raw: string | null | undefined): string | null {
   return host;
 }
 
-/** Normalise the configured root domain (`academybee.com`, `staging.academybee.com`, `localhost`). */
+/** Normalise the configured root domain (`academybees.com`, `staging.academybees.com`, `localhost`). */
 export function normalizeRootDomain(root: string): string {
   const normalized = normalizeHost(root);
   if (!normalized) throw new Error(`Invalid platform root domain: ${JSON.stringify(root)}`);
@@ -61,7 +61,7 @@ export function classifyHost(raw: string | null | undefined, rootDomain: string)
   if (host === root || host === `www.${root}`) return { kind: 'marketing', host };
   if (host.endsWith(`.${root}`)) {
     const sub = host.slice(0, -(root.length + 1));
-    if (sub.includes('.')) return { kind: 'invalid', host }; // nested: a.b.academybee.com
+    if (sub.includes('.')) return { kind: 'invalid', host }; // nested: a.b.academybees.com
     if (sub === 'console') return { kind: 'console', host };
     if (sub === 'app') return { kind: 'hub', host };
     if (!isSlugShaped(sub)) return { kind: 'invalid', host };

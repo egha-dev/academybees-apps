@@ -46,7 +46,7 @@ The online gateway layer is built and tested with a simulator. Razorpay is conne
 
 ## Families with children at several academies
 
-Parents and students use one **AcademyBee Family Hub** at `app.academybee.com` (PRD v3.2 G-31):
+Parents and students use one **AcademyBee Family Hub** at `app.academybees.com` (PRD v3.2 G-31):
 - **One login** covers every academy they're linked to.
 - **Adding an academy:** scan the academy's QR code, type its address, or accept an invite. Access is granted only after a verification code or academy approval.
 - **Home screen:** today's classes across academies, dues shown per academy, and one merged notification inbox.

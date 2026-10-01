@@ -44,8 +44,8 @@ When versions disagree the newest wins: **PRD v3.2 addendum > v3.1 > v3.0 > v2.x
 ```text
                          ┌──────────────────────────────────────────────┐
   Browsers / PWAs        │                 Edge / CDN                    │
-  ─────────────────      │  academybee.com  console.academybee.com       │
-  Owner/Admin (desktop)  │  *.academybee.com (tenants)  custom domains*  │
+  ─────────────────      │  academybees.com  console.academybees.com       │
+  Owner/Admin (desktop)  │  *.academybees.com (tenants)  custom domains*  │
   Teacher PWA (mobile) ─▶│  wildcard TLS                                 │
   Parent/Student PWA     └───────────────┬──────────────────────────────┘
   Super Admin console                    │ same host, path-routed
@@ -97,15 +97,15 @@ academybee/
 │   ├── web/                     Next.js — academy staff, Family Hub, console, marketing
 │   │   ├── src/app/
 │   │   │   ├── (marketing)/         apex host
-│   │   │   ├── (console)/console/   console.academybee.com  (rewritten)
-│   │   │   ├── (tenant)/t/[slug]/   *.academybee.com  — staff (rewritten)
+│   │   │   ├── (console)/console/   console.academybees.com  (rewritten)
+│   │   │   ├── (tenant)/t/[slug]/   *.academybees.com  — staff (rewritten)
 │   │   │   │   ├── (auth)/          login, reset, invite
 │   │   │   │   ├── (status)/        unknown / suspended / setup
 │   │   │   │   ├── (public)/        academy public page, enquiry, privacy notice
 │   │   │   │   ├── onboarding/
 │   │   │   │   ├── (manage)/        owner/admin/accountant/receptionist
 │   │   │   │   └── teach/           teacher PWA
-│   │   │   ├── (hub)/hub/           app.academybee.com — Family Hub (rewritten)
+│   │   │   ├── (hub)/hub/           app.academybees.com — Family Hub (rewritten)
 │   │   │   │   ├── (parent)/        all-academies Home, /a/[slug]/…, join, academies
 │   │   │   │   └── me/              student
 │   │   │   ├── manifest.ts          dynamic per-tenant manifest
@@ -150,12 +150,12 @@ One private monorepo, trunk-based. Work lands in **slices** (short branches `p<p
 
 | Host | Purpose | Notes |
 | --- | --- | --- |
-| `academybee.com`, `www.` | Marketing/platform entry | Phase 0 placeholder; public enquiry lives on tenant hosts |
-| `app.academybee.com` | **Family Hub**: parents & students, one login across all linked academies (ADR-039) | User-bound `HUB` sessions; academy URLs redirect parents/students here |
-| `console.academybee.com` | Super Admin platform console | Separate origin ⇒ separate cookies & storage (ADR-003) |
-| `{slug}.academybee.com` | Academy tenant workspace | All academy roles, one origin per academy |
+| `academybees.com`, `www.` | Marketing/platform entry | Phase 0 placeholder; public enquiry lives on tenant hosts |
+| `app.academybees.com` | **Family Hub**: parents & students, one login across all linked academies (ADR-039) | User-bound `HUB` sessions; academy URLs redirect parents/students here |
+| `console.academybees.com` | Super Admin platform console | Separate origin ⇒ separate cookies & storage (ADR-003) |
+| `{slug}.academybees.com` | Academy tenant workspace | All academy roles, one origin per academy |
 | `{custom-domain}` | Verified custom domain (future) | Maps to same immutable tenant ID |
-| `*.staging.academybee.com` | Staging tenants | Needs its own wildcard cert |
+| `*.staging.academybees.com` | Staging tenants | Needs its own wildcard cert |
 | `{slug}.localhost:3000` | Local development | `*.localhost` resolves to loopback in Chromium; no hosts-file edits |
 
 **Reserved slugs** (never provisionable), kept in `packages/tenant/src/reserved.ts`:
@@ -169,7 +169,7 @@ One private monorepo, trunk-based. Work lands in **slices** (short branches `p<p
 
 Every host serves `/api/*`, rewritten by the web tier (or the load balancer) to the NestJS service. The browser therefore talks to its own origin only:
 
-- Cookies are **host-only** (no `Domain=` attribute) — a session on `abc.academybee.com` is never sent to `xyz.academybee.com` (ADR-004).
+- Cookies are **host-only** (no `Domain=` attribute) — a session on `abc.academybees.com` is never sent to `xyz.academybees.com` (ADR-004).
 - No wildcard CORS with credentials.
 - The API resolves the tenant from `X-Forwarded-Host`, which it trusts **only** from the configured proxy (trusted-proxy list; direct access to the API origin is firewalled or requires an internal shared secret header).
 - *As built (Phase 0, C-46):* `apps/web/src/proxy.ts` rewrites `/api/*` to `API_ORIGIN`, **overwriting** `X-Forwarded-Host` with the browser's host and adding `X-AB-Proxy-Secret`; the API accepts the forwarded host only with that secret (timing-safe compare) or from `TRUSTED_PROXY_IPS`, otherwise it uses `Host`. The effective host is stored in the request context for tenant resolution (Phase 1).
@@ -256,10 +256,10 @@ Raw errors (tenantId, DB, routing) are never shown (UX v1.1 §7).
 
 Add `TenantDomain(kind=CUSTOM, verification=PENDING)` with a TXT token → worker verifies DNS → platform edge API (e.g. Vercel Domains API) attaches domain + certificate → `VERIFIED`. Nothing else in the tenant model changes.
 
-### 5.6 Family Hub (`app.academybee.com`, ADR-039, PRD v3.2 G-31)
+### 5.6 Family Hub (`app.academybees.com`, ADR-039, PRD v3.2 G-31)
 
 ```text
-Parent opens app.academybee.com ──▶ HUB session (user-bound, no tid)
+Parent opens app.academybees.com ──▶ HUB session (user-bound, no tid)
   ├─ GET /api/v1/hub/home
   │    → memberships = ACTIVE Parent/Student memberships of user
   │    → for each tenant (parallel, timeout 3s):
@@ -274,7 +274,7 @@ Parent opens app.academybee.com ──▶ HUB session (user-bound, no tid)
 ```
 
 - The Parent/Student experiences are served **only** by the hub; the same UI components are used in "All academies" and "single academy" modes (the selected academy's logo/accent is applied).
-- Academy sites show a "Parents: open your AcademyBee app" entry that deep-links to `app.academybee.com/a/<slug>`.
+- Academy sites show a "Parents: open your AcademyBee app" entry that deep-links to `app.academybees.com/a/<slug>`.
 - `HubChildGroup` stores parent-private groupings of the same child across academies; never visible to tenants.
 
 ### 5.5 Per-tenant PWA identity
@@ -282,7 +282,7 @@ Parent opens app.academybee.com ──▶ HUB session (user-bound, no tid)
 `app/manifest.ts` is dynamic: name, short_name, icons and theme colour come from `TenantBranding`. *As built (Phase 1):*
 - an ACTIVE academy host serves `/manifest.webmanifest` from `(tenant)/t/[slug]/manifest.webmanifest/route.ts` (name, short name ≤ 12 characters, `theme_color` = brand colour when it passes `brandIdentityColors`);
 - icons come from `/academy-icon/{icon-192,icon-512,maskable-512,apple-180}.png`, generated from the slug initials until uploaded logos arrive (Phase 3);
-- every other host serves the AcademyBee manifest. Because each tenant is its own origin, each academy installs as its own branded app for **staff** with an isolated service worker, cache and IndexedDB. Parents and students install the single **AcademyBee Family Hub** app from `app.academybee.com` (§5.6).
+- every other host serves the AcademyBee manifest. Because each tenant is its own origin, each academy installs as its own branded app for **staff** with an isolated service worker, cache and IndexedDB. Parents and students install the single **AcademyBee Family Hub** app from `app.academybees.com` (§5.6).
 
 ---
 
@@ -327,7 +327,7 @@ PasswordResetToken   userId · tokenHash · expiresAt · usedAt
 
 ### 6.3 Console authentication
 
-Super Admin signs in only on `console.academybee.com`. Console sessions have `aud=CONSOLE`, shorter lifetime, mandatory TOTP 2FA (Phase 14 — before that, restricted to allow-listed accounts created by CLI). Console tokens are rejected on tenant hosts and vice versa.
+Super Admin signs in only on `console.academybees.com`. Console sessions have `aud=CONSOLE`, shorter lifetime, mandatory TOTP 2FA (Phase 14 — before that, restricted to allow-listed accounts created by CLI). Console tokens are rejected on tenant hosts and vice versa.
 
 ### 6.4 Impersonation ("Login as Academy") — Phase 14
 
@@ -584,7 +584,7 @@ The Next.js host-routing file (`proxy.ts` on Next.js 16+, formerly `middleware.t
 - apex → `/(marketing)`
 - `console.` → `/console/...`
 - `app.` (Family Hub) → `/hub/...` (parents and students, all linked academies)
-- tenant → `/t/{slug}/...` (the visible URL stays clean, e.g. `gurushethra.academybee.com/students`)
+- tenant → `/t/{slug}/...` (the visible URL stays clean, e.g. `gurushethra.academybees.com/students`)
 
 *As built (Phase 1):* `apps/web/src/proxy.ts` strips every client-sent `x-ab-*` header, classifies the host, and for academy/custom hosts reads `GET /api/v1/tenant/context` (in-memory cache 60 s, unknown hosts 30 s). The decision itself is a pure function, `lib/routing.ts` (unit-tested):
 - ACTIVE → `/t/<slug><path>`;
@@ -598,7 +598,7 @@ The Next.js host-routing file (`proxy.ts` on Next.js 16+, formerly `middleware.t
 
 The resolved context reaches server components in the `x-ab-context` request header (URI-encoded JSON, validated with the contract on read) and the marketing origin in `x-ab-apex`. Status pages are the shared `StatusPage` composition (academy identity or AcademyBee brand, icon + heading, next action, "Powered by AcademyBee"; `noindex`).
 
-After login on an academy URL, `/` sends staff to the home of their primary experience: Owner/Admin/Accountant/Receptionist → `/today`; Teacher → `/teach`. Parents and students are redirected to the Family Hub (`app.academybee.com/a/<slug>`), where Parent Home is `/` and Student Home is `/me`. Users with several roles (owner who also teaches) get an experience switcher.
+After login on an academy URL, `/` sends staff to the home of their primary experience: Owner/Admin/Accountant/Receptionist → `/today`; Teacher → `/teach`. Parents and students are redirected to the Family Hub (`app.academybees.com/a/<slug>`), where Parent Home is `/` and Student Home is `/me`. Users with several roles (owner who also teaches) get an experience switcher.
 
 ### 10.3 Route map (visible paths on a tenant host)
 
@@ -614,7 +614,7 @@ After login on an academy URL, `/` sends staff to the home of their primary expe
 | Manage — INSIGHTS | `/reports` `/reports/[section]` |
 | Manage — ACADEMY | `/settings/academy` `/settings/branding` `/settings/team` `/settings/notifications` `/settings/payments` `/settings/communication` `/settings/security` `/settings/subscription` `/branches`‡ |
 | Teacher (`/teach`) | `/teach` (Today) `/teach/classes` `/teach/classes/[sessionId]` `/teach/classes/[sessionId]/attendance` `/teach/batches/[id]` `/teach/students` `/teach/students/[id]` `/teach/learning` `/teach/sync` `/teach/more` |
-| Parent & Student — **Family Hub host `app.academybee.com`** | `/` (Home: all academies) `/a/[slug]` (single academy) `/a/[slug]/children/[id]` `/schedule` `/payments` `/a/[slug]/invoices/[id]` `/notifications` `/leave` (Ph 11) `/join/[slug]` (QR/URL add) `/academies` (My academies, consent, leave) `/me/...` (student) — core delivered in Phase 7P |
+| Parent & Student — **Family Hub host `app.academybees.com`** | `/` (Home: all academies) `/a/[slug]` (single academy) `/a/[slug]/children/[id]` `/schedule` `/payments` `/a/[slug]/invoices/[id]` `/notifications` `/leave` (Ph 11) `/join/[slug]` (QR/URL add) `/academies` (My academies, consent, leave) `/me/...` (student) — core delivered in Phase 7P |
 | Student | on the Family Hub: `/me` `/me/classes` `/me/homework` `/me/progress` `/me/profile` (Phase 11) |
 | Academy (staff side) | `/settings/parent-app` (Join QR poster, printable) · `/join-requests` queue (Phase 4) |
 | Public | `/` academy public page when enabled + `/enquire` (Phase 8) · `/privacy` academy privacy notice (Phase 4) · `/d/[token]` shared receipt/invoice (Phase 7) |
@@ -622,7 +622,7 @@ After login on an academy URL, `/` sends staff to the home of their primary expe
 
 † added in Phase 7 · ‡ deferred modules (hidden until built — no placeholder "coming soon" pages in production navigation).
 
-**Console (`console.academybee.com`)**: `/overview` `/academies` `/academies/new` `/academies/[id]/[tab]` `/users` `/subscriptions` `/plans` `/payments` `/growth/(acquisition|usage|retention)` `/support` `/announcements` `/audit` `/settings` `/security`.
+**Console (`console.academybees.com`)**: `/overview` `/academies` `/academies/new` `/academies/[id]/[tab]` `/users` `/subscriptions` `/plans` `/payments` `/growth/(acquisition|usage|retention)` `/support` `/announcements` `/audit` `/settings` `/security`.
 
 ### 10.4 Shells and navigation (UX §7, §8, §25)
 
