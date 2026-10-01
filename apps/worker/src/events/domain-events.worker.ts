@@ -14,6 +14,7 @@ import {
 import { type Job, Worker } from 'bullmq';
 import { type Redis } from 'ioredis';
 
+import { reportError } from '../observability/error-reporting.js';
 import { WORKER_DEFAULTS } from '../queues/queues.js';
 import { REDIS_CONNECTION } from '../queues/redis.provider.js';
 
@@ -43,12 +44,13 @@ export class DomainEventsWorker implements OnApplicationBootstrap, OnApplication
       ...WORKER_DEFAULTS,
       connection: this.connection.duplicate(),
     });
-    this.worker.on('failed', (job, err) =>
+    this.worker.on('failed', (job, err) => {
       this.logger.error(
         { jobId: job?.id, type: job?.name, err: err.message },
         'Domain event failed',
-      ),
-    );
+      );
+      reportError(err, { queue: 'domain-events', jobId: job?.id, type: job?.name });
+    });
   }
 
   private async process(job: Job): Promise<void> {

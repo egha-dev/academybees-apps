@@ -11,6 +11,7 @@ import { type Queue } from 'bullmq';
 import { type Redis } from 'ioredis';
 
 import { WORKER_CONFIG, type WorkerConfig } from '../config/config.js';
+import { reportError } from '../observability/error-reporting.js';
 import { createQueue } from '../queues/queues.js';
 import { REDIS_CONNECTION } from '../queues/redis.provider.js';
 import { OutboxRelay } from './outbox-relay.js';
@@ -51,6 +52,7 @@ export class OutboxRelayService implements OnApplicationBootstrap, OnApplication
         if (relayed > 0) this.logger.debug({ relayed }, 'Outbox events relayed');
       } catch (error) {
         this.logger.error({ err: error }, 'Outbox relay pass failed');
+        reportError(error, { component: 'outbox-relay' });
       }
       // A full batch means there is more backlog: go again immediately.
       if (relayed < this.config.OUTBOX_BATCH_SIZE)

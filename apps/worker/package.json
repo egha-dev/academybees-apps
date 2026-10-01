@@ -18,6 +18,7 @@
     "@academybee/database": "workspace:*",
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
+    "@sentry/node": "catalog:",
     "bullmq": "catalog:",
     "ioredis": "catalog:",
     "nestjs-pino": "catalog:",

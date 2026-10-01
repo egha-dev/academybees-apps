@@ -4,6 +4,7 @@ import { type Response } from 'express';
 import { ClsService } from 'nestjs-cls';
 
 import { type RequestContext } from '../context/request-context.js';
+import { reportError } from '../observability/error-reporting.js';
 import { DomainError } from './domain-error.js';
 import { mapError } from './map-error.js';
 import { errorMessage } from './messages.js';
@@ -25,6 +26,7 @@ export class ErrorEnvelopeFilter implements ExceptionFilter {
 
     if (mapped.unexpected) {
       this.logger.error({ err: exception, requestId }, 'Unhandled error');
+      reportError(exception, { requestId });
     } else if (exception instanceof DomainError && exception.reason) {
       this.logger.debug({ code: mapped.code, reason: exception.reason, requestId }, 'Domain error');
     }
