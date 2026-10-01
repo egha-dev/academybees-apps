@@ -116,7 +116,12 @@ pnpm infra:up            # postgres, redis, mailpit (http://localhost:8025), sea
 pnpm db:migrate          # prisma migrate dev + RLS SQL
 pnpm db:seed             # dev tenants demo-a, demo-b, paused + one user per role
 pnpm dev                 # web :3000, api :4000, worker
-pnpm lint | pnpm typecheck | pnpm test | pnpm test:integration | pnpm build | pnpm e2e
+pnpm lint | pnpm typecheck | pnpm test | pnpm test:integration | pnpm build
+pnpm e2e                 # builds web (en-IN + en-XA + en-LONG) + API, then Playwright; needs infra:up + db:deploy
+pnpm e2e:run             # Playwright only, against existing builds
+pnpm perf:budget         # route JS budget (< 200 KB gz, G-24) — after build
+pnpm perf:lighthouse     # Lighthouse CI: LCP/CLS/a11y budgets — after build
+pnpm i18n:check | pnpm flags:check
 pnpm platform:create-admin --email you@example.com   # from Phase 2
 ```
 
