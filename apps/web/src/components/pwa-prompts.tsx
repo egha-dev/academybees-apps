@@ -3,7 +3,7 @@
 import { Button } from '@academybee/ui/components/actions';
 import { Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
-import { color, radius } from '@academybee/ui/tokens';
+import { radius } from '@academybee/ui/tokens';
 import { useSerwist } from '@serwist/turbopack/react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -48,8 +48,9 @@ function Prompt({
         marginInline: 'auto',
         padding: 4,
         borderRadius: `${radius.lg}px`,
-        backgroundColor: color.white,
-        border: `1px solid ${color.neutral[200]}`,
+        bgcolor: 'ab.surface',
+        border: '1px solid',
+        borderColor: 'ab.border',
         boxShadow: '0 8px 24px rgba(23,24,23,0.12)',
         zIndex: 1400,
       }}

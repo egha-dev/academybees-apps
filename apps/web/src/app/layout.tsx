@@ -1,7 +1,8 @@
 import '@fontsource-variable/inter';
 import './globals.css';
 
-import { color } from '@academybee/ui/tokens';
+import { ThemeScript } from '@academybee/ui/theme-script';
+import { palettes } from '@academybee/ui/tokens';
 import type { Metadata, Viewport } from 'next';
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
@@ -22,7 +23,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: color.ivory,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: palettes.light.background },
+    { media: '(prefers-color-scheme: dark)', color: palettes.dark.background },
+  ],
   width: 'device-width',
   initialScale: 1,
 };
@@ -46,8 +50,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // The service worker is off in `next dev` (stale caches confuse development) and on in builds.
   const serviceWorker = process.env.NODE_ENV === 'production';
   return (
-    <html lang={locale}>
+    // suppressHydrationWarning: ThemeScript sets data-ab-theme on <html> before React hydrates.
+    <html lang={locale} suppressHydrationWarning>
       <body>
+        <ThemeScript />
         <Providers labels={labels} serviceWorker={serviceWorker}>
           {children}
         </Providers>

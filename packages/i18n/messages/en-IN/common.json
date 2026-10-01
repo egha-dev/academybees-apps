@@ -21,5 +21,11 @@
   "count": {
     "students": "{count, plural, =0 {No students} one {# student} other {# students}}",
     "records": "{count, plural, one {# record} other {# records}}"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
   }
 }
