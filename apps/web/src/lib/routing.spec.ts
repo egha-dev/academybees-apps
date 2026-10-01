@@ -122,4 +122,23 @@ describe('decideRoute (ARCHITECTURE §10.2)', () => {
   it('serves shared app pages on every host', () => {
     expect(route('demo-a.localhost:3000', '/offline', active)).toEqual({ type: 'next' });
   });
+
+  it('serves the academy manifest and icons only for ACTIVE academies', () => {
+    expect(route('demo-a.localhost:3000', '/manifest.webmanifest', active)).toEqual({
+      type: 'rewrite',
+      path: '/t/demo-a/manifest.webmanifest',
+    });
+    expect(route('demo-a.localhost:3000', '/academy-icon/icon-192.png', active)).toEqual({
+      type: 'rewrite',
+      path: '/t/demo-a/academy-icon/icon-192.png',
+    });
+    expect(
+      route('paused.localhost:3000', '/manifest.webmanifest', {
+        found: true,
+        context: { status: 'SUSPENDED', displayName: 'P' },
+      }),
+    ).toEqual({ type: 'next' });
+    expect(route('localhost:3000', '/manifest.webmanifest')).toEqual({ type: 'next' });
+    expect(route('console.localhost:3000', '/manifest.webmanifest')).toEqual({ type: 'next' });
+  });
 });

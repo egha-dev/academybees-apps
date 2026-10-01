@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { StatusPage, type StatusTone } from '@/components/status-page';
-import { academyName, hostContext } from '@/lib/host-context.server';
+import { academyColor, academyName, hostContext } from '@/lib/host-context.server';
 
 /**
  * Academy host states (UX v1.1 §7), reached only through a rewrite from `proxy.ts` — typing
@@ -50,6 +50,7 @@ export default async function StatusRoute({ params }: { params: Promise<{ state:
   return (
     <StatusPage
       academyName={name}
+      academyColor={academyColor(context)}
       tone={tone}
       title={t(`${key}.title`, { academy })}
       body={t(`${key}.body`, { academy })}

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 
 import { StatusPage } from '@/components/status-page';
-import { academyName, hostContext } from '@/lib/host-context.server';
+import { academyColor, academyName, hostContext } from '@/lib/host-context.server';
 
 /** Tenant access denied (UX v1.1 §7). Phase 2 sends signed-in users here when a role lacks access. */
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,6 +16,7 @@ export default async function AccessDenied() {
   return (
     <StatusPage
       academyName={name}
+      academyColor={academyColor(context)}
       tone="lock"
       title={t('accessDenied.title')}
       body={t('accessDenied.body', { academy: name ?? t('fallbackAcademy') })}

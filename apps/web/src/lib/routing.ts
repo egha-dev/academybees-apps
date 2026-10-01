@@ -15,6 +15,8 @@ export type RouteDecision =
 
 /** App-level pages served the same way on every host (offline fallback, dev tools). */
 const SHARED_PREFIXES = ['/offline', '/dev/'];
+const MANIFEST = '/manifest.webmanifest';
+
 /** Route-group folders only reachable through a rewrite, never by typing the URL. */
 const INTERNAL_PREFIXES = ['/t/', '/console', '/hub', '/status/'];
 
@@ -46,6 +48,13 @@ export function decideRoute(input: {
   const { hostClass, pathname } = input;
   if (starts(pathname, INTERNAL_PREFIXES)) return { type: 'rewrite', path: '/__not-found' };
   if (starts(pathname, SHARED_PREFIXES)) return { type: 'next' };
+  // Only ACTIVE academies serve their own manifest; every other host gets AcademyBee's.
+  const activeAcademy =
+    (hostClass.kind === 'tenant' || hostClass.kind === 'custom') &&
+    typeof input.lookup === 'object' &&
+    input.lookup.found &&
+    input.lookup.context.status === 'ACTIVE';
+  if (pathname === MANIFEST && !activeAcademy) return { type: 'next' };
 
   switch (hostClass.kind) {
     case 'marketing':

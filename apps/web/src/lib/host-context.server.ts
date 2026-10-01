@@ -21,3 +21,8 @@ export async function hostContext(): Promise<{
 export function academyName(context: TenantContextResponse | undefined): string | undefined {
   return context && 'displayName' in context ? context.displayName : undefined;
 }
+
+/** The academy's brand colour when the context carries branding (ACTIVE / SETUP). */
+export function academyColor(context: TenantContextResponse | undefined): string | null {
+  return context && 'branding' in context ? context.branding.primaryColor : null;
+}
