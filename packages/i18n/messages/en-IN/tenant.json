@@ -1,0 +1,42 @@
+{
+  "poweredBy": "Powered by AcademyBee",
+  "status": {
+    "fallbackAcademy": "This academy",
+    "unknown": {
+      "metaTitle": "Academy not found",
+      "title": "We couldn't find this academy",
+      "body": "Check the address for typing mistakes. If an academy sent you this link, ask them for the correct one.",
+      "action": "Go to AcademyBee"
+    },
+    "suspended": {
+      "metaTitle": "Academy unavailable",
+      "title": "{academy} is temporarily unavailable",
+      "body": "This academy's workspace is paused for now. Nothing has been deleted. If you run this academy, contact AcademyBee support to restore access.",
+      "action": "Go to AcademyBee"
+    },
+    "archived": {
+      "metaTitle": "Academy closed",
+      "title": "This academy is no longer on AcademyBee",
+      "body": "The workspace at this address has been closed. If you need your records, contact the academy directly.",
+      "action": "Go to AcademyBee"
+    },
+    "setup": {
+      "metaTitle": "Setting up",
+      "title": "{academy} is getting ready",
+      "body": "This academy is still setting up its workspace on AcademyBee. Please check back soon.",
+      "action": "Go to AcademyBee"
+    },
+    "accessDenied": {
+      "metaTitle": "No access",
+      "title": "You don't have access to this page",
+      "body": "Your account can't open this part of {academy}. If you think this is a mistake, ask your academy's administrator.",
+      "action": "Go to the home page"
+    },
+    "unavailable": {
+      "metaTitle": "Temporarily unavailable",
+      "title": "We can't reach AcademyBee right now",
+      "body": "This is usually temporary. Wait a moment and try again — nothing you saved has been lost.",
+      "action": "Try again"
+    }
+  }
+}

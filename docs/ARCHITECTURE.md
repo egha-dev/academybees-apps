@@ -581,6 +581,18 @@ The Next.js host-routing file (`proxy.ts` on Next.js 16+, formerly `middleware.t
 - `app.` (Family Hub) → `/hub/...` (parents and students, all linked academies)
 - tenant → `/t/{slug}/...` (the visible URL stays clean, e.g. `gurushethra.academybee.com/students`)
 
+*As built (Phase 1):* `apps/web/src/proxy.ts` strips every client-sent `x-ab-*` header, classifies the host, and for academy/custom hosts reads `GET /api/v1/tenant/context` (in-memory cache 60 s, unknown hosts 30 s). The decision itself is a pure function, `lib/routing.ts` (unit-tested):
+- ACTIVE → `/t/<slug><path>`;
+- REDIRECT → **301** to the primary host (same path, query and port);
+- SUSPENDED / ARCHIVED / SETUP → `/status/<state>` (HTTP 503 / 410 / 200);
+- unknown or invalid host → `/status/unknown` (404);
+- API unreachable → `/status/unavailable` (503, fail closed — never "unknown");
+- `console.` → `/console`, `app.` → `/hub`, apex/`www` → marketing;
+- typed internal paths (`/t/…`, `/status/…`, `/console`, `/hub`) → 404;
+- `/offline` and `/dev/*` are served on every host.
+
+The resolved context reaches server components in the `x-ab-context` request header (URI-encoded JSON, validated with the contract on read) and the marketing origin in `x-ab-apex`. Status pages are the shared `StatusPage` composition (academy identity or AcademyBee brand, icon + heading, next action, "Powered by AcademyBee"; `noindex`).
+
 After login on an academy URL, `/` sends staff to the home of their primary experience: Owner/Admin/Accountant/Receptionist → `/today`; Teacher → `/teach`. Parents and students are redirected to the Family Hub (`app.academybee.com/a/<slug>`), where Parent Home is `/` and Student Home is `/me`. Users with several roles (owner who also teaches) get an experience switcher.
 
 ### 10.3 Route map (visible paths on a tenant host)
