@@ -4,9 +4,15 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Called by nightly.yml for a full run (no --affected).
+  workflow_call:
+    inputs:
+      full:
+        type: boolean
+        default: true
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -16,15 +22,22 @@ env:
   APP_ENV: ci
   TURBO_TELEMETRY_DISABLED: 1
   NEXT_TELEMETRY_DISABLED: 1
+  # Turborepo remote cache (OD-21, Vercel). Empty until the token exists → local cache only.
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+  # Pull requests check only what changed; pushes to main and the nightly run check everything.
+  AFFECTED: ${{ github.event_name == 'pull_request' && !inputs.full && '--affected' || '' }}
 
+# Required checks (ADR-041, scripts/github/apply-governance.sh): verify, integration, build, e2e, pr-title.
 jobs:
-  # Required checks (ADR-041). Later Phase 0 slices add integration, drift, build and e2e.
   verify:
     name: verify
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # --affected compares with the base branch
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
@@ -32,10 +45,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
+      - name: lint, typecheck, unit tests
+        run: pnpm turbo run lint typecheck test ${AFFECTED:+"$AFFECTED"}
       - run: pnpm i18n:check
+      - name: release flags not past expiry
+        run: pnpm flags:check
       - name: governance script (shellcheck + dry run)
         run: |
           shellcheck scripts/*/*.sh infra/postgres/init/*.sh
@@ -59,3 +73,61 @@ jobs:
         run: docker pull -q postgres:17-alpine && docker pull -q redis:7-alpine
       # Testcontainers: real Postgres with the ab_* roles, migrations and grants (includes the drift check).
       - run: pnpm test:integration
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: route JS budget (G-24)
+        run: pnpm perf:budget
+
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      MIGRATOR_DATABASE_URL: postgresql://ab_migrator:ab_migrator_local@localhost:5432/academybee
+      API_ORIGIN: http://localhost:4000
+      TRUSTED_PROXY_SECRET: local-proxy-secret
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: start Postgres and Redis
+        run: docker compose -f infra/docker-compose.yml up -d --wait postgres redis
+      - name: migrate
+        run: pnpm db:deploy
+      - name: build (en-IN + en-XA + en-LONG web builds)
+        run: pnpm build && pnpm --filter @academybee/web build:pseudo
+      - name: cache Playwright browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-1.63.0
+      - name: install browsers
+        run: pnpm --filter @academybee/e2e exec playwright install --with-deps chromium webkit
+      - name: Playwright (desktop, Android, iPhone, pseudo-locales)
+        run: pnpm e2e:run
+      - name: Lighthouse CI (LCP, CLS, accessibility budgets)
+        run: pnpm perf:lighthouse
+      - name: upload E2E artifacts (screenshots, traces, reports)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-artifacts
+          path: e2e/artifacts/
+          retention-days: 14
+          if-no-files-found: ignore

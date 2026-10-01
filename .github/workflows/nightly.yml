@@ -1,0 +1,17 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: '30 20 * * *' # 02:00 IST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Full pipeline without --affected: catches anything the affected-only PR runs missed (ADR-041).
+  full:
+    uses: ./.github/workflows/ci.yml
+    with:
+      full: true
+    secrets: inherit

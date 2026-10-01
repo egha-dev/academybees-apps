@@ -121,6 +121,7 @@ export function createConfig(options = {}) {
       ignores: [
         '**/dist/**',
         '**/.next/**',
+        '**/.next-*/**',
         '**/coverage/**',
         '**/node_modules/**',
         '**/.turbo/**',
