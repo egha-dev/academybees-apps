@@ -1,16 +1,19 @@
-/**
- * Host classification STUB (C-34). Phase 1 replaces this with the shared `@academybee/tenant`
- * parser (reserved slugs, punycode, custom domains, REDIRECT domains) and real rewrites.
- */
-export type HostKind = 'marketing' | 'console' | 'hub' | 'tenant';
+import { classifyHost, type HostClass } from '@academybee/tenant';
 
-export function classifyHost(hostHeader: string): HostKind {
-  const host = hostHeader.toLowerCase().replace(/\.$/, '').split(':')[0] ?? '';
-  const labels = host.split('.');
-  const isLocal = host === 'localhost' || host.endsWith('.localhost');
-  const baseLabels = isLocal ? 1 : 2; // localhost vs academybee.com
-  if (labels.length <= baseLabels || labels[0] === 'www') return 'marketing';
-  if (labels[0] === 'console') return 'console';
-  if (labels[0] === 'app') return 'hub';
-  return 'tenant';
+type Env = Readonly<Record<string, string | undefined>>;
+
+/**
+ * The platform root domain for this environment (C-52): `academybee.com`, `staging.academybee.com`
+ * or `localhost`. Local and CI default to `localhost`; every other environment must set it.
+ */
+export function platformRootDomain(env: Env = process.env): string {
+  const root = env.PLATFORM_ROOT_DOMAIN?.trim();
+  if (root) return root;
+  if (env.APP_ENV === 'local' || env.APP_ENV === 'ci') return 'localhost';
+  throw new Error('PLATFORM_ROOT_DOMAIN must be set outside local/ci');
+}
+
+/** Classify the request host with the shared rules (`@academybee/tenant`, ARCHITECTURE §5.2). */
+export function classifyRequestHost(host: string | null, env?: Env): HostClass {
+  return classifyHost(host, platformRootDomain(env));
 }

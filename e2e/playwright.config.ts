@@ -28,6 +28,7 @@ const WEB_ENV = {
   APP_ENV,
   API_ORIGIN: 'http://localhost:4000',
   TRUSTED_PROXY_SECRET: 'local-proxy-secret',
+  PLATFORM_ROOT_DOMAIN: 'localhost',
 };
 
 const webServer = (port: number, distDir: string, locale = '') => ({

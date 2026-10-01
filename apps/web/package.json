@@ -16,6 +16,7 @@
   "dependencies": {
     "@academybee/contracts": "workspace:*",
     "@academybee/i18n": "workspace:*",
+    "@academybee/tenant": "workspace:*",
     "@academybee/ui": "workspace:*",
     "@fontsource-variable/inter": "catalog:",
     "@sentry/nextjs": "catalog:",

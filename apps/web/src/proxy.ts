@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { classifyHost } from './lib/host';
+import { classifyRequestHost } from './lib/host';
 
 const PROXY_SECRET_HEADER = 'x-ab-proxy-secret';
 
@@ -28,7 +28,7 @@ export function proxy(request: NextRequest) {
   }
 
   const response = NextResponse.next();
-  response.headers.set('x-ab-host-kind', classifyHost(host));
+  response.headers.set('x-ab-host-kind', classifyRequestHost(host).kind);
   return response;
 }
 

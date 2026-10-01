@@ -90,6 +90,7 @@ Both services: **Deploy an existing image** from `ghcr.io/egha-dev/academybee-<a
 | `APP_ENV` | `staging` |
 | `API_ORIGIN` | the Render API URL, e.g. `https://academybee-api-staging.onrender.com` |
 | `TRUSTED_PROXY_SECRET` | same value as the API |
+| `PLATFORM_ROOT_DOMAIN` | `staging.academybee.com` (C-52) |
 | `NEXT_PUBLIC_APP_ENV` | `staging` |
 | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN` | optional (off when empty; the browser DSN is fixed at build time) |
 
