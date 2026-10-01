@@ -230,6 +230,12 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 
 **Exit gate.** All above green; staging `*.staging.academybees.com` resolves two seeded tenants with correct branding and TLS.
 
+**Independent review (P1-4, 2026-10-01).** No CRITICAL or HIGH. Fixed in Phase 1: M1 client IP through the web proxy, M2 tenant column grants + slug CHECK, M3 junk hosts (custom domains off, LRU) — #30; L3 route prefixes, L4 brand colour CHECK, L5 exact policy coverage, L8 platform audit rows insert-only, L9 spoof tests — R2. Assigned to later phases:
+- **Phase 2:** L6 lint-restrict `createMigratorClient` and the `PrismaClient` constructor in app code; L7 reset `app.tenant_id` on the no-context path (or lint-ban `set_config` outside `packages/database`); API returns 404, not 500, if a mismatching tenantId ever reaches the client from request input.
+- **Phase 3 (console: suspend/activate, domains):** L1 status changes visible within about 2 min (shorter web TTL for non-ACTIVE, per-tenant cache epoch, invalidation race); REDIRECT to a CUSTOM primary must check `verification`.
+- **Staging go-live (C-50):** L2 namespace Redis tenant keys by root domain if Redis is ever shared; require `https:` `API_ORIGIN` and a non-local proxy secret in staging too; validate `PLATFORM_ROOT_DOMAIN` at web boot and check that web and API agree; apex link port on custom hosts.
+- **Phase 15 (or when the check flaps again):** C-58 bring `/` LCP comfortably under 2.5 s.
+
 **Gate evidence (draft for P1-3)**
 
 | Gate item | Evidence |
