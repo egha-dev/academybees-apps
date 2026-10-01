@@ -1,14 +1,24 @@
 'use client';
 
-import Alert from '@mui/material/Alert';
-import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
+import {
+  createContext,
+  lazy,
+  type ReactNode,
+  Suspense,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from 'react';
 
 import { ErrorIcon, LockIcon } from '../icons.js';
 import { color } from '../tokens.js';
 import { Button } from './actions.js';
 import { Text } from './text.js';
+import { type ToastMessage, type ToastTone } from './toast-view.js';
+
+const ToastView = lazy(() => import('./toast-view.js'));
 
 export type StateAction = { label: string; onClick?: () => void; href?: string };
 
@@ -146,9 +156,6 @@ export function PermissionState({
   );
 }
 
-type ToastTone = 'success' | 'info' | 'warning' | 'error';
-type ToastMessage = { id: number; message: string; tone: ToastTone };
-
 const ToastContext = createContext<((message: string, tone?: ToastTone) => void) | null>(null);
 
 /** Toasts for confirmations ("Attendance saved"). Announced politely to screen readers. */
@@ -167,24 +174,11 @@ export function ToastProvider({
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <Snackbar
-        key={current?.id}
-        open={current !== null}
-        autoHideDuration={4000}
-        onClose={() => setCurrent(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          severity={current?.tone ?? 'success'}
-          variant="filled"
-          onClose={() => setCurrent(null)}
-          slotProps={{ closeButton: { 'aria-label': closeLabel, title: closeLabel } }}
-          role="status"
-          aria-live="polite"
-        >
-          {current?.message}
-        </Alert>
-      </Snackbar>
+      {current && (
+        <Suspense fallback={null}>
+          <ToastView current={current} closeLabel={closeLabel} onClose={() => setCurrent(null)} />
+        </Suspense>
+      )}
     </ToastContext.Provider>
   );
 }

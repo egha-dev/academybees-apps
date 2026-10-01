@@ -24,10 +24,12 @@ export function createAcademyBeeTheme(): Theme {
       mode: 'light',
       primary: { main: color.ink, contrastText: color.ivory },
       secondary: { main: color.gold, light: color.goldSoft, contrastText: color.text.onGold },
-      success: { main: color.success, contrastText: color.white },
-      warning: { main: color.warning, contrastText: color.ink },
-      error: { main: color.danger, contrastText: color.white },
-      info: { main: color.info, contrastText: color.white },
+      // Anything that carries text (buttons, field errors) uses the AA-safe variants (≥ 5.5:1 on
+      // white/ivory); the UX §5 hues stay for icons, surfaces and badges (tokens.ts).
+      success: { main: color.text.success, light: color.success, contrastText: color.white },
+      warning: { main: color.warning, dark: color.text.warning, contrastText: color.ink },
+      error: { main: color.text.danger, light: color.danger, contrastText: color.white },
+      info: { main: color.text.info, light: color.info, contrastText: color.white },
       background: { default: color.ivory, paper: color.white },
       text: { primary: color.text.primary, secondary: color.text.secondary },
       divider: color.neutral[200],

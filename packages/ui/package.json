@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "AcademyBee design system: tokens (UX §5–6), MUI theme and components (ADR-014). Apps import UI only from here.",
+  "description": "AcademyBee design system: tokens (UX \u00a75\u20136), MUI theme and components (ADR-014). Apps import UI only from here.",
   "sideEffects": false,
   "exports": {
     ".": {
@@ -20,6 +20,21 @@
       "@academybee/source": "./src/tokens.ts",
       "types": "./dist/tokens.d.ts",
       "default": "./dist/tokens.js"
+    },
+    "./components/*": {
+      "@academybee/source": "./src/components/*.tsx",
+      "types": "./dist/components/*.d.ts",
+      "default": "./dist/components/*.js"
+    },
+    "./icons": {
+      "@academybee/source": "./src/icons.ts",
+      "types": "./dist/icons.d.ts",
+      "default": "./dist/icons.js"
+    },
+    "./provider": {
+      "@academybee/source": "./src/provider.tsx",
+      "types": "./dist/provider.d.ts",
+      "default": "./dist/provider.js"
     }
   },
   "files": [
