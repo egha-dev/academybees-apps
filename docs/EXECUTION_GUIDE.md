@@ -43,11 +43,11 @@ Engineering will stall at Phases 7 and 10 without these. Start them all this wee
 | # | Task | Who helps | Needed by | Done |
 | --- | --- | --- | --- | --- |
 | A1 | Register or confirm the legal entity, PAN and a current bank account | CA | Razorpay KYC | ☐ |
-| A2 | Buy or confirm `academybee.com`. Move its DNS to **Vercel DNS** (point the domain's nameservers to Vercel): Vercel can only issue the wildcard `*.academybee.com` certificate when it runs the DNS (C-31) | — | Phase 1 | ☐ |
+| A2 | Buy or confirm `academybees.com`. Move its DNS to **Vercel DNS** (point the domain's nameservers to Vercel): Vercel can only issue the wildcard `*.academybees.com` certificate when it runs the DNS (C-31) | — | Phase 1 | ☐ |
 | A3 | Apply for GST registration | CA | Razorpay, Phase 13 | ☐ |
 | A4 | Create an AcademyBee Razorpay account and start KYC. **Not needed for Phases 7–16** (payments work via UPI and manual recording, G-30); needed only when you run Phase G | — | Phase G | ☐ |
 | A5 | Brief a lawyer: Terms of Service, Privacy Policy, Data Processing Agreement, DPDP Act review (children's data, consent), and the fee-collection model (academies use their own gateway accounts, OD-13) | Lawyer | Terms: Phase 3 · Payments: Phase 7 | ☐ |
-| A6 | Pick an email provider (Resend, Postmark or Amazon SES). Add SPF, DKIM and DMARC records for `mail.academybee.com` | — | Phase 2 | ☐ |
+| A6 | Pick an email provider (Resend, Postmark or Amazon SES). Add SPF, DKIM and DMARC records for `mail.academybees.com` | — | Phase 2 | ☐ |
 | A7 | Meta Business verification → WhatsApp Business Account → Cloud API phone number | — | Phase 10 | ☐ |
 | A8 | TRAI DLT registration (entity, sender header "ACDBEE" or similar, message templates) | SMS provider | Phase 10 | ☐ |
 | A9 | Recruit **two pilot academies** (one tuition, one dance/karate/sports). Agree pilot terms (OD-16): free during the pilot + 3 months, a weekly 30-minute feedback call | You | Phase 7P | ☐ |
@@ -189,7 +189,7 @@ For each phase: **Before you start** (your inputs) → **Kickoff** (the phase's 
 - **Done when:** the gate is green and you like the design system page. Design feedback is cheapest now.
 
 ### Phase 1 — Multi-Tenant + Wildcard Domain
-- **Before you start:** DNS for `academybee.com` is with your provider (A2). Staging domain decided (OD-07).
+- **Before you start:** DNS for `academybees.com` is with your provider (A2). Staging domain decided (OD-07).
 - **Your acceptance checklist:**
   - ☐ `http://demo-a.localhost:3000` shows "Demo A" branding; `demo-b.localhost` shows Demo B.
   - ☐ `http://nothing.localhost:3000` shows a friendly "Academy not found" page (no technical error).
@@ -285,7 +285,7 @@ For each phase: **Before you start** (your inputs) → **Kickoff** (the phase's 
   - ☐ Open the academy URL as a parent → you're sent to the Family Hub with that academy selected.
   - ☐ At demo-b, unlink the parent → demo-b disappears from their hub.
   - ☐ "Help" is on every screen; "Contact support" opens WhatsApp with context filled in.
-  - ☐ `demo.academybee.com` works with the role login panel; tomorrow the data has reset.
+  - ☐ `demo.academybees.com` works with the role login panel; tomorrow the data has reset.
   - ☐ The activation dashboard shows your test academy's funnel.
   - ☐ Production is live: provision the two pilot academies, import their students, invite teachers.
 - **Done when:** both pilots are live → **M2P Pilot Start**. Now follow Part G every week while continuing with Phase 8.

@@ -146,7 +146,7 @@ Phase 0: web `http://localhost:3000` (design system at `/dev/design-system`), AP
 
 ## 10. Frontend conventions
 
-- Separate experiences, not one UI with hidden buttons: Manage (`/today…`) and Teacher (`/teach`) on each academy URL; **Parent and Student on the Family Hub `app.academybee.com`** (G-31, ADR-039); Console (`console.` host). Navigation per UX §8 and §25.
+- Separate experiences, not one UI with hidden buttons: Manage (`/today…`) and Teacher (`/teach`) on each academy URL; **Parent and Student on the Family Hub `app.academybees.com`** (G-31, ADR-039); Console (`console.` host). Navigation per UX §8 and §25.
 - Every screen answers: Where am I? What needs attention? What can I do now? What happened recently? (UX §10). Prefer contextual drawers/sheets and workspaces (Student 360, Batch Workspace, Invoice workspace) over CRUD tables.
 - Every screen ships **loading (skeleton), empty (with next action), error (what happened + next step), permission, success** states, plus **offline** where applicable.
 - Mobile is designed, not shrunk. Teacher and parent flows are phone-first; touch targets ≥ 48 px; status is never colour-only.

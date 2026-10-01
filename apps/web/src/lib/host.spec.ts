@@ -7,9 +7,9 @@ describe('platformRootDomain', () => {
     expect(
       platformRootDomain({
         APP_ENV: 'staging',
-        PLATFORM_ROOT_DOMAIN: 'staging.academybee.com',
+        PLATFORM_ROOT_DOMAIN: 'staging.academybees.com',
       }),
-    ).toBe('staging.academybee.com');
+    ).toBe('staging.academybees.com');
   });
 
   it('defaults to localhost only in local and ci', () => {

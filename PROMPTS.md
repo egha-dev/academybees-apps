@@ -35,7 +35,7 @@ You are the engineering team for AcademyBee. Before any code:
 1. Read CLAUDE.md, then every file in docs/ (ARCHITECTURE, DECISIONS, IMPLEMENTATION_PLAN, PRD_ADDENDUM_v3.2, EXECUTION_GUIDE) and both files in docs/source/.
 2. Summarise in 15 bullet points what AcademyBee is, the build order (Phases 0–16 plus 7P, L and G), and the non-negotiable rules.
 3. List any contradictions or gaps you find between these documents, with your recommended resolution (don't change files yet).
-4. Confirm the payment approach for this release (PRD v3.2 G-30: all payment features enabled, no gateway integration until Phase G), the Family Hub on app.academybee.com (G-31), and that the launch is English only with multilingual-ready code, languages delivered in Phase L (G-32).
+4. Confirm the payment approach for this release (PRD v3.2 G-30: all payment features enabled, no gateway integration until Phase G), the Family Hub on app.academybees.com (G-31), and that the launch is English only with multilingual-ready code, languages delivered in Phase L (G-32).
 5. Tell me what you need from me before Phase 0 (accounts, decisions), with sensible defaults for each.
 ```
 Read the summary. If Claude found contradictions, answer with **H6 Record a decision** for each one you decide. Then start Phase 0.
@@ -125,7 +125,7 @@ Nothing to type in the terminal. From Phase 7P on, open GitHub → Actions and c
 
 ## Phase 1 — Multi-Tenant + Wildcard Domain
 
-**Before you start (your inputs):** DNS for academybee.com with a wildcard-capable provider (A2) if you want staging subdomains now; otherwise local `*.localhost` is enough to build.
+**Before you start (your inputs):** DNS for academybees.com with a wildcard-capable provider (A2) if you want staging subdomains now; otherwise local `*.localhost` is enough to build.
 **Your acceptance checklist:** `docs/EXECUTION_GUIDE.md` → Part F → Phase 1 — Multi-Tenant + Wildcard Domain.
 
 **Terminal (you):**
@@ -703,7 +703,7 @@ First confirm the previous phase is ✅ in docs/IMPLEMENTATION_PLAN.md §1 (Phas
 Read, in this order: CLAUDE.md; docs/IMPLEMENTATION_PLAN.md (§1 tracker, §2 Common Phase Gate, and the full Phase 7P — Pilot Readiness Pack section); the PRD v3.2 gap items it references (docs/PRD_ADDENDUM_v3.2.md); the PRD and UX sections it references (docs/source/PRD_v3.1.md, docs/source/UX_SPEC_v1.1.md); docs/ARCHITECTURE.md; docs/DECISIONS.md.
 
 Must-haves for this phase (all detailed in the docs):
-- **Family Hub** on `app.academybee.com` (G-31, ADR-039): one login for all linked academies; add an academy by QR / typed URL or code / invite (verification code or join request, consent per academy); All-academies Home (today across academies tagged by academy, children cards, dues per academy, merged notifications) and single-academy mode with that academy's branding; My academies (consent, leave); every per-academy call runs inside TenantContext.run(tenantId) — never the platform client
+- **Family Hub** on `app.academybees.com` (G-31, ADR-039): one login for all linked academies; add an academy by QR / typed URL or code / invite (verification code or join request, consent per academy); All-academies Home (today across academies tagged by academy, children cards, dues per academy, merged notifications) and single-academy mode with that academy's branding; My academies (consent, leave); every per-academy call runs inside TenantContext.run(tenantId) — never the platform client
 - Parent Core on the hub: invite + consent, child selector, Parent Home, attendance, invoices, receipts, **Pay via UPI** (QR + one-tap `upi://` link → 'I've paid' + UTR → 'Awaiting academy confirmation' → confirmed + receipt), reported-payment status, notifications, offline read cache with 'Last updated' — C-21, G-30
 - Help & support in every shell: help centre (15 articles), Contact support (WhatsApp/email with context, no PII), feedback form, What's new — G-10
 - Activation dashboard (platform-only) with the G-29 pilot metrics — G-09
@@ -961,7 +961,7 @@ Must-haves for this phase (all detailed in the docs):
 - Template library (system defaults + tenant overrides, validated variables, per-channel variants, preview)
 - Communication Center + Composer (audience → channels → template → preview → schedule/send), announcements, message history with per-recipient delivery status
 - Automated triggers wired to existing intents (absence, fee reminders/overdue, reported payment confirmed/rejected, trial reminders, homework due) with dedupe, quiet hours, preferences, opt-out
-- Per-tenant usage metering; phone OTP login for parents/students on the Family Hub (OD-04, G-31); templates/announcements stored locale-keyed with `en-IN` only (per-language variants come in Phase L, G-32); notification links point to `app.academybee.com/a/<slug>/...`; teacher reminders and missed-attendance nudges on channels — G-16
+- Per-tenant usage metering; phone OTP login for parents/students on the Family Hub (OD-04, G-31); templates/announcements stored locale-keyed with `en-IN` only (per-language variants come in Phase L, G-32); notification links point to `app.academybees.com/a/<slug>/...`; teacher reminders and missed-attendance nudges on channels — G-16
 
 Inspect the current code, then produce a plan for THIS PHASE ONLY — no code yet:
 1. Numbered tasks small enough to finish and commit one at a time, grouped into slices of 1–5 tasks (each slice = one PR into main, ADR-041), noting which unfinished screens need a release flag

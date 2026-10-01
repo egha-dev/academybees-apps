@@ -5,7 +5,7 @@ import { classifyHost, normalizeHost } from './host.js';
 import { RESERVED_SLUGS } from './reserved.js';
 import { validateSlug } from './slug.js';
 
-const ROOTS = ['academybee.com', 'staging.academybee.com', 'localhost'];
+const ROOTS = ['academybees.com', 'staging.academybees.com', 'localhost'];
 const root = fc.constantFrom(...ROOTS);
 
 const slugChar = fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz0123456789'.split(''));

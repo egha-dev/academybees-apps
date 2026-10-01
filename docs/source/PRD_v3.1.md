@@ -1517,13 +1517,13 @@ Status: Approved baseline extension to PRD v3.0. This addendum makes academy-spe
 
 Every AcademyBee academy is a first-class tenant with a unique AcademyBee subdomain. When a Super Admin creates an academy, the platform provisions a unique tenant identity and URL such as:
 
-academybee.com — public/platform entry point
+academybees.com — public/platform entry point
 
-gurushethra.academybee.com — Gurushethra tenant
+gurushethra.academybees.com — Gurushethra tenant
 
-abcacademy.academybee.com — ABC Academy tenant
+abcacademy.academybees.com — ABC Academy tenant
 
-xyzacademy.academybee.com — XYZ Academy tenant
+xyzacademy.academybees.com — XYZ Academy tenant
 
 The academy URL must resolve directly to that academy's branded workspace and configuration without requiring the user to select an academy after the tenant has been resolved.
 
@@ -1607,7 +1607,7 @@ All tenant-owned entities continue to carry tenantId; branch-scoped entities add
 
 ## F. Wildcard Domain Infrastructure
 
-Production deployment must support wildcard routing for the AcademyBee tenant namespace (for example, *.academybee.com). The application layer must resolve the hostname and map it to the tenant configuration.
+Production deployment must support wildcard routing for the AcademyBee tenant namespace (for example, *.academybees.com). The application layer must resolve the hostname and map it to the tenant configuration.
 
 Wildcard DNS/TLS strategy must be defined before production launch.
 

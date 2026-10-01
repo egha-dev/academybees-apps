@@ -3,7 +3,7 @@ import { classifyHost, type HostClass } from '@academybee/tenant';
 type Env = Readonly<Record<string, string | undefined>>;
 
 /**
- * The platform root domain for this environment (C-52): `academybee.com`, `staging.academybee.com`
+ * The platform root domain for this environment (C-52): `academybees.com`, `staging.academybees.com`
  * or `localhost`. Local and CI default to `localhost`; every other environment must set it.
  */
 export function platformRootDomain(env: Env = process.env): string {

@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { academyName, hostContext } from '@/lib/host-context.server';
 
 /**
- * Route group: academy experiences (`{slug}.academybee.com`, rewritten to /t/{slug} by
+ * Route group: academy experiences (`{slug}.academybees.com`, rewritten to /t/{slug} by
  * proxy.ts). Academy identity in the tab title, favicon and installed app (ADR-015, ARCHITECTURE
  * §5.5): the manifest and icons are served per academy at the same paths on its own host.
  */

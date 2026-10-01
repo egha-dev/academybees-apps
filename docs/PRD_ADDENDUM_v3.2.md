@@ -130,7 +130,7 @@ Priority: **P0** = blocks pilot or launch, or creates legal/financial risk · **
 **Requirement.**
 - **SMS**: TRAI DLT registration of the principal entity, sender headers and every template. Templates are stored with their DLT template ID, and sends with an unregistered template are blocked.
 - **WhatsApp**: Meta Business verification, a WhatsApp Business Account on the Cloud API, approved templates per category (utility vs marketing), recorded opt-in per parent, and respected opt-out. **Sender strategy**: default one AcademyBee-managed number with the academy name in the template body; option (Growth plan and above) for an academy to connect its **own** WhatsApp Business number.
-- **Email**: sending domain authenticated with SPF, DKIM and DMARC. Transactional mail comes from `no-reply@mail.academybee.com` with the academy's name as the display name and the academy's reply-to address.
+- **Email**: sending domain authenticated with SPF, DKIM and DMARC. Transactional mail comes from `no-reply@mail.academybees.com` with the academy's name as the display name and the academy's reply-to address.
 - Per-tenant **usage metering** and caps per plan (WhatsApp and SMS are paid per message).
 
 **Acceptance.** Every outbound SMS or WhatsApp is traceable to a registered or approved template. Opted-out parents receive only legally required service messages through the allowed channels.
@@ -159,7 +159,7 @@ Covered by §1 (Phase 7P).
 **Acceptance.** A salesperson can demo every Tier-1 screen without touching a real tenant.
 
 ### G-14 — Marketing site and acquisition (P1, parallel track)
-**Requirement.** `academybee.com`: value proposition per academy type, feature pages matching the five outcomes, a pricing page (from G-25), "Book a demo" and "Join the pilot" forms that create platform leads (emailed to the founder until the Phase 14 console lists them), Terms, Privacy, DPA, a security page, and a contact page. It can be built in the `(marketing)` route group or a no-code site. **Needed before pilot outreach.**
+**Requirement.** `academybees.com`: value proposition per academy type, feature pages matching the five outcomes, a pricing page (from G-25), "Book a demo" and "Join the pilot" forms that create platform leads (emailed to the founder until the Phase 14 console lists them), Terms, Privacy, DPA, a security page, and a contact page. It can be built in the `(marketing)` route group or a no-code site. **Needed before pilot outreach.**
 
 ### G-15 — Full academy data export (P0 before billing)
 **Requirement.** The owner can request a full export (a ZIP of CSVs: students, parents, batches, enrolments, sessions, attendance, invoices, payments, receipts, leads, assessments, plus attachments manifest). It is generated asynchronously, arrives as a download link, and is available in every subscription state including Suspended (PRD v3 §20 "never block critical data access").
@@ -175,7 +175,7 @@ Covered by §1 (Phase 7P).
 **Requirement (Phase 7).** A4 PDF and a compact mobile-friendly version, carrying the academy branding, number, GSTIN (if configured), line items, and paid/balance. "Share" creates a signed, expiring link (7 days, revocable) for WhatsApp or email and copies a prefilled message. Staff can reprint any receipt. Receipts are never editable after issue (corrections go through refund or credit).
 
 ### G-19 — Academy public page (P1)
-**Requirement (Phase 8).** An optional public page at `{slug}.academybee.com/` for signed-out visitors, when enabled: logo, about, courses offered (names, levels, age groups, optional fees), locations and timings, contact, WhatsApp button, and the enquiry form (creates a Lead). Includes SEO metadata. It's off by default, and the owner controls every field.
+**Requirement (Phase 8).** An optional public page at `{slug}.academybees.com/` for signed-out visitors, when enabled: logo, about, courses offered (names, levels, age groups, optional fees), locations and timings, contact, WhatsApp button, and the enquiry form (creates a Lead). Includes SEO metadata. It's off by default, and the owner controls every field.
 
 ### G-20 — Lifecycle communications to owners (P1)
 **Requirement (Phase 13).** Emails and in-app messages: welcome, onboarding nudges (day 1/3/7 when incomplete), trial ending (7/3/1 days), payment failed, grace period, suspension warning, monthly academy summary. All are templated and can be switched off except billing and security notices.
@@ -220,7 +220,7 @@ These are not engineering tasks, but engineering will stall without them:
 | --- | --- | --- |
 | Company or legal entity, PAN, bank account | Razorpay KYC, GST | weeks |
 | GST registration | Phase 13 (and earlier for Razorpay) | 1–4 weeks |
-| Domain `academybee.com` + DNS provider supporting wildcard | Phase 1 staging | days (if available) |
+| Domain `academybees.com` + DNS provider supporting wildcard | Phase 1 staging | days (if available) |
 | Razorpay account (AcademyBee) + test keys; understand the academy-account model | Phase 7 | 1–3 weeks KYC |
 | Meta Business verification + WhatsApp Cloud API number + templates | Phase 10 | 1–4 weeks |
 | TRAI DLT registration (entity, headers, templates) | Phase 10 | 1–3 weeks |
@@ -265,13 +265,13 @@ If the targets are missed, fix root causes before commercial launch; don't just 
 
 ### G-31 — Family Hub: one parent login across many academies (P0)
 **Problem.** Families often use more than one academy (tuition at one, karate at another). Every academy lives on its own URL with its own login and app, so such a parent would need two apps, two logins and two sets of notifications. That makes AcademyBee feel fragmented exactly where it should feel simplest.
-**PO decision (2026-09-29).** Parents (and students) use **one AcademyBee Family Hub** at **`app.academybee.com`** (OD-17, closed): one login, one installed app, every linked academy and child in one place. Staff (owner, admin, teacher, accountant, receptionist) keep using each academy's own URL.
+**PO decision (2026-09-29).** Parents (and students) use **one AcademyBee Family Hub** at **`app.academybees.com`** (OD-17, closed): one login, one installed app, every linked academy and child in one place. Staff (owner, admin, teacher, accountant, receptionist) keep using each academy's own URL.
 
 **Requirement.**
 1. **One account, many academies.** A parent signs in once (email + password now, phone OTP from Phase 10) and sees every academy they are linked to. With one academy, the hub opens straight into it (no extra step). With two or more, Home shows all children across academies.
 2. **Adding an academy**, three ways:
-   - **Scan the academy's QR code**: each academy gets a printable "Join us on AcademyBee" poster and QR in Settings, encoding `https://app.academybee.com/join/<slug>`.
-   - **Enter the academy's address or code manually**: `gurushethra.academybee.com`, or just `gurushethra`.
+   - **Scan the academy's QR code**: each academy gets a printable "Join us on AcademyBee" poster and QR in Settings, encoding `https://app.academybees.com/join/<slug>`.
+   - **Enter the academy's address or code manually**: `gurushethra.academybees.com`, or just `gurushethra`.
    - **Accept an invite from the academy** (email / WhatsApp / SMS link with a one-time token). If the invited person already has an AcademyBee account, the invite simply adds this academy to their hub.
 3. **Scanning or typing never grants access by itself** (security). After choosing an academy, the parent must prove they are the parent the academy has on record:
    - **Match & verify**: if the academy has a parent record with the parent's verified email/phone, a one-time code is sent to that email/phone. Entering it links the account. The response is always the same ("If this academy has your details, you'll receive a code"), so nobody can discover who studies where.
@@ -287,7 +287,7 @@ If the targets are missed, fix root causes before commercial launch; don't just 
 5. **Same child at two academies.** Each academy keeps its own student record. In the hub, the parent may **group** them as one child ("Aarav: Karate at ABC, Maths at Gurushethra"). AcademyBee suggests groupings when the name and date of birth match. This grouping is private to the parent and never visible to either academy.
 6. **Privacy between academies.** An academy can never see that a parent or child also uses another academy: no shared data, no counts, no cross-academy search. Each academy's data is fetched under that academy's own tenant context (ADR-039). Removing a parent link at the academy, or suspending or archiving the academy, removes or greys out that academy in the hub immediately ("This academy is currently unavailable").
 7. **Managing academies.** Hub → Settings → My academies lists linked academies, consent per academy (view or withdraw), notification preferences per academy, and "Leave this academy" (which unlinks the parent's access; the academy keeps its own records).
-8. **Links and notifications.** All parent-facing links (emails, WhatsApp, push, receipts) point to the hub (`app.academybee.com/a/<slug>/…`). A parent who opens an academy's own URL and signs in is sent to the hub, with that academy selected.
+8. **Links and notifications.** All parent-facing links (emails, WhatsApp, push, receipts) point to the hub (`app.academybees.com/a/<slug>/…`). A parent who opens an academy's own URL and signs in is sent to the hub, with that academy selected.
 9. **Offline.** The hub caches each linked academy's working set (children, schedule, attendance, invoices, recent notifications), tagged by academy, with "Last updated" shown per academy.
 10. **Later (backlog):** teachers who work at several academies get a "My academies" launcher in the hub with single sign-on into each academy URL.
 
