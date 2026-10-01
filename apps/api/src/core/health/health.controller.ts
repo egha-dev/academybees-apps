@@ -38,8 +38,9 @@ export class HealthController {
 
   @Get('live')
   @HttpCode(200)
-  live(): { status: 'ok' } {
-    return { status: 'ok' };
+  live(): { status: 'ok'; release: string } {
+    // The deployed commit (baked into the image); deploy smoke checks wait for it.
+    return { status: 'ok', release: process.env.RELEASE_SHA ?? 'dev' };
   }
 
   @Get('ready')
