@@ -115,6 +115,17 @@ describe('tenant schema invariants (ARCHITECTURE §5.1)', () => {
     ).rejects.toThrow(/permission denied/);
   });
 
+  it('refuses a brand colour that is not #RRGGBB (review L4)', async () => {
+    await expect(
+      inTenant(migrator, tenant.id, () =>
+        migrator.query(
+          `UPDATE tenant_branding SET primary_color = 'red    ' WHERE tenant_id = $1`,
+          [tenant.id],
+        ),
+      ),
+    ).rejects.toThrow(/tenant_branding_colours/);
+  });
+
   it.each(['../console', 'Upper', 'ab', 'a--b', 'xn--abc', '-abc', 'with space'])(
     'the database refuses the slug %j',
     async (slug) => {

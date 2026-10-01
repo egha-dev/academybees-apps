@@ -86,6 +86,44 @@ describe('RLS coverage (ADR-005)', () => {
     expect(rows[0]?.qual).toContain('ab_current_tenant()');
   });
 
+  it('every table has exactly the expected policies, all keyed on the tenant context (review L5)', async () => {
+    const { rows } = await db.query<{
+      tablename: string;
+      policyname: string;
+      cmd: string;
+      qual: string | null;
+      with_check: string | null;
+    }>(
+      `SELECT tablename, policyname, cmd, qual, with_check FROM pg_policies
+        WHERE schemaname = 'public' ORDER BY tablename, policyname`,
+    );
+    const byTable = new Map<string, string[]>();
+    for (const r of rows)
+      byTable.set(r.tablename, [...(byTable.get(r.tablename) ?? []), r.policyname]);
+    const tables = (await tenantTables()).map((t) => t.table_name);
+    const expected = (table: string) =>
+      table === 'tenant_domain'
+        ? ['host_lookup', 'tenant_isolation']
+        : table === 'audit_log'
+          ? ['platform_insert', 'tenant_isolation']
+          : ['tenant_isolation'];
+    for (const table of tables) expect(byTable.get(table), table).toEqual(expected(table));
+    expect(byTable.get('tenant')).toEqual(['host_lookup', 'tenant_isolation']);
+    // No permissive "allow everything" policy can hide among them.
+    for (const r of rows) {
+      const text = `${r.qual ?? ''} ${r.with_check ?? ''}`;
+      expect(text, `${r.tablename}.${r.policyname}`).toMatch(
+        /ab_current_tenant\(\)|ab_lookup_host\(\)/,
+      );
+      expect(text, `${r.tablename}.${r.policyname}`).not.toMatch(/^\s*true\s*$|\(true\)/);
+    }
+    // Host lookup and the audit platform insert are narrower than "all commands".
+    for (const r of rows.filter((x) => x.policyname === 'host_lookup'))
+      expect(r.cmd).toBe('SELECT');
+    for (const r of rows.filter((x) => x.policyname === 'platform_insert'))
+      expect(r.cmd).toBe('INSERT');
+  });
+
   it('the application role cannot bypass RLS', async () => {
     const { rows } = await db.query(
       `SELECT rolname, rolbypassrls FROM pg_roles WHERE rolname IN ('ab_app', 'ab_migrator') ORDER BY rolname`,
