@@ -1,0 +1,52 @@
+name: Deploy production
+
+# Production deploys only from a v* release tag, started by the PO (ADR-041). The free GitHub plan
+# has no environment reviewers on private repos (C-44), so this is a manual workflow_dispatch that
+# refuses anyone else. Unused until Phase 7P (PRODUCTION_ENABLED stays unset until then).
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to deploy (vX.Y.Z)
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+    steps:
+      - name: only the PO, only when enabled, only v* tags
+        env:
+          ACTOR: ${{ github.actor }}
+          PO: ${{ vars.PO_LOGIN || 'egha-dev' }}
+          ENABLED: ${{ vars.PRODUCTION_ENABLED }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          [ "$ACTOR" = "$PO" ] || { echo "::error::Only the PO ($PO) may deploy production."; exit 1; }
+          [ "$ENABLED" = "true" ] || { echo "::error::PRODUCTION_ENABLED is not 'true'."; exit 1; }
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::'$TAG' is not a vX.Y.Z tag."; exit 1; }
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+      - id: resolve
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: guard
+    uses: ./.github/workflows/deploy.yml
+    with:
+      prefix: PRODUCTION
+      sha: ${{ needs.guard.outputs.sha }}
+      image_tag: production
+      web_url_var: PRODUCTION_WEB_URL
+    secrets: inherit
