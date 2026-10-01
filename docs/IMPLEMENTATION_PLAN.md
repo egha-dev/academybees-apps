@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-09-30 · Current phase: **Phase 0 — Foundation (🟨 in progress; plan approved 2026-09-30 → `docs/plans/phase-0.md`)**
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-01 · Current phase: **Phase 1 — Multi-Tenant + Wildcard Domain (⬜ not started)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -11,7 +11,7 @@
 
 | # | Phase | Status | Pulled-forward slices | Key decisions |
 | --- | --- | --- | --- | --- |
-| 0 | Foundation | 🟨 In progress | Outbox, audit, idempotency tables; English-only i18n foundation, multilingual-ready (G-08, G-32), analytics port, perf budgets (G-09, G-24) | ADR-001/002/012/013/014/015/016/022/030/031/032/035/040 |
+| 0 | Foundation | ✅ 2026-10-01 | Outbox, audit, idempotency tables; English-only i18n foundation, multilingual-ready (G-08, G-32), analytics port, perf budgets (G-09, G-24) | ADR-001/002/012/013/014/015/016/022/030/031/032/035/040 |
 | 1 | Multi-Tenant + Wildcard Domain | ⬜ | Default branch per tenant; `app.` Family Hub host reserved + classified (G-31) | ADR-003/004/005/039, C-07 |
 | 2 | Authentication + RBAC | ⬜ | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
 | 3 | Academy Provisioning + Onboarding | ⬜ | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, ADR-028/034 |
@@ -84,7 +84,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 ### Phase 0 — Foundation
 
 **Goal.** A working, tested, deployable skeleton with every cross-cutting convention in place, so later phases add domain code only.
-**Status.** 🟨 since 2026-09-30 (`phase-0-start` = `72a4078`). Approved slice plan: [`docs/plans/phase-0.md`](plans/phase-0.md).
+**Status.** ✅ 2026-10-01 — PO acceptance recorded below (started 2026-09-30, `phase-0-start` = `72a4078`; closed with tag `phase-0`). Approved slice plan: [`docs/plans/phase-0.md`](plans/phase-0.md).
 
 **Slices (each = one PR, ADR-041)**
 
@@ -106,6 +106,8 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | S13 | `p0/docs` | 0.19 | ✅ #16 |
 | G1 | `p0/gate-fixes` | P0-3 gate: `pnpm dev` and `db:seed` from a clean clone | ✅ #17 |
 | S14 | `p0/dark-theme` | PO design review: Light / Dark / System themes (C-49, UX V1.2 addendum) | ✅ #18 |
+| R1 | `p0/review-fixes` | P0-4 independent review: H1 idempotency key released after a committed handler | ✅ #19 |
+| C1 | `p0/close` | P0-5: exit notes, C-50, tracker | ✅ |
 **Refs.** PRD v2 §15, v3 §14–18; UX §4–7, §24, §26; ARCHITECTURE §3, §4, §9.1, §10.5, §11, §15, §18–19.
 
 **Tasks**
@@ -146,7 +148,11 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 - Repository: a direct push to `main` is rejected; a PR with a failing check cannot merge; a green PR auto-merges and deploys to staging; a release flag hides an unfinished screen on staging (ADR-041). *(C-44: while on the free GitHub plan, the first two items are waived by the PO and evidenced by the C-43 merge process.)*
 
 
-**Exit notes (2026-10-01, all slices merged — for the P0-3 gate; status stays 🟨 until PO acceptance)**
+**Exit notes (2026-10-01 — Phase 0 ✅)**
+
+*PO acceptance.* **Accepted by the Product Owner on 2026-10-01**, with two recorded conditions: the C-44 waiver of the repository-rule gate items is re-confirmed (solo developer, every change via PR), and staging is **deferred** to a later phase as a known open item (**C-50** — must be live no later than the Phase 6 gate). Acceptance was done locally.
+
+*Delivered.* Monorepo and toolchain; local infra (Postgres, Redis, Mailpit, SeaweedFS); contracts (error envelope, `ErrorCode`, pagination, permissions skeleton, sync op base); database roles/grants, first migration (audit, idempotency, outbox, feature flags) and local/ci-only seeds; NestJS API core (config, pino + redaction, request IDs, Zod pipe, error filter, health, OpenAPI, `@Idempotent()`, `@Audited()`, outbox, CLS, trusted proxy host); worker (BullMQ, heartbeat, outbox relay); English-only i18n with Intl formatters and pseudo-locale/long-text builds; analytics port with PII guard; `@academybee/ui` design system with Light/Dark/System themes (C-49); web shell with host-routing stub, PWA (Serwist, offline page, install and update prompts) and release flags; Dexie sync queue and runner; Playwright E2E on desktop, Android and iPhone projects; CI with performance budgets; Docker images and staging/production workflows (off); governance files and README.
 
 *Pinned toolchain (pnpm catalog, C-42).* Node 24.21 (`.nvmrc` 24) · pnpm 12.8.1 · Turborepo 2.11.5 · TypeScript 5.9.3 · ESLint 9.39.5 · Vitest 5.0.3 · Next.js 16.3.8 (`proxy.ts`, C-34) · React 19.3 · MUI 9.4 · next-intl 4.14.8 · TanStack Query 5.104 · Serwist 9.5.12 (`@serwist/turbopack`) · NestJS 12.1.2 (ESM) · Prisma 7.10.0 (pg adapter) · Zod 4.6.5 · BullMQ 6.3.10 · ioredis 6.0 · pino 10.3 · Dexie 4.4.6 · Sentry 11.1 · Playwright 1.63 · axe-core 4.13 · Lighthouse CI 0.15.1 (Lighthouse 12.6) · Testcontainers 12.2 · images `postgres:17-alpine`, `redis:7-alpine`, `axllent/mailpit:v1.31`, `chrislusf/seaweedfs:4.48`, runtime `node:24-alpine`.
 
@@ -160,22 +166,27 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | --- | --- |
 | Clean clone → infra → migrate → dev | README "Local setup (WSL2)"; `pnpm dev` verified 2026-10-01 (web, API via proxy, worker heartbeat in ≈55 s); timed clean clone is P0-3 |
 | CI green | PRs #2–#16, all required checks green before merge |
-| Staging serves `/api/health/ready` | **Open** — workflows merged off; needs the OD-03 accounts (`docs/runbooks/environments.md`) |
+| Staging serves `/api/health/ready` | **DEFERRED (C-50)** — workflows merged off; needs the OD-03 accounts (`docs/runbooks/environments.md`) |
 | Error envelope | `apps/api/test/contract/error-envelope.int.spec.ts` |
 | Idempotency | `apps/api/test/integration/idempotency.int.spec.ts` |
 | Outbox | `apps/worker/test/integration/outbox-relay.int.spec.ts`, `worker.int.spec.ts` |
 | Dexie restart + backoff | `packages/sync/src/queue.spec.ts`, `backoff.spec.ts`, `runner.spec.ts` |
 | PWA installable + offline page | `e2e/specs/pwa.spec.ts` (Chromium installability + offline reload) |
-| Design system reviewed by PO | `/dev/design-system`; screenshots in CI artifact `e2e-artifacts` (`screenshots/design-system-*.png`) — **PO review pending** |
+| Design system reviewed by PO | `/dev/design-system`; screenshots in CI artifact `e2e-artifacts` (`screenshots/design-system-*.png`) — reviewed by the PO 2026-10-01 (led to C-49) |
 | Light and dark themes (C-49) | `packages/ui/src/tokens.spec.ts` (AA contrast, both palettes); `e2e/specs/theme.spec.ts` (follows device, no flash with app JS blocked, toggle remembered); `design-system.a11y.spec.ts` runs axe in both themes |
 | Pseudo-locale, long text, money, names | `e2e/specs/i18n-pseudo.spec.ts`; `packages/i18n/src/format.spec.ts`, `name.spec.ts`; Tamil/Hindi round trip in `error-envelope.int.spec.ts` |
 | Analytics PII guard | `apps/api/src/core/analytics/pii-guard.spec.ts`, `packages/contracts/src/analytics/pii-guard.spec.ts` |
 | Repository rules | Push to `main` / failing-PR block **waived (C-44)**; green PRs merged by the C-43 process; flag hides `/flag-probe` (`e2e/specs/flag.spec.ts`; staging smoke check once live) |
+| Independent review (P0-4) | No CRITICAL; 1 HIGH (H1) fixed in #19 with a regression test (`idempotency.int.spec.ts` → "a failure to store the response … keeps the key locked"); MEDIUM/LOW findings assigned below |
 | Budgets (G-24) | `pnpm perf:budget` shell 196 KB / 200 KB; Lighthouse LCP 1.9 s, a11y 100 (local, mobile 4G) |
 
 *Open items and follow-ups.*
-- **PO:** staging accounts + `STAGING_ENABLED` (runbook); design-system review; release PR #5 (first version, `v0.1.0`) is yours to merge when you want a version tag; optional GitHub Pro → `scripts/github/apply-governance.sh`.
-- **Phase 1:** remove `p0-flag-probe`; FK to `Tenant` + RLS on `feature_flag_override` (C-35); real host routing replaces the `proxy.ts` stub; dynamic manifest.
+- **PO:** staging accounts + `STAGING_ENABLED` (runbook) — **deferred, C-50** (no later than the Phase 6 gate); release PR #5 (first version, `v0.1.0`) is yours to merge when you want a version tag; optional GitHub Pro → `scripts/github/apply-governance.sh`.
+- **Phase 1:** remove `p0-flag-probe`; FK to `Tenant` + RLS on `feature_flag_override` (C-35) **and on `outbox_event`, `audit_log`, `idempotency_record`** (they carry `tenant_id` but have no policy yet); cross-tenant suite scaffold in `packages/testing`; real host routing replaces the `proxy.ts` stub; dynamic manifest; review **M4** (take the client IP from `X-Forwarded-For` once the proxy secret validates — audit IPs and the Phase 2 throttler depend on it) with an integration test of forwarded host + secret through the CLS middleware.
+- **Before the staging go-live (C-50):** review **M6** — staging `workflow_dispatch` only from `refs/heads/main`, `environment: staging` on deploy jobs with `STAGING_*` as environment secrets; **L5** production guard on `github.triggering_actor` + CI-green check for the tag SHA. `/api/docs` is public on staging (non-production only) — acceptable until then.
+- **Phase 2 (before any finance or provisioning endpoint uses `@Idempotent()`):** review **M1** stale IN_PROGRESS lease (today a crash or a failed `complete()` locks the key for 24 h — safe, but blocks retries); **M2** store the schema-filtered response, not the raw handler output (fix interceptor order); **M3** no extra audit row on an idempotent replay; **L2** log URLs without query strings, deep redaction paths; **L1** mask `Error` messages/stacks and drop Prisma `meta` in logs; **L4** unmapped 4xx statuses become 500 without being logged.
+- **Phase 6 (sync goes live):** review **M5** — validate the push response, `markRetry` on any post-transport error, transport timeout, tests for a malformed response and a throwing `applyResult`; **L8** run `recoverInterrupted()` inside the Web Lock.
+- **Phase 15 (or earlier when volume warrants):** **L6** purge expired idempotency records and dispatched outbox events; **L7** outbox relay backoff + dead-letter for poison rows. Small: **L3** PII guard also checks long numbers; **L9** token shadows in `pwa-prompts`/`theme-toggle`, `ConfirmDialog` focuses Cancel.
 - **Phase 15:** trim API/worker images (~730 MB: `@prisma/client`'s peer pulls the Prisma CLI, Studio and TypeScript into production deps); total blocking time ≈ 350 ms on simulated mobile (Lighthouse warning only); OpenTelemetry tracing.
 - **Watch:** the shell has ≈4 KB of route-JS headroom (React DOM + Next router ≈ 114 KB); teacher/hub screens in Phases 6–7P must import from `@academybee/ui/components/*` and lazy-load heavy UI.
 
