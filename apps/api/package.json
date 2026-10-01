@@ -20,6 +20,7 @@
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
     "@nestjs/platform-express": "catalog:",
+    "@sentry/node": "catalog:",
     "express": "catalog:",
     "ioredis": "catalog:",
     "nestjs-cls": "catalog:",

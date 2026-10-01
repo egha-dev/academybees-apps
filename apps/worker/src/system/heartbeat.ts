@@ -10,6 +10,7 @@ import { type Job, type Queue, Worker } from 'bullmq';
 import { type Redis } from 'ioredis';
 
 import { WORKER_CONFIG, type WorkerConfig } from '../config/config.js';
+import { reportError } from '../observability/error-reporting.js';
 import { createQueue, WORKER_DEFAULTS } from '../queues/queues.js';
 import { REDIS_CONNECTION } from '../queues/redis.provider.js';
 
@@ -38,9 +39,10 @@ export class SystemQueueService implements OnApplicationBootstrap, OnApplication
       ...WORKER_DEFAULTS,
       connection: this.connection.duplicate(),
     });
-    this.worker.on('failed', (job, err) =>
-      this.logger.error({ jobId: job?.id, name: job?.name, err: err.message }, 'System job failed'),
-    );
+    this.worker.on('failed', (job, err) => {
+      this.logger.error({ jobId: job?.id, name: job?.name, err: err.message }, 'System job failed');
+      reportError(err, { queue: 'system', jobId: job?.id, job: job?.name });
+    });
     const envelope: JobEnvelope<Record<string, never>> = {
       tenantId: 'platform',
       requestId: null,

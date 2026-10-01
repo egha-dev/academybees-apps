@@ -64,6 +64,8 @@ catalog:
   '@playwright/test': 1.63.0
   '@axe-core/playwright': 4.13.0
   '@lhci/cli': 0.15.1
+  '@sentry/node': 11.1.0
+  '@sentry/nextjs': 11.1.0
   uuid: 14.0.2
   prisma: 7.10.0
   '@prisma/client': 7.10.0

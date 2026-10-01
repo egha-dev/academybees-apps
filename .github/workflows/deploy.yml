@@ -1,0 +1,155 @@
+name: Deploy (reusable)
+
+# Shared deploy steps for staging and production (C-48). Secrets are repository secrets
+# named <PREFIX>_* (STAGING_* / PRODUCTION_*) — see docs/runbooks/environments.md.
+on:
+  workflow_call:
+    inputs:
+      prefix:
+        description: STAGING or PRODUCTION
+        type: string
+        required: true
+      sha:
+        description: Commit to deploy
+        type: string
+        required: true
+      image_tag:
+        description: Extra image tag (staging / production)
+        type: string
+        required: true
+      web_url_var:
+        description: Name of the repository variable holding the public web URL
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io/egha-dev
+  TURBO_TELEMETRY_DISABLED: 1
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  images:
+    name: build images
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      matrix:
+        app: [api, worker]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: true
+          build-args: RELEASE_SHA=${{ inputs.sha }}
+          tags: |
+            ${{ env.REGISTRY }}/academybee-${{ matrix.app }}:${{ inputs.sha }}
+            ${{ env.REGISTRY }}/academybee-${{ matrix.app }}:${{ inputs.image_tag }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+  migrate:
+    name: migrate (ab_migrator)
+    needs: images
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Expand → migrate → contract: migrations run before new code is deployed.
+      - name: prisma migrate deploy + grants
+        env:
+          MIGRATOR_DATABASE_URL: ${{ secrets[format('{0}_MIGRATOR_DATABASE_URL', inputs.prefix)] }}
+        run: pnpm db:deploy
+
+  backend:
+    name: deploy API + worker (Render)
+    needs: migrate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: trigger Render deploys with the new image
+        env:
+          API_HOOK: ${{ secrets[format('{0}_RENDER_DEPLOY_HOOK_API', inputs.prefix)] }}
+          WORKER_HOOK: ${{ secrets[format('{0}_RENDER_DEPLOY_HOOK_WORKER', inputs.prefix)] }}
+          SHA: ${{ inputs.sha }}
+        run: |
+          deploy() {
+            local image
+            image=$(jq -rn --arg i "$REGISTRY/academybee-$1:$SHA" '$i|@uri')
+            curl --fail --silent --show-error -X POST "$2&imgURL=$image" > /dev/null
+            echo "Deploy of $1 ($SHA) requested"
+          }
+          deploy api "$API_HOOK"
+          deploy worker "$WORKER_HOOK"
+
+  web:
+    name: deploy web (Vercel)
+    needs: backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets[format('{0}_VERCEL_PROJECT_ID', inputs.prefix)] }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: build and deploy (prebuilt)
+        run: |
+          pnpm dlx vercel@62.1.0 pull --yes --environment=production --token "$VERCEL_TOKEN"
+          pnpm dlx vercel@62.1.0 build --prod --token "$VERCEL_TOKEN"
+          pnpm dlx vercel@62.1.0 deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+
+  smoke:
+    name: smoke check
+    needs: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WEB_URL: ${{ vars[inputs.web_url_var] }}
+      SHA: ${{ inputs.sha }}
+    steps:
+      - name: wait for the new release behind the web origin
+        run: |
+          for _ in $(seq 1 60); do
+            release=$(curl -fsS "$WEB_URL/api/v1/health/live" | jq -r .release || true)
+            [ "$release" = "$SHA" ] && break
+            echo "waiting for release $SHA (serving: ${release:-none})"; sleep 10
+          done
+          [ "$release" = "$SHA" ] || { echo "::error::$SHA is not serving after 10 minutes"; exit 1; }
+      - name: readiness (DB + Redis) through the web origin
+        run: curl -fsS "$WEB_URL/api/health/ready" | tee /dev/stderr | jq -e '.status == "ok"'
+      - name: web shell and offline page
+        run: |
+          curl -fsS -o /dev/null "$WEB_URL/"
+          curl -fsS -o /dev/null "$WEB_URL/offline"
+      - name: release flag hides the probe page
+        run: test "$(curl -s -o /dev/null -w '%{http_code}' "$WEB_URL/flag-probe")" = 404

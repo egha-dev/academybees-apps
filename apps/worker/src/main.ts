@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { Logger } from 'nestjs-pino';
 
 import { InvalidWorkerConfigError, loadWorkerConfig } from './config/config.js';
+import { initErrorReporting } from './observability/error-reporting.js';
 import { WorkerModule } from './worker.module.js';
 
 async function bootstrap(): Promise<void> {
@@ -17,6 +18,12 @@ async function bootstrap(): Promise<void> {
     }
     throw error;
   }
+  await initErrorReporting({
+    dsn: config.SENTRY_DSN,
+    environment: config.APP_ENV,
+    service: 'worker',
+    release: process.env.RELEASE_SHA,
+  });
   const app = await NestFactory.createApplicationContext(WorkerModule.forRoot(config), {
     bufferLogs: true,
   });

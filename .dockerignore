@@ -1,0 +1,17 @@
+# Docker build context is the repo root (turbo prune needs the whole workspace).
+**/node_modules
+**/dist
+**/.next
+**/.next-*
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+**/src/generated
+.git
+.lighthouseci
+e2e/artifacts
+e2e/test-results
+**/.env
+**/.env.*
+!**/.env.example
+C:*

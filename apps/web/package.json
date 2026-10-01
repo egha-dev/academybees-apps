@@ -18,6 +18,7 @@
     "@academybee/i18n": "workspace:*",
     "@academybee/ui": "workspace:*",
     "@fontsource-variable/inter": "catalog:",
+    "@sentry/nextjs": "catalog:",
     "@serwist/turbopack": "catalog:",
     "@serwist/window": "catalog:",
     "@tanstack/react-query": "catalog:",
