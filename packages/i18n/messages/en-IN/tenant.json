@@ -38,5 +38,18 @@
       "body": "This is usually temporary. Wait a moment and try again — nothing you saved has been lost.",
       "action": "Try again"
     }
+  },
+  "home": {
+    "title": "Welcome to {academy}",
+    "body": "This is {academy}'s workspace on AcademyBee. Staff sign-in arrives in the next release.",
+    "preparing": {
+      "title": "{academy} on AcademyBee",
+      "body": "This academy's workspace is being prepared. Please check back soon."
+    }
+  },
+  "hub": {
+    "metaTitle": "Family Hub",
+    "title": "AcademyBee Family Hub",
+    "body": "One app for parents and students across every academy they belong to. Your academy will invite you when it's ready."
   }
 }
