@@ -23,8 +23,8 @@ Every feature must serve one of five outcomes: **acquire students · run classes
 
 ## 3. Current state
 
-- **Current phase:** Phase 0 — Foundation (see `docs/IMPLEMENTATION_PLAN.md` §1 tracker). P-00 orientation done 2026-09-30 (C-29…C-41).
-- **Phase 0 plan:** `docs/plans/phase-0.md` (approved 2026-09-30; slice tracker in IMPLEMENTATION_PLAN Phase 0).
+- **Current phase:** Phase 1 — Multi-Tenant + Wildcard Domain, **not started** (see `docs/IMPLEMENTATION_PLAN.md` §1 tracker). Phase 0 ✅ 2026-10-01 (tag `phase-0`; exit notes list review follow-ups per phase). P-00 orientation done 2026-09-30 (C-29…C-41).
+- **Staging is deferred (C-50):** gate items needing staging are reported DEFERRED with local evidence; staging must be live no later than the Phase 6 gate.
 - **Open decisions with defaults applied:** DECISIONS.md §B (OD-02, OD-04 … OD-13, OD-15, OD-16, OD-18). Closed: OD-01, OD-03 (staging), OD-14, OD-17, OD-19, OD-20, OD-21. Do not re-litigate; follow the default until the PO changes it.
 - **Repository:** `egha-dev/academybees-apps` (OD-19) on the **free GitHub plan** (C-44): no ruleset, so Claude merges only after all checks pass (C-43) and never pushes to `main`. Development runs in WSL2 Ubuntu with the repo cloned inside Linux (OD-20).
 
