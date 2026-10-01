@@ -11,7 +11,7 @@ Every feature must serve one of five outcomes: **acquire students · run classes
 ## 2. Sources of truth and authority
 
 1. `docs/PRD_ADDENDUM_v3.2.md` + `docs/source/PRD_v3.1.md` — WHAT (scope, rules, acceptance). The v3.2 addendum (gap requirements `G-01…G-32`, Phase 7P) overrides earlier PRD text.
-2. `docs/source/UX_SPEC_v1.1.md` — HOW it looks and behaves
+2. `docs/source/UX_SPEC_v1.1.md` — HOW it looks and behaves (includes the V1.2 Light/Dark theme addendum, C-49)
 3. `CLAUDE.md` (this file) — HOW you work
 4. `docs/ARCHITECTURE.md` — system design
 5. `docs/DECISIONS.md` — conflicts, open decisions, ADRs
@@ -150,7 +150,7 @@ Phase 0: web `http://localhost:3000` (design system at `/dev/design-system`), AP
 - Every screen answers: Where am I? What needs attention? What can I do now? What happened recently? (UX §10). Prefer contextual drawers/sheets and workspaces (Student 360, Batch Workspace, Invoice workspace) over CRUD tables.
 - Every screen ships **loading (skeleton), empty (with next action), error (what happened + next step), permission, success** states, plus **offline** where applicable.
 - Mobile is designed, not shrunk. Teacher and parent flows are phone-first; touch targets ≥ 48 px; status is never colour-only.
-- Design tokens from UX §5–6 only; Bee Gold is an accent. Avoid purple gradients, glassmorphism, KPI walls, decorative animation, dense ERP tables.
+- Design tokens from UX §5–6 and the UX V1.2 theme addendum only; components use semantic roles (`ab.*`), never raw colours, so **Light and Dark themes** both work (C-49); Bee Gold is an accent. Avoid purple gradients, glassmorphism, KPI walls, decorative animation, dense ERP tables.
 - Labels come from configurable terminology (`useTerm`), never hard-coded academy-type assumptions.
 - **English-only launch, multilingual-ready code** (G-32, ADR-040). Do not build a language switcher, language settings UI or per-language editors before Phase L. But always: no hard-coded UI, email, notification, PDF or error text; use `packages/i18n` keys with ICU plurals, and never concatenate translated fragments. Format money/dates/times only via the `Intl` helpers (Indian grouping ₹1,00,000, user locale, tenant timezone). Use CSS logical properties (`margin-inline-start`), never `left/right`. Allow text to grow 40% without breaking. Validate names with Unicode-aware rules (any script). Store content that academies may translate as locale-keyed variants.
 - Respect performance budgets on teacher/parent screens (ADR-035): target a 3 GB Android phone on 4G.

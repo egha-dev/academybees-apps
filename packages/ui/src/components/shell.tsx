@@ -9,7 +9,8 @@ import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { type ElementType, type ReactNode } from 'react';
 
-import { color, radius, TOUCH_TARGET } from '../tokens.js';
+import { radius, TOUCH_TARGET } from '../tokens.js';
+import { ab } from './ab.js';
 import { Text } from './text.js';
 
 export type NavItem = {
@@ -57,12 +58,12 @@ function SidebarLink({ item, linkComponent }: { item: NavItem; linkComponent: El
         minHeight: 44,
         paddingInline: 3,
         borderRadius: `${radius.md}px`,
-        color: color.ink,
+        color: 'ab.textPrimary',
         fontSize: 14,
         fontWeight: item.active ? 600 : 500,
-        backgroundColor: item.active ? color.goldSoft : 'transparent',
-        '&:hover': { backgroundColor: item.active ? color.goldSoft : color.neutral[100] },
-        '& svg': { fontSize: 20, color: item.active ? color.ink : color.neutral[600] },
+        bgcolor: item.active ? 'ab.accentSoft' : 'transparent',
+        '&:hover': { bgcolor: item.active ? 'ab.accentSoft' : 'ab.surfaceRaised' },
+        '& svg': { fontSize: 20, color: item.active ? 'ab.onAccentSoft' : 'ab.textSecondary' },
       }}
     >
       {item.icon}
@@ -89,7 +90,7 @@ export function AppShell({
   const activeBottom = bottomNav?.find((i) => i.active)?.key ?? false;
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100%', backgroundColor: color.ivory }}>
+    <Box sx={{ display: 'flex', minHeight: '100%', bgcolor: 'ab.background' }}>
       {showSidebar && (
         <Box
           component="nav"
@@ -97,8 +98,8 @@ export function AppShell({
           sx={{
             width: SIDEBAR_WIDTH,
             flexShrink: 0,
-            borderInlineEnd: `1px solid ${color.neutral[200]}`,
-            backgroundColor: color.white,
+            borderInlineEnd: (t) => `1px solid ${ab(t).border}`,
+            bgcolor: 'ab.surface',
             paddingBlock: 4,
             paddingInline: 3,
             position: 'sticky',
@@ -138,8 +139,8 @@ export function AppShell({
             gap: 3,
             minHeight: 60,
             paddingInline: { xs: 4, md: 6 },
-            borderBlockEnd: `1px solid ${color.neutral[200]}`,
-            backgroundColor: color.white,
+            borderBlockEnd: (t) => `1px solid ${ab(t).border}`,
+            bgcolor: 'ab.surface',
             position: 'sticky',
             insetBlockStart: 0,
             zIndex: theme.zIndex.appBar,
@@ -174,8 +175,8 @@ export function AppShell({
             position: 'fixed',
             insetInline: 0,
             insetBlockEnd: 0,
-            borderBlockStart: `1px solid ${color.neutral[200]}`,
-            backgroundColor: color.white,
+            borderBlockStart: (t) => `1px solid ${ab(t).border}`,
+            bgcolor: 'ab.surface',
             paddingBlockEnd: 'env(safe-area-inset-bottom)',
             zIndex: theme.zIndex.appBar,
           }}
@@ -196,8 +197,8 @@ export function AppShell({
                 aria-current={item.active ? 'page' : undefined}
                 sx={{
                   minWidth: TOUCH_TARGET,
-                  color: color.neutral[600],
-                  '&.Mui-selected': { color: color.ink, fontWeight: 600 },
+                  color: 'ab.textSecondary',
+                  '&.Mui-selected': { color: 'ab.textPrimary', fontWeight: 600 },
                 }}
               />
             ))}

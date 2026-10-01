@@ -839,3 +839,56 @@ The experience supports future custom domains without redesigning the tenant she
 Design source-of-truth rule: the PRD defines tenant/domain behavior and acceptance; this UI/UX specification defines how that behavior is presented to Super Admins, academy owners and academy users.
 
 AcademyBee Master UI/UX Design Specification v1.0 • September 2026
+# V1.2 Addendum — Light and Dark Themes
+
+*Product Owner direction, 2026-10-01 (DECISIONS C-49). This addendum extends §4–6 and §24; where it differs, it overrides them. The original .docx files predate it.*
+
+## 1. Principle
+
+AcademyBee has two themes, **Light** and **Dark**, with the same brand feel: premium, warm, calm. Dark is not an inverted light theme. It uses **deep warm charcoal** (never pure black), **ivory text**, and keeps **Bee Gold as the accent**, never a dominant background.
+
+## 2. Choosing a theme
+
+- The theme **follows the device** (`prefers-color-scheme`) until the user chooses.
+- A **Light / Dark / System** control lives in the app shell (top bar or account menu) and on the public home header. Each option shows an icon and a label; the selected option is clearly marked (not by colour alone).
+- The choice is remembered on the device now and moves to the user profile with accounts (Phase 2), so it follows the user across devices.
+- The page **never flashes** the wrong theme on load: the theme is applied before the first paint.
+
+## 3. Colour roles
+
+Screens use **roles**, never raw colours. Both palettes keep every text/background pair at **≥ 4.5:1** and control borders and focus rings at **≥ 3:1** (WCAG 2.1 AA), checked automatically.
+
+| Role | Light | Dark | Use |
+| --- | --- | --- | --- |
+| Background | Warm Ivory `#FAFAF7` | Warm charcoal `#191816` | Page |
+| Surface | White `#FFFFFF` | `#22211E` | Cards, sheets, top bar, sidebar |
+| Surface raised | `#ECEAE3` | `#2B2A26` | Hover, segmented controls, subtle fills |
+| Border | `#DEDBD2` | `#3A3833` | Dividers, card outlines |
+| Border strong | `#8A867C` | `#8C877C` | Input and control outlines |
+| Text | Deep Ink `#171817` | Ivory `#F3F1EA` | Primary text |
+| Text secondary | `#5C5A54` | `#B8B3A7` | Metadata |
+| Accent | Bee Gold `#E6B94A` | Bee Gold `#E6B94A` | Highlights, brand moments |
+| Accent soft / on | Soft Gold `#F5E7B8` / Ink | `#3A3222` / `#EBC664` | Selected navigation item |
+| Primary button / text | Ink / Ivory | Ivory / Ink | Primary actions |
+| Inverse / text | Ink / Ivory | Ivory / Ink | Offline banner, high-emphasis notices |
+| Focus ring | `#3A63A6` | `#86AEEE` | Keyboard focus |
+| Success text · surface | `#1D7453` · `#E6F3EC` | `#5BC796` · `#163126` | Paid, present, confirmed |
+| Warning text · surface | `#8A5A12` · `#FBF0DC` | `#E9AE55` · `#33281A` | Needs attention, awaiting confirmation |
+| Danger text · surface | `#B23B3B` · `#FBE7E7` | `#F08A84` · `#3A1F1E` | Overdue, errors, destructive |
+| Info text · surface | `#3A63A6` · `#E6EDF8` | `#86AEEE` · `#1C2840` | Informational |
+
+The §5 hues (`#238B63`, `#D99124`, `#D95555`, `#4778C7`) remain the brand reference; text and filled buttons use the AA-safe variants above. In Dark, filled status buttons use ink text on the lighter status colour.
+
+## 4. Brand mark
+
+The logo keeps its ink square and gold cell in both themes. In Dark, a **1 px warm-grey hairline** (`#4A4741`) outlines the square so it does not vanish into the background. App icons, emails, PDFs and receipts stay light.
+
+## 5. Academy branding
+
+An academy's brand colour tints identity surfaces only (§V1.1-8) and must pass contrast in **both** themes; status colours and the system palette are never overridden.
+
+## 6. Acceptance
+
+- Every screen is reviewed in Light and Dark on phone and desktop.
+- Automated accessibility checks run in both themes.
+- Switching themes never loses form input or scroll position and never reloads the page.

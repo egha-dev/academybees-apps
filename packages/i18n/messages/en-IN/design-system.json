@@ -13,7 +13,8 @@
     "shell": "App shell",
     "offline": "Offline and sync",
     "states": "Screen states",
-    "money": "Money and dates"
+    "money": "Money and dates",
+    "palettes": "Light and dark palettes"
   },
   "samples": {
     "studentName": "Student name",
@@ -43,6 +44,9 @@
     "secondary": "View timetable",
     "danger": "Remove",
     "disabled": "Not available",
-    "textLink": "See all"
-  }
+    "textLink": "See all",
+    "lightPalette": "Light",
+    "darkPalette": "Dark"
+  },
+  "themeIntro": "Every component follows the selected theme. Both palettes keep text at 4.5:1 contrast or better."
 }

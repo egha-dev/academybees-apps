@@ -104,6 +104,8 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | S11 | `p0/e2e-ci` | 0.12, 0.17, full 0.13 | ✅ #14 |
 | S12 | `p0/staging` | 0.14 (workflows off until `STAGING_ENABLED`) | ✅ #15 merged; staging goes live when the accounts exist (runbook) |
 | S13 | `p0/docs` | 0.19 | ✅ #16 |
+| G1 | `p0/gate-fixes` | P0-3 gate: `pnpm dev` and `db:seed` from a clean clone | ✅ #17 |
+| S14 | `p0/dark-theme` | PO design review: Light / Dark / System themes (C-49, UX V1.2 addendum) | ✅ #18 |
 **Refs.** PRD v2 §15, v3 §14–18; UX §4–7, §24, §26; ARCHITECTURE §3, §4, §9.1, §10.5, §11, §15, §18–19.
 
 **Tasks**
@@ -148,7 +150,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 
 *Pinned toolchain (pnpm catalog, C-42).* Node 24.21 (`.nvmrc` 24) · pnpm 12.8.1 · Turborepo 2.11.5 · TypeScript 5.9.3 · ESLint 9.39.5 · Vitest 5.0.3 · Next.js 16.3.8 (`proxy.ts`, C-34) · React 19.3 · MUI 9.4 · next-intl 4.14.8 · TanStack Query 5.104 · Serwist 9.5.12 (`@serwist/turbopack`) · NestJS 12.1.2 (ESM) · Prisma 7.10.0 (pg adapter) · Zod 4.6.5 · BullMQ 6.3.10 · ioredis 6.0 · pino 10.3 · Dexie 4.4.6 · Sentry 11.1 · Playwright 1.63 · axe-core 4.13 · Lighthouse CI 0.15.1 (Lighthouse 12.6) · Testcontainers 12.2 · images `postgres:17-alpine`, `redis:7-alpine`, `axllent/mailpit:v1.31`, `chrislusf/seaweedfs:4.48`, runtime `node:24-alpine`.
 
-*Deviations from the plan, each recorded before coding.* C-42 toolchain majors (NestJS 12 ⇒ all-ESM; source export condition `@academybee/source`) · C-43 merge only after all required checks · C-44 stay on the free GitHub plan (ruleset, secret scanning and production environment skipped; repository gate items waived) · C-45 SeaweedFS instead of MinIO locally · C-46 Serwist on Turbopack, `/api` proxy with shared secret in `proxy.ts`, self-hosted Inter · C-47 installability via Chromium in Playwright, Lighthouse for LCP/CLS/a11y, own route-JS budget script · C-48 staging deploy mechanics (GHCR, Render hooks, migrate-before-deploy, Vercel CLI) and Sentry wiring.
+*Deviations from the plan, each recorded before coding.* C-42 toolchain majors (NestJS 12 ⇒ all-ESM; source export condition `@academybee/source`) · C-43 merge only after all required checks · C-44 stay on the free GitHub plan (ruleset, secret scanning and production environment skipped; repository gate items waived) · C-45 SeaweedFS instead of MinIO locally · C-46 Serwist on Turbopack, `/api` proxy with shared secret in `proxy.ts`, self-hosted Inter · C-47 installability via Chromium in Playwright, Lighthouse for LCP/CLS/a11y, own route-JS budget script · C-48 staging deploy mechanics (GHCR, Render hooks, migrate-before-deploy, Vercel CLI) and Sentry wiring. · **C-49** (PO design review, 2026-10-01) light and dark themes: semantic colour roles, follows the device with a Light / Dark / System toggle, no flash on load, AA in both themes.
 
 *Release flags.* `p0-flag-probe` — owner PO — off in every environment — expires 2026-12-31 — **remove in Phase 1** (`pnpm flags:check` fails CI after expiry).
 
@@ -165,6 +167,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | Dexie restart + backoff | `packages/sync/src/queue.spec.ts`, `backoff.spec.ts`, `runner.spec.ts` |
 | PWA installable + offline page | `e2e/specs/pwa.spec.ts` (Chromium installability + offline reload) |
 | Design system reviewed by PO | `/dev/design-system`; screenshots in CI artifact `e2e-artifacts` (`screenshots/design-system-*.png`) — **PO review pending** |
+| Light and dark themes (C-49) | `packages/ui/src/tokens.spec.ts` (AA contrast, both palettes); `e2e/specs/theme.spec.ts` (follows device, no flash with app JS blocked, toggle remembered); `design-system.a11y.spec.ts` runs axe in both themes |
 | Pseudo-locale, long text, money, names | `e2e/specs/i18n-pseudo.spec.ts`; `packages/i18n/src/format.spec.ts`, `name.spec.ts`; Tamil/Hindi round trip in `error-envelope.int.spec.ts` |
 | Analytics PII guard | `apps/api/src/core/analytics/pii-guard.spec.ts`, `packages/contracts/src/analytics/pii-guard.spec.ts` |
 | Repository rules | Push to `main` / failing-PR block **waived (C-44)**; green PRs merged by the C-43 process; flag hides `/flag-probe` (`e2e/specs/flag.spec.ts`; staging smoke check once live) |

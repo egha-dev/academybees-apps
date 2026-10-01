@@ -8,7 +8,6 @@ import {
   Button,
   Card,
   ClassIcon,
-  color,
   ConfirmDialog,
   Container,
   EmptyState,
@@ -20,6 +19,7 @@ import {
   OfflineBanner,
   PeopleIcon,
   PermissionState,
+  palettes,
   radius,
   Select,
   Sheet,
@@ -27,25 +27,40 @@ import {
   Stack,
   StatusBadge,
   SyncIndicator,
+  type StatusTone,
   type SyncState,
   Text,
   TextField,
+  ThemeModeToggle,
+  type ThemePalette,
   TodayIcon,
   useToast,
 } from '@academybee/ui';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useState } from 'react';
 
-const SWATCHES = [
-  'ivory',
-  'ink',
-  'gold',
-  'goldSoft',
-  'success',
-  'warning',
-  'danger',
-  'info',
+const ROLE_SWATCHES = [
+  'background',
+  'surface',
+  'surfaceRaised',
+  'border',
+  'textPrimary',
+  'textSecondary',
+  'accent',
+  'accentSoft',
+  'primary',
+  'status.success',
+  'status.warning',
+  'status.danger',
+  'status.info',
 ] as const;
+
+type RoleSwatch = (typeof ROLE_SWATCHES)[number];
+
+function swatch(p: ThemePalette, role: RoleSwatch): string {
+  if (role.startsWith('status.')) return p.status[role.slice(7) as StatusTone].fg;
+  return p[role as Exclude<RoleSwatch, `status.${string}`>];
+}
 const SYNC_STATES: SyncState[] = ['synced', 'offline', 'pending', 'syncing', 'attention'];
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
@@ -54,7 +69,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
       component="section"
       aria-labelledby={id}
       spacing={4}
-      sx={{ paddingBlock: 6, borderBlockStart: `1px solid ${color.neutral[200]}` }}
+      sx={{ paddingBlock: 6, borderBlockStart: '1px solid', borderColor: 'ab.border' }}
     >
       <Text variant="section" as="h2" id={id}>
         {title}
@@ -90,31 +105,86 @@ export function DesignSystemShowcase() {
 
   return (
     <Container maxWidth="lg" sx={{ paddingBlock: 8 }}>
-      <Stack spacing={2} sx={{ paddingBlockEnd: 4 }}>
-        <Text variant="title" as="h1">
-          {ds('designSystem.title')}
-        </Text>
-        <Text tone="secondary">{ds('designSystem.intro')}</Text>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={3}
+        sx={{
+          paddingBlockEnd: 4,
+          justifyContent: 'space-between',
+          alignItems: { sm: 'flex-start' },
+        }}
+      >
+        <Stack spacing={2}>
+          <Text variant="title" as="h1">
+            {ds('designSystem.title')}
+          </Text>
+          <Text tone="secondary">{ds('designSystem.intro')}</Text>
+          <Text variant="meta" tone="secondary">
+            {ds('designSystem.themeIntro')}
+          </Text>
+        </Stack>
+        <ThemeModeToggle
+          labels={{
+            group: t('common.theme.label'),
+            light: t('common.theme.light'),
+            dark: t('common.theme.dark'),
+            system: t('common.theme.system'),
+          }}
+        />
       </Stack>
 
-      <Section id="ds-colors" title={ds('designSystem.sections.colors')}>
-        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 3 }}>
-          {SWATCHES.map((name) => (
-            <Stack key={name} spacing={1} sx={{ inlineSize: 120 }} data-i18n-exempt>
-              <Box
+      <Section id="ds-colors" title={ds('designSystem.sections.palettes')}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={4}>
+          {(['light', 'dark'] as const).map((scheme) => {
+            const p = palettes[scheme];
+            return (
+              <Stack
+                key={scheme}
+                spacing={3}
                 sx={{
-                  blockSize: 64,
-                  borderRadius: `${radius.md}px`,
-                  backgroundColor: color[name],
-                  border: `1px solid ${color.neutral[200]}`,
+                  flex: 1,
+                  padding: 4,
+                  borderRadius: `${radius.lg}px`,
+                  backgroundColor: p.background,
+                  color: p.textPrimary,
+                  border: '1px solid',
+                  borderColor: p.border,
                 }}
-              />
-              <Text variant="meta">{name}</Text>
-              <Text variant="meta" tone="secondary">
-                {color[name]}
-              </Text>
-            </Stack>
-          ))}
+              >
+                <Text variant="section" as="h3">
+                  {ds(
+                    scheme === 'light'
+                      ? 'designSystem.samples.lightPalette'
+                      : 'designSystem.samples.darkPalette',
+                  )}
+                </Text>
+                <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 2 }} data-i18n-exempt>
+                  {ROLE_SWATCHES.map((role) => (
+                    <Stack key={role} spacing={0.5} sx={{ inlineSize: 104 }}>
+                      <Box
+                        sx={{
+                          blockSize: 44,
+                          borderRadius: `${radius.md}px`,
+                          backgroundColor: swatch(p, role),
+                          border: '1px solid',
+                          borderColor: p.border,
+                        }}
+                      />
+                      <Box
+                        component="span"
+                        sx={{ fontSize: 12, fontWeight: 600, color: p.textPrimary }}
+                      >
+                        {role}
+                      </Box>
+                      <Box component="span" sx={{ fontSize: 12, color: p.textSecondary }}>
+                        {swatch(p, role)}
+                      </Box>
+                    </Stack>
+                  ))}
+                </Stack>
+              </Stack>
+            );
+          })}
         </Stack>
       </Section>
 
@@ -308,7 +378,8 @@ export function DesignSystemShowcase() {
         <Stack spacing={6}>
           <Box
             sx={{
-              border: `1px solid ${color.neutral[200]}`,
+              border: '1px solid',
+              borderColor: 'ab.border',
               borderRadius: `${radius.lg}px`,
               overflow: 'hidden',
               blockSize: 360,
@@ -332,7 +403,8 @@ export function DesignSystemShowcase() {
           </Box>
           <Box
             sx={{
-              border: `1px solid ${color.neutral[200]}`,
+              border: '1px solid',
+              borderColor: 'ab.border',
               borderRadius: `${radius.lg}px`,
               overflow: 'hidden',
               inlineSize: 390,

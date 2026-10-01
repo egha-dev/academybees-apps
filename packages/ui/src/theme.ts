@@ -1,44 +1,80 @@
-import { createTheme, type Theme } from '@mui/material/styles';
+import { createTheme, type PaletteOptions, type Theme } from '@mui/material/styles';
 
 import {
   breakpoints,
-  color,
   motion,
+  palettes,
   radius,
   SPACING_UNIT,
+  THEME_ATTRIBUTE,
+  type ThemePalette,
   TOUCH_TARGET,
   typography,
 } from './tokens.js';
 
+declare module '@mui/material/styles' {
+  interface Palette {
+    /** AcademyBee semantic roles (tokens.ts); use in sx as e.g. `bgcolor: 'ab.surfaceRaised'`. */
+    ab: ThemePalette;
+  }
+  interface PaletteOptions {
+    ab?: ThemePalette;
+  }
+}
+
+function schemePalette(p: ThemePalette, mode: 'light' | 'dark'): PaletteOptions {
+  return {
+    mode,
+    ab: p,
+    primary: { main: p.primary, contrastText: p.onPrimary },
+    secondary: { main: p.accent, light: p.accentSoft, contrastText: '#171817' },
+    // Text-bearing uses (buttons, field errors) take the AA-safe solids (C-47, C-49).
+    success: {
+      main: p.status.success.solid,
+      light: p.status.success.fg,
+      contrastText: p.status.success.onSolid,
+    },
+    warning: {
+      main: p.status.warning.solid,
+      dark: p.status.warning.fg,
+      contrastText: p.status.warning.onSolid,
+    },
+    error: {
+      main: p.status.danger.solid,
+      light: p.status.danger.fg,
+      contrastText: p.status.danger.onSolid,
+    },
+    info: {
+      main: p.status.info.solid,
+      light: p.status.info.fg,
+      contrastText: p.status.info.onSolid,
+    },
+    background: { default: p.background, paper: p.surface },
+    text: { primary: p.textPrimary, secondary: p.textSecondary },
+    divider: p.border,
+  };
+}
+
 /**
- * The MUI theme is an implementation detail of @academybee/ui (ADR-014): every value comes
- * from tokens.ts; CSS variables are emitted so non-MUI CSS can use the same tokens.
+ * The MUI theme is an implementation detail of @academybee/ui (ADR-014). Light and dark colour
+ * schemes (C-49) are emitted as CSS variables and selected by `data-ab-theme` on <html>, which
+ * the inline ThemeScript sets before first paint.
  */
 export function createAcademyBeeTheme(): Theme {
   return createTheme({
-    cssVariables: { cssVarPrefix: 'ab' },
+    cssVariables: { cssVarPrefix: 'ab', colorSchemeSelector: `[${THEME_ATTRIBUTE}="%s"]` },
+    colorSchemes: {
+      light: { palette: schemePalette(palettes.light, 'light') },
+      dark: { palette: schemePalette(palettes.dark, 'dark') },
+    },
     breakpoints: { values: breakpoints },
     spacing: SPACING_UNIT,
     shape: { borderRadius: radius.md },
-    palette: {
-      mode: 'light',
-      primary: { main: color.ink, contrastText: color.ivory },
-      secondary: { main: color.gold, light: color.goldSoft, contrastText: color.text.onGold },
-      // Anything that carries text (buttons, field errors) uses the AA-safe variants (≥ 5.5:1 on
-      // white/ivory); the UX §5 hues stay for icons, surfaces and badges (tokens.ts).
-      success: { main: color.text.success, light: color.success, contrastText: color.white },
-      warning: { main: color.warning, dark: color.text.warning, contrastText: color.ink },
-      error: { main: color.text.danger, light: color.danger, contrastText: color.white },
-      info: { main: color.text.info, light: color.info, contrastText: color.white },
-      background: { default: color.ivory, paper: color.white },
-      text: { primary: color.text.primary, secondary: color.text.secondary },
-      divider: color.neutral[200],
-      grey: color.neutral,
-    },
     typography: {
       fontFamily: typography.fontFamily,
       fontSize: typography.bodySmall.size,
       h1: {
+        '@media (max-width: 599.95px)': { fontSize: 30 },
         fontSize: typography.display.size,
         lineHeight: typography.display.lineHeight,
         fontWeight: typography.display.weight,
@@ -83,12 +119,8 @@ export function createAcademyBeeTheme(): Theme {
     },
     components: {
       MuiCssBaseline: {
-        styleOverrides: {
-          body: {
-            backgroundColor: color.ivory,
-            color: color.ink,
-            WebkitFontSmoothing: 'antialiased',
-          },
+        styleOverrides: (theme) => ({
+          body: { WebkitFontSmoothing: 'antialiased' },
           '@media (prefers-reduced-motion: reduce)': {
             '*, *::before, *::after': {
               animationDuration: '0.01ms !important',
@@ -97,8 +129,11 @@ export function createAcademyBeeTheme(): Theme {
               scrollBehavior: 'auto !important',
             },
           },
-          ':focus-visible': { outline: `2px solid ${color.info}`, outlineOffset: 2 },
-        },
+          ':focus-visible': {
+            outline: `2px solid ${theme.vars.palette.ab.focus}`,
+            outlineOffset: 2,
+          },
+        }),
       },
       MuiButtonBase: { defaultProps: { disableRipple: true } },
       MuiButton: {
@@ -113,22 +148,24 @@ export function createAcademyBeeTheme(): Theme {
       },
       MuiOutlinedInput: {
         styleOverrides: {
-          root: { borderRadius: radius.md, backgroundColor: color.white, minHeight: TOUCH_TARGET },
-          notchedOutline: { borderColor: color.neutral[300] },
-        },
-      },
-      // 16 px phone gutters, 24 px from sm (UX §7; the 4-pt spacing unit would give MUI's default 8 px).
-      MuiContainer: {
-        styleOverrides: {
-          root: { paddingInline: 16, '@media (min-width: 600px)': { paddingInline: 24 } },
+          root: ({ theme }) => ({
+            borderRadius: radius.md,
+            backgroundColor: theme.vars.palette.ab.surface,
+            minHeight: TOUCH_TARGET,
+          }),
+          notchedOutline: ({ theme }) => ({ borderColor: theme.vars.palette.ab.borderStrong }),
         },
       },
       MuiCard: {
         defaultProps: { elevation: 0 },
         styleOverrides: {
-          root: { borderRadius: radius.lg, border: `1px solid ${color.neutral[200]}` },
+          root: ({ theme }) => ({
+            borderRadius: radius.lg,
+            border: `1px solid ${theme.vars.palette.ab.border}`,
+          }),
         },
       },
+      MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
       MuiDialog: { styleOverrides: { paper: { borderRadius: radius.lg } } },
       MuiSkeleton: {
         defaultProps: { animation: 'wave' },

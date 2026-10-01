@@ -7,7 +7,7 @@ import Stack from '@mui/material/Stack';
 import { type ReactNode } from 'react';
 
 import { CheckCircleIcon, CircleIcon, ErrorIcon, InfoIcon, WarningIcon } from '../icons.js';
-import { color, radius, type StatusTone } from '../tokens.js';
+import { radius, type StatusTone } from '../tokens.js';
 import { Text } from './text.js';
 
 /** Card — used selectively (UX §4: avoid dashboard card overload). */
@@ -54,11 +54,11 @@ export function Card({
 }
 
 const TONE = {
-  success: { fg: color.text.success, bg: color.surface.success, Icon: CheckCircleIcon },
-  warning: { fg: color.text.warning, bg: color.surface.warning, Icon: WarningIcon },
-  danger: { fg: color.text.danger, bg: color.surface.danger, Icon: ErrorIcon },
-  info: { fg: color.text.info, bg: color.surface.info, Icon: InfoIcon },
-  neutral: { fg: color.text.secondary, bg: color.neutral[100], Icon: CircleIcon },
+  success: { fg: 'ab.status.success.fg', bg: 'ab.status.success.surface', Icon: CheckCircleIcon },
+  warning: { fg: 'ab.status.warning.fg', bg: 'ab.status.warning.surface', Icon: WarningIcon },
+  danger: { fg: 'ab.status.danger.fg', bg: 'ab.status.danger.surface', Icon: ErrorIcon },
+  info: { fg: 'ab.status.info.fg', bg: 'ab.status.info.surface', Icon: InfoIcon },
+  neutral: { fg: 'ab.status.neutral.fg', bg: 'ab.status.neutral.surface', Icon: CircleIcon },
 } as const;
 
 /** Status is never colour-only (UX §31): every badge has an icon and text. */
