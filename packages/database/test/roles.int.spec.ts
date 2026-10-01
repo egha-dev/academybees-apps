@@ -29,9 +29,18 @@ describe('database roles and grants (ADR-005, ADR-027)', () => {
     await migrator.end();
   });
 
-  it('ab_app can insert and read the audit log', async () => {
+  it('ab_app can insert platform audit rows but not read them back (review L8)', async () => {
     const { rows } = await app.query('SELECT action FROM audit_log WHERE id = $1', [auditId]);
-    expect(rows).toEqual([{ action: 'test.insert' }]);
+    expect(rows).toEqual([]);
+    const su = await connect(urls.superuser);
+    try {
+      const { rows: stored } = await su.query('SELECT action FROM audit_log WHERE id = $1', [
+        auditId,
+      ]);
+      expect(stored).toEqual([{ action: 'test.insert' }]);
+    } finally {
+      await su.end();
+    }
   });
 
   it('ab_app cannot UPDATE, DELETE or TRUNCATE the audit log', async () => {

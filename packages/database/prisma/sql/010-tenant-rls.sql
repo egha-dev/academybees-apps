@@ -43,9 +43,21 @@ BEGIN
     tbl);
 END $$;
 
-SELECT ab_enable_platform_row_rls('audit_log');
 SELECT ab_enable_platform_row_rls('outbox_event');
 SELECT ab_enable_platform_row_rls('idempotency_record');
+
+-- Audit log (review L8): tenant code reads and writes only its academy's rows; without a tenant
+-- context it may still INSERT platform/system rows (tenant_id NULL) but never read them back —
+-- platform staff actions are visible only to the platform role.
+ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_log FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON audit_log;
+DROP POLICY IF EXISTS platform_insert ON audit_log;
+CREATE POLICY tenant_isolation ON audit_log
+  USING (tenant_id = ab_current_tenant())
+  WITH CHECK (tenant_id = ab_current_tenant());
+CREATE POLICY platform_insert ON audit_log FOR INSERT
+  WITH CHECK (tenant_id IS NULL AND ab_current_tenant() IS NULL);
 
 -- Release-flag overrides: global rows plus the current tenant's (C-53). ab_app is read-only here
 -- (000-grants.sql); the migrator writes overrides with the matching context.
@@ -109,4 +121,12 @@ ALTER TABLE tenant_domain ADD CONSTRAINT tenant_domain_hostname_shape CHECK (
   hostname = lower(hostname)
   AND ((kind = 'SUBDOMAIN' AND ab_slug_shaped(hostname))
     OR (kind = 'CUSTOM' AND position('.' IN hostname) > 0))
+);
+
+-- Brand colours are `#RRGGBB` or NULL (review L4): a malformed value must never break the public
+-- academy context.
+ALTER TABLE tenant_branding DROP CONSTRAINT IF EXISTS tenant_branding_colours;
+ALTER TABLE tenant_branding ADD CONSTRAINT tenant_branding_colours CHECK (
+  (primary_color IS NULL OR primary_color ~ '^#[0-9A-Fa-f]{6}$')
+  AND (secondary_color IS NULL OR secondary_color ~ '^#[0-9A-Fa-f]{6}$')
 );
