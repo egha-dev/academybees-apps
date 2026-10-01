@@ -92,10 +92,21 @@ DROP POLICY IF EXISTS host_lookup ON tenant;
 CREATE POLICY host_lookup ON tenant FOR SELECT
   USING (id IN (SELECT d.tenant_id FROM tenant_domain d WHERE d.hostname = ab_lookup_host()));
 
--- Hostname shape (C-52): lower-case; SUBDOMAIN rows hold a label (no dot), CUSTOM rows a full host.
+-- Slug shape (ARCHITECTURE §4.1, same rule as packages/tenant isSlugShaped): 3–42 chars,
+-- lower-case letters/digits/hyphens, alphanumeric at both ends, no `--` (blocks punycode).
+-- The web uses the slug in a rewrite path, so the database refuses anything else (review M2).
+CREATE OR REPLACE FUNCTION ab_slug_shaped(value text) RETURNS boolean
+  LANGUAGE sql IMMUTABLE PARALLEL SAFE
+  AS $$ SELECT value ~ '^[a-z0-9][a-z0-9-]{1,40}[a-z0-9]$' AND position('--' IN value) = 0 $$;
+
+ALTER TABLE tenant DROP CONSTRAINT IF EXISTS tenant_slug_shape;
+ALTER TABLE tenant ADD CONSTRAINT tenant_slug_shape CHECK (ab_slug_shaped(slug));
+
+-- Hostname shape (C-52): lower-case; SUBDOMAIN rows hold a slug-shaped label, CUSTOM rows a
+-- full host (always with a dot).
 ALTER TABLE tenant_domain DROP CONSTRAINT IF EXISTS tenant_domain_hostname_shape;
 ALTER TABLE tenant_domain ADD CONSTRAINT tenant_domain_hostname_shape CHECK (
   hostname = lower(hostname)
-  AND ((kind = 'SUBDOMAIN' AND position('.' IN hostname) = 0)
+  AND ((kind = 'SUBDOMAIN' AND ab_slug_shaped(hostname))
     OR (kind = 'CUSTOM' AND position('.' IN hostname) > 0))
 );

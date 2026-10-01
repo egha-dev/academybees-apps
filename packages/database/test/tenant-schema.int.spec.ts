@@ -102,4 +102,30 @@ describe('tenant schema invariants (ARCHITECTURE §5.1)', () => {
     );
     expect(rowCount).toBe(1);
   });
+
+  it.each([
+    ['status', `status = 'ACTIVE'`],
+    ['slug', `slug = 'taken-over'`],
+    ['id', `id = gen_random_uuid()`],
+  ])('ab_app cannot change the academy %s (platform-only, review M2)', async (_, set) => {
+    await expect(
+      inTenant(app, tenant.id, () =>
+        app.query(`UPDATE tenant SET ${set} WHERE id = $1`, [tenant.id]),
+      ),
+    ).rejects.toThrow(/permission denied/);
+  });
+
+  it.each(['../console', 'Upper', 'ab', 'a--b', 'xn--abc', '-abc', 'with space'])(
+    'the database refuses the slug %j',
+    async (slug) => {
+      const su = await connect(urls.superuser);
+      try {
+        await expect(
+          su.query(`UPDATE tenant SET slug = $1 WHERE id = $2`, [slug, tenant.id]),
+        ).rejects.toThrow(/tenant_slug_shape/);
+      } finally {
+        await su.end();
+      }
+    },
+  );
 });
