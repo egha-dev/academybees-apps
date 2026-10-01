@@ -95,7 +95,21 @@ Both services: **Deploy an existing image** from `ghcr.io/egha-dev/academybee-<a
 | `NEXT_PUBLIC_APP_ENV` | `staging` |
 | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN` | optional (off when empty; the browser DSN is fixed at build time) |
 
-Domains: `staging.academybee.com` now; `*.staging.academybee.com` wildcard arrives with Phase 1 (Vercel DNS, C-31).
+Domains: `staging.academybee.com` and the wildcard `*.staging.academybee.com` (see *Academy hosts on staging*).
+
+## Academy hosts on staging (Phase 1 wildcard; live with staging, C-50)
+
+Every academy, the Family Hub (`app.`) and the console (`console.`) are subdomains of `PLATFORM_ROOT_DOMAIN`, routed by `apps/web/src/proxy.ts` (ARCHITECTURE §10.2). Nothing per academy is configured at the edge.
+
+1. **DNS:** `academybee.com` uses **Vercel nameservers** (C-31; needed for Vercel-issued wildcard certificates).
+2. **Vercel → academybee-staging → Domains:** add `staging.academybee.com` and `*.staging.academybee.com`. Vercel issues the wildcard certificate (DNS-01) automatically. One wildcard covers academies, `app.staging…` and `console.staging…`.
+3. **Env:** `PLATFORM_ROOT_DOMAIN=staging.academybee.com` on Vercel **and** Render (API). A mismatch makes every academy host "unknown".
+4. **Academies on staging:** dev seeds refuse to run outside `local`/`ci`. Until Phase 3 provisioning exists, create the two gate academies with `packages/database/src/seed/tenants.ts` semantics through a one-off, reviewed SQL script run as `ab_migrator`:
+   - one transaction per academy;
+   - `SELECT set_config('app.tenant_id', '<uuid>', true)` first (FORCE RLS applies to the owner too);
+   - then `tenant`, `tenant_domain` (PRIMARY SUBDOMAIN, **label only** — C-52), `tenant_branding`, `tenant_settings` and the default `branch`.
+5. **Check:** `https://demo-a.staging.academybee.com` shows the academy home with a valid certificate. `https://nope.staging.academybee.com` shows "We couldn't find this academy" (404). `curl -sI https://demo-a.staging.academybee.com/manifest.webmanifest` returns `application/manifest+json`.
+6. **Supabase transaction pooler:** the tenant context is transaction-local (`set_config(…, true)`, C-55), so pooling is safe. Never switch the app to session-level `SET`.
 
 ## Supabase (staging)
 

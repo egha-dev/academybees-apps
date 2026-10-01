@@ -208,8 +208,8 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | S3 | `p1/tenant-client` | 1.6 tenant-bound Prisma client + lint, 1.7 isolation suite, 1.8 RLS benchmark | ✅ #23 |
 | S4 | `p1/tenant-api` | 1.9 resolver + context, 1.10 guards + `GET /tenant/context`, 1.11 security tests, M4, cross-tenant scaffold | ✅ #24 |
 | S5 | `p1/web-routing` | 1.12 `proxy.ts` routing, 1.13 status pages | ✅ #25 |
-| S6 | `p1/web-branding` | 1.14 branding + manifest + icons (flag `p1-tenant-home`), 1.15 hub/console + remove `p0-flag-probe` (flag `p1-hub-placeholder`), 1.16 E2E + analytics (C-56: none) | 🟨 |
-| S7 | `p1/docs` | 1.17 as-built docs | ⬜ |
+| S6 | `p1/web-branding` | 1.14 branding + manifest + icons (flag `p1-tenant-home`), 1.15 hub/console + remove `p0-flag-probe` (flag `p1-hub-placeholder`), 1.16 E2E + analytics (C-56: none) | ✅ #26 |
+| S7 | `p1/docs` | 1.17 as-built docs | ✅ (this PR) |
 
 **Scope**
 - DB: `Tenant`, `TenantDomain`, `TenantBranding`, `TenantSettings`, `Branch` (default branch auto-created) ⤴ C-07. RLS policy template + migration helper that applies it to every table flagged tenant-owned; `ab_app`/`ab_platform` grants.
@@ -229,6 +229,18 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 - E2E: `demo-a.localhost` shows Demo A branding & manifest name; `nope.localhost` → Unknown page (404); `paused.localhost` → Suspended page.
 
 **Exit gate.** All above green; staging `*.staging.academybee.com` resolves two seeded tenants with correct branding and TLS.
+
+**Gate evidence (draft for P1-3)**
+
+| Gate item | Evidence |
+| --- | --- |
+| Host classification matrix (apex, www, console, app, tenant, uppercase, port, trailing dot, IP, punycode, nested, unknown, REDIRECT, custom) | `packages/tenant/src/host.spec.ts`, `host.property.spec.ts` (fast-check), `slug.spec.ts`; `apps/web/src/lib/routing.spec.ts`; `apps/api/test/security/tenant-resolution.int.spec.ts` |
+| Context A sees only A on every tenant table; raw SQL without context → 0 rows; writing B under A rejected by WITH CHECK | `packages/database/test/tenant-isolation.int.spec.ts` (generated from the Prisma models), `rls-coverage.int.spec.ts`, `tenant-schema.int.spec.ts` |
+| Platform client only under `platform/**` (+ raw app client only in the database providers) | `packages/config/test/eslint-rules.spec.js` |
+| Client-supplied tenantId / forged host never trusted; every tenant route registered | `apps/api/test/security/cross-tenant.int.spec.ts` + `cross-tenant.registry.ts`; `client-ip.int.spec.ts` (M4) |
+| E2E: demo-a branding + manifest name; `nope` → 404 Unknown; `paused` → Suspended (+ archived, setup, redirect, hub, console) | `e2e/specs/tenant-hosts.spec.ts`, `tenant-status.a11y.spec.ts`, `i18n-pseudo.spec.ts`, `flag.spec.ts` |
+| RLS overhead < 2 ms p95 | `pnpm --filter @academybee/database bench`: 1.8–2.4 ms p95 locally (C-55) — **PO decision** |
+| Staging `*.staging.academybee.com` + TLS | **DEFERRED (C-50)**; runbook *Academy hosts on staging* |
 
 ---
 

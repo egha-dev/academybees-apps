@@ -163,6 +163,8 @@ One private monorepo, trunk-based. Work lands in **slices** (short branches `p<p
 
 **Slug rules:** `^[a-z0-9](?:[a-z0-9-]{1,40}[a-z0-9])$`, no `--` (blocks punycode `xn--`), lower-cased, trimmed, profanity/impersonation list checked at provisioning.
 
+*As built (Phase 1):* `packages/tenant` (dependency-free, used by `proxy.ts` and the API) holds `normalizeHost`, `classifyHost(host, PLATFORM_ROOT_DOMAIN)` → `marketing | console | hub | tenant(label) | custom(host) | invalid`, `validateSlug` and the reserved list. IP literals, punycode labels and nested labels under the root are `invalid`. Reserved labels still classify as `tenant`, because a platform-owned tenant may hold one (C-36); provisioning refuses them with `validateSlug`. `TenantDomain.hostname` stores the **label** for subdomains and the full host for custom domains (C-52). The root domain comes from `PLATFORM_ROOT_DOMAIN` (web + API; `localhost` by default only in local/ci).
+
 ### 4.2 Same-origin API
 
 Every host serves `/api/*`, rewritten by the web tier (or the load balancer) to the NestJS service. The browser therefore talks to its own origin only:
@@ -277,7 +279,10 @@ Parent opens app.academybee.com ──▶ HUB session (user-bound, no tid)
 
 ### 5.5 Per-tenant PWA identity
 
-`app/manifest.ts` is dynamic: name, short_name, icons and theme colour come from `TenantBranding`. Because each tenant is its own origin, each academy installs as its own branded app for **staff** with an isolated service worker, cache and IndexedDB. Parents and students install the single **AcademyBee Family Hub** app from `app.academybee.com` (§5.6).
+`app/manifest.ts` is dynamic: name, short_name, icons and theme colour come from `TenantBranding`. *As built (Phase 1):*
+- an ACTIVE academy host serves `/manifest.webmanifest` from `(tenant)/t/[slug]/manifest.webmanifest/route.ts` (name, short name ≤ 12 characters, `theme_color` = brand colour when it passes `brandIdentityColors`);
+- icons come from `/academy-icon/{icon-192,icon-512,maskable-512,apple-180}.png`, generated from the slug initials until uploaded logos arrive (Phase 3);
+- every other host serves the AcademyBee manifest. Because each tenant is its own origin, each academy installs as its own branded app for **staff** with an isolated service worker, cache and IndexedDB. Parents and students install the single **AcademyBee Family Hub** app from `app.academybee.com` (§5.6).
 
 ---
 
