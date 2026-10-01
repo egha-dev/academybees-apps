@@ -115,7 +115,7 @@ pnpm install             # also installs git hooks (no commits/pushes on main)
 pnpm env:init            # .env files from the committed examples
 pnpm infra:up            # postgres, redis, mailpit (http://localhost:8025), seaweedfs S3 (C-45) — infra:down | infra:reset | infra:logs
 pnpm db:migrate          # prisma migrate dev + grants/RLS SQL (as ab_migrator) — db:deploy in CI/deploys
-pnpm db:seed             # local/ci only: release-flag definitions (Phase 1 adds tenants demo-a, demo-b, paused; Phase 2 one user per role)
+pnpm db:seed             # local/ci only: release-flag definitions + academies demo-a, demo-b (ACTIVE), paused, setup-demo, closed-demo, old-demo-a → demo-a (C-54); Phase 2 adds one user per role
 pnpm db:drift            # committed migrations == Prisma schema
 pnpm dev                 # web :3000, api :4000, worker (packages rebuild in watch mode)
 pnpm lint | pnpm typecheck | pnpm test | pnpm test:integration | pnpm build
