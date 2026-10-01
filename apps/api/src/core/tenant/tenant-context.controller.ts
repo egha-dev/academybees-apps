@@ -9,6 +9,10 @@ import { DomainError } from '../errors/domain-error.js';
 import { ZodResponse } from '../validation/zod-dto.js';
 import { AnyHost } from './host-policy.js';
 
+/** Branding is decoration: a malformed colour falls back to the neutral tile, never a 500 (L4). */
+const hexOrNull = (value: string | null | undefined) =>
+  value && /^#[0-9A-Fa-f]{6}$/.test(value) ? value : null;
+
 /**
  * Public academy identity for the request host (ARCHITECTURE §5.3) — used by the web proxy to
  * route, brand the shell and pick a status page. The academy comes only from the host.
@@ -53,8 +57,8 @@ export class TenantContextController {
       timezone: tenant.timezone,
       locale: tenant.locale,
       branding: {
-        primaryColor: tenant.branding?.primaryColor ?? null,
-        secondaryColor: tenant.branding?.secondaryColor ?? null,
+        primaryColor: hexOrNull(tenant.branding?.primaryColor),
+        secondaryColor: hexOrNull(tenant.branding?.secondaryColor),
         hasLogo: Boolean(tenant.branding?.logoKey),
       },
     };

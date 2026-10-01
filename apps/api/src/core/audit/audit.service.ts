@@ -33,7 +33,9 @@ export class AuditService {
     const id = newId();
     const store = this.cls.isActive() ? this.cls.get() : undefined;
     const actor = store?.actor ?? { type: 'SYSTEM' as const };
-    await (tx ?? this.db).auditLog.create({
+    // createMany: no INSERT … RETURNING, because platform rows (tenant_id NULL) are insert-only for
+    // the app role (review L8).
+    await (tx ?? this.db).auditLog.createMany({
       data: {
         id,
         tenantId: entry.tenantId !== undefined ? entry.tenantId : (store?.tenantId ?? null),

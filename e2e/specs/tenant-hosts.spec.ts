@@ -87,6 +87,26 @@ test('internal routes cannot be typed to reach another academy', async ({ page }
   await expect(page.getByText('Demo B Dance Studio')).toHaveCount(0);
 });
 
+test('a forged x-ab-context header never changes the academy shown (review L9)', async ({
+  page,
+}, testInfo) => {
+  const forge = (context: object) => encodeURIComponent(JSON.stringify(context));
+  await page.setExtraHTTPHeaders({
+    'x-ab-context': forge({ status: 'SUSPENDED', displayName: 'Demo B Dance Studio' }),
+    'x-ab-apex': 'https://evil.example',
+  });
+  await page.goto(hostUrl(testInfo, 'demo-a'));
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome to Demo A Academy');
+  await expect(page.getByText('Demo B Dance Studio')).toHaveCount(0);
+
+  const unknown = await page.goto(hostUrl(testInfo, 'nope'));
+  expect(unknown?.status()).toBe(404);
+  await expect(page.getByRole('link', { name: 'Go to AcademyBee' })).not.toHaveAttribute(
+    'href',
+    /evil/,
+  );
+});
+
 test('app. is the Family Hub host (G-31)', async ({ page }, testInfo) => {
   await page.goto(hostUrl(testInfo, 'app'));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('AcademyBee Family Hub');

@@ -1,8 +1,9 @@
 import { newId } from '@academybee/contracts';
 import { type PrismaClient, withTransaction } from '@academybee/database';
 import { type INestApplication } from '@nestjs/common';
+import pg from 'pg';
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 
 import { AuditService } from '../../src/core/audit/audit.service.js';
 import { TENANT_DB } from '../../src/core/database/database.module.js';
@@ -27,7 +28,17 @@ describe('audit and outbox services', () => {
       .set('Idempotency-Key', newId())
       .set('x-request-id', 'audit-test-req-1')
       .send({ amountMinor: 10 });
-    const entry = await db.auditLog.findFirst({ where: { requestId: 'audit-test-req-1' } });
+    // A request on a non-academy host writes a platform row, which the app role cannot read back
+    // (review L8) — inspect it as the superuser.
+    const su = new pg.Client({ connectionString: inject('databaseUrls').superuser });
+    await su.connect();
+    const { rows } = await su
+      .query(
+        `SELECT action, entity_type AS "entityType", entity_id AS "entityId", actor_type AS "actorType"
+           FROM audit_log WHERE request_id = 'audit-test-req-1'`,
+      )
+      .finally(() => su.end());
+    const entry = rows[0] as Record<string, unknown> | undefined;
     expect(entry).toMatchObject({
       action: 'test.payment_recorded',
       entityType: 'Payment',
@@ -57,6 +68,11 @@ describe('audit and outbox services', () => {
       dispatchedAt: null,
     });
     expect(await db.outboxEvent.findUnique({ where: { id: rolledBackId } })).toBeNull();
-    expect(await db.auditLog.count({ where: { action: 'test.rolled_back' } })).toBe(0);
+    const check = new pg.Client({ connectionString: inject('databaseUrls').superuser });
+    await check.connect();
+    const { rows: rolledBack } = await check
+      .query(`SELECT 1 FROM audit_log WHERE action = 'test.rolled_back'`)
+      .finally(() => check.end());
+    expect(rolledBack).toEqual([]);
   });
 });

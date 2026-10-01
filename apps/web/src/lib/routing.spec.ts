@@ -141,4 +141,24 @@ describe('decideRoute (ARCHITECTURE §10.2)', () => {
     expect(route('localhost:3000', '/manifest.webmanifest')).toEqual({ type: 'next' });
     expect(route('console.localhost:3000', '/manifest.webmanifest')).toEqual({ type: 'next' });
   });
+
+  it('matches internal and shared prefixes by whole segment only (review L3)', () => {
+    for (const path of [
+      '/hubs',
+      '/hub-settings',
+      '/console-help',
+      '/tea',
+      '/offline-x',
+      '/status-report',
+    ])
+      expect(route('demo-a.localhost:3000', path, active)).toEqual({
+        type: 'rewrite',
+        path: `/t/demo-a${path}`,
+      });
+    for (const path of ['/t', '/hub', '/hub/x', '/status'])
+      expect(route('demo-a.localhost:3000', path, active)).toEqual({
+        type: 'rewrite',
+        path: '/__not-found',
+      });
+  });
 });

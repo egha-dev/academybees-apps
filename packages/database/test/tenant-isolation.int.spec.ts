@@ -287,28 +287,24 @@ describe('tenant isolation (ADR-005)', () => {
   });
 
   describe('platform rows in core tables (C-53)', () => {
+    const outbox = (id: string) => ({ id, type: 'test.event', payload: { ok: true } });
+
     it('without a context, NULL-tenant rows are writable and readable; tenant rows are not', async () => {
       const id = newId();
-      await db.auditLog.create({ data: { id, actorType: 'SYSTEM', action: 'test.platform' } });
+      await db.outboxEvent.create({ data: outbox(id) });
       const tenantRowId = newId();
-      await asTenant(a.id, () =>
-        db.auditLog.create({
-          data: { id: tenantRowId, actorType: 'SYSTEM', action: 'test.tenant' },
-        }),
-      );
-      const visible = await db.auditLog.findMany({ where: { id: { in: [id, tenantRowId] } } });
+      await asTenant(a.id, () => db.outboxEvent.create({ data: outbox(tenantRowId) }));
+      const visible = await db.outboxEvent.findMany({ where: { id: { in: [id, tenantRowId] } } });
       expect(visible.map((r) => r.id)).toEqual([id]);
     });
 
     it('with context A, NULL-tenant and B rows are invisible', async () => {
       const platformId = newId();
-      await db.auditLog.create({ data: { id: platformId, actorType: 'SYSTEM', action: 'x' } });
+      await db.outboxEvent.create({ data: outbox(platformId) });
       const bId = newId();
-      await asTenant(b.id, () =>
-        db.auditLog.create({ data: { id: bId, actorType: 'SYSTEM', action: 'x' } }),
-      );
+      await asTenant(b.id, () => db.outboxEvent.create({ data: outbox(bId) }));
       const seen = await asTenant(a.id, () =>
-        db.auditLog.findMany({ where: { id: { in: [platformId, bId] } } }),
+        db.outboxEvent.findMany({ where: { id: { in: [platformId, bId] } } }),
       );
       expect(seen).toEqual([]);
     });
@@ -316,11 +312,38 @@ describe('tenant isolation (ADR-005)', () => {
     it('with context A, a platform row cannot be written', async () => {
       await expect(
         asTenant(a.id, () =>
-          db.auditLog.create({
-            data: { id: newId(), tenantId: null, actorType: 'SYSTEM', action: 'x' },
-          }),
+          db.outboxEvent.create({ data: { ...outbox(newId()), tenantId: null } }),
         ),
       ).rejects.toBeInstanceOf(TenantMismatchError);
+    });
+  });
+
+  describe('audit log (review L8)', () => {
+    const audit = (id: string) => ({ id, actorType: 'SYSTEM' as const, action: 'test.audit' });
+
+    it('platform audit rows are insert-only for the app role, even without a context', async () => {
+      const id = newId();
+      await db.auditLog.createMany({ data: [audit(id)] });
+      expect(await db.auditLog.findMany({ where: { id } })).toEqual([]);
+      const su = new pg.Client({ connectionString: urls.superuser });
+      await su.connect();
+      try {
+        const { rows } = await su.query('SELECT tenant_id FROM audit_log WHERE id = $1', [id]);
+        expect(rows).toEqual([{ tenant_id: null }]);
+      } finally {
+        await su.end();
+      }
+    });
+
+    it("an academy reads its own audit rows and never another's", async () => {
+      const mine = newId();
+      const theirs = newId();
+      await asTenant(a.id, () => db.auditLog.createMany({ data: [audit(mine)] }));
+      await asTenant(b.id, () => db.auditLog.createMany({ data: [audit(theirs)] }));
+      const seen = await asTenant(a.id, () =>
+        db.auditLog.findMany({ where: { id: { in: [mine, theirs] } } }),
+      );
+      expect(seen.map((r) => r.id)).toEqual([mine]);
     });
   });
 

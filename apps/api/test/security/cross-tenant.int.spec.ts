@@ -66,6 +66,8 @@ describe('cross-tenant suite', () => {
         const victim = ref(b);
         const attempt = tenantSpoofAttempts(victim).find((x) => x.name === attemptName)!;
         const baseline = await send(route, ref(a).host);
+        // Not vacuous: the route really serves academy A here (a 404 on both would prove nothing).
+        expect(baseline.status, 'baseline must succeed on A').toBeLessThan(400);
         const spoofed = await send(route, ref(a).host, attempt);
         expect(spoofed.status).toBe(baseline.status);
         expect(spoofed.body).toEqual(baseline.body);
