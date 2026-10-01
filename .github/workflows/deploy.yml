@@ -151,5 +151,5 @@ jobs:
         run: |
           curl -fsS -o /dev/null "$WEB_URL/"
           curl -fsS -o /dev/null "$WEB_URL/offline"
-      - name: release flag hides the probe page
-        run: test "$(curl -s -o /dev/null -w '%{http_code}' "$WEB_URL/flag-probe")" = 404
+      - name: internal routes cannot be reached by URL
+        run: test "$(curl -s -o /dev/null -w '%{http_code}' "$WEB_URL/t/demo-a")" = 404

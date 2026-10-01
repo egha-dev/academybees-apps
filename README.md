@@ -84,7 +84,7 @@ pnpm install                    # also installs the git hooks
 pnpm env:init                   # creates .env files from the committed examples (local values only)
 pnpm infra:up                   # Postgres 17, Redis 7, Mailpit, SeaweedFS S3 — all healthy
 pnpm db:migrate                 # migrations + grants, as ab_migrator
-pnpm db:seed                    # local/ci only
+pnpm db:seed                    # local/ci only: demo academies (needed by pnpm e2e)
 pnpm dev                        # web :3000, API :4000, worker (≈1 minute on first start)
 ```
 
@@ -94,6 +94,10 @@ Then open:
 | --- | --- |
 | http://localhost:3000 | Web shell |
 | http://localhost:3000/dev/design-system | Every component and state (not in production) |
+| http://demo-a.localhost:3000, http://demo-b.localhost:3000 | Seeded academies (branded home, own manifest and icon) |
+| http://paused.localhost:3000, http://closed-demo.localhost:3000, http://setup-demo.localhost:3000, http://nope.localhost:3000 | Academy status pages: suspended, archived, setting up, unknown |
+| http://old-demo-a.localhost:3000 | Old slug → 301 to demo-a |
+| http://app.localhost:3000 | Family Hub placeholder (G-31) |
 | http://localhost:3000/api/v1/health/ready | API through the web origin (DB + Redis) |
 | http://localhost:4000/api/docs | OpenAPI (not in production) |
 | http://localhost:8025 | Mailpit (email from Phase 2) |

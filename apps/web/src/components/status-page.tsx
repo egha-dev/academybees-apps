@@ -26,12 +26,14 @@ const ICONS: Record<StatusTone, { icon: ReactNode; fg: string; bg: string }> = {
  */
 export async function StatusPage({
   academyName,
+  academyColor,
   tone,
   title,
   body,
   action,
 }: {
   academyName?: string | undefined;
+  academyColor?: string | null | undefined;
   tone: StatusTone;
   title: string;
   body: string;
@@ -43,7 +45,13 @@ export async function StatusPage({
   return (
     <Container maxWidth="sm" sx={{ paddingBlock: { xs: 6, md: 12 }, minBlockSize: '100dvh' }}>
       <Stack spacing={{ xs: 8, md: 10 }} sx={{ minBlockSize: '100%' }}>
-        <header>{academyName ? <AcademyIdentity name={academyName} /> : <Brand />}</header>
+        <header>
+          {academyName ? (
+            <AcademyIdentity name={academyName} primaryColor={academyColor} />
+          ) : (
+            <Brand />
+          )}
+        </header>
         <Stack component="main" spacing={3} sx={{ alignItems: 'flex-start' }}>
           <Box
             aria-hidden

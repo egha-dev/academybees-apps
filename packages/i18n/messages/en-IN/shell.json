@@ -24,10 +24,6 @@
     "update": "Update now",
     "later": "Later"
   },
-  "flagProbe": {
-    "title": "Release flag probe",
-    "body": "This page is only visible when the p0-flag-probe release flag is on."
-  },
   "nav": {
     "today": "Today",
     "students": "Students",

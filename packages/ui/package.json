@@ -16,6 +16,11 @@
       "types": "./dist/next.d.ts",
       "default": "./dist/next.js"
     },
+    "./brand": {
+      "@academybee/source": "./src/brand.ts",
+      "types": "./dist/brand.d.ts",
+      "default": "./dist/brand.js"
+    },
     "./tokens": {
       "@academybee/source": "./src/tokens.ts",
       "types": "./dist/tokens.d.ts",

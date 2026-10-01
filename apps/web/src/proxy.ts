@@ -67,5 +67,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|serwist/|icons/|favicon.ico|manifest.webmanifest).*)'],
+  // The manifest and /academy-icon/* go through routing: academy hosts serve their own (ADR-015).
+  matcher: ['/((?!_next/static|_next/image|serwist/|icons/|favicon.ico).*)'],
 };

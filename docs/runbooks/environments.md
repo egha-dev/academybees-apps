@@ -21,7 +21,7 @@ Decisions: OD-03 (vendors), OD-21 (Sentry, remote cache), C-44 (free GitHub plan
 3. **migrate**: `pnpm db:deploy` as `ab_migrator` (direct connection) — migrations and `prisma/sql/*.sql` grants run **before** new code.
 4. **backend**: Render deploy hooks pull the new images.
 5. **web**: Vercel CLI builds and deploys the web app (prebuilt).
-6. **smoke**: waits until `<web>/api/v1/health/live` reports the new commit, then checks `/api/health/ready` (DB + Redis through the web origin), `/`, `/offline`, and that `/flag-probe` is **404** (release flag off).
+6. **smoke**: waits until `<web>/api/v1/health/live` reports the new commit, then checks `/api/health/ready` (DB + Redis through the web origin), `/`, `/offline`, and that the internal route `/t/demo-a` is **404** (academies are reached only through their own host).
 
 Rollback: re-run *Deploy staging* (`workflow_dispatch`) on the previous good commit, or redeploy the previous image tag from the Render dashboard. Migrations are forward-only (expand → migrate → contract), so the previous code keeps working against the newer schema.
 

@@ -110,6 +110,10 @@ jobs:
         run: docker compose -f infra/docker-compose.yml up -d --wait postgres redis
       - name: migrate
         run: pnpm db:deploy
+      - name: seed demo academies (local/ci only, C-54)
+        run: pnpm db:seed
+        env:
+          APP_ENV: ci
       - name: build (en-IN + en-XA + en-LONG web builds)
         run: pnpm build && pnpm --filter @academybee/web build:pseudo
       - name: cache Playwright browsers
