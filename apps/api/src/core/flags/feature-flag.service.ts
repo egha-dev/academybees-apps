@@ -7,9 +7,7 @@ import { type ApiConfig } from '../config/config.schema.js';
 import { APP_DB } from '../database/database.module.js';
 import { type FlagOverride, resolveFlag } from './resolve-flag.js';
 
-const CACHE_MS = 30_000;
-
-/** Release flags (ADR-041): code registry defaults + database overrides (cached 30 s). */
+/** Release flags (ADR-041): code registry defaults + database overrides (cached, FLAGS_CACHE_MS). */
 @Injectable()
 export class FeatureFlagService {
   private cache: { at: number; overrides: FlagOverride[] } | undefined;
@@ -37,7 +35,8 @@ export class FeatureFlagService {
   }
 
   private async overrides(): Promise<FlagOverride[]> {
-    if (this.cache && Date.now() - this.cache.at < CACHE_MS) return this.cache.overrides;
+    if (this.cache && Date.now() - this.cache.at < this.config.FLAGS_CACHE_MS)
+      return this.cache.overrides;
     const overrides = await this.db.featureFlagOverride.findMany({
       select: { flagKey: true, environment: true, tenantId: true, enabled: true },
     });
