@@ -57,6 +57,14 @@ describe('shared ESLint config', () => {
     expect(await ruleIds('apps/api/src/platform/uses-platform-client.ts')).toEqual([]);
   });
 
+  it('confines the raw app client to the database module (ADR-005)', async () => {
+    expect(await ruleIds('apps/api/src/modules/students/uses-app-client.ts')).toContain(
+      'no-restricted-imports',
+    );
+    expect(await ruleIds('apps/api/src/core/database/uses-app-client.ts')).toEqual([]);
+    expect(await ruleIds('apps/api/test/uses-app-client.ts')).toEqual([]);
+  });
+
   it('accepts clean code', async () => {
     expect(await ruleIds('apps/web/src/ok.ts')).toEqual([]);
   });
