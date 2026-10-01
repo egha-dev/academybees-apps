@@ -23,6 +23,9 @@ Everything needed to build AcademyBee with Claude Code. This pack lives at the r
 | `docs/DECISIONS.md` | Both | Conflict register, open decisions with defaults, architecture decision records |
 | `docs/source/PRD_v3.1.md` | Claude Code | Text copy of the original PRD (.docx) |
 | `docs/source/UX_SPEC_v1.1.md` | Claude Code | Text copy of the original UI/UX specification (.docx) |
+| `apps/`, `packages/` | Code | Web (Next.js), API and worker (NestJS); shared packages (contracts, database, i18n, ui, sync, testing, config) |
+| `e2e/`, `infra/`, `scripts/` | Code | Playwright specs; local Docker stack and DB role scripts; governance, performance and dev scripts |
+| `docs/runbooks/` | Both | How-tos: GitHub governance, environments and deploys |
 
 Optionally put the original `.docx` files in `docs/source/` too, for the record; the `.md` copies are the working sources (C-41).
 
@@ -61,10 +64,47 @@ When you are ready, **Phase L** adds the language switcher and your first langua
 
 ## Repository
 
-The pack assumes **one private GitHub monorepo** (web, API, worker and shared packages together), managed trunk-based (ADR-041):
-- **Protected main branch:** nothing reaches it without passing all automatic checks.
-- **Small pull requests ("slices")** that merge themselves when green.
+**One private GitHub monorepo** (web, API, worker and shared packages together), managed trunk-based (ADR-041):
+- **Small pull requests ("slices")** that merge only when every automatic check is green: `verify`, `integration`, `build`, `e2e`, `pr-title`.
 - **Release flags** keep unfinished screens hidden.
-- **Staging** updates automatically on every merge. **Production** releases need your approval.
+- **Staging** updates automatically on every merge once its accounts exist (`docs/runbooks/environments.md`). **Production** releases are started by you from a version tag.
+
+On the **free GitHub plan** (C-44), `main` has no server-side protection: Claude merges only after all checks pass and never pushes to `main`, and local git hooks refuse commits and pushes on `main`. Upgrading later (GitHub Pro) and running `scripts/github/apply-governance.sh` adds the enforced ruleset (`docs/runbooks/github-governance.md`).
 
 This scales from a solo founder to a team of about 10–15 engineers without restructuring. The signals for when to revisit are listed in ADR-041.
+
+## Local setup (WSL2)
+
+Supported setup (OD-20): Windows with **WSL2 Ubuntu**, the repository cloned **inside Linux** (`~/academybees-apps`), and Docker Desktop with WSL integration. Prerequisites in `docs/EXECUTION_GUIDE.md` Part C: git, `gh`, Node 24 (fnm), pnpm via corepack.
+
+```bash
+git clone https://github.com/egha-dev/academybees-apps.git ~/academybees-apps && cd ~/academybees-apps
+corepack enable                 # pnpm version comes from package.json
+pnpm install                    # also installs the git hooks
+pnpm env:init                   # creates .env files from the committed examples (local values only)
+pnpm infra:up                   # Postgres 17, Redis 7, Mailpit, SeaweedFS S3 — all healthy
+pnpm db:migrate                 # migrations + grants, as ab_migrator
+pnpm db:seed                    # local/ci only
+pnpm dev                        # web :3000, API :4000, worker (≈1 minute on first start)
+```
+
+Then open:
+
+| URL | What |
+| --- | --- |
+| http://localhost:3000 | Web shell |
+| http://localhost:3000/dev/design-system | Every component and state (not in production) |
+| http://localhost:3000/api/v1/health/ready | API through the web origin (DB + Redis) |
+| http://localhost:4000/api/docs | OpenAPI (not in production) |
+| http://localhost:8025 | Mailpit (email from Phase 2) |
+| http://localhost:8888 | SeaweedFS S3 browser |
+
+Academy hosts (`http://demo-a.localhost:3000`), the Family Hub (`app.localhost`) and the console (`console.localhost`) arrive with Phases 1–3.
+
+**Checks** (the same as CI): `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:integration` (Docker), `pnpm build`, `pnpm e2e` (builds, then Playwright), `pnpm perf:budget`, `pnpm perf:lighthouse`, `pnpm i18n:check`, `pnpm flags:check`.
+
+**Troubleshooting**
+- *Playwright: "error while loading shared libraries"* → `sudo pnpm dlx playwright@1.63.0 install-deps chromium webkit` once.
+- *Ports 3000/4000/5432 busy* → stop old servers or `pnpm infra:down`; `pnpm infra:reset` wipes local data.
+- *A package's changes don't show in the API/worker* → `pnpm dev` rebuilds packages in watch mode; when running `node dist/main.js` yourself, run `pnpm build` first.
+- *Lighthouse in WSL leaves `C:\Users\…` folders* → temporary Chrome profiles, git-ignored and safe to delete.
