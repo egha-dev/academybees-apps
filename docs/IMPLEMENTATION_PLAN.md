@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-01 · Current phase: **Phase 1 — Multi-Tenant + Wildcard Domain (⬜ not started)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`)
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-01 · Current phase: **Phase 1 — Multi-Tenant + Wildcard Domain (🟨 in progress, started 2026-10-01)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -12,7 +12,7 @@
 | # | Phase | Status | Pulled-forward slices | Key decisions |
 | --- | --- | --- | --- | --- |
 | 0 | Foundation | ✅ 2026-10-01 | Outbox, audit, idempotency tables; English-only i18n foundation, multilingual-ready (G-08, G-32), analytics port, perf budgets (G-09, G-24) | ADR-001/002/012/013/014/015/016/022/030/031/032/035/040 |
-| 1 | Multi-Tenant + Wildcard Domain | ⬜ | Default branch per tenant; `app.` Family Hub host reserved + classified (G-31) | ADR-003/004/005/039, C-07 |
+| 1 | Multi-Tenant + Wildcard Domain | 🟨 | Default branch per tenant; `app.` Family Hub host reserved + classified (G-31) | ADR-003/004/005/039, C-07 |
 | 2 | Authentication + RBAC | ⬜ | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
 | 3 | Academy Provisioning + Onboarding | ⬜ | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, ADR-028/034 |
 | 4 | Students + Parents + Teachers | ⬜ | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
@@ -190,7 +190,6 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 - **Phase 15:** trim API/worker images (~730 MB: `@prisma/client`'s peer pulls the Prisma CLI, Studio and TypeScript into production deps); total blocking time ≈ 350 ms on simulated mobile (Lighthouse warning only); OpenTelemetry tracing.
 - **Watch:** the shell has ≈4 KB of route-JS headroom (React DOM + Next router ≈ 114 KB); teacher/hub screens in Phases 6–7P must import from `@academybee/ui/components/*` and lazy-load heavy UI.
 
-Phase 1 is **not** started.
 
 ---
 
@@ -198,6 +197,19 @@ Phase 1 is **not** started.
 
 **Goal.** Any request knows its tenant safely; the database refuses cross-tenant reads/writes; academy hosts show branded shells or polished status pages.
 **Refs.** PRD v2 §27, v3 §13, v3.1 §C–G; UX v1.1 §1, §7, §8; ARCHITECTURE §5, §8.2.
+**Status.** 🟨 in progress — started 2026-10-01, `phase-1-start` = `f965f1d`. Approved slice plan: [`docs/plans/phase-1.md`](plans/phase-1.md) (decisions C-51…C-54).
+
+**Slices (each = one PR, ADR-041)**
+
+| Slice | Branch | Tasks | State |
+| --- | --- | --- | --- |
+| S1 | `p1/tenant-package` | 1.1 plan + decisions, 1.2 `packages/tenant` (host/slug/reserved, property tests) | 🟨 |
+| S2 | `p1/tenant-schema` | 1.3 tenant tables + migration, 1.4 RLS applier + coverage test, 1.5 seeds + factories | ⬜ |
+| S3 | `p1/tenant-client` | 1.6 tenant-bound Prisma client + lint, 1.7 isolation suite, 1.8 RLS benchmark | ⬜ |
+| S4 | `p1/tenant-api` | 1.9 resolver + context, 1.10 guards + `GET /tenant/context`, 1.11 security tests, M4, cross-tenant scaffold | ⬜ |
+| S5 | `p1/web-routing` | 1.12 `proxy.ts` routing, 1.13 status pages | ⬜ |
+| S6 | `p1/web-branding` | 1.14 branding + manifest + icons (flag `p1-tenant-home`), 1.15 hub/console + remove `p0-flag-probe` (flag `p1-hub-placeholder`), 1.16 E2E + analytics | ⬜ |
+| S7 | `p1/docs` | 1.17 as-built docs | ⬜ |
 
 **Scope**
 - DB: `Tenant`, `TenantDomain`, `TenantBranding`, `TenantSettings`, `Branch` (default branch auto-created) ⤴ C-07. RLS policy template + migration helper that applies it to every table flagged tenant-owned; `ab_app`/`ab_platform` grants.
