@@ -37,6 +37,8 @@ export class TenantResolver {
   async resolve(host: string | undefined): Promise<ResolvedHost> {
     const hostClass = classifyHost(host, this.root);
     if (hostClass.kind !== 'tenant' && hostClass.kind !== 'custom') return { kind: hostClass.kind };
+    if (hostClass.kind === 'custom' && !this.config.CUSTOM_DOMAINS_ENABLED)
+      return { kind: 'unknown' };
     const cached = await this.cacheGet(hostClass.lookupKey);
     if (cached) return cached;
     const resolved = await this.lookup(hostClass.lookupKey, hostClass.kind === 'custom');

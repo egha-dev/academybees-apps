@@ -8,7 +8,9 @@ module.exports = {
       startServerReadyPattern: 'Ready in|Local:',
       startServerReadyTimeout: 60000,
       url: ['http://localhost:3000/', 'http://localhost:3000/offline'],
-      numberOfRuns: 3,
+      // 5 runs (median): CI runners vary ±0.5 s on the same build; 3 runs flapped around the
+      // 2.5 s budget (C-58). The budget itself is unchanged.
+      numberOfRuns: 5,
       settings: { chromeFlags: '--no-sandbox --headless=new' },
     },
     assert: {

@@ -239,7 +239,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | Platform client only under `platform/**` (+ raw app client only in the database providers) | `packages/config/test/eslint-rules.spec.js` |
 | Client-supplied tenantId / forged host never trusted; every tenant route registered | `apps/api/test/security/cross-tenant.int.spec.ts` + `cross-tenant.registry.ts`; `client-ip.int.spec.ts` (M4) |
 | E2E: demo-a branding + manifest name; `nope` → 404 Unknown; `paused` → Suspended (+ archived, setup, redirect, hub, console) | `e2e/specs/tenant-hosts.spec.ts`, `tenant-status.a11y.spec.ts`, `i18n-pseudo.spec.ts`, `flag.spec.ts` |
-| RLS overhead < 2 ms p95 | `pnpm --filter @academybee/database bench`: 1.8–2.4 ms p95 locally (C-55) — **PO decision** |
+| RLS overhead (budget amended to ≈ 2.5 ms p95 locally, C-55) | `pnpm --filter @academybee/database bench`: 2.2–2.5 ms p95 — **accepted by the PO 2026-10-01**; re-measure on staging, same region |
 | Staging `*.staging.academybees.com` + TLS | **DEFERRED (C-50)**; runbook *Academy hosts on staging* |
 
 ---

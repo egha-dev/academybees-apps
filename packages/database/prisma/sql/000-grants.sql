@@ -15,9 +15,11 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON feature_flag_override FROM ab_app;
 GRANT SELECT ON feature_flag_override TO ab_app;
 
 -- Tenants and their domains are created and re-pointed only by platform staff (provisioning,
--- domain changes — audited, PRD v3.1 §B, §F). Tenant code may read them and update the academy row.
-REVOKE INSERT, DELETE, TRUNCATE ON tenant FROM ab_app;
-GRANT SELECT, UPDATE ON tenant TO ab_app;
+-- domain changes — audited, PRD v3.1 §B, §F). Tenant code may read the academy row and update
+-- only its descriptive columns: never status, slug, id or created_by (review M2).
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON tenant FROM ab_app;
+GRANT SELECT ON tenant TO ab_app;
+GRANT UPDATE (name, academy_type, timezone, locale, currency, updated_at) ON tenant TO ab_app;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON tenant_domain FROM ab_app;
 GRANT SELECT ON tenant_domain TO ab_app;
 
