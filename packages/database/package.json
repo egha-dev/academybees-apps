@@ -21,9 +21,9 @@
       "default": "./dist/migrate.js"
     },
     "./seed": {
-      "@academybee/source": "./src/seed/flags.ts",
-      "types": "./dist/seed/flags.d.ts",
-      "default": "./dist/seed/flags.js"
+      "@academybee/source": "./src/seed/index.ts",
+      "types": "./dist/seed/index.d.ts",
+      "default": "./dist/seed/index.js"
     }
   },
   "files": [
