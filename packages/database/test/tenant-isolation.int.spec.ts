@@ -1,17 +1,16 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+
 import { newId } from '@academybee/contracts';
 import { createTenantFixture, type TenantFixture } from '@academybee/testing';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 
-import { createAppClient, type PrismaClient } from '../src/index.js';
 import {
   createTenantBoundClient,
-  lookupTenantDomain,
   TENANT_OWNED_MODELS,
   type TenantBoundClient,
   TenantContextMissingError,
   TenantMismatchError,
-  UnsupportedTransactionError,
 } from '../src/tenant.js';
 
 /**
@@ -32,21 +31,16 @@ type Delegate = {
 describe('tenant isolation (ADR-005)', () => {
   let a: TenantFixture;
   let b: TenantFixture;
-  let base: PrismaClient;
   let db: TenantBoundClient;
-  let current: string | undefined;
+  // Same mechanism as the API's CLS: the context follows the async call chain into the driver.
+  const context = new AsyncLocalStorage<string | undefined>();
   let migrator: pg.Client;
   let app: pg.Client;
 
-  const asTenant = async <T>(tenantId: string | undefined, fn: () => Promise<T>): Promise<T> => {
-    const previous = current;
-    current = tenantId;
-    try {
-      return await fn();
-    } finally {
-      current = previous;
-    }
-  };
+  // Prisma promises are lazy: they run when awaited, so await inside the context (as request
+  // handlers do inside their CLS scope).
+  const asTenant = <T>(tenantId: string | undefined, fn: () => PromiseLike<T>): Promise<T> =>
+    context.run(tenantId, async () => await fn());
 
   beforeAll(async () => {
     [a, b] = await Promise.all([
@@ -54,15 +48,14 @@ describe('tenant isolation (ADR-005)', () => {
       createTenantFixture(urls.migrator),
     ]);
     // One connection, so every test also proves a reused pooled connection carries no context.
-    base = createAppClient(urls.app, { maxConnections: 1 });
-    db = createTenantBoundClient(base, () => current);
+    db = createTenantBoundClient(urls.app, () => context.getStore(), { maxConnections: 1 });
     migrator = new pg.Client({ connectionString: urls.migrator });
     app = new pg.Client({ connectionString: urls.app });
     await Promise.all([migrator.connect(), app.connect()]);
   });
 
   afterAll(async () => {
-    await base.$disconnect();
+    await db.$disconnect();
     await Promise.all([migrator.end(), app.end()]);
   });
 
@@ -235,9 +228,47 @@ describe('tenant isolation (ADR-005)', () => {
       ).rejects.toBeInstanceOf(TenantMismatchError);
     });
 
-    it('rejects the batch transaction form', async () => {
-      await expect(asTenant(a.id, () => db.$transaction([] as never))).rejects.toBeInstanceOf(
-        UnsupportedTransactionError,
+    it('a batch transaction runs under the tenant context', async () => {
+      const [branches, setting] = await asTenant(a.id, () =>
+        db.$transaction([
+          db.branch.findMany(),
+          db.$queryRaw<Array<{ t: string }>>`SELECT current_setting('app.tenant_id', true) AS t`,
+        ]),
+      );
+      expect(new Set(branches.map((r) => r.tenantId))).toEqual(new Set([a.id]));
+      expect(setting).toEqual([{ t: a.id }]);
+    });
+
+    it('a failed transaction rolls back and leaves the connection clean', async () => {
+      await expect(
+        asTenant(a.id, () =>
+          db.$transaction(async (tx) => {
+            await tx.branch.create({ data: { id: newId(), name: 'Rolled back' } as never });
+            throw new Error('boom');
+          }),
+        ),
+      ).rejects.toThrow('boom');
+      const rows = await asTenant(a.id, () =>
+        db.branch.findMany({ where: { name: 'Rolled back' } }),
+      );
+      expect(rows).toEqual([]);
+      const leaked = await db.$queryRaw<Array<{ t: string | null }>>`
+        SELECT NULLIF(current_setting('app.tenant_id', true), '') AS t`;
+      expect(leaked).toEqual([{ t: null }]);
+    });
+
+    it('concurrent requests for two tenants in the same tick each see their own rows', async () => {
+      const [ra, rb] = await Promise.all([
+        asTenant(a.id, () => db.branch.findUnique({ where: { id: a.branchId } })),
+        asTenant(b.id, () => db.branch.findUnique({ where: { id: b.branchId } })),
+      ]);
+      expect(ra?.tenantId).toBe(a.id);
+      expect(rb?.tenantId).toBe(b.id);
+      const lists = await Promise.all(
+        [a.id, b.id, a.id, b.id].map((t) => asTenant(t, () => db.branch.findMany())),
+      );
+      lists.forEach((rows, i) =>
+        expect(new Set(rows.map((r) => r.tenantId))).toEqual(new Set([i % 2 ? b.id : a.id])),
       );
     });
 
@@ -295,7 +326,7 @@ describe('tenant isolation (ADR-005)', () => {
 
   describe('host lookup (C-51)', () => {
     it('resolves exactly the requested hostname', async () => {
-      const row = await lookupTenantDomain(base, a.slug);
+      const row = await db.$lookupTenantDomain(a.slug);
       expect(row).toMatchObject({
         tenantId: a.id,
         role: 'PRIMARY',
@@ -304,7 +335,13 @@ describe('tenant isolation (ADR-005)', () => {
     });
 
     it('returns null for an unknown hostname', async () => {
-      expect(await lookupTenantDomain(base, 'no-such-academy')).toBeNull();
+      expect(await db.$lookupTenantDomain('no-such-academy')).toBeNull();
+    });
+
+    it('is refused inside a tenant context', async () => {
+      await expect(asTenant(a.id, () => db.$lookupTenantDomain(b.slug))).rejects.toThrow(
+        /before a tenant context/,
+      );
     });
 
     it('the lookup GUC exposes only that hostname and its tenant', async () => {

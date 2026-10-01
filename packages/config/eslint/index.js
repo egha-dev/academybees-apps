@@ -44,7 +44,11 @@ const APP_CLIENT_RESTRICTION = {
     'Use the tenant-bound client (TENANT_DB). The raw app client is created only by the database module (ADR-005).',
 };
 
-/** `no-restricted-imports` with the chosen restrictions. */
+/**
+ * `no-restricted-imports` with the chosen restrictions.
+ * @param {{ mui?: boolean; platform?: boolean; appClient?: boolean }} [options]
+ * @returns {import('eslint').Linter.RuleEntry}
+ */
 function restrictImports({ mui = true, platform = true, appClient = true } = {}) {
   return [
     'error',

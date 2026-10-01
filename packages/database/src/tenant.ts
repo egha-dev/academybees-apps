@@ -1,10 +1,22 @@
 // Tenant-bound Prisma client (ADR-005, ARCHITECTURE §8.2).
 //
-// Every model operation runs in a transaction that first sets `app.tenant_id` (transaction-local,
-// safe with PgBouncer transaction pooling), so PostgreSQL RLS sees only the current tenant's rows.
+// The pg driver adapter sets `app.tenant_id` (transaction-local, safe with PgBouncer transaction
+// pooling) for everything the client sends, so PostgreSQL RLS sees only the current tenant's rows.
 // On top of RLS, the client injects `tenantId` into filters and created rows and refuses a
-// different tenantId, so application code never hand-writes it.
-import { Prisma, type PrismaClient } from './generated/prisma/client.js';
+// different tenantId, so application code never hand-writes it. Setting the context in the driver
+// instead of a Prisma batch transaction per query keeps the overhead to raw round trips (Phase 1
+// benchmark, ADR-005).
+import { PrismaPg } from '@prisma/adapter-pg';
+import type {
+  IsolationLevel,
+  SqlDriverAdapter,
+  SqlDriverAdapterFactory,
+  SqlQuery,
+  Transaction,
+} from '@prisma/driver-adapter-utils';
+
+import { type DatabaseClientOptions } from './clients.js';
+import { Prisma, PrismaClient } from './generated/prisma/client.js';
 
 /** Returns the tenant of the current request/job, or undefined outside a tenant context. */
 export type TenantIdSource = () => string | undefined;
@@ -22,16 +34,6 @@ export class TenantMismatchError extends Error {
   constructor(model: string, operation: string) {
     super(`tenantId does not match the current tenant in ${model}.${operation}`);
     this.name = 'TenantMismatchError';
-  }
-}
-
-/** The client's interactive transaction is the only transaction form it supports. */
-export class UnsupportedTransactionError extends Error {
-  constructor() {
-    super(
-      'Batch $transaction([...]) is not supported on the tenant-bound client; use $transaction(async (tx) => …)',
-    );
-    this.name = 'UnsupportedTransactionError';
   }
 }
 
@@ -152,86 +154,187 @@ function requireTenantFor(model: string, operation: string, tenantId: string | u
     throw new TenantContextMissingError(model, operation);
 }
 
-/** Client extension used inside interactive transactions: argument scoping only (RLS GUC is set once). */
-function scopingExtension(getTenantId: TenantIdSource) {
-  return Prisma.defineExtension({
-    name: 'tenant-scoping',
-    query: {
-      $allModels: {
-        $allOperations({ model, operation, args, query }) {
-          const tenantId = getTenantId();
-          requireTenantFor(model, operation, tenantId);
-          return query(tenantId ? scopeArgs(model, operation, args, tenantId) : args);
-        },
-      },
+/** Statements the driver runs around a tenant-scoped query (ADR-005). */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const STATEMENT = (sql: string): SqlQuery => ({ sql, args: [], argTypes: [] });
+
+function setTenantQuery(tenantId: string): SqlQuery {
+  if (!UUID.test(tenantId)) throw new Error('Tenant context is not a UUID');
+  return {
+    sql: `SELECT set_config('app.tenant_id', $1, true)`,
+    args: [tenantId],
+    argTypes: [{ scalarType: 'string', arity: 'scalar' }],
+  };
+}
+
+/**
+ * Driver-level tenant context. Every statement Prisma sends outside a transaction runs as
+ * BEGIN → set_config('app.tenant_id', …, true) → statement → COMMIT on one pooled connection, and
+ * every transaction Prisma starts sets the context right after BEGIN. Transaction-local, so it is
+ * safe with PgBouncer transaction pooling and a reused connection never carries a tenant.
+ * Without a tenant context statements run unchanged (RLS then shows no tenant rows).
+ */
+function tenantScopedAdapter(
+  adapter: SqlDriverAdapter,
+  getTenantId: TenantIdSource,
+): SqlDriverAdapter {
+  const inTenant = async <T>(
+    tenantId: string,
+    run: (tx: Transaction) => Promise<T>,
+  ): Promise<T> => {
+    const tx = await adapter.startTransaction();
+    try {
+      await tx.executeRaw(setTenantQuery(tenantId));
+      const result = await run(tx);
+      await tx.executeRaw(STATEMENT('COMMIT'));
+      await tx.commit();
+      return result;
+    } catch (error) {
+      await tx.executeRaw(STATEMENT('ROLLBACK')).catch(() => undefined);
+      await tx.rollback();
+      throw error;
+    }
+  };
+
+  return new Proxy(adapter, {
+    get(target, prop, receiver) {
+      switch (prop) {
+        case 'queryRaw':
+          return (query: SqlQuery) => {
+            const tenantId = getTenantId();
+            return tenantId === undefined
+              ? target.queryRaw(query)
+              : inTenant(tenantId, (tx) => tx.queryRaw(query));
+          };
+        case 'executeRaw':
+          return (query: SqlQuery) => {
+            const tenantId = getTenantId();
+            return tenantId === undefined
+              ? target.executeRaw(query)
+              : inTenant(tenantId, (tx) => tx.executeRaw(query));
+          };
+        case 'startTransaction':
+          return async (isolationLevel?: IsolationLevel) => {
+            const tenantId = getTenantId();
+            const tx = await target.startTransaction(isolationLevel);
+            if (tenantId !== undefined) {
+              try {
+                await tx.executeRaw(setTenantQuery(tenantId));
+              } catch (error) {
+                await tx.executeRaw(STATEMENT('ROLLBACK')).catch(() => undefined);
+                await tx.rollback();
+                throw error;
+              }
+            }
+            return tx;
+          };
+        case 'executeScript':
+          return () =>
+            Promise.reject(new Error('executeScript is not available on the tenant-bound client'));
+        default: {
+          const value: unknown = Reflect.get(target, prop, receiver);
+          return typeof value === 'function'
+            ? (value as (...a: unknown[]) => unknown).bind(target)
+            : value;
+        }
+      }
+    },
+  });
+}
+
+function tenantScopedAdapterFactory(
+  factory: SqlDriverAdapterFactory,
+  getTenantId: TenantIdSource,
+): SqlDriverAdapterFactory {
+  return new Proxy(factory, {
+    get(target, prop, receiver) {
+      if (prop === 'connect')
+        return async () => tenantScopedAdapter(await target.connect(), getTenantId);
+      const value: unknown = Reflect.get(target, prop, receiver);
+      return typeof value === 'function'
+        ? (value as (...a: unknown[]) => unknown).bind(target)
+        : value;
     },
   });
 }
 
 /**
- * Wrap the app client (`ab_app`) so that:
- * - model operations and raw queries run with `app.tenant_id` set for the current tenant;
+ * The application database client (`ab_app`, ADR-005):
+ * - the driver sets `app.tenant_id` for every statement and transaction (see above), so RLS sees
+ *   only the current tenant's rows — model operations, raw SQL, batch and interactive transactions;
+ * - the client also scopes arguments: `tenantId` is injected into filters and created rows and a
+ *   different tenantId is refused;
  * - tenant-owned models are refused outside a tenant context (fail closed); platform-row core
- *   tables and global tables work without one (RLS then shows only NULL-tenant rows, C-53);
- * - `$transaction(async (tx) => …)` sets the context once and scopes every call inside it;
- *   the batch form `$transaction([...])` is rejected.
+ *   tables and global tables work without one (RLS then shows only NULL-tenant rows, C-53).
  */
-export function createTenantBoundClient(base: PrismaClient, getTenantId: TenantIdSource) {
-  const scoped = base.$extends(scopingExtension(getTenantId));
-
-  const setTenant = (tenantId: string) =>
-    base.$executeRaw`SELECT set_config('app.tenant_id', ${tenantId}, true)`;
-
-  /** Raw SQL runs under the tenant context when there is one (RLS still applies without). */
-  const runRaw = async ({
-    args,
-    query,
-  }: {
-    args: unknown;
-    query: (args: unknown) => Prisma.PrismaPromise<unknown>;
-  }): Promise<unknown> => {
-    const tenantId = getTenantId();
-    if (tenantId === undefined) return query(args);
-    const [, result] = await base.$transaction([setTenant(tenantId), query(args)]);
-    return result;
-  };
-
+export function createTenantBoundClient(
+  url: string,
+  getTenantId: TenantIdSource,
+  options: DatabaseClientOptions = {},
+) {
+  const adapter = new PrismaPg({ connectionString: url, max: options.maxConnections ?? 10 });
+  const base = new PrismaClient({
+    adapter: tenantScopedAdapterFactory(adapter, getTenantId),
+    log: options.log ?? [],
+  });
   return base.$extends({
     name: 'tenant-bound',
-    query: {
+    model: {
+      // Prisma batches findUnique calls made in the same tick into one query, which would run
+      // under only one caller's tenant context (the others would get null). findFirst is never
+      // batched; with a unique filter it returns the same row.
       $allModels: {
-        async $allOperations({ model, operation, args, query }) {
-          const tenantId = getTenantId();
-          requireTenantFor(model, operation, tenantId);
-          if (tenantId === undefined) return query(args);
-          const [, result] = await base.$transaction([
-            setTenant(tenantId),
-            query(scopeArgs(model, operation, args as Args, tenantId)),
-          ]);
-          return result;
+        findUnique<T, A>(this: T, args: Prisma.Exact<A, Prisma.Args<T, 'findUnique'>>) {
+          const ctx = Prisma.getExtensionContext(this) as unknown as {
+            findFirst: (a: unknown) => Prisma.PrismaPromise<Prisma.Result<T, A, 'findUnique'>>;
+          };
+          return ctx.findFirst(args);
+        },
+        findUniqueOrThrow<T, A>(
+          this: T,
+          args: Prisma.Exact<A, Prisma.Args<T, 'findUniqueOrThrow'>>,
+        ) {
+          const ctx = Prisma.getExtensionContext(this) as unknown as {
+            findFirstOrThrow: (
+              a: unknown,
+            ) => Prisma.PrismaPromise<Prisma.Result<T, A, 'findUniqueOrThrow'>>;
+          };
+          return ctx.findFirstOrThrow(args);
         },
       },
-      $queryRaw: runRaw,
-      $executeRaw: runRaw,
-      $queryRawUnsafe: runRaw,
-      $executeRawUnsafe: runRaw,
+    },
+    query: {
+      $allModels: {
+        $allOperations({ model, operation, args, query }) {
+          const tenantId = getTenantId();
+          requireTenantFor(model, operation, tenantId);
+          return query(tenantId === undefined ? args : scopeArgs(model, operation, args, tenantId));
+        },
+      },
     },
     client: {
-      $transaction<R>(
-        fn: (tx: Prisma.TransactionClient) => Promise<R>,
-        options?: {
-          isolationLevel?: Prisma.TransactionIsolationLevel;
-          timeout?: number;
-          maxWait?: number;
-        },
-      ): Promise<R> {
-        if (typeof fn !== 'function') return Promise.reject(new UnsupportedTransactionError());
-        const tenantId = getTenantId();
-        return scoped.$transaction(async (tx) => {
-          if (tenantId !== undefined)
-            await tx.$executeRaw`SELECT set_config('app.tenant_id', ${tenantId}, true)`;
-          return fn(tx as unknown as Prisma.TransactionClient);
-        }, options);
+      /**
+       * Find the domain row for one lookup key (subdomain label or custom host) before any tenant
+       * is known, under the narrow host-lookup policy (C-51). Null for unknown hosts.
+       */
+      async $lookupTenantDomain(lookupKey: string): Promise<ResolvedDomainRow | null> {
+        if (getTenantId() !== undefined)
+          throw new Error('Host lookup runs before a tenant context exists');
+        const [, row] = await base.$transaction([
+          base.$executeRaw`SELECT set_config('app.lookup_host', ${lookupKey}, true)`,
+          base.tenantDomain.findUnique({
+            where: { hostname: lookupKey },
+            select: {
+              tenantId: true,
+              hostname: true,
+              role: true,
+              kind: true,
+              verification: true,
+              tenant: { select: { id: true, slug: true, status: true } },
+            },
+          }),
+        ]);
+        return row;
       },
     },
   });
@@ -251,28 +354,3 @@ export type ResolvedDomainRow = {
     status: 'PENDING_APPROVAL' | 'SETUP' | 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
   };
 };
-
-/**
- * Find the domain row for one lookup key (subdomain label or custom host) before any tenant is
- * known, under the narrow host-lookup policy (C-51). Returns null for unknown hosts.
- */
-export async function lookupTenantDomain(
-  base: PrismaClient,
-  lookupKey: string,
-): Promise<ResolvedDomainRow | null> {
-  const [, row] = await base.$transaction([
-    base.$executeRaw`SELECT set_config('app.lookup_host', ${lookupKey}, true)`,
-    base.tenantDomain.findUnique({
-      where: { hostname: lookupKey },
-      select: {
-        tenantId: true,
-        hostname: true,
-        role: true,
-        kind: true,
-        verification: true,
-        tenant: { select: { id: true, slug: true, status: true } },
-      },
-    }),
-  ]);
-  return row;
-}

@@ -8,7 +8,6 @@ export {
 export { Prisma, PrismaClient } from './generated/prisma/client.js';
 export {
   createTenantBoundClient,
-  lookupTenantDomain,
   MODEL_KINDS,
   type ResolvedDomainRow,
   scopeArgs,
@@ -17,7 +16,6 @@ export {
   TenantContextMissingError,
   type TenantIdSource,
   TenantMismatchError,
-  UnsupportedTransactionError,
 } from './tenant.js';
 export { uniqueIndexFields } from './unique-constraints.js';
 export * from './generated/prisma/enums.js';
