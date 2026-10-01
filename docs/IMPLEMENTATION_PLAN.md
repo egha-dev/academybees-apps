@@ -203,8 +203,8 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 
 | Slice | Branch | Tasks | State |
 | --- | --- | --- | --- |
-| S1 | `p1/tenant-package` | 1.1 plan + decisions, 1.2 `packages/tenant` (host/slug/reserved, property tests) | 🟨 |
-| S2 | `p1/tenant-schema` | 1.3 tenant tables + migration, 1.4 RLS applier + coverage test, 1.5 seeds + factories | ⬜ |
+| S1 | `p1/tenant-package` | 1.1 plan + decisions, 1.2 `packages/tenant` (host/slug/reserved, property tests) | ✅ #21 |
+| S2 | `p1/tenant-schema` | 1.3 tenant tables + migration, 1.4 RLS applier + coverage test, 1.5 seeds + factories | 🟨 |
 | S3 | `p1/tenant-client` | 1.6 tenant-bound Prisma client + lint, 1.7 isolation suite, 1.8 RLS benchmark | ⬜ |
 | S4 | `p1/tenant-api` | 1.9 resolver + context, 1.10 guards + `GET /tenant/context`, 1.11 security tests, M4, cross-tenant scaffold | ⬜ |
 | S5 | `p1/web-routing` | 1.12 `proxy.ts` routing, 1.13 status pages | ⬜ |

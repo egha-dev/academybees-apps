@@ -972,6 +972,9 @@ importers:
       '@testcontainers/redis':
         specifier: 'catalog:'
         version: 12.2.0(supports-color@7.2.0)
+      pg:
+        specifier: 'catalog:'
+        version: 8.23.0
       testcontainers:
         specifier: 'catalog:'
         version: 12.2.0(supports-color@7.2.0)
@@ -982,6 +985,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.0
+      '@types/pg':
+        specifier: 'catalog:'
+        version: 8.23.1
       eslint:
         specifier: 'catalog:'
         version: 9.39.5(jiti@2.6.1)(supports-color@7.2.0)

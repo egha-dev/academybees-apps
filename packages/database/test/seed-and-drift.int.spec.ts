@@ -26,7 +26,7 @@ describe('seed runner', () => {
   it('runs with APP_ENV=ci and is repeatable', async () => {
     await seed('ci');
     const { stderr } = await seed('ci');
-    expect(stderr).toContain('Seeded: 1 feature flag definition(s).');
+    expect(stderr).toMatch(/Seeded: \d+ feature flag definition\(s\), 5 demo academies\./);
   });
 });
 

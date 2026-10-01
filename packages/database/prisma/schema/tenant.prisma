@@ -1,0 +1,148 @@
+// Tenant & domain model (Phase 1, ARCHITECTURE §5.1, PRD v3.1 §D–G). Academy = tenant.
+// RLS (prisma/sql/010-tenant-rls.sql): `tenant` is keyed on id; every other table here on tenant_id;
+// `tenant_domain` and `tenant` also have the narrow host-lookup policy used by resolution (C-51).
+
+/// C-11. PENDING_APPROVAL is reserved for self-serve signup (Phase 13).
+enum TenantStatus {
+  PENDING_APPROVAL
+  SETUP
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+
+  @@map("tenant_status")
+}
+
+enum TenantDomainKind {
+  SUBDOMAIN
+  CUSTOM
+
+  @@map("tenant_domain_kind")
+}
+
+/// PRIMARY serves the academy; REDIRECT answers 301 to the primary (old slugs stay reserved);
+/// ALIAS serves the academy without redirecting (verified custom domains, future).
+enum TenantDomainRole {
+  PRIMARY
+  REDIRECT
+  ALIAS
+
+  @@map("tenant_domain_role")
+}
+
+enum DomainVerification {
+  PENDING
+  VERIFIED
+  FAILED
+
+  @@map("domain_verification")
+}
+
+enum BranchStatus {
+  ACTIVE
+  ARCHIVED
+
+  @@map("branch_status")
+}
+
+/// An academy. `id` is immutable; slug/domain changes never change it (PRD v3.1 §F).
+model Tenant {
+  id          String       @id @db.Uuid
+  /// Current primary subdomain label (mirrors the PRIMARY SUBDOMAIN domain row).
+  slug        String       @unique @db.VarChar(42)
+  name        String       @db.VarChar(120)
+  /// Drives defaults only (terminology, templates), never business branching (ADR-029).
+  academyType String       @map("academy_type") @db.VarChar(40)
+  status      TenantStatus @default(SETUP)
+  /// IANA timezone; drives "today", schedules and reports (ADR-011).
+  timezone    String       @default("Asia/Kolkata") @db.VarChar(64)
+  locale      String       @default("en-IN") @db.VarChar(20)
+  currency    String       @default("INR") @db.Char(3)
+  createdById String?      @map("created_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  domains       TenantDomain[]
+  branding      TenantBranding?
+  settings      TenantSettings?
+  branches      Branch[]
+  flagOverrides FeatureFlagOverride[]
+
+  @@map("tenant")
+}
+
+/// Hostnames that resolve to a tenant. `hostname` is the label for SUBDOMAIN rows (`demo-a`) and
+/// the full lower-case host for CUSTOM rows (C-52). Changed only by platform staff (audited).
+model TenantDomain {
+  id                String             @id @db.Uuid
+  tenantId          String             @map("tenant_id") @db.Uuid
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  hostname          String             @unique @db.VarChar(253)
+  kind              TenantDomainKind
+  role              TenantDomainRole
+  verification      DomainVerification @default(PENDING)
+  verificationToken String?            @map("verification_token") @db.VarChar(100)
+  verifiedAt        DateTime?          @map("verified_at") @db.Timestamptz(3)
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([tenantId], map: "tenant_domain_one_primary", where: raw("role = 'PRIMARY'"))
+  @@index([tenantId])
+  @@map("tenant_domain")
+}
+
+/// Academy identity on its surfaces (UX v1.1 §8). Brand colours tint identity surfaces only and
+/// must pass contrast in light and dark themes (C-49, ADR-014).
+model TenantBranding {
+  tenantId       String   @id @map("tenant_id") @db.Uuid
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  displayName    String   @map("display_name") @db.VarChar(120)
+  /// Object-storage keys (Phase 3 uploads); null → generated monogram.
+  logoKey        String?  @map("logo_key") @db.VarChar(300)
+  faviconKey     String?  @map("favicon_key") @db.VarChar(300)
+  /// `#RRGGBB`.
+  primaryColor   String?  @map("primary_color") @db.Char(7)
+  secondaryColor String?  @map("secondary_color") @db.Char(7)
+  version        Int      @default(1)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("tenant_branding")
+}
+
+/// Operational configuration (PRD v3.1 §D). Each JSON section is validated by a Zod schema in
+/// @academybee/contracts when written.
+model TenantSettings {
+  tenantId      String   @id @map("tenant_id") @db.Uuid
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  contact       Json     @default("{}")
+  terminology   Json     @default("{}")
+  attendance    Json     @default("{}")
+  finance       Json     @default("{}")
+  notifications Json     @default("{}")
+  publicProfile Json     @default("{}") @map("public_profile")
+  /// `{ defaultLocale, enabledLocales, documentLocale }` — `en-IN` only until Phase L (ADR-040).
+  i18n          Json     @default("{\"defaultLocale\":\"en-IN\",\"enabledLocales\":[\"en-IN\"]}")
+  version       Int      @default(1)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("tenant_settings")
+}
+
+/// Every tenant has exactly one default branch from provisioning (C-07); branch-scoped tables
+/// carry branch_id. Multi-branch UI is deferred (OD-05).
+model Branch {
+  id        String       @id @db.Uuid
+  tenantId  String       @map("tenant_id") @db.Uuid
+  tenant    Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name      String       @db.VarChar(120)
+  isDefault Boolean      @default(false) @map("is_default")
+  address   Json?
+  status    BranchStatus @default(ACTIVE)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId], map: "branch_one_default", where: raw("is_default"))
+  @@index([tenantId, status])
+  @@map("branch")
+}

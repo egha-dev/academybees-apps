@@ -21,11 +21,13 @@
     "@academybee/contracts": "workspace:*",
     "@testcontainers/postgresql": "catalog:",
     "@testcontainers/redis": "catalog:",
+    "pg": "catalog:",
     "testcontainers": "catalog:"
   },
   "devDependencies": {
     "@academybee/config": "workspace:*",
     "@types/node": "catalog:",
+    "@types/pg": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

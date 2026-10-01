@@ -13,3 +13,14 @@ GRANT SELECT ON feature_flag TO ab_app;
 -- Flag overrides are changed by platform staff (console, Phase 14) or the migrator, never by tenant code.
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON feature_flag_override FROM ab_app;
 GRANT SELECT ON feature_flag_override TO ab_app;
+
+-- Tenants and their domains are created and re-pointed only by platform staff (provisioning,
+-- domain changes — audited, PRD v3.1 §B, §F). Tenant code may read them and update the academy row.
+REVOKE INSERT, DELETE, TRUNCATE ON tenant FROM ab_app;
+GRANT SELECT, UPDATE ON tenant TO ab_app;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON tenant_domain FROM ab_app;
+GRANT SELECT ON tenant_domain TO ab_app;
+
+-- Configuration rows are never deleted by tenant code (one per tenant).
+REVOKE DELETE, TRUNCATE ON tenant_branding, tenant_settings FROM ab_app;
+REVOKE TRUNCATE ON branch FROM ab_app;
