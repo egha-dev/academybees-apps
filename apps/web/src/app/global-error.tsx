@@ -1,10 +1,17 @@
 'use client';
 
-import { getMessages } from '@academybee/i18n';
-import { Container, ErrorState, UiProvider } from '@academybee/ui';
-import { createTranslator } from 'use-intl/core';
+import common from '@academybee/i18n/messages/en-IN/common.json';
+import shell from '@academybee/i18n/messages/en-IN/shell.json';
+import { ErrorState } from '@academybee/ui/components/feedback';
+import { Container } from '@academybee/ui/components/layout';
+import { UiProvider } from '@academybee/ui/provider';
 
-/** Last-resort boundary (replaces the root layout, so providers are rebuilt here). */
+import { fill } from '@/components/shell-labels';
+
+/**
+ * Last-resort boundary: it replaces the root layout, so no providers or server translations are
+ * available. It reads the en-IN catalogue JSON directly (static strings, no ICU runtime).
+ */
 export default function GlobalError({
   error,
   reset,
@@ -12,19 +19,18 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const t = createTranslator({ locale: 'en-IN', messages: getMessages('en-IN') });
   return (
     <html lang="en-IN">
       <body>
         <UiProvider>
           <Container maxWidth="sm">
             <ErrorState
-              title={t('shell.error.title')}
-              body={t('shell.error.body')}
-              retry={{ label: t('common.actions.retry'), onClick: reset }}
-              secondary={{ label: t('common.actions.goHome'), href: '/' }}
+              title={shell.error.title}
+              body={shell.error.body}
+              retry={{ label: common.actions.retry, onClick: reset }}
+              secondary={{ label: common.actions.goHome, href: '/' }}
               {...(error.digest
-                ? { reference: t('shell.error.reference', { requestId: error.digest }) }
+                ? { reference: fill(shell.error.reference, { requestId: error.digest }) }
                 : {})}
             />
           </Container>

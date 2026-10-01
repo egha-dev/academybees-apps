@@ -1,7 +1,9 @@
 'use client';
 
-import { Container, ErrorState } from '@academybee/ui';
-import { useTranslations } from 'next-intl';
+import { ErrorState } from '@academybee/ui/components/feedback';
+import { Container } from '@academybee/ui/components/layout';
+
+import { fill, useShellLabels } from '@/components/shell-labels';
 
 /** Route error boundary: what happened + next step, with a reference for support. */
 export default function RouteError({
@@ -11,16 +13,16 @@ export default function RouteError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const t = useTranslations();
+  const labels = useShellLabels();
   return (
     <Container maxWidth="sm">
       <ErrorState
-        title={t('shell.error.title')}
-        body={t('shell.error.body')}
-        retry={{ label: t('common.actions.retry'), onClick: reset }}
-        secondary={{ label: t('common.actions.goHome'), href: '/' }}
+        title={labels.errorTitle}
+        body={labels.errorBody}
+        retry={{ label: labels.retry, onClick: reset }}
+        secondary={{ label: labels.goHome, href: '/' }}
         {...(error.digest
-          ? { reference: t('shell.error.reference', { requestId: error.digest }) }
+          ? { reference: fill(labels.errorReference, { requestId: error.digest }) }
           : {})}
       />
     </Container>

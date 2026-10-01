@@ -3,10 +3,11 @@ import './globals.css';
 
 import { color } from '@academybee/ui/tokens';
 import type { Metadata, Viewport } from 'next';
-import { getLocale, getMessages, getTimeZone, getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 
 import { Providers } from '@/components/providers';
+import { type ShellLabels } from '@/components/shell-labels';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('common');
@@ -27,22 +28,27 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const [locale, timeZone, messages] = await Promise.all([
-    getLocale(),
-    getTimeZone(),
-    getMessages(),
-  ]);
+  const [locale, t] = await Promise.all([getLocale(), getTranslations()]);
+  // Translated on the server so the shell ships no ICU runtime (G-24); see shell-labels.tsx.
+  const labels: ShellLabels = {
+    close: t('common.actions.close'),
+    retry: t('common.actions.retry'),
+    goHome: t('common.actions.goHome'),
+    install: t('shell.pwa.install'),
+    installBody: t('shell.pwa.installBody'),
+    updateAvailable: t('shell.pwa.updateAvailable'),
+    update: t('shell.pwa.update'),
+    later: t('shell.pwa.later'),
+    errorTitle: t('shell.error.title'),
+    errorBody: t('shell.error.body'),
+    errorReference: t.raw('shell.error.reference') as string,
+  };
   // The service worker is off in `next dev` (stale caches confuse development) and on in builds.
   const serviceWorker = process.env.NODE_ENV === 'production';
   return (
     <html lang={locale}>
       <body>
-        <Providers
-          locale={locale}
-          timeZone={timeZone}
-          messages={messages}
-          serviceWorker={serviceWorker}
-        >
+        <Providers labels={labels} serviceWorker={serviceWorker}>
           {children}
         </Providers>
       </body>

@@ -1,4 +1,6 @@
-import { Box, color, Container, Stack, Text } from '@academybee/ui';
+import { Box, Container, Stack } from '@academybee/ui/components/layout';
+import { Text } from '@academybee/ui/components/text';
+import { color } from '@academybee/ui/tokens';
 import { getTranslations } from 'next-intl/server';
 
 import { Brand } from '@/components/brand';

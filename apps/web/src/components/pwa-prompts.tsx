@@ -1,9 +1,13 @@
 'use client';
 
-import { Button, color, radius, Stack, Text } from '@academybee/ui';
+import { Button } from '@academybee/ui/components/actions';
+import { Stack } from '@academybee/ui/components/layout';
+import { Text } from '@academybee/ui/components/text';
+import { color, radius } from '@academybee/ui/tokens';
 import { useSerwist } from '@serwist/turbopack/react';
-import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+import { useShellLabels } from './shell-labels';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -74,10 +78,11 @@ function Prompt({
  * so an in-progress form is never lost.
  */
 export function PwaPrompts() {
-  const t = useTranslations('shell.pwa');
+  const labels = useShellLabels();
   const { serwist } = useSerwist();
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [updateWaiting, setUpdateWaiting] = useState(false);
+  const updateAccepted = useRef(false);
 
   useEffect(() => {
     const onPrompt = (e: Event) => {
@@ -91,7 +96,11 @@ export function PwaPrompts() {
   useEffect(() => {
     if (!serwist) return;
     const onWaiting = () => setUpdateWaiting(true);
-    const onControlling = () => window.location.reload();
+    // Reload only when the user accepted an update — the first install also fires `controlling`
+    // and must not reload the page under the user.
+    const onControlling = (event: { isUpdate?: boolean }) => {
+      if (event.isUpdate && updateAccepted.current) window.location.reload();
+    };
     serwist.addEventListener('waiting', onWaiting);
     serwist.addEventListener('controlling', onControlling);
     return () => {
@@ -103,26 +112,32 @@ export function PwaPrompts() {
   if (updateWaiting) {
     return (
       <Prompt
-        title={t('updateAvailable')}
-        primary={{ label: t('update'), onClick: () => serwist?.messageSkipWaiting() }}
-        secondary={{ label: t('later'), onClick: () => setUpdateWaiting(false) }}
+        title={labels.updateAvailable}
+        primary={{
+          label: labels.update,
+          onClick: () => {
+            updateAccepted.current = true;
+            serwist?.messageSkipWaiting();
+          },
+        }}
+        secondary={{ label: labels.later, onClick: () => setUpdateWaiting(false) }}
       />
     );
   }
   if (installEvent) {
     return (
       <Prompt
-        title={t('install')}
-        body={t('installBody')}
+        title={labels.install}
+        body={labels.installBody}
         primary={{
-          label: t('install'),
+          label: labels.install,
           onClick: () => {
             void installEvent.prompt();
             setInstallEvent(null);
           },
         }}
         secondary={{
-          label: t('later'),
+          label: labels.later,
           onClick: () => {
             try {
               window.localStorage.setItem(DISMISS_KEY, '1');

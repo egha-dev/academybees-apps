@@ -100,7 +100,7 @@ export function DesignSystemShowcase() {
       <Section id="ds-colors" title={ds('designSystem.sections.colors')}>
         <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 3 }}>
           {SWATCHES.map((name) => (
-            <Stack key={name} spacing={1} sx={{ inlineSize: 120 }}>
+            <Stack key={name} spacing={1} sx={{ inlineSize: 120 }} data-i18n-exempt>
               <Box
                 sx={{
                   blockSize: 64,
@@ -221,7 +221,7 @@ export function DesignSystemShowcase() {
               title={t('shell.error.title')}
               body={t('shell.error.body')}
               retry={{ label: t('common.actions.retry'), onClick: () => undefined }}
-              reference={t('shell.error.reference', { requestId: '0199a0a0-4bad-76eb-a93d' })}
+              reference={t('shell.error.reference', { requestId: '01999999-7000-8000' })}
             />
           </Card>
           <Card>
@@ -294,7 +294,8 @@ export function DesignSystemShowcase() {
       </Section>
 
       <Section id="ds-money" title={ds('designSystem.sections.money')}>
-        <Stack spacing={1}>
+        {/* Intl output (month names, digits) is locale data, not catalogue text. */}
+        <Stack spacing={1} data-i18n-exempt>
           <Text>{formatMoney(10_000_000, 'INR')}</Text>
           <Text>{formatMoney(10_000_000, 'INR', { compact: true })}</Text>
           <Text>{formatDate(now)}</Text>

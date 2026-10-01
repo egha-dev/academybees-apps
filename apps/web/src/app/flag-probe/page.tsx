@@ -1,4 +1,5 @@
-import { Container, EmptyState } from '@academybee/ui';
+import { EmptyState } from '@academybee/ui/components/feedback';
+import { Container } from '@academybee/ui/components/layout';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';

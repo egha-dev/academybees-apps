@@ -1,4 +1,5 @@
-import { Stack, Text } from '@academybee/ui';
+import { Stack } from '@academybee/ui/components/layout';
+import { Text } from '@academybee/ui/components/text';
 import { getTranslations } from 'next-intl/server';
 
 import { BeeMark } from './bee-mark';
