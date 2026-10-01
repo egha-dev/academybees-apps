@@ -37,10 +37,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "db:migrate": "prisma migrate dev && tsx --conditions=@academybee/source src/cli/apply-sql.ts",
+    "db:migrate": "prisma migrate dev && prisma generate && tsx --conditions=@academybee/source src/cli/apply-sql.ts",
     "db:deploy": "prisma migrate deploy && tsx --conditions=@academybee/source src/cli/apply-sql.ts",
     "db:drift": "tsx --conditions=@academybee/source src/cli/drift.ts",
-    "db:seed": "tsx --conditions=@academybee/source src/seed/run.ts",
+    "db:seed": "prisma generate && tsx --conditions=@academybee/source src/seed/run.ts",
     "db:studio": "prisma studio",
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput"
   },
