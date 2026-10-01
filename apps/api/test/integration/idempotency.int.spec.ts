@@ -1,8 +1,9 @@
 import { newId } from '@academybee/contracts';
 import { type INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { IdempotencyStore } from '../../src/core/idempotency/idempotency.store.js';
 import { createTestApp } from '../support/test-app.js';
 import { executions } from '../support/test-support.module.js';
 
@@ -74,6 +75,24 @@ describe('@Idempotent()', () => {
     expect(b.status).toBe(409);
     expect(b.body.error.code).toBe('INVALID_STATE_TRANSITION');
     expect(executions.count).toBe(2);
+  });
+
+  it('a failure to store the response after the handler succeeded keeps the key locked', async () => {
+    const store = app.get(IdempotencyStore);
+    const complete = vi
+      .spyOn(store, 'complete')
+      .mockRejectedValueOnce(new Error('connection reset'));
+    try {
+      const key = newId();
+      const first = await post(key, { amountMinor: 2_500 });
+      const retry = await post(key, { amountMinor: 2_500 });
+      expect(first.status).toBe(500);
+      expect(retry.status).toBe(409);
+      expect(retry.body.error.code).toBe('IDEMPOTENCY_KEY_IN_PROGRESS');
+      expect(executions.count).toBe(1);
+    } finally {
+      complete.mockRestore();
+    }
   });
 
   it('the same key is independent per route', async () => {

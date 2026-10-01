@@ -66,15 +66,18 @@ export class IdempotencyInterceptor implements NestInterceptor {
             return of(claim.body);
           case 'claimed':
             return next.handle().pipe(
+              // Release only when the handler failed. If storing the response fails after the
+              // handler committed, the key must stay IN_PROGRESS: releasing it would let a retry
+              // execute the side effect (e.g. a payment) a second time.
+              catchError((error: unknown) =>
+                from(this.store.release(claim.id)).pipe(mergeMap(() => throwError(() => error))),
+              ),
               mergeMap((body: unknown) =>
                 from(
                   this.store
                     .complete(claim.id, this.statusFor(context, req, res), body)
                     .then(() => body),
                 ),
-              ),
-              catchError((error: unknown) =>
-                from(this.store.release(claim.id)).pipe(mergeMap(() => throwError(() => error))),
               ),
             );
         }
