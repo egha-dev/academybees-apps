@@ -15,6 +15,7 @@ import { IdempotencyModule } from './core/idempotency/idempotency.module.js';
 import { LoggingModule } from './core/logging/logging.module.js';
 import { OutboxModule } from './core/outbox/outbox.module.js';
 import { RateLimitModule } from './core/rate-limit/rate-limit.module.js';
+import { RbacModule } from './core/rbac/rbac.module.js';
 import { RedisModule } from './core/redis/redis.module.js';
 import { TenantModule } from './core/tenant/tenant.module.js';
 import { ZodResponseInterceptor } from './core/validation/zod-response.interceptor.js';
@@ -35,6 +36,7 @@ export class AppModule {
         TenantModule,
         RateLimitModule,
         AuthModule,
+        RbacModule,
         AuditModule,
         OutboxModule,
         AnalyticsModule,
