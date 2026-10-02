@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-02 · Current phase: **Phase 2 — Authentication + RBAC (⬜ not started)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`)
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-02 · Current phase: **Phase 2 — Authentication + RBAC (🟨 in progress, started 2026-10-02)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -13,7 +13,7 @@
 | --- | --- | --- | --- | --- |
 | 0 | Foundation | ✅ 2026-10-01 | Outbox, audit, idempotency tables; English-only i18n foundation, multilingual-ready (G-08, G-32), analytics port, perf budgets (G-09, G-24) | ADR-001/002/012/013/014/015/016/022/030/031/032/035/040 |
 | 1 | Multi-Tenant + Wildcard Domain | ✅ 2026-10-02 | Default branch per tenant; `app.` Family Hub host reserved + classified (G-31) | ADR-003/004/005/039, C-07 |
-| 2 | Authentication + RBAC | ⬜ | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
+| 2 | Authentication + RBAC | 🟨 | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
 | 3 | Academy Provisioning + Onboarding | ⬜ | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, ADR-028/034 |
 | 4 | Students + Parents + Teachers | ⬜ | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
 | 5 | Courses + Batches + Timetable | ⬜ | Owner Today v1; terminology; holidays (G-03); transfer (G-27) | ADR-024/029/037 |
@@ -323,6 +323,23 @@ Phase 2 is **not** started.
 
 **Goal.** Staff sign in on their academy's URL and parents/students on the Family Hub; everyone gets exactly their capabilities and cannot use a session anywhere else.
 **Refs.** PRD v2 §4, §16 (auth), v3 §5, §13; UX §29 (Login Tier 1), v1.1 §8; ARCHITECTURE §6, §7.
+**Status.** 🟨 in progress — started 2026-10-02, `phase-2-start` = `be3e1a2`. Approved slice plan: [`docs/plans/phase-2.md`](plans/phase-2.md) (decisions C-59…C-66; staging proposal [`docs/plans/staging-proposal.md`](plans/staging-proposal.md) awaiting PO approval).
+
+**Slices (each = one PR, ADR-041)**
+
+| Slice | Branch | Tasks | State |
+| --- | --- | --- | --- |
+| S1 | `p2/identity-schema` | 2.1 plan + decisions, 2.2 identity schema + RLS (phone-ready), 2.3 capability catalogue + role templates, 2.4 seeds + factories | 🟨 |
+| S2 | `p2/auth-core` | 2.5 `packages/auth`, 2.6 config + keys | ⬜ |
+| S3 | `p2/sessions` | 2.7 sessions + endpoints, 2.8 guards, 2.9 rate limits + lockout | ⬜ |
+| S4 | `p2/rbac` | 2.10 capabilities + `@Can`, 2.11 scope policies, 2.12 cross-tenant suite + Phase 1 L6/L7 | ⬜ |
+| S5 | `p2/email-invites` | 2.13 email (worker), 2.14 invitations, reset, team API | ⬜ |
+| S6 | `p2/web-auth` | 2.15 web auth plumbing (cookie spike), 2.16 Login, forgot/reset, invite accept | ⬜ |
+| S7 | `p2/web-shell` | 2.17 signed-in shell (flag `p2-role-homes`), 2.18 Team page | ⬜ |
+| S7b | `p2/staging` | staging on the approved host (needs PO approval + accounts) | ⬜ |
+| S8 | `p2/hub-console` | 2.19 HUB sessions + handoff, 2.20 console + mandatory TOTP (flag `p2-console-home`) | ⬜ |
+| S9 | `p2/account-security` | 2.21 TOTP 2FA, 2.22 devices & sessions, alerts | ⬜ |
+| S10 | `p2/hardening-e2e` | 2.23 Phase 0 idempotency/logging follow-ups, 2.24 E2E + docs | ⬜ |
 
 **Scope**
 - DB: `User`, `UserCredential`, `Membership`, `Role`, `RolePermission`, `MembershipRole`, `PlatformStaff`, `AuthSession`, `Invitation`, `PasswordResetToken`.
