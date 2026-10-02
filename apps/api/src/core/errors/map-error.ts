@@ -1,5 +1,5 @@
 import { ERROR_HTTP_STATUS, type ErrorCode, type ErrorDetail } from '@academybee/contracts';
-import { Prisma, uniqueIndexFields } from '@academybee/database';
+import { Prisma, TenantMismatchError, uniqueIndexFields } from '@academybee/database';
 import { HttpException } from '@nestjs/common';
 import { ZodError } from 'zod';
 
@@ -63,6 +63,9 @@ function uniqueFields(error: Prisma.PrismaClientKnownRequestError): string[] {
 export function mapError(error: unknown): MappedError {
   if (error instanceof DomainError) return withCode(error.code, error.details);
   if (error instanceof ZodError) return withCode('VALIDATION_FAILED', zodDetails(error));
+  // Another academy's id reached the tenant-bound client from request input: report it like any
+  // record outside the caller's academy (Phase 1 review follow-up; ADR-008 no existence leak).
+  if (error instanceof TenantMismatchError) return withCode('NOT_FOUND');
 
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === 'P2002') {
@@ -72,6 +75,9 @@ export function mapError(error: unknown): MappedError {
       );
     }
     if (error.code === 'P2025') return withCode('NOT_FOUND');
+    // Invalid value for a column (e.g. a malformed UUID in a path). Bodies are validated by Zod
+    // first, so this is an identifier the client made up: not found, never a 500 (ADR-013).
+    if (error.code === 'P2007') return withCode('NOT_FOUND');
     if (error.code === 'P2034') return withCode('CONFLICT');
     return withCode('INTERNAL', undefined, true);
   }
