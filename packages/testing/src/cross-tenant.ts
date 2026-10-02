@@ -18,6 +18,8 @@ export type CrossTenantRoute = {
   body?: Record<string, unknown>;
   /** The route needs a signed-in session of academy A (cookies + CSRF header are sent). */
   session?: boolean;
+  /** The `@Can` capability: a member of A without it must get 403. */
+  capability?: string;
 };
 
 export type RouteRef = { method: string; path: string };

@@ -5,3 +5,4 @@ export * from './global-setup.js';
 export * from './factories/tenant.js';
 export * from './cross-tenant.js';
 export * from './auth-env.js';
+export * from './factories/member.js';

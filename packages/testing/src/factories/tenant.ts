@@ -108,7 +108,7 @@ export async function createTenantFixture(
     );
     await client.query(
       `INSERT INTO role_permission (tenant_id, role_id, capability, scope)
-       VALUES ($1, $2, 'academy.settings.manage', 'TENANT')`,
+       VALUES ($1, $2, 'academy.settings.manage', 'TENANT'), ($1, $2, 'team.read', 'TENANT')`,
       [t.id, user.roleId],
     );
     await client.query(

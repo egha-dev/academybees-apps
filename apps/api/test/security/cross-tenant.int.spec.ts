@@ -1,7 +1,9 @@
 import {
+  addMemberFixture,
   createTenantFixture,
   FIXTURE_PASSWORD,
   leaksTenant,
+  type MemberFixture,
   missingFromRegistry,
   type TenantFixture,
   type TenantRef,
@@ -21,6 +23,7 @@ describe('cross-tenant suite', () => {
   let app: INestApplication;
   let a: TenantFixture;
   let b: TenantFixture;
+  let limited: MemberFixture;
   const ref = (t: TenantFixture): TenantRef => ({
     id: t.id,
     slug: t.slug,
@@ -35,6 +38,12 @@ describe('cross-tenant suite', () => {
       createTenantFixture(urls.migrator, { name: 'Cross Academy B' }),
     ]);
     app = await createTestApp();
+    // A member of A with no capabilities beyond announcements (for the 403 checks).
+    limited = await addMemberFixture(urls.migrator, a.id, {
+      email: `limited-${a.slug}@example.test`,
+      roleKey: 'limited',
+      grants: [{ capability: 'announcement.read', scope: 'TENANT' }],
+    });
   });
   afterAll(async () => {
     await app.close();
@@ -47,12 +56,16 @@ describe('cross-tenant suite', () => {
     expect(missingFromRegistry(tenantRoutes, CROSS_TENANT_ROUTES)).toEqual([]);
   });
 
-  /** Sign in as academy A's fixture user; returns the cookies and CSRF token (insecure-dev names). */
-  const signIn = async (t: TenantFixture) => {
+  /** Path parameters are filled with academy A's records. */
+  const pathFor = (route: (typeof CROSS_TENANT_ROUTES)[number]) =>
+    route.path.replace(':id', a.user.membershipId);
+
+  /** Sign in; returns the cookies and CSRF token (insecure-dev names). */
+  const signIn = async (t: TenantFixture, email = t.user.email) => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .set('Host', ref(t).host)
-      .send({ identifier: t.user.email, password: FIXTURE_PASSWORD });
+      .send({ identifier: email, password: FIXTURE_PASSWORD });
     expect(res.status, 'fixture sign-in').toBe(200);
     const cookies = ([] as string[])
       .concat(res.headers['set-cookie'] ?? [])
@@ -69,7 +82,7 @@ describe('cross-tenant suite', () => {
     // Sign in first: supertest binds its server when a request is created.
     const session = route.session ? await signIn(a) : undefined;
     let req = request(app.getHttpServer())
-      [route.method === 'GET' ? 'get' : route.method === 'POST' ? 'post' : 'put'](route.path)
+      [route.method === 'GET' ? 'get' : route.method === 'POST' ? 'post' : 'put'](pathFor(route))
       .set('Host', host);
     if (session) req = req.set('Cookie', session.cookie).set('x-csrf-token', session.csrf);
     if (extra.query) req = req.query(extra.query);
@@ -88,6 +101,49 @@ describe('cross-tenant suite', () => {
     const keys = await redis.keys('rl:*');
     if (keys.length) await redis.del(...keys);
     await redis.quit();
+  });
+
+  it('every private route declares @Can or @SignedIn (fail-closed guard, ADR-008)', () => {
+    const undeclared = listRoutes(app)
+      .filter((r) => r.policy !== 'none' && !r.isPublic && !r.capability && !r.signedIn)
+      .map((r) => `${r.method} ${r.path}`);
+    expect(undeclared).toEqual([]);
+  });
+
+  const raw = (
+    route: (typeof CROSS_TENANT_ROUTES)[number],
+    host: string,
+    session?: { cookie: string; csrf: string },
+  ) => {
+    let req = request(app.getHttpServer())
+      [route.method === 'GET' ? 'get' : route.method === 'POST' ? 'post' : 'put'](pathFor(route))
+      .set('Host', host);
+    if (session) req = req.set('Cookie', session.cookie).set('x-csrf-token', session.csrf);
+    return route.method === 'GET' ? req : req.send(route.body ?? {});
+  };
+
+  describe.each(
+    CROSS_TENANT_ROUTES.filter(
+      (r) => r.session && r.path !== '/api/v1/auth/logout' && r.path !== '/api/v1/auth/refresh',
+    ),
+  )('session checks: $method $path', (route) => {
+    it('without a session → 401', async () => {
+      expect((await raw(route, ref(a).host)).status).toBe(401);
+    });
+
+    it("academy A's session on academy B's host → 401 TENANT_MISMATCH", async () => {
+      const res = await raw(route, ref(b).host, await signIn(a));
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe('TENANT_MISMATCH');
+      expect(leaksTenant(res.body, ref(a))).toEqual([]);
+    });
+
+    if (route.capability)
+      it(`a member without ${route.capability} → 403`, async () => {
+        const res = await raw(route, ref(a).host, await signIn(a, limited.email));
+        expect(res.status).toBe(403);
+        expect(res.body.error.code).toBe('FORBIDDEN');
+      });
   });
 
   describe.each(CROSS_TENANT_ROUTES)('$method $path', (route) => {

@@ -1,4 +1,4 @@
-import { Prisma } from '@academybee/database';
+import { Prisma, TenantMismatchError } from '@academybee/database';
 import { BadRequestException, NotFoundException, PayloadTooLargeException } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -52,6 +52,18 @@ describe('mapError', () => {
       status: 500,
       code: 'INTERNAL',
       unexpected: true,
+    });
+  });
+
+  it('reports malformed ids and cross-academy ids as NOT_FOUND, not as internal errors', () => {
+    const p2007 = new Prisma.PrismaClientKnownRequestError('invalid input', {
+      code: 'P2007',
+      clientVersion: 'test',
+    });
+    expect(mapError(p2007)).toMatchObject({ code: 'NOT_FOUND', status: 404, unexpected: false });
+    expect(mapError(new TenantMismatchError('Branch', 'findMany'))).toMatchObject({
+      code: 'NOT_FOUND',
+      unexpected: false,
     });
   });
 });
