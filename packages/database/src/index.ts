@@ -19,6 +19,7 @@ export {
   TenantMismatchError,
   uniqueToFirstArgs,
 } from './tenant.js';
+export { ensureSystemRoles } from './roles.js';
 export { uniqueIndexFields } from './unique-constraints.js';
 export * from './generated/prisma/enums.js';
 export type * from './generated/prisma/models.js';

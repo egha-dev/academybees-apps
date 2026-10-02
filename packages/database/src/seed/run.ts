@@ -4,6 +4,7 @@ import { requireEnv } from '../cli/env.js';
 import { syncFeatureFlagDefinitions } from './flags.js';
 import { assertSeedAllowed, SeedNotAllowedError } from './guard.js';
 import { seedDevTenants } from './tenants.js';
+import { seedDevUsers } from './users.js';
 
 try {
   assertSeedAllowed(process.env.APP_ENV);
@@ -19,8 +20,10 @@ const db = createMigratorClient(requireEnv('MIGRATOR_DATABASE_URL'));
 try {
   const flags = await syncFeatureFlagDefinitions(db);
   const tenants = await seedDevTenants(db);
-  // Phase 2 adds one user per role.
-  console.warn(`Seeded: ${flags} feature flag definition(s), ${tenants} demo academies.`);
+  const users = await seedDevUsers(db);
+  console.warn(
+    `Seeded: ${flags} feature flag definition(s), ${tenants} demo academies, ${users} demo users.`,
+  );
 } finally {
   await db.$disconnect();
 }
