@@ -59,10 +59,7 @@ describe('identity isolation (C-59)', () => {
       [b, sessionToken.b],
     ] as const) {
       await as(migrator, { user: t.user.id }, async () => {
-        await migrator.query(
-          `INSERT INTO user_credential (user_id, password_hash, updated_at) VALUES ($1, 'hash', now())`,
-          [t.user.id],
-        );
+        // The fixture already created the credential (FIXTURE_PASSWORD).
         await migrator.query(
           `INSERT INTO auth_session (id, user_id, tenant_id, audience, family_id, refresh_token_hash, expires_at)
            VALUES ($1, $2, $3, 'TENANT', $4, $5, now() + interval '30 days')`,

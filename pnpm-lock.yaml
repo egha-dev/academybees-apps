@@ -475,6 +475,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@academybee/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@academybee/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -1021,6 +1024,9 @@ importers:
 
   packages/testing:
     dependencies:
+      '@academybee/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@academybee/contracts':
         specifier: workspace:*
         version: link:../contracts

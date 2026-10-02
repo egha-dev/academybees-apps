@@ -7,6 +7,7 @@ import { type RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { DomainError } from '../errors/domain-error.js';
 import { ZodResponse } from '../validation/zod-dto.js';
+import { Public } from '../auth/public.decorator.js';
 import { AnyHost } from './host-policy.js';
 
 /** Branding is decoration: a malformed colour falls back to the neutral tile, never a 500 (L4). */
@@ -26,6 +27,7 @@ export class TenantContextController {
 
   @Get('context')
   @AnyHost()
+  @Public()
   @ZodResponse(TenantContextResponseSchema)
   async context(): Promise<TenantContextResponse> {
     const resolved = this.cls.get('resolvedHost');

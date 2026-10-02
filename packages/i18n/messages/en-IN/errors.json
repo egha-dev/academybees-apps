@@ -1,6 +1,7 @@
 {
   "VALIDATION_FAILED": "Some details are missing or invalid. Check the highlighted fields.",
   "UNAUTHENTICATED": "Please sign in to continue.",
+  "INVALID_CREDENTIALS": "That email or password doesn't match our records. Check them and try again.",
   "SESSION_EXPIRED": "Your session has expired. Please sign in again.",
   "TENANT_MISMATCH": "Please sign in to this academy to continue.",
   "TENANT_UNAVAILABLE": "This academy is not available right now.",

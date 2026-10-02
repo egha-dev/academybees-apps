@@ -1,5 +1,6 @@
 import {
   createTenantFixture,
+  FIXTURE_PASSWORD,
   leaksTenant,
   missingFromRegistry,
   type TenantFixture,
@@ -8,7 +9,8 @@ import {
 } from '@academybee/testing';
 import { type INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
+import { Redis } from 'ioredis';
+import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from 'vitest';
 
 import { listRoutes } from '../support/routes.js';
 import { createTestApp } from '../support/test-app.js';
@@ -45,19 +47,48 @@ describe('cross-tenant suite', () => {
     expect(missingFromRegistry(tenantRoutes, CROSS_TENANT_ROUTES)).toEqual([]);
   });
 
-  const send = (
+  /** Sign in as academy A's fixture user; returns the cookies and CSRF token (insecure-dev names). */
+  const signIn = async (t: TenantFixture) => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .set('Host', ref(t).host)
+      .send({ identifier: t.user.email, password: FIXTURE_PASSWORD });
+    expect(res.status, 'fixture sign-in').toBe(200);
+    const cookies = ([] as string[])
+      .concat(res.headers['set-cookie'] ?? [])
+      .map((c) => c.split(';')[0]!);
+    const csrf = cookies.find((c) => c.startsWith('ab_csrf='))!.slice('ab_csrf='.length);
+    return { cookie: cookies.join('; '), csrf };
+  };
+
+  const send = async (
     route: (typeof CROSS_TENANT_ROUTES)[number],
     host: string,
     extra: { query?: object; headers?: Record<string, string>; body?: object } = {},
   ) => {
+    // Sign in first: supertest binds its server when a request is created.
+    const session = route.session ? await signIn(a) : undefined;
     let req = request(app.getHttpServer())
       [route.method === 'GET' ? 'get' : route.method === 'POST' ? 'post' : 'put'](route.path)
       .set('Host', host);
+    if (session) req = req.set('Cookie', session.cookie).set('x-csrf-token', session.csrf);
     if (extra.query) req = req.query(extra.query);
     for (const [k, v] of Object.entries(extra.headers ?? {})) req = req.set(k, v);
-    if (route.method !== 'GET') req = req.send({ ...route.body, ...extra.body });
+    const body =
+      route.path === '/api/v1/auth/login'
+        ? { identifier: a.user.email, password: FIXTURE_PASSWORD }
+        : route.body;
+    if (route.method !== 'GET') req = req.send({ ...body, ...extra.body });
     return req;
   };
+
+  // Each case signs in several times; start every case with clean rate-limit counters.
+  beforeEach(async () => {
+    const redis = new Redis(inject('redisUrl'));
+    const keys = await redis.keys('rl:*');
+    if (keys.length) await redis.del(...keys);
+    await redis.quit();
+  });
 
   describe.each(CROSS_TENANT_ROUTES)('$method $path', (route) => {
     it.each(tenantSpoofAttempts({ id: '', slug: '', name: '', host: '' }).map((x) => x.name))(

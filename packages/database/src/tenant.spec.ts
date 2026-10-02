@@ -81,6 +81,15 @@ describe('scopeArgs', () => {
     );
   });
 
+  it('leaves user-owned identity models to user-bound RLS (C-59)', () => {
+    expect(scopeArgs('User', 'findFirst', { where: { email: 'x@y.test' } }, A)).toEqual({
+      where: { email: 'x@y.test' },
+    });
+    expect(scopeArgs('AuthSession', 'create', { data: { id: 'x' } }, A)).toEqual({
+      data: { id: 'x' },
+    });
+  });
+
   it('leaves global models alone', () => {
     expect(scopeArgs('FeatureFlag', 'findMany', { where: { key: 'k' } }, A)).toEqual({
       where: { key: 'k' },

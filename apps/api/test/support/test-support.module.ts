@@ -10,6 +10,7 @@ import { TENANT_DB } from '../../src/core/database/database.module.js';
 import { type RequestContext } from '../../src/core/context/request-context.js';
 import { DomainError } from '../../src/core/errors/domain-error.js';
 import { Idempotent } from '../../src/core/idempotency/idempotent.js';
+import { Public } from '../../src/core/auth/public.decorator.js';
 import { AnyHost, TenantHost } from '../../src/core/tenant/host-policy.js';
 import { createZodDto, ZodResponse } from '../../src/core/validation/zod-dto.js';
 
@@ -28,6 +29,7 @@ export const executions = { count: 0 };
 /** Test-only routes. Never imported by src/ — only by the test harness. */
 @Controller({ path: 'test', version: '1' })
 @AnyHost()
+@Public()
 class TestSupportController {
   constructor(
     @Inject(TENANT_DB) private readonly db: TenantBoundClient,
@@ -93,6 +95,7 @@ class TestSupportController {
  * every domain endpoint looks like from Phase 2 on. Echoes what the server decided.
  */
 @Controller({ path: 'test/academy', version: '1' })
+@Public()
 class TestAcademyController {
   constructor(
     @Inject(TENANT_DB) private readonly db: TenantBoundClient,

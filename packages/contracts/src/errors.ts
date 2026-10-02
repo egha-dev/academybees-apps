@@ -8,6 +8,8 @@ import { z } from 'zod';
 export const ErrorCode = {
   VALIDATION_FAILED: 'VALIDATION_FAILED',
   UNAUTHENTICATED: 'UNAUTHENTICATED',
+  /** Wrong identifier or password — one uniform answer, never which part was wrong. */
+  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
   SESSION_EXPIRED: 'SESSION_EXPIRED',
   TENANT_MISMATCH: 'TENANT_MISMATCH',
   TENANT_UNAVAILABLE: 'TENANT_UNAVAILABLE',
@@ -34,6 +36,7 @@ export const ErrorCodeSchema = z.enum(ErrorCode);
 export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   VALIDATION_FAILED: 400,
   UNAUTHENTICATED: 401,
+  INVALID_CREDENTIALS: 401,
   SESSION_EXPIRED: 401,
   TENANT_MISMATCH: 401,
   TENANT_UNAVAILABLE: 403,

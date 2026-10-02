@@ -18,6 +18,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@academybee/auth": "workspace:*",
     "@academybee/contracts": "workspace:*",
     "@testcontainers/postgresql": "catalog:",
     "@testcontainers/redis": "catalog:",

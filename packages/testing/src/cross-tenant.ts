@@ -16,6 +16,8 @@ export type CrossTenantRoute = {
   path: string;
   /** JSON body for writes (the spoof attempts add a `tenantId` to it). */
   body?: Record<string, unknown>;
+  /** The route needs a signed-in session of academy A (cookies + CSRF header are sent). */
+  session?: boolean;
 };
 
 export type RouteRef = { method: string; path: string };

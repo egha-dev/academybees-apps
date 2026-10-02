@@ -2,6 +2,9 @@ import { z } from 'zod';
 
 import { type Capability, type Scope } from './permissions.js';
 
+/** Widest first: when several roles grant a capability, the widest scope wins (ADR-008). */
+const SCOPE_ORDER: readonly Scope[] = ['TENANT', 'BRANCH', 'ASSIGNED', 'LINKED', 'SELF'];
+
 /**
  * System role templates (ADR-008, ARCHITECTURE §7.3). They live in code (C-60): each academy gets
  * its own `Role` rows copied from them — by seed now, by provisioning from Phase 3. A grant is a
@@ -317,4 +320,17 @@ export const PLATFORM_ROLE_GRANTS: Readonly<
 export function primaryExperience(roles: readonly RoleKey[]): Experience | undefined {
   const experiences = new Set(roles.map((r) => ROLE_TEMPLATES[r].experience));
   return (['manage', 'teach', 'hub'] as const).find((e) => experiences.has(e));
+}
+
+/** Combine role grants (template or stored) into capability → widest scope. */
+export function mergeGrants(
+  grants: Iterable<{ capability: Capability; scope: Scope }>,
+): Partial<Record<Capability, Scope>> {
+  const out: Partial<Record<Capability, Scope>> = {};
+  for (const { capability, scope } of grants) {
+    const current = out[capability];
+    if (current === undefined || SCOPE_ORDER.indexOf(scope) < SCOPE_ORDER.indexOf(current))
+      out[capability] = scope;
+  }
+  return out;
 }
