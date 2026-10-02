@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-01 · Current phase: **Phase 1 — Multi-Tenant + Wildcard Domain (🟨 in progress, started 2026-10-01)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`)
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-02 · Current phase: **Phase 2 — Authentication + RBAC (⬜ not started)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -12,7 +12,7 @@
 | # | Phase | Status | Pulled-forward slices | Key decisions |
 | --- | --- | --- | --- | --- |
 | 0 | Foundation | ✅ 2026-10-01 | Outbox, audit, idempotency tables; English-only i18n foundation, multilingual-ready (G-08, G-32), analytics port, perf budgets (G-09, G-24) | ADR-001/002/012/013/014/015/016/022/030/031/032/035/040 |
-| 1 | Multi-Tenant + Wildcard Domain | 🟨 | Default branch per tenant; `app.` Family Hub host reserved + classified (G-31) | ADR-003/004/005/039, C-07 |
+| 1 | Multi-Tenant + Wildcard Domain | ✅ 2026-10-02 | Default branch per tenant; `app.` Family Hub host reserved + classified (G-31) | ADR-003/004/005/039, C-07 |
 | 2 | Authentication + RBAC | ⬜ | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
 | 3 | Academy Provisioning + Onboarding | ⬜ | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, ADR-028/034 |
 | 4 | Students + Parents + Teachers | ⬜ | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
@@ -197,7 +197,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 
 **Goal.** Any request knows its tenant safely; the database refuses cross-tenant reads/writes; academy hosts show branded shells or polished status pages.
 **Refs.** PRD v2 §27, v3 §13, v3.1 §C–G; UX v1.1 §1, §7, §8; ARCHITECTURE §5, §8.2.
-**Status.** 🟨 in progress — started 2026-10-01, `phase-1-start` = `f965f1d`. Approved slice plan: [`docs/plans/phase-1.md`](plans/phase-1.md) (decisions C-51…C-54).
+**Status.** ✅ 2026-10-02 — PO acceptance recorded below (started 2026-10-01, `phase-1-start` = `f965f1d`; closed with tag `phase-1`). Approved slice plan: [`docs/plans/phase-1.md`](plans/phase-1.md) (decisions C-51…C-58).
 
 **Slices (each = one PR, ADR-041)**
 
@@ -209,7 +209,12 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | S4 | `p1/tenant-api` | 1.9 resolver + context, 1.10 guards + `GET /tenant/context`, 1.11 security tests, M4, cross-tenant scaffold | ✅ #24 |
 | S5 | `p1/web-routing` | 1.12 `proxy.ts` routing, 1.13 status pages | ✅ #25 |
 | S6 | `p1/web-branding` | 1.14 branding + manifest + icons (flag `p1-tenant-home`), 1.15 hub/console + remove `p0-flag-probe` (flag `p1-hub-placeholder`), 1.16 E2E + analytics (C-56: none) | ✅ #26 |
-| S7 | `p1/docs` | 1.17 as-built docs | ✅ (this PR) |
+| S7 | `p1/docs` | 1.17 as-built docs | ✅ #27 |
+| X1 | `fix/domain-academybees` | P1-3: product domain is `academybees.com` everywhere (C-57) | ✅ #28 |
+| X2 | `ci/apt-timeouts` | CI: apt timeouts + retries for the Playwright browser install (hung twice) | ✅ #29 |
+| R1 | `p1/review-fixes-1` | P1-4 M1–M3; C-55 accepted; C-58 Lighthouse median of 5; untrack stray agent-skill files | ✅ #30 |
+| R2 | `p1/review-fixes-2` | P1-4 L3, L4, L5, L8, L9; review follow-ups by phase | ✅ #31 |
+| C1 | `p1/close` | P1-5: exit notes, `.gitignore` for local agent-skill installs, tracker | ✅ (this PR) |
 
 **Scope**
 - DB: `Tenant`, `TenantDomain`, `TenantBranding`, `TenantSettings`, `Branch` (default branch auto-created) ⤴ C-07. RLS policy template + migration helper that applies it to every table flagged tenant-owned; `ab_app`/`ab_platform` grants.
@@ -236,7 +241,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 - **Staging go-live (C-50):** L2 namespace Redis tenant keys by root domain if Redis is ever shared; require `https:` `API_ORIGIN` and a non-local proxy secret in staging too; validate `PLATFORM_ROOT_DOMAIN` at web boot and check that web and API agree; apex link port on custom hosts.
 - **Phase 15 (or when the check flaps again):** C-58 bring `/` LCP comfortably under 2.5 s.
 
-**Gate evidence (draft for P1-3)**
+**Gate evidence (P1-3, re-run 2026-10-02 on `main` = `cade406` after the review fixes; CI on `cade406` green)**
 
 | Gate item | Evidence |
 | --- | --- |
@@ -245,8 +250,72 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 | Platform client only under `platform/**` (+ raw app client only in the database providers) | `packages/config/test/eslint-rules.spec.js` |
 | Client-supplied tenantId / forged host never trusted; every tenant route registered | `apps/api/test/security/cross-tenant.int.spec.ts` + `cross-tenant.registry.ts`; `client-ip.int.spec.ts` (M4) |
 | E2E: demo-a branding + manifest name; `nope` → 404 Unknown; `paused` → Suspended (+ archived, setup, redirect, hub, console) | `e2e/specs/tenant-hosts.spec.ts`, `tenant-status.a11y.spec.ts`, `i18n-pseudo.spec.ts`, `flag.spec.ts` |
-| RLS overhead (budget amended to ≈ 2.5 ms p95 locally, C-55) | `pnpm --filter @academybee/database bench`: 2.2–2.5 ms p95 — **accepted by the PO 2026-10-01**; re-measure on staging, same region |
+| RLS overhead (budget amended to ≈ 2.5 ms p95 locally, C-55) | `pnpm --filter @academybee/database bench`: 2.2–2.5 ms p95 on 2026-10-01 (1.9–3.3 ms on a busy machine 2026-10-02, baseline itself noisy) — **accepted by the PO 2026-10-01**; re-measure on staging, same region |
 | Staging `*.staging.academybees.com` + TLS | **DEFERRED (C-50)**; runbook *Academy hosts on staging* |
+| Common gate commands | lint, typecheck, unit **407**, integration **190** (database 90, api 91, worker 9), build, `db:drift` clean, `perf:budget` (`/` 198.6 KB gz / 200), `i18n:check`, `flags:check`, E2E **180 passed** (desktop, Android, iPhone, en-XA, +40 % text), Lighthouse median LCP 2.05 s on `/` and `/offline`, a11y 100 |
+
+
+**Exit notes (2026-10-02 — Phase 1 ✅)**
+
+*PO acceptance.* **Accepted by the Product Owner on 2026-10-02**, locally (EXECUTION_GUIDE Part F, Phase 1). The staging item ("two academy URLs over https") stays **deferred under C-50**. The PO also decided C-55 (full RLS kept, ≈ 2.5 ms p95 accepted locally) and C-57 (domain `academybees.com`).
+
+*Delivered.*
+- `packages/tenant`: host classification (marketing / console / hub / tenant / custom / invalid), slug rules and reserved names, with property tests.
+- Tenant tables (`Tenant`, `TenantDomain`, `TenantBranding`, `TenantSettings`, default `Branch`).
+- **FORCE RLS on every table with `tenant_id`**, applied automatically after each migration:
+  - narrow host-lookup policy (C-51);
+  - platform-row policies (C-53), with platform audit rows insert-only for the app role;
+  - column-level grants (status and slug are platform-only);
+  - slug, hostname and colour CHECKs.
+- **Tenant-bound Prisma client.** The tenant context is set in the pg driver adapter per statement and transaction (C-55). The client scopes arguments, fails closed without an academy, and routes `findUnique` through `findFirst`. An isolation suite is generated from the Prisma models.
+- **API:**
+  - `TenantGuard` + `TenantResolver` (Redis cache, negative cache, invalidation);
+  - host policies (academy host by default);
+  - `GET /api/v1/tenant/context`;
+  - per-tenant release-flag cache;
+  - `TenantContext.run`;
+  - client IP only behind the trusted proxy;
+  - cross-tenant suite with a route registry and 9 spoof attempts per route.
+- **Web:**
+  - `proxy.ts` routing (academy, 301 for old slugs, status pages with 404/503/410, Family Hub `app.`, console, marketing; fails closed when the API is down);
+  - designed status pages (unknown, suspended, archived, setting up, access denied, temporarily unavailable);
+  - branded academy home;
+  - per-academy manifest and generated icons;
+  - brand tint only at ≥ 4.5:1 contrast (C-49).
+- **Seeds:** `demo-a`, `demo-b`, `paused`, `setup-demo`, `closed-demo`, `old-demo-a` (C-54). `p0-flag-probe` removed.
+
+*Pinned toolchain.* Unchanged from Phase 0, plus `fast-check` 4.10.2 and `@prisma/driver-adapter-utils` 7.10.0 (pnpm catalog).
+
+*Deviations, each recorded before coding.*
+- **C-51:** host-lookup RLS policy.
+- **C-52:** subdomains stored as labels + `PLATFORM_ROOT_DOMAIN`.
+- **C-53:** NULL-tenant core rows.
+- **C-54:** extra local seeds.
+- **C-55:** driver-level tenant context; RLS budget ≈ 2.5 ms p95, accepted by the PO.
+- **C-56:** no product analytics events in Phase 1.
+- **C-57:** domain `academybees.com`.
+- **C-58:** Lighthouse median of 5 runs.
+- New config: `PLATFORM_ROOT_DOMAIN`, `TENANT_CACHE_MS`, `TENANT_NEGATIVE_CACHE_MS`, `CUSTOM_DOMAINS_ENABLED` (web + API, off), `TRUSTED_CLIENT_IP_HEADER` (web; `x-real-ip` on Vercel).
+
+*Known limitations.*
+- RLS adds ≈ 2–3 ms p95 per query locally (three extra round trips). **Before staging goes live, run API and database in the same region** (OD-03's Singapore ↔ Mumbai split would cost 100–180 ms per query) and re-measure.
+- `/` LCP sits at about 2.0–2.1 s locally, close to the 2.5 s budget on CI runners (C-58).
+- Custom domains are modelled and tested but switched off.
+- Status changes can take up to about 2 minutes to show (two 60 s caches).
+- Staging deferred (C-50).
+
+*Release flags (ADR-041).*
+- `p1-tenant-home`: owner PO; on in local/ci, off in staging/production; **remove in Phase 2** when sign-in replaces it (expires 2027-01-31).
+- `p1-hub-placeholder`: owner PO; on in local/ci, off in staging/production (`app.` → marketing); **remove in Phase 7P** (expires 2027-06-30).
+
+*Review follow-ups.* Listed above under **Independent review (P1-4)**, by phase: Phase 2 (L6, L7, 404 for tenant mismatch), Phase 3 (L1, custom-domain REDIRECT verification), staging go-live (L2, https `API_ORIGIN`, secret check, root-domain validation, apex port), Phase 15 (C-58 LCP headroom).
+
+*Process notes.*
+- PR #28 accidentally committed local agent-skill files (`packages/database/.agents|.claude|.windsurf`, `skills-lock.json`) through a broad `git add -A`. They were untracked in #30, and are now ignored by pattern (`.gitignore`, this PR).
+- Slices stage explicit paths from now on.
+- CI's browser install hung twice on a stalled Ubuntu mirror; fixed with apt timeouts and retries (#29).
+
+Phase 2 is **not** started.
 
 ---
 
@@ -619,7 +688,5 @@ P7 payment provider layer + simulator (ADR-038) ──────────�
 - Pack moved to the repository root (C-29).
 - Pre-Phase-0 blockers for the PO: toolchain in WSL2 (OD-20), paid GitHub plan for rulesets (OD-19), staging accounts (OD-03).
 
-### Phase 0
-- Pinned versions: _tbd_
-- Deviations: _none yet_
-- PO acceptance: _pending_
+### Phases 0 and 1
+- Exit notes live in each phase's section above (Phase 0 ✅ 2026-10-01, Phase 1 ✅ 2026-10-02).
