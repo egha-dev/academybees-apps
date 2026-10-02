@@ -8,3 +8,4 @@ export * from './permissions.js';
 export * from './privacy.js';
 export * from './sync.js';
 export * from './tenant.js';
+export * from './roles.js';
