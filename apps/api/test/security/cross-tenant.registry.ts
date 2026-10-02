@@ -13,6 +13,27 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
   { method: 'POST', path: '/api/v1/auth/refresh', session: true },
   { method: 'POST', path: '/api/v1/auth/logout', session: true, body: {} },
   { method: 'GET', path: '/api/v1/auth/me', session: true },
+  // Test-only signed-in routes guarded by @Can + a scope policy (shape of domain endpoints).
+  {
+    method: 'GET',
+    path: '/api/v1/test/secure/settings',
+    session: true,
+    capability: 'academy.settings.manage',
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/test/secure/settings',
+    session: true,
+    capability: 'academy.settings.manage',
+    body: {},
+  },
+  { method: 'GET', path: '/api/v1/test/secure/members', session: true, capability: 'team.read' },
+  {
+    method: 'GET',
+    path: '/api/v1/test/secure/members/:id',
+    session: true,
+    capability: 'team.read',
+  },
   // Test-only academy routes (the shape of every domain endpoint from Phase 2).
   { method: 'GET', path: '/api/v1/test/academy/probe' },
   { method: 'POST', path: '/api/v1/test/academy/probe', body: { note: 'x' } },

@@ -1,7 +1,7 @@
 import { newId } from '@academybee/contracts';
 import { PersonNameSchema } from '@academybee/i18n';
 import { type TenantBoundClient } from '@academybee/database';
-import { Body, Controller, Get, HttpCode, Inject, Module, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Module, Param, Post } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { z } from 'zod';
 
@@ -11,6 +11,9 @@ import { type RequestContext } from '../../src/core/context/request-context.js';
 import { DomainError } from '../../src/core/errors/domain-error.js';
 import { Idempotent } from '../../src/core/idempotency/idempotent.js';
 import { Public } from '../../src/core/auth/public.decorator.js';
+import { Can } from '../../src/core/rbac/can.decorator.js';
+import { membershipPolicy } from '../../src/core/rbac/membership.policy.js';
+import { assertInScope, scopedWhere } from '../../src/core/rbac/scope.js';
 import { AnyHost, TenantHost } from '../../src/core/tenant/host-policy.js';
 import { createZodDto, ZodResponse } from '../../src/core/validation/zod-dto.js';
 
@@ -121,5 +124,49 @@ class TestAcademyController {
   }
 }
 
-@Module({ controllers: [TestSupportController, TestAcademyController] })
+/**
+ * Signed-in academy routes guarded by `@Can` and a scope policy — the shape of every domain
+ * endpoint from Phase 4 (ADR-008).
+ */
+@Controller({ path: 'test/secure', version: '1' })
+class TestSecureController {
+  constructor(
+    @Inject(TENANT_DB) private readonly db: TenantBoundClient,
+    private readonly cls: ClsService<RequestContext>,
+  ) {}
+
+  @Get('settings')
+  @Can('academy.settings.manage')
+  settings() {
+    return { tenantId: this.cls.get('tenantId'), userId: this.cls.get('userId') };
+  }
+
+  @Post('settings')
+  @HttpCode(200)
+  @Can('academy.settings.manage')
+  updateSettings(@Body() _body: unknown) {
+    return this.settings();
+  }
+
+  @Get('members')
+  @Can('team.read')
+  async members() {
+    const where = scopedWhere(this.cls, 'team.read', membershipPolicy);
+    const rows = await this.db.membership.findMany({ where, select: { id: true, userId: true } });
+    return { members: rows.map((r) => r.userId).sort() };
+  }
+
+  @Get('members/:id')
+  @Can('team.read')
+  async member(@Param('id') id: string) {
+    const row = await this.db.membership.findFirst({
+      where: { id },
+      select: { id: true, userId: true, branchIds: true },
+    });
+    const member = assertInScope(this.cls, 'team.read', membershipPolicy, row);
+    return { userId: member.userId };
+  }
+}
+
+@Module({ controllers: [TestSupportController, TestAcademyController, TestSecureController] })
 export class TestSupportModule {}

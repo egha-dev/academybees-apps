@@ -2,9 +2,18 @@ import { type INestApplication, RequestMethod, VERSION_NEUTRAL } from '@nestjs/c
 import { METHOD_METADATA, PATH_METADATA, VERSION_METADATA } from '@nestjs/common/constants.js';
 import { DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core';
 
+import { IS_PUBLIC } from '../../src/core/auth/public.decorator.js';
+import { REQUIRED_CAPABILITY, SIGNED_IN_ONLY } from '../../src/core/rbac/can.decorator.js';
 import { HOST_POLICY, type HostPolicy } from '../../src/core/tenant/host-policy.js';
 
-export type RouteInfo = { method: string; path: string; policy: HostPolicy['kind'] };
+export type RouteInfo = {
+  method: string;
+  path: string;
+  policy: HostPolicy['kind'];
+  isPublic: boolean;
+  capability: string | undefined;
+  signedIn: boolean;
+};
 
 /** Every HTTP route of the app with its host policy (default: academy host). */
 export function listRoutes(app: INestApplication): RouteInfo[] {
@@ -37,7 +46,16 @@ export function listRoutes(app: INestApplication): RouteInfo[] {
           .map((p) => p.replace(/^\/+|\/+$/g, ''))
           .filter(Boolean)
           .join('/')}`;
-        routes.push({ method: RequestMethod[method], path, policy: policy?.kind ?? 'tenant' });
+        const meta = <T>(key: string) =>
+          reflector.getAllAndOverride<T | undefined>(key, [handler, metatype]);
+        routes.push({
+          method: RequestMethod[method],
+          path,
+          policy: policy?.kind ?? 'tenant',
+          isPublic: meta<boolean>(IS_PUBLIC) ?? false,
+          capability: meta<string>(REQUIRED_CAPABILITY),
+          signedIn: meta<boolean>(SIGNED_IN_ONLY) ?? false,
+        });
       }
     }
   }
