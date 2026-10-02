@@ -39,3 +39,10 @@ apps/web/next-env.d.ts
 
 # Lighthouse temp Chrome profiles: chrome-launcher on WSL writes Windows-style paths into the cwd
 /C:*
+
+# Local AI-agent skill installs (e.g. Prisma skills) — kept out of the repo (PO, 2026-10-02).
+# Only .claude/skills/ is ignored, so project-level .claude/ settings can still be committed.
+**/.agents/
+**/.windsurf/
+**/.claude/skills/
+**/skills-lock.json

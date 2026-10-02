@@ -1,6 +1,6 @@
 # P1-1 · Phase 1 — Multi-Tenant + Wildcard Domain: plan
 
-> **Approved by the PO on 2026-10-01** (no changes to the decisions). `phase-1-start` = `f965f1d`.
+> **Approved by the PO on 2026-10-01** (no changes to the decisions). `phase-1-start` = `f965f1d`. **Completed 2026-10-02** (tag `phase-1`); outcome and deviations in IMPLEMENTATION_PLAN Phase 1 exit notes (C-51…C-58).
 
 ## Context
 
