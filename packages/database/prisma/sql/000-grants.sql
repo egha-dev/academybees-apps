@@ -26,3 +26,12 @@ GRANT SELECT ON tenant_domain TO ab_app;
 -- Configuration rows are never deleted by tenant code (one per tenant).
 REVOKE DELETE, TRUNCATE ON tenant_branding, tenant_settings FROM ab_app;
 REVOKE TRUNCATE ON branch FROM ab_app;
+
+-- Identity (Phase 2, C-59). History is never deleted by the app role: sessions and tokens are
+-- revoked/used, users disabled. Platform staff are managed by the platform role / CLI only.
+REVOKE DELETE, TRUNCATE ON "user", user_credential, auth_session, password_reset_token,
+  invitation, membership FROM ab_app;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON platform_staff FROM ab_app;
+GRANT SELECT ON platform_staff TO ab_app;
+REVOKE TRUNCATE ON role, role_permission, membership_role, mfa_factor, mfa_recovery_code,
+  known_device, otp_challenge FROM ab_app;

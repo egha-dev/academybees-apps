@@ -14,6 +14,12 @@ describe('MODEL_KINDS', () => {
       AuditLog: 'platform-rows',
       FeatureFlagOverride: 'platform-rows',
       FeatureFlag: 'global',
+      AuthSession: 'user-owned',
+      UserCredential: 'user-owned',
+      Membership: 'tenant-owned',
+      Role: 'tenant-owned',
+      Invitation: 'tenant-owned',
+      OtpChallenge: 'global',
     });
   });
 });

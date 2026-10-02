@@ -4,8 +4,8 @@ import { z } from 'zod';
  * Capability catalogue (ADR-008, ARCHITECTURE §7.1): the single source for API guards
  * (`@Can`), UI visibility and role seed data. Capabilities are `resource.action` strings.
  *
- * Phase 0 skeleton: the documented catalogue and helpers. Phase 2 adds descriptions,
- * the system role templates and the scope each role gets.
+ * Complete for all modules, including ones built later, so role templates stay stable. Role
+ * templates and their default scopes live in `roles.ts` (C-60).
  */
 export const CAPABILITY_AREAS = {
   academy: [
@@ -52,6 +52,8 @@ export const CAPABILITY_AREAS = {
     'payment.refund',
     'receipt.read',
     'finance.reconcile',
+    /** Deferred module (OD-05); in the catalogue so roles are stable. */
+    'expense.manage',
   ],
   crm: ['lead.read', 'lead.manage', 'trial.manage', 'admission.convert'],
   learning: [

@@ -67,6 +67,9 @@ model Tenant {
   settings      TenantSettings?
   branches      Branch[]
   flagOverrides FeatureFlagOverride[]
+  memberships   Membership[]
+  roles         Role[]
+  invitations   Invitation[]
 
   @@map("tenant")
 }
