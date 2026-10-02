@@ -10,6 +10,8 @@ export class DomainError extends Error {
     /** For logs only — never sent to clients. */
     readonly reason?: string,
     readonly details?: ErrorDetail[],
+    /** For RATE_LIMITED: seconds until the client may retry (sent as `Retry-After`). */
+    readonly retryAfterSeconds?: number,
   ) {
     super(reason ?? code);
     this.name = 'DomainError';

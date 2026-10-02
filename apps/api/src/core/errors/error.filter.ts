@@ -40,7 +40,13 @@ export class ErrorEnvelopeFilter implements ExceptionFilter {
       },
     };
     if (res.headersSent) return;
-    if (mapped.code === 'RATE_LIMITED') res.setHeader('Retry-After', '60');
+    if (mapped.code === 'RATE_LIMITED') {
+      const retry =
+        exception instanceof DomainError && exception.retryAfterSeconds !== undefined
+          ? Math.max(1, Math.ceil(exception.retryAfterSeconds))
+          : 60;
+      res.setHeader('Retry-After', String(retry));
+    }
     res.status(mapped.status).json(body);
   }
 }
