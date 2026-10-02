@@ -3,6 +3,7 @@ import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 
 import { AnalyticsModule } from './core/analytics/analytics.module.js';
 import { AuditModule } from './core/audit/audit.module.js';
+import { AuthModule } from './core/auth/auth.module.js';
 import { ConfigModule } from './core/config/config.module.js';
 import { type ApiConfig } from './core/config/config.schema.js';
 import { ContextModule } from './core/context/context.module.js';
@@ -13,6 +14,7 @@ import { HealthModule } from './core/health/health.module.js';
 import { IdempotencyModule } from './core/idempotency/idempotency.module.js';
 import { LoggingModule } from './core/logging/logging.module.js';
 import { OutboxModule } from './core/outbox/outbox.module.js';
+import { RateLimitModule } from './core/rate-limit/rate-limit.module.js';
 import { RedisModule } from './core/redis/redis.module.js';
 import { TenantModule } from './core/tenant/tenant.module.js';
 import { ZodResponseInterceptor } from './core/validation/zod-response.interceptor.js';
@@ -31,6 +33,8 @@ export class AppModule {
         DatabaseModule,
         RedisModule,
         TenantModule,
+        RateLimitModule,
+        AuthModule,
         AuditModule,
         OutboxModule,
         AnalyticsModule,

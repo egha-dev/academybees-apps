@@ -14,6 +14,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
+    "@academybee/auth": "workspace:*",
     "@academybee/contracts": "workspace:*",
     "@academybee/database": "workspace:*",
     "@academybee/i18n": "workspace:*",

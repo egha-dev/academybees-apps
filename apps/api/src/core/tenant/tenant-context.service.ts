@@ -20,6 +20,14 @@ export class TenantContext {
     });
   }
 
+  /** Run work as a user (identity rows become visible, C-59); the academy context is kept. */
+  runAsUser<T>(userId: string, fn: () => PromiseLike<T>): Promise<T> {
+    return this.cls.run({ ifNested: 'inherit' }, async () => {
+      this.cls.set('userId', userId);
+      return await fn();
+    });
+  }
+
   /** The current academy, if any. */
   get tenantId(): string | undefined {
     return this.cls.isActive() ? this.cls.get('tenantId') : undefined;

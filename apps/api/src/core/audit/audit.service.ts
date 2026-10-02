@@ -3,7 +3,7 @@ import { type Prisma, type PrismaClient, type TransactionClient } from '@academy
 import { Inject, Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
-import { type RequestContext } from '../context/request-context.js';
+import { type Actor, type RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 
 export type AuditEntry = {
@@ -16,6 +16,8 @@ export type AuditEntry = {
   metadata?: Prisma.InputJsonValue;
   /** Defaults to the request tenant; null for platform actions. */
   tenantId?: string | null;
+  /** Overrides the request's actor (e.g. sign-in, where the user is known only mid-request). */
+  actor?: Actor;
 };
 
 /**
@@ -32,7 +34,7 @@ export class AuditService {
   async record(entry: AuditEntry, tx?: TransactionClient): Promise<string> {
     const id = newId();
     const store = this.cls.isActive() ? this.cls.get() : undefined;
-    const actor = store?.actor ?? { type: 'SYSTEM' as const };
+    const actor = entry.actor ?? store?.actor ?? { type: 'SYSTEM' as const };
     // createMany: no INSERT … RETURNING, because platform rows (tenant_id NULL) are insert-only for
     // the app role (review L8).
     await (tx ?? this.db).auditLog.createMany({
