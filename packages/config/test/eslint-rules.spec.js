@@ -57,6 +57,13 @@ describe('shared ESLint config', () => {
     expect(await ruleIds('apps/api/src/platform/uses-platform-client.ts')).toEqual([]);
   });
 
+  it('keeps client creation and RLS context out of app code (Phase 1 review L6/L7)', async () => {
+    for (const file of ['uses-migrator.ts', 'new-prisma.ts', 'set-config.ts'])
+      expect(await ruleIds(`apps/api/src/modules/students/${file}`), file).toEqual(
+        expect.arrayContaining([expect.stringMatching(/^no-restricted-(imports|syntax)$/)]),
+      );
+  });
+
   it('confines the raw app client to the database module (ADR-005)', async () => {
     expect(await ruleIds('apps/api/src/modules/students/uses-app-client.ts')).toContain(
       'no-restricted-imports',

@@ -39,9 +39,9 @@ const MUI_RESTRICTION = {
 
 const APP_CLIENT_RESTRICTION = {
   name: '@academybee/database',
-  importNames: ['createAppClient'],
+  importNames: ['createAppClient', 'createMigratorClient', 'createTenantBoundClient'],
   message:
-    'Use the tenant-bound client (TENANT_DB). The raw app client is created only by the database module (ADR-005).',
+    'Use the tenant-bound client (TENANT_DB). Database clients are created only by the database module (ADR-005, Phase 1 review L6).',
 };
 
 /**
@@ -224,6 +224,33 @@ export function createConfig(options = {}) {
       basePath: rootDir,
       files: TEST_GLOBS,
       rules: { 'no-restricted-imports': restrictImports({ platform: false, appClient: false }) },
+    },
+    {
+      // Only packages/database creates clients and sets RLS context (Phase 1 review L6/L7): a
+      // session-level set_config in app code could leak a tenant or user to the next request on
+      // a pooled connection.
+      basePath: rootDir,
+      files: ['apps/*/src/**'],
+      rules: {
+        'no-restricted-syntax': [
+          'error',
+          {
+            selector: "NewExpression[callee.name='PrismaClient']",
+            message:
+              'Use the tenant-bound client (TENANT_DB); clients are created in packages/database.',
+          },
+          {
+            selector: 'Literal[value=/set_config/]',
+            message:
+              'Only packages/database sets RLS context (set_config); use TenantContext.run / runAsUser.',
+          },
+          {
+            selector: 'TemplateElement[value.raw=/set_config/]',
+            message:
+              'Only packages/database sets RLS context (set_config); use TenantContext.run / runAsUser.',
+          },
+        ],
+      },
     },
     {
       files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
