@@ -12,6 +12,7 @@ export {
   type ResolvedDomainRow,
   scopeArgs,
   TENANT_OWNED_MODELS,
+  USER_OWNED_MODELS,
   type TenantBoundClient,
   TenantContextMissingError,
   type TenantIdSource,

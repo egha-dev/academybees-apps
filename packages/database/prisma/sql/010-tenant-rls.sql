@@ -80,7 +80,8 @@ BEGIN
      WHERE c.table_schema = 'public'
        AND c.column_name = 'tenant_id'
        AND t.table_type = 'BASE TABLE'
-       AND c.table_name NOT IN ('audit_log', 'outbox_event', 'idempotency_record', 'feature_flag_override')
+       AND c.table_name NOT IN ('audit_log', 'outbox_event', 'idempotency_record', 'feature_flag_override',
+                                'auth_session')
   LOOP
     PERFORM ab_enable_tenant_rls(format('%I', r.table_name)::regclass);
   END LOOP;

@@ -37,7 +37,7 @@ export class TenantMismatchError extends Error {
   }
 }
 
-type ModelKind = 'tenant-root' | 'tenant-owned' | 'platform-rows' | 'global';
+type ModelKind = 'tenant-root' | 'tenant-owned' | 'platform-rows' | 'user-owned' | 'global';
 
 /** Core tables that also hold platform/system rows with tenant_id NULL (C-53). */
 const PLATFORM_ROW_MODELS = new Set([
@@ -45,6 +45,21 @@ const PLATFORM_ROW_MODELS = new Set([
   'OutboxEvent',
   'IdempotencyRecord',
   'FeatureFlagOverride',
+]);
+
+/**
+ * Identity models protected by user-bound RLS (`app.user_id`, C-59), not by tenant context.
+ * `AuthSession` has a nullable tenant_id (TENANT sessions only) but is user-owned.
+ */
+export const USER_OWNED_MODELS: ReadonlySet<string> = new Set([
+  'User',
+  'UserCredential',
+  'AuthSession',
+  'PasswordResetToken',
+  'MfaFactor',
+  'MfaRecoveryCode',
+  'KnownDevice',
+  'PlatformStaff',
 ]);
 
 /** How each Prisma model relates to tenants, derived from the generated client. */
@@ -56,6 +71,7 @@ export const MODEL_KINDS: Readonly<Record<string, ModelKind>> = Object.fromEntri
     let kind: ModelKind = 'global';
     if (model === 'Tenant') kind = 'tenant-root';
     else if (PLATFORM_ROW_MODELS.has(model)) kind = 'platform-rows';
+    else if (USER_OWNED_MODELS.has(model)) kind = 'user-owned';
     else if (fields && 'tenantId' in fields) kind = 'tenant-owned';
     return [model, kind];
   }),

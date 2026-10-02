@@ -28,7 +28,12 @@ export const buildTenant = defineFactory<TenantSeed>(() => {
   };
 });
 
-export type TenantFixture = TenantSeed & { branchId: string };
+export type TenantFixture = TenantSeed & {
+  branchId: string;
+  /** A member (role `owner`) of this academy only. */
+  user: { id: string; email: string; membershipId: string; roleId: string };
+  invitationId: string;
+};
 
 /**
  * Insert a tenant with its PRIMARY subdomain, branding, settings and default branch, the way
@@ -41,6 +46,13 @@ export async function createTenantFixture(
 ): Promise<TenantFixture> {
   const t = buildTenant(overrides);
   const branchId = newId();
+  const user = {
+    id: newId(),
+    email: `owner-${t.slug}@example.test`,
+    membershipId: newId(),
+    roleId: newId(),
+  };
+  const invitationId = newId();
   const client = new pg.Client({ connectionString });
   await client.connect();
   try {
@@ -69,6 +81,40 @@ export async function createTenantFixture(
        VALUES ($1, $2, 'Main branch', true, now())`,
       [branchId, t.id],
     );
+    // Identity rows (C-59): a user may be created only for the identifier being looked up.
+    await client.query(`SELECT set_config('app.lookup_identifier', $1, true)`, [user.email]);
+    await client.query(
+      `INSERT INTO "user" (id, email, name, updated_at) VALUES ($1, $2, $3, now())`,
+      [user.id, user.email, `Owner of ${t.name}`],
+    );
+    await client.query(
+      `INSERT INTO membership (id, tenant_id, user_id, status, updated_at)
+       VALUES ($1, $2, $3, 'ACTIVE', now())`,
+      [user.membershipId, t.id, user.id],
+    );
+    await client.query(
+      `INSERT INTO role (id, tenant_id, key, name, updated_at) VALUES ($1, $2, 'owner', 'Owner', now())`,
+      [user.roleId, t.id],
+    );
+    await client.query(
+      `INSERT INTO role_permission (tenant_id, role_id, capability, scope)
+       VALUES ($1, $2, 'academy.settings.manage', 'TENANT')`,
+      [t.id, user.roleId],
+    );
+    await client.query(
+      `INSERT INTO membership_role (tenant_id, membership_id, role_id) VALUES ($1, $2, $3)`,
+      [t.id, user.membershipId, user.roleId],
+    );
+    await client.query(
+      `INSERT INTO invitation (id, tenant_id, email, role_keys, token_hash, expires_at)
+       VALUES ($1, $2, $3, '{teacher}', $4, now() + interval '7 days')`,
+      [
+        invitationId,
+        t.id,
+        `invitee-${t.slug}@example.test`,
+        invitationId.replace(/-/g, '').padEnd(64, '0'),
+      ],
+    );
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');
@@ -76,5 +122,5 @@ export async function createTenantFixture(
   } finally {
     await client.end();
   }
-  return { ...t, branchId };
+  return { ...t, branchId, user, invitationId };
 }

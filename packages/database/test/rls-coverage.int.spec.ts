@@ -14,6 +14,22 @@ const PLATFORM_ROW_TABLES = [
   'outbox_event',
 ];
 
+/**
+ * Identity tables (C-59): protected by user-bound RLS instead of the tenant policy. `auth_session`
+ * has a nullable tenant_id (TENANT sessions only) but is user-owned.
+ */
+const IDENTITY_POLICIES: Record<string, string[]> = {
+  user: ['user_insert', 'user_select', 'user_update'],
+  user_credential: ['user_isolation'],
+  mfa_factor: ['user_isolation'],
+  mfa_recovery_code: ['user_isolation'],
+  known_device: ['user_isolation'],
+  platform_staff: ['user_isolation'],
+  password_reset_token: ['token_lookup', 'user_isolation'],
+  auth_session: ['token_lookup', 'user_isolation'],
+  otp_challenge: ['identifier_lookup'],
+};
+
 const urls = inject('databaseUrls');
 
 describe('RLS coverage (ADR-005)', () => {
@@ -64,7 +80,10 @@ describe('RLS coverage (ADR-005)', () => {
 
   it('every table with tenant_id has ENABLE + FORCE RLS and a tenant_isolation policy', async () => {
     const unprotected = (await tenantTables()).filter(
-      (t) => !t.rls || !t.forced || !t.policies.includes('tenant_isolation'),
+      (t) =>
+        !t.rls ||
+        !t.forced ||
+        (!t.policies.includes('tenant_isolation') && !(t.table_name in IDENTITY_POLICIES)),
     );
     expect(unprotected.map((t) => t.table_name)).toEqual([]);
   });
@@ -73,7 +92,17 @@ describe('RLS coverage (ADR-005)', () => {
     const nullable = (await tenantTables())
       .filter((t) => t.is_nullable === 'YES')
       .map((t) => t.table_name);
-    expect(nullable.sort()).toEqual([...PLATFORM_ROW_TABLES].sort());
+    expect(nullable.sort()).toEqual([...PLATFORM_ROW_TABLES, 'auth_session'].sort());
+  });
+
+  it('every identity table is FORCE-protected by its user-bound policies (C-59)', async () => {
+    const { rows } = await db.query<{ relname: string; rls: boolean; forced: boolean }>(
+      `SELECT relname, relrowsecurity AS rls, relforcerowsecurity AS forced FROM pg_class
+        WHERE relname = ANY($1) AND relkind = 'r'`,
+      [Object.keys(IDENTITY_POLICIES)],
+    );
+    expect(rows.map((r) => r.relname).sort()).toEqual(Object.keys(IDENTITY_POLICIES).sort());
+    expect(rows.filter((r) => !r.rls || !r.forced)).toEqual([]);
   });
 
   it('the tenant table itself is protected and keyed on id', async () => {
@@ -86,7 +115,7 @@ describe('RLS coverage (ADR-005)', () => {
     expect(rows[0]?.qual).toContain('ab_current_tenant()');
   });
 
-  it('every table has exactly the expected policies, all keyed on the tenant context (review L5)', async () => {
+  it('every table has exactly the expected policies, all keyed on tenant/user/lookup context (review L5)', async () => {
     const { rows } = await db.query<{
       tablename: string;
       policyname: string;
@@ -100,20 +129,27 @@ describe('RLS coverage (ADR-005)', () => {
     const byTable = new Map<string, string[]>();
     for (const r of rows)
       byTable.set(r.tablename, [...(byTable.get(r.tablename) ?? []), r.policyname]);
-    const tables = (await tenantTables()).map((t) => t.table_name);
-    const expected = (table: string) =>
-      table === 'tenant_domain'
-        ? ['host_lookup', 'tenant_isolation']
-        : table === 'audit_log'
-          ? ['platform_insert', 'tenant_isolation']
-          : ['tenant_isolation'];
-    for (const table of tables) expect(byTable.get(table), table).toEqual(expected(table));
+    const tables = [
+      ...new Set([
+        ...(await tenantTables()).map((t) => t.table_name),
+        ...Object.keys(IDENTITY_POLICIES),
+      ]),
+    ];
+    const SPECIAL: Record<string, string[]> = {
+      ...IDENTITY_POLICIES,
+      tenant_domain: ['host_lookup', 'tenant_isolation'],
+      audit_log: ['platform_insert', 'tenant_isolation'],
+      membership: ['own_memberships', 'tenant_isolation'],
+      invitation: ['tenant_isolation', 'token_lookup'],
+    };
+    for (const table of tables)
+      expect(byTable.get(table), table).toEqual(SPECIAL[table] ?? ['tenant_isolation']);
     expect(byTable.get('tenant')).toEqual(['host_lookup', 'tenant_isolation']);
     // No permissive "allow everything" policy can hide among them.
     for (const r of rows) {
       const text = `${r.qual ?? ''} ${r.with_check ?? ''}`;
       expect(text, `${r.tablename}.${r.policyname}`).toMatch(
-        /ab_current_tenant\(\)|ab_lookup_host\(\)/,
+        /ab_current_tenant\(\)|ab_lookup_host\(\)|ab_current_user\(\)|ab_lookup_identifier\(\)|ab_lookup_token\(\)/,
       );
       expect(text, `${r.tablename}.${r.policyname}`).not.toMatch(/^\s*true\s*$|\(true\)/);
     }
@@ -122,6 +158,11 @@ describe('RLS coverage (ADR-005)', () => {
       expect(r.cmd).toBe('SELECT');
     for (const r of rows.filter((x) => x.policyname === 'platform_insert'))
       expect(r.cmd).toBe('INSERT');
+    // Lookups and the Family Hub membership listing only read.
+    for (const r of rows.filter((x) =>
+      ['token_lookup', 'own_memberships', 'user_select'].includes(x.policyname),
+    ))
+      expect(r.cmd, `${r.tablename}.${r.policyname}`).toBe('SELECT');
   });
 
   it('the application role cannot bypass RLS', async () => {
