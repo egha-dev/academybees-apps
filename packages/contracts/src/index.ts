@@ -9,3 +9,4 @@ export * from './privacy.js';
 export * from './sync.js';
 export * from './tenant.js';
 export * from './roles.js';
+export * from './auth.js';

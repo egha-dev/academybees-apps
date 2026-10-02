@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { isCapability, isPlatformCapability, type Capability } from './permissions.js';
-import { PLATFORM_ROLE_GRANTS, primaryExperience, ROLE_KEYS, ROLE_TEMPLATES } from './roles.js';
+import {
+  mergeGrants,
+  PLATFORM_ROLE_GRANTS,
+  primaryExperience,
+  ROLE_KEYS,
+  ROLE_TEMPLATES,
+} from './roles.js';
 
 const caps = (key: (typeof ROLE_KEYS)[number]) =>
   Object.keys(ROLE_TEMPLATES[key].grants) as Capability[];
@@ -55,5 +61,15 @@ describe('role templates (ARCHITECTURE §7.3)', () => {
   it('platform roles grant only platform capabilities', () => {
     for (const list of Object.values(PLATFORM_ROLE_GRANTS))
       for (const c of list) expect(isPlatformCapability(c)).toBe(true);
+  });
+
+  it('merges several roles to the widest scope per capability', () => {
+    expect(
+      mergeGrants([
+        { capability: 'student.read', scope: 'ASSIGNED' },
+        { capability: 'student.read', scope: 'BRANCH' },
+        { capability: 'attendance.mark', scope: 'ASSIGNED' },
+      ]),
+    ).toEqual({ 'student.read': 'BRANCH', 'attendance.mark': 'ASSIGNED' });
   });
 });

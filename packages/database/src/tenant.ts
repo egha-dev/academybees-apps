@@ -124,7 +124,8 @@ function scopeData(data: unknown, tenantId: string, fail: () => Error): Args {
  */
 export function scopeArgs(model: string, operation: string, args: Args, tenantId: string): Args {
   const kind = MODEL_KINDS[model] ?? 'global';
-  if (kind === 'global') return args;
+  // Identity rows are protected by user-bound RLS, not tenant scoping (C-59).
+  if (kind === 'global' || kind === 'user-owned') return args;
   const fail = () => new TenantMismatchError(model, operation);
   const out: Args = { ...args };
 
