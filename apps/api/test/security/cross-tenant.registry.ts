@@ -8,6 +8,11 @@ import { type CrossTenantRoute } from '@academybee/testing';
 export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
   { method: 'GET', path: '/api/v1/tenant/context' },
   { method: 'GET', path: '/api/v1/flags' },
+  // Auth (Phase 2). The sign-in body is filled with academy A's fixture user by the suite.
+  { method: 'POST', path: '/api/v1/auth/login' },
+  { method: 'POST', path: '/api/v1/auth/refresh', session: true },
+  { method: 'POST', path: '/api/v1/auth/logout', session: true, body: {} },
+  { method: 'GET', path: '/api/v1/auth/me', session: true },
   // Test-only academy routes (the shape of every domain endpoint from Phase 2).
   { method: 'GET', path: '/api/v1/test/academy/probe' },
   { method: 'POST', path: '/api/v1/test/academy/probe', body: { note: 'x' } },

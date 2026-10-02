@@ -1,3 +1,4 @@
+import { hashPassword } from '@academybee/auth';
 import { newId } from '@academybee/contracts';
 import pg from 'pg';
 
@@ -13,6 +14,10 @@ export type TenantSeed = {
 };
 
 let counter = 0;
+
+/** Password of every fixture user (tests only). */
+export const FIXTURE_PASSWORD = 'Fixture#Pass2026';
+let fixtureHash: Promise<string> | undefined;
 
 export const buildTenant = defineFactory<TenantSeed>(() => {
   counter += 1;
@@ -86,6 +91,11 @@ export async function createTenantFixture(
     await client.query(
       `INSERT INTO "user" (id, email, name, updated_at) VALUES ($1, $2, $3, now())`,
       [user.id, user.email, `Owner of ${t.name}`],
+    );
+    await client.query(`SELECT set_config('app.user_id', $1, true)`, [user.id]);
+    await client.query(
+      `INSERT INTO user_credential (user_id, password_hash, updated_at) VALUES ($1, $2, now())`,
+      [user.id, await (fixtureHash ??= hashPassword(FIXTURE_PASSWORD))],
     );
     await client.query(
       `INSERT INTO membership (id, tenant_id, user_id, status, updated_at)
