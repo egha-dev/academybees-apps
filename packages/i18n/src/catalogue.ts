@@ -1,5 +1,6 @@
 import common from '../messages/en-IN/common.json' with { type: 'json' };
 import designSystem from '../messages/en-IN/design-system.json' with { type: 'json' };
+import email from '../messages/en-IN/email.json' with { type: 'json' };
 import errors from '../messages/en-IN/errors.json' with { type: 'json' };
 import offline from '../messages/en-IN/offline.json' with { type: 'json' };
 import shell from '../messages/en-IN/shell.json' with { type: 'json' };
@@ -12,6 +13,7 @@ import tenant from '../messages/en-IN/tenant.json' with { type: 'json' };
 export const EN_IN_MESSAGES = {
   common,
   errors,
+  email,
   shell,
   tenant,
   offline,
@@ -25,6 +27,7 @@ export type Namespace = keyof Messages;
 export const NAMESPACE_FILES: Record<Namespace, string> = {
   common: 'common.json',
   errors: 'errors.json',
+  email: 'email.json',
   shell: 'shell.json',
   tenant: 'tenant.json',
   offline: 'offline.json',

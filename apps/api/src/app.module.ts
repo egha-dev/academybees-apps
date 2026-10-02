@@ -9,6 +9,7 @@ import { type ApiConfig } from './core/config/config.schema.js';
 import { ContextModule } from './core/context/context.module.js';
 import { DatabaseModule } from './core/database/database.module.js';
 import { DocsModule } from './core/docs/docs.module.js';
+import { EmailModule } from './core/email/email.module.js';
 import { FlagsModule } from './core/flags/flags.module.js';
 import { HealthModule } from './core/health/health.module.js';
 import { IdempotencyModule } from './core/idempotency/idempotency.module.js';
@@ -36,6 +37,7 @@ export class AppModule {
         TenantModule,
         RateLimitModule,
         AuthModule,
+        EmailModule,
         RbacModule,
         AuditModule,
         OutboxModule,

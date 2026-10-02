@@ -1,0 +1,26 @@
+{
+  "brand": "AcademyBee",
+  "sentFor": "Sent by AcademyBee for {academy}.",
+  "ignore": "If you didn't expect this email, you can ignore it.",
+  "linkFallback": "If the button doesn't work, copy this link into your browser:",
+  "invite": {
+    "subject": "You're invited to join {academy} on AcademyBee",
+    "heading": "Join {academy}",
+    "body": "{inviter} has invited you to join {academy} on AcademyBee. Accept the invitation to set up your account.",
+    "cta": "Accept invitation",
+    "expiry": "This invitation expires in 7 days."
+  },
+  "passwordReset": {
+    "subject": "Reset your AcademyBee password",
+    "heading": "Reset your password",
+    "body": "We received a request to reset the password for your account at {academy}. If it was you, choose a new password.",
+    "cta": "Choose a new password",
+    "expiry": "This link expires in 1 hour. If you didn't ask for it, your password won't change."
+  },
+  "passwordChanged": {
+    "subject": "Your AcademyBee password was changed",
+    "heading": "Your password was changed",
+    "body": "The password for your AcademyBee account was just changed, and you were signed out of every device.",
+    "notYou": "If you didn't change it, reset your password now and tell {academy}."
+  }
+}

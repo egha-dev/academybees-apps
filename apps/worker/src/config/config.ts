@@ -18,6 +18,15 @@ export const WorkerConfigSchema = z.object({
   POSTHOG_HOST: z.url().default('https://eu.i.posthog.com'),
   ANALYTICS_HASH_SALT: z.string().min(8),
   SENTRY_DSN: z.union([z.url(), z.literal('')]).optional(),
+  /** Decrypts link tokens sealed by the API (C-62); must equal the API's value. */
+  SECRETS_MASTER_KEY: z.string().min(10),
+  /** SMTP server (Mailpit locally on :1025; the provider on staging, A6). */
+  SMTP_URL: z.url({ protocol: /^smtps?$/ }).default('smtp://localhost:1025'),
+  EMAIL_FROM: z.string().min(3).default('AcademyBee <no-reply@academybees.test>'),
+  /** Links in emails (C-52): https://<slug>.<root>[:port]/… */
+  PLATFORM_ROOT_DOMAIN: z.string().trim().min(1).default('localhost'),
+  WEB_PUBLIC_PROTOCOL: z.enum(['http', 'https']).default('https'),
+  WEB_PUBLIC_PORT: z.coerce.number().int().min(1).max(65535).optional(),
 });
 export type WorkerConfig = z.infer<typeof WorkerConfigSchema>;
 
