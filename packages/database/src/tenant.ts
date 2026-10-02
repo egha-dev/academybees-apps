@@ -20,6 +20,10 @@ import { Prisma, PrismaClient } from './generated/prisma/client.js';
 
 /** Returns the tenant of the current request/job, or undefined outside a tenant context. */
 export type TenantIdSource = () => string | undefined;
+/** Returns the signed-in (or flow-resolved) user, or undefined (C-59). */
+export type UserIdSource = () => string | undefined;
+
+type DbContext = { tenantId: string | undefined; userId: string | undefined };
 
 /** A tenant-owned table was used without a tenant context (fails closed). */
 export class TenantContextMissingError extends Error {
@@ -192,33 +196,38 @@ export function uniqueToFirstArgs(args: unknown): Args {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STATEMENT = (sql: string): SqlQuery => ({ sql, args: [], argTypes: [] });
 
-function setTenantQuery(tenantId: string): SqlQuery {
-  if (!UUID.test(tenantId)) throw new Error('Tenant context is not a UUID');
+/** One statement sets both GUCs (an unset one becomes '', which policies read as NULL). */
+function setContextQuery({ tenantId, userId }: DbContext): SqlQuery {
+  if (tenantId !== undefined && !UUID.test(tenantId))
+    throw new Error('Tenant context is not a UUID');
+  if (userId !== undefined && !UUID.test(userId)) throw new Error('User context is not a UUID');
   return {
-    sql: `SELECT set_config('app.tenant_id', $1, true)`,
-    args: [tenantId],
-    argTypes: [{ scalarType: 'string', arity: 'scalar' }],
+    sql: `SELECT set_config('app.tenant_id', $1, true), set_config('app.user_id', $2, true)`,
+    args: [tenantId ?? '', userId ?? ''],
+    argTypes: [
+      { scalarType: 'string', arity: 'scalar' },
+      { scalarType: 'string', arity: 'scalar' },
+    ],
   };
 }
 
+const hasContext = (ctx: DbContext) => ctx.tenantId !== undefined || ctx.userId !== undefined;
+
 /**
- * Driver-level tenant context. Every statement Prisma sends outside a transaction runs as
- * BEGIN → set_config('app.tenant_id', …, true) → statement → COMMIT on one pooled connection, and
- * every transaction Prisma starts sets the context right after BEGIN. Transaction-local, so it is
- * safe with PgBouncer transaction pooling and a reused connection never carries a tenant.
- * Without a tenant context statements run unchanged (RLS then shows no tenant rows).
+ * Driver-level context. Every statement Prisma sends outside a transaction runs as
+ * BEGIN → set_config('app.tenant_id' / 'app.user_id', …, true) → statement → COMMIT on one pooled
+ * connection, and every transaction Prisma starts sets the context right after BEGIN.
+ * Transaction-local, so it is safe with PgBouncer transaction pooling and a reused connection never
+ * carries a tenant or user. Without any context statements run unchanged (RLS then shows nothing).
  */
 function tenantScopedAdapter(
   adapter: SqlDriverAdapter,
-  getTenantId: TenantIdSource,
+  getContext: () => DbContext,
 ): SqlDriverAdapter {
-  const inTenant = async <T>(
-    tenantId: string,
-    run: (tx: Transaction) => Promise<T>,
-  ): Promise<T> => {
+  const inContext = async <T>(ctx: DbContext, run: (tx: Transaction) => Promise<T>): Promise<T> => {
     const tx = await adapter.startTransaction();
     try {
-      await tx.executeRaw(setTenantQuery(tenantId));
+      await tx.executeRaw(setContextQuery(ctx));
       const result = await run(tx);
       await tx.executeRaw(STATEMENT('COMMIT'));
       await tx.commit();
@@ -235,25 +244,25 @@ function tenantScopedAdapter(
       switch (prop) {
         case 'queryRaw':
           return (query: SqlQuery) => {
-            const tenantId = getTenantId();
-            return tenantId === undefined
-              ? target.queryRaw(query)
-              : inTenant(tenantId, (tx) => tx.queryRaw(query));
+            const ctx = getContext();
+            return hasContext(ctx)
+              ? inContext(ctx, (tx) => tx.queryRaw(query))
+              : target.queryRaw(query);
           };
         case 'executeRaw':
           return (query: SqlQuery) => {
-            const tenantId = getTenantId();
-            return tenantId === undefined
-              ? target.executeRaw(query)
-              : inTenant(tenantId, (tx) => tx.executeRaw(query));
+            const ctx = getContext();
+            return hasContext(ctx)
+              ? inContext(ctx, (tx) => tx.executeRaw(query))
+              : target.executeRaw(query);
           };
         case 'startTransaction':
           return async (isolationLevel?: IsolationLevel) => {
-            const tenantId = getTenantId();
+            const ctx = getContext();
             const tx = await target.startTransaction(isolationLevel);
-            if (tenantId !== undefined) {
+            if (hasContext(ctx)) {
               try {
-                await tx.executeRaw(setTenantQuery(tenantId));
+                await tx.executeRaw(setContextQuery(ctx));
               } catch (error) {
                 await tx.executeRaw(STATEMENT('ROLLBACK')).catch(() => undefined);
                 await tx.rollback();
@@ -278,12 +287,12 @@ function tenantScopedAdapter(
 
 function tenantScopedAdapterFactory(
   factory: SqlDriverAdapterFactory,
-  getTenantId: TenantIdSource,
+  getContext: () => DbContext,
 ): SqlDriverAdapterFactory {
   return new Proxy(factory, {
     get(target, prop, receiver) {
       if (prop === 'connect')
-        return async () => tenantScopedAdapter(await target.connect(), getTenantId);
+        return async () => tenantScopedAdapter(await target.connect(), getContext);
       const value: unknown = Reflect.get(target, prop, receiver);
       return typeof value === 'function'
         ? (value as (...a: unknown[]) => unknown).bind(target)
@@ -304,11 +313,15 @@ function tenantScopedAdapterFactory(
 export function createTenantBoundClient(
   url: string,
   getTenantId: TenantIdSource,
-  options: DatabaseClientOptions = {},
+  options: DatabaseClientOptions & { getUserId?: UserIdSource } = {},
 ): TenantBoundClient {
+  const getUserId = options.getUserId ?? (() => undefined);
   const adapter = new PrismaPg({ connectionString: url, max: options.maxConnections ?? 10 });
   const base = new PrismaClient({
-    adapter: tenantScopedAdapterFactory(adapter, getTenantId),
+    adapter: tenantScopedAdapterFactory(adapter, () => ({
+      tenantId: getTenantId(),
+      userId: getUserId(),
+    })),
     log: options.log ?? [],
   });
   const bound = base.$extends({
@@ -348,6 +361,21 @@ export function createTenantBoundClient(
     },
     client: {
       /**
+       * Run `fn` in one transaction that may read the single identity row matching a value the
+       * caller already holds (C-59): `identifier` (normalised email/phone) or `token` (SHA-256 of a
+       * refresh/reset/invite secret). The current academy/user context still applies.
+       */
+      async $withLookup<T>(
+        lookup: { identifier?: string; token?: string },
+        fn: (tx: Prisma.TransactionClient) => Promise<T>,
+      ): Promise<T> {
+        const client = Prisma.getExtensionContext(this) as unknown as PrismaClient;
+        return client.$transaction(async (tx) => {
+          await tx.$executeRaw`SELECT set_config('app.lookup_identifier', ${lookup.identifier ?? ''}, true), set_config('app.lookup_token', ${lookup.token ?? ''}, true)`;
+          return fn(tx);
+        });
+      },
+      /**
        * Find the domain row for one lookup key (subdomain label or custom host) before any tenant
        * is known, under the narrow host-lookup policy (C-51). Null for unknown hosts.
        */
@@ -381,7 +409,20 @@ export function createTenantBoundClient(
  */
 export type TenantBoundClient = PrismaClient & {
   $lookupTenantDomain(lookupKey: string): Promise<ResolvedDomainRow | null>;
+  $withLookup<T>(
+    lookup: { identifier?: string; token?: string },
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T>;
 };
+
+/**
+ * Pin a user resolved during a flow (login, refresh, reset) for the rest of the transaction, so
+ * its user-owned rows become visible and writable (C-59). Clears the lookup GUCs.
+ */
+export async function bindUser(tx: Prisma.TransactionClient, userId: string): Promise<void> {
+  if (!UUID.test(userId)) throw new Error('User id is not a UUID');
+  await tx.$executeRaw`SELECT set_config('app.user_id', ${userId}, true), set_config('app.lookup_identifier', '', true), set_config('app.lookup_token', '', true)`;
+}
 
 export type ResolvedDomainRow = {
   tenantId: string;

@@ -7,6 +7,7 @@ export {
 } from './clients.js';
 export { Prisma, PrismaClient } from './generated/prisma/client.js';
 export {
+  bindUser,
   createTenantBoundClient,
   MODEL_KINDS,
   type ResolvedDomainRow,
@@ -16,6 +17,7 @@ export {
   type TenantBoundClient,
   TenantContextMissingError,
   type TenantIdSource,
+  type UserIdSource,
   TenantMismatchError,
   uniqueToFirstArgs,
 } from './tenant.js';
