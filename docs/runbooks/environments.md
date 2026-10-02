@@ -64,6 +64,9 @@ Both services: **Deploy an existing image** from `ghcr.io/egha-dev/academybee-<a
 | `DATABASE_URL` | `ab_app` via the Supabase **transaction pooler** (port 6543) |
 | `REDIS_URL` | Upstash `rediss://…` |
 | `TRUSTED_PROXY_SECRET` | random ≥ 32 chars; **same value** as on Vercel |
+| `AUTH_SIGNING_KEYS` | Ed25519 key set for access tokens (C-64): generate with `node -e "const c=require('crypto');const k=c.generateKeyPairSync('ed25519').privateKey.export({format:'jwk'});console.log(JSON.stringify({current:'s1',keys:[{...k,kid:'s1',alg:'EdDSA'}]}))"`; rotate by adding a key and switching `current` |
+| `SECRETS_MASTER_KEY` | `s1:` + 32 random bytes base64 (`openssl rand -base64 32`); **same value** on the worker (C-62) |
+| `COOKIE_MODE` | `secure` (never `insecure-dev` outside local/ci) |
 | `TRUSTED_PROXY_IPS` | empty (the secret header is used instead) |
 | `PLATFORM_ROOT_DOMAIN` | `staging.academybees.com` (C-52) |
 | `CUSTOM_DOMAINS_ENABLED` | `false` until custom domains ship (same as the web) |

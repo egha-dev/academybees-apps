@@ -8,6 +8,8 @@ const base = {
   REDIS_URL: 'redis://localhost:6379',
   TRUSTED_PROXY_SECRET: 'local-proxy-secret-123',
   ANALYTICS_HASH_SALT: 'local-salt',
+  AUTH_SIGNING_KEYS: '{"current":"k","keys":[]}',
+  SECRETS_MASTER_KEY: `m1:${'A'.repeat(43)}=`,
 };
 
 describe('loadApiConfig', () => {
@@ -48,5 +50,35 @@ describe('loadApiConfig', () => {
 
   it('refuses the local proxy secret in production', () => {
     expect(() => loadApiConfig({ ...base, APP_ENV: 'production' })).toThrow(/real secret/);
+  });
+
+  it('allows insecure-dev cookies only in local/ci (C-64)', () => {
+    expect(loadApiConfig({ ...base, COOKIE_MODE: 'insecure-dev' }).COOKIE_MODE).toBe(
+      'insecure-dev',
+    );
+    expect(() =>
+      loadApiConfig({
+        ...base,
+        APP_ENV: 'staging',
+        PLATFORM_ROOT_DOMAIN: 'staging.academybees.com',
+        COOKIE_MODE: 'insecure-dev',
+      }),
+    ).toThrow(/COOKIE_MODE: insecure-dev cookies are allowed only in local\/ci/);
+    expect(loadApiConfig(base).COOKIE_MODE).toBe('secure');
+  });
+
+  it('validates the secrets master key format and refuses a local key in production', () => {
+    expect(() => loadApiConfig({ ...base, SECRETS_MASTER_KEY: 'too-short' })).toThrow(
+      /SECRETS_MASTER_KEY/,
+    );
+    expect(() =>
+      loadApiConfig({
+        ...base,
+        APP_ENV: 'production',
+        PLATFORM_ROOT_DOMAIN: 'academybees.com',
+        TRUSTED_PROXY_SECRET: 'a-real-production-secret',
+        SECRETS_MASTER_KEY: `local1:${'A'.repeat(43)}=`,
+      }),
+    ).toThrow(/must be a real key in production/);
   });
 });

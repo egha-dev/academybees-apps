@@ -1,0 +1,38 @@
+{
+  "name": "@academybee/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Passwords (argon2id), opaque tokens, EdDSA access tokens, cookies, CSRF, TOTP + recovery codes and secret encryption — pure helpers shared by the API, worker and CLI (ADR-007, C-63).",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "@academybee/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "catalog:",
+    "jose": "catalog:",
+    "otpauth": "catalog:"
+  },
+  "devDependencies": {
+    "@academybee/config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "fast-check": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

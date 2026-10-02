@@ -13,3 +13,4 @@ while IFS= read -r example; do
     echo "created $target"
   fi
 done < <(git ls-files '*.env.example' '**/.env.example')
+node scripts/dev/ensure-secrets.mjs

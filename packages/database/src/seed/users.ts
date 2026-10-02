@@ -1,3 +1,4 @@
+import { hashPassword } from '@academybee/auth';
 import { newId, type RoleKey } from '@academybee/contracts';
 
 import type { PrismaClient } from '../generated/prisma/client.js';
@@ -6,9 +7,10 @@ import { DEV_TENANTS } from './tenants.js';
 
 /**
  * Local/CI demo people (IMPLEMENTATION_PLAN Phase 2): one user per role in demo-a, the teacher also
- * a member of demo-b, and a Super Admin. Fixed ids keep re-runs idempotent. Passwords are added by
- * `seedDevCredentials` (Phase 2 S2). Seeds never run outside local/ci (guard.ts).
+ * a member of demo-b, and a Super Admin. Fixed ids keep re-runs idempotent. Every demo user has the
+ * same local-only password (README); seeds never run outside local/ci (guard.ts).
  */
+export const DEV_PASSWORD = 'AcademyBees#2026';
 export type DevUser = {
   id: string;
   email: string;
@@ -81,6 +83,7 @@ export const DEV_USERS: readonly DevUser[] = [
 
 /** System roles for every demo academy, then the demo users, memberships and platform staff. */
 export async function seedDevUsers(db: PrismaClient): Promise<number> {
+  const passwordHash = await hashPassword(DEV_PASSWORD);
   const roleIds = new Map<string, Record<RoleKey, string>>();
   for (const t of DEV_TENANTS) {
     roleIds.set(
@@ -101,6 +104,11 @@ export async function seedDevUsers(db: PrismaClient): Promise<number> {
         where: { id: u.id },
         create: { id: u.id, email: u.email, name: u.name, emailVerifiedAt: new Date() },
         update: { name: u.name },
+      });
+      await tx.userCredential.upsert({
+        where: { userId: u.id },
+        create: { userId: u.id, passwordHash },
+        update: { passwordHash, failedCount: 0, lockedUntil: null },
       });
       if (u.platformRole)
         await tx.platformStaff.upsert({

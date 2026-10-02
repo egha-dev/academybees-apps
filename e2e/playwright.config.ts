@@ -1,3 +1,5 @@
+import { generateKeyPairSync, randomBytes } from 'node:crypto';
+
 import { defineConfig, devices } from '@playwright/test';
 
 /**
@@ -11,6 +13,13 @@ const HOST = process.env.E2E_BASE_HOST ?? 'localhost';
 const APP_ENV = process.env.APP_ENV ?? 'local';
 const url = (port: number) => `http://${HOST}:${port}`;
 
+/** Throwaway session secrets for the E2E API (C-64), generated per run. */
+const signingKey = {
+  ...generateKeyPairSync('ed25519').privateKey.export({ format: 'jwk' }),
+  kid: 'e2e',
+  alg: 'EdDSA',
+};
+
 const API_ENV = {
   APP_ENV,
   NODE_ENV: 'production',
@@ -21,6 +30,10 @@ const API_ENV = {
   REDIS_URL: process.env.E2E_REDIS_URL ?? 'redis://localhost:6379',
   TRUSTED_PROXY_SECRET: 'local-proxy-secret',
   ANALYTICS_HASH_SALT: 'e2e-analytics-salt',
+  AUTH_SIGNING_KEYS: JSON.stringify({ current: 'e2e', keys: [signingKey] }),
+  SECRETS_MASTER_KEY: `e2e:${randomBytes(32).toString('base64')}`,
+  // Playwright drives plain-http *.localhost hosts; the S6 spike decides whether WebKit needs this (C-64).
+  COOKIE_MODE: 'insecure-dev',
   FLAGS_CACHE_MS: '0',
   PLATFORM_ROOT_DOMAIN: 'localhost',
 };
