@@ -331,8 +331,8 @@ Phase 2 is **not** started.
 | --- | --- | --- | --- |
 | S1 | `p2/identity-schema` | 2.1 plan + decisions, 2.2 identity schema + RLS (phone-ready), 2.3 capability catalogue + role templates, 2.4 seeds + factories | ✅ #33 |
 | S2 | `p2/auth-core` | 2.5 `packages/auth`, 2.6 config + keys | ✅ #34 |
-| S3 | `p2/sessions` | 2.7 sessions + endpoints, 2.8 guards, 2.9 rate limits + lockout | 🟨 |
-| S4 | `p2/rbac` | 2.10 capabilities + `@Can`, 2.11 scope policies, 2.12 cross-tenant suite + Phase 1 L6/L7 | ⬜ |
+| S3 | `p2/sessions` | 2.7 sessions + endpoints, 2.8 guards, 2.9 rate limits + lockout | ✅ #35 |
+| S4 | `p2/rbac` | 2.10 capabilities + `@Can`, 2.11 scope policies, 2.12 cross-tenant suite + Phase 1 L6/L7 | 🟨 |
 | S5 | `p2/email-invites` | 2.13 email (worker), 2.14 invitations, reset, team API | ⬜ |
 | S6 | `p2/web-auth` | 2.15 web auth plumbing (cookie spike), 2.16 Login, forgot/reset, invite accept | ⬜ |
 | S7 | `p2/web-shell` | 2.17 signed-in shell (flag `p2-role-homes`), 2.18 Team page | ⬜ |
