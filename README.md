@@ -98,6 +98,18 @@ Then open:
 | http://paused.localhost:3000, http://closed-demo.localhost:3000, http://setup-demo.localhost:3000, http://nope.localhost:3000 | Academy status pages: suspended, archived, setting up, unknown |
 | http://old-demo-a.localhost:3000 | Old slug → 301 to demo-a |
 | http://app.localhost:3000 | Family Hub placeholder (G-31) |
+
+**Demo sign-ins (local/CI seeds only):** every demo user's password is `AcademyBees#2026`.
+
+| Email | Where | Role |
+| --- | --- | --- |
+| `owner@demo-a.test`, `admin@demo-a.test`, `accountant@demo-a.test`, `reception@demo-a.test` | `demo-a.localhost:3000` | Owner, Admin, Accountant, Receptionist |
+| `teacher@demo-a.test` | `demo-a.localhost:3000` and `demo-b.localhost:3000` | Teacher in both academies |
+| `parent@demo-a.test`, `student@demo-a.test` | `app.localhost:3000` (Family Hub) | Parent, Student of demo-a |
+| `owner@demo-b.test` | `demo-b.localhost:3000` | Owner |
+| `superadmin@academybees.test` | `console.localhost:3000` | Super Admin (TOTP enrolment on first sign-in, C-66) |
+
+Sign-in screens arrive during Phase 2.
 | http://localhost:3000/api/v1/health/ready | API through the web origin (DB + Redis) |
 | http://localhost:4000/api/docs | OpenAPI (not in production) |
 | http://localhost:8025 | Mailpit (email from Phase 2) |

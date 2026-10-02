@@ -43,6 +43,17 @@ export const ApiConfigSchema = z
      * other dotted hosts are then "unknown" without a lookup, so junk Host headers cost nothing
      * (review M3).
      */
+    /** Ed25519 signing key set for access tokens (C-64); checked fully at boot by the auth module. */
+    AUTH_SIGNING_KEYS: z.string().min(20, 'must be a JSON key set (pnpm env:init generates one)'),
+    /** Master key ring for secrets at rest (ADR-033, C-62): `<id>:<base64 32 bytes>[,…]`. */
+    SECRETS_MASTER_KEY: z
+      .string()
+      .regex(
+        /^[A-Za-z0-9_-]{1,20}:[A-Za-z0-9+/=]{43,44}(,[A-Za-z0-9_-]{1,20}:[A-Za-z0-9+/=]{43,44})*$/,
+        'must be <id>:<base64 32-byte key>[,…]',
+      ),
+    /** `insecure-dev` (unprefixed, non-Secure cookies) is allowed on local/ci http hosts only (C-64). */
+    COOKIE_MODE: z.enum(['secure', 'insecure-dev']).default('secure'),
     CUSTOM_DOMAINS_ENABLED: z
       .enum(['true', 'false'])
       .default('false')
@@ -57,6 +68,20 @@ export const ApiConfigSchema = z
     SENTRY_DSN: z.union([z.url(), z.literal('')]).optional(),
   })
   .superRefine((cfg, ctx) => {
+    if (cfg.COOKIE_MODE === 'insecure-dev' && cfg.APP_ENV !== 'local' && cfg.APP_ENV !== 'ci') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['COOKIE_MODE'],
+        message: 'insecure-dev cookies are allowed only in local/ci (C-64)',
+      });
+    }
+    if (cfg.APP_ENV === 'production' && cfg.SECRETS_MASTER_KEY.startsWith('local')) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SECRETS_MASTER_KEY'],
+        message: 'must be a real key in production',
+      });
+    }
     if (!cfg.PLATFORM_ROOT_DOMAIN && cfg.APP_ENV !== 'local' && cfg.APP_ENV !== 'ci') {
       ctx.addIssue({
         code: 'custom',
