@@ -5,7 +5,7 @@ import { getTranslations } from 'next-intl/server';
 import { AuthFrame } from '@/components/auth/auth-frame';
 import { loginLabels } from '@/components/auth/labels.server';
 import { LoginForm } from '@/components/auth/login-form';
-import { academyColor, academyName, hostContext } from '@/lib/host-context.server';
+import { academyColor, academyName, hostContext, hubOrigin } from '@/lib/host-context.server';
 import { safeNext } from '@/lib/safe-next';
 import { getSession, homeFor } from '@/lib/session.server';
 
@@ -22,7 +22,7 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ next?: string | string[] }>;
 }) {
-  const [{ context }, session, params, t] = await Promise.all([
+  const [{ context, apexUrl }, session, params, t] = await Promise.all([
     hostContext(),
     getSession(),
     searchParams,
@@ -39,7 +39,7 @@ export default async function LoginPage({
       title={t('title', { academy })}
       body={t('body')}
     >
-      <LoginForm labels={await loginLabels()} next={next} />
+      <LoginForm labels={await loginLabels()} next={next} hubOrigin={hubOrigin(apexUrl)} />
     </AuthFrame>
   );
 }

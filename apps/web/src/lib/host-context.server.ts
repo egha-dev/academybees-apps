@@ -36,3 +36,13 @@ export async function requestPath(): Promise<string> {
 export function academyTimeZone(context: TenantContextResponse | undefined): string | undefined {
   return context && 'timezone' in context ? context.timezone : undefined;
 }
+
+/** The Family Hub origin (`app.` on the platform root) for this deployment (G-31). */
+export function hubOrigin(apexUrl: string): string | undefined {
+  try {
+    const url = new URL(apexUrl);
+    return `${url.protocol}//app.${url.host}`;
+  } catch {
+    return undefined;
+  }
+}

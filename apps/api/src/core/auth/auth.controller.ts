@@ -33,6 +33,7 @@ import { TenantContext } from '../tenant/tenant-context.service.js';
 import { createZodDto, ZodResponse } from '../validation/zod-dto.js';
 import { readCookies } from './http.js';
 import { HubService } from './hub.service.js';
+import { LoginService } from './login.service.js';
 import { MfaService } from './mfa.service.js';
 import { PasswordService } from './password.service.js';
 import { Public } from './public.decorator.js';
@@ -56,6 +57,7 @@ class MfaVerifyDto extends createZodDto(MfaVerifyRequestSchema) {}
 export class AuthController {
   constructor(
     private readonly sessions: SessionService,
+    private readonly logins: LoginService,
     private readonly passwords: PasswordService,
     private readonly hub: HubService,
     private readonly mfa: MfaService,
@@ -70,7 +72,7 @@ export class AuthController {
   @HttpCode(200)
   @ZodResponse(LoginOutcomeSchema)
   login(@Body() body: LoginDto, @Res({ passthrough: true }) res: Response) {
-    return this.sessions.login(body, res);
+    return this.logins.login(body, res);
   }
 
   /** Family Hub: exchange the one-time code from an academy sign-in for a HUB session (C-61). */
@@ -171,7 +173,7 @@ export class AuthController {
       };
     }
     if (session.audience === 'CONSOLE') {
-      const staff = await this.mfa.platformStaff(userId);
+      const staff = await this.sessions.platformStaff(userId);
       if (!staff) throw new DomainError('UNAUTHENTICATED', 'not platform staff');
       return { user, audience: 'CONSOLE', platform: { role: staff.platformRole } };
     }

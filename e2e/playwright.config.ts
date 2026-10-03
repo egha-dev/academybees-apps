@@ -23,7 +23,10 @@ const signingKey = {
 };
 
 /** Seals link tokens in the API and opens them in the worker (C-62): one value for both. */
-const SECRETS_MASTER_KEY = `e2e:${randomBytes(32).toString('base64')}`;
+// Kept in the environment so test workers (which re-load this file) share it: the console spec
+// runs `platform:create-admin`, whose emailed link the worker must open.
+process.env.E2E_SECRETS_MASTER_KEY ??= `e2e:${randomBytes(32).toString('base64')}`;
+const SECRETS_MASTER_KEY = process.env.E2E_SECRETS_MASTER_KEY;
 
 const API_ENV = {
   APP_ENV,

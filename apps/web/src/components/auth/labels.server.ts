@@ -45,7 +45,6 @@ export async function authLabels(): Promise<{
     errors: {
       invalidCredentials: t('errors.invalidCredentials'),
       rateLimited: t('errors.rateLimited'),
-      familyHub: t('errors.familyHub'),
       offline: t('errors.offline'),
       network: t('errors.network'),
       generic: t('errors.generic'),

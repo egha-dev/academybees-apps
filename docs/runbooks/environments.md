@@ -61,6 +61,9 @@ Set them with Railway's shared variables. Values never go in the repo.
 | `ANALYTICS_HASH_SALT` | api, worker | random ≥ 32 chars, the same on both |
 | `SENTRY_DSN`, `POSTHOG_*` | api, worker, web | optional |
 | `PAYMENT_PROVIDERS` | api | `manual` |
+| `CONSOLE_IP_ALLOWLIST` | api | the office/VPN IPs or CIDRs allowed on `console.` (C-66, C-73); empty = no allow-list. Console sign-in always needs password + TOTP |
+
+**First console admin:** run `pnpm platform:create-admin --email <you>` in a one-off job with `APP_ENV`, `PLATFORM_DATABASE_URL`, `SECRETS_MASTER_KEY` (same as api/worker), `PLATFORM_ROOT_DOMAIN` set. It prints a 24-hour set-password link for `console.` and emails it; the first sign-in sets up an authenticator app and shows ten recovery codes once. `--new-link` issues a fresh link for existing staff.
 
 **Deploys:** the current `deploy-staging.yml` still targets Render and Vercel (C-48). S7b re-points it at Railway and keeps the rest of the order:
 1. build the images;

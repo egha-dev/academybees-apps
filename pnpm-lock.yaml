@@ -757,6 +757,9 @@ importers:
 
   e2e:
     devDependencies:
+      '@academybee/auth':
+        specifier: workspace:*
+        version: link:../packages/auth
       '@academybee/config':
         specifier: workspace:*
         version: link:../packages/config

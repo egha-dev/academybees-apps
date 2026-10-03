@@ -27,7 +27,16 @@ export type ResetFormLabels = {
 };
 
 /** Choose a new password from a reset link (single use; signs out everywhere, C-67). */
-export function ResetForm({ token, labels }: { token: string; labels: ResetFormLabels }) {
+export function ResetForm({
+  token,
+  labels,
+  canRequestNew = true,
+}: {
+  token: string;
+  labels: ResetFormLabels;
+  /** Academy hosts offer "get a new link"; the console has no self-service reset (C-73). */
+  canRequestNew?: boolean;
+}) {
   const online = useOnline();
   const hydrated = useHydrated();
   const [errors, setErrors] = useState<{ password?: string; confirm?: string }>({});
@@ -75,7 +84,8 @@ export function ResetForm({ token, labels }: { token: string; labels: ResetFormL
         </Button>
       </Stack>
     );
-  if (state === 'invalid') return <ResetLinkInvalid labels={labels} />;
+  if (state === 'invalid')
+    return <ResetLinkInvalid labels={labels} canRequestNew={canRequestNew} />;
 
   return (
     <form method="post" noValidate onSubmit={(e) => void submit(e)}>
@@ -109,8 +119,10 @@ export function ResetForm({ token, labels }: { token: string; labels: ResetFormL
 
 export function ResetLinkInvalid({
   labels,
+  canRequestNew = true,
 }: {
   labels: Pick<ResetFormLabels, 'invalidTitle' | 'invalidBody' | 'requestNew'>;
+  canRequestNew?: boolean;
 }) {
   return (
     <Stack spacing={4}>
@@ -118,9 +130,11 @@ export function ResetLinkInvalid({
         <strong>{labels.invalidTitle}</strong>
       </InlineAlert>
       <Text tone="secondary">{labels.invalidBody}</Text>
-      <Button href="/forgot-password" fullWidth>
-        {labels.requestNew}
-      </Button>
+      {canRequestNew && (
+        <Button href="/forgot-password" fullWidth>
+          {labels.requestNew}
+        </Button>
+      )}
     </Stack>
   );
 }

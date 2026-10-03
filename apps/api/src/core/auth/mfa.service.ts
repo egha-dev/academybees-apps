@@ -19,7 +19,7 @@ import {
   newId,
 } from '@academybee/contracts';
 import { type TenantBoundClient } from '@academybee/database';
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { type Response } from 'express';
 import { type Redis } from 'ioredis';
 import { ClsService } from 'nestjs-cls';
@@ -63,17 +63,10 @@ export class MfaService {
     @Inject(MASTER_KEYS) private readonly keys: MasterKeyRing,
     private readonly cls: ClsService<RequestContext>,
     private readonly context: TenantContext,
-    @Inject(forwardRef(() => SessionService)) private readonly sessions: SessionService,
+    private readonly sessions: SessionService,
     private readonly audit: AuditService,
     private readonly rate: RateLimiter,
   ) {}
-
-  /** The user's platform staff row (user-bound RLS: only their own, C-59). */
-  platformStaff(userId: string) {
-    return this.context.runAsUser(userId, () =>
-      this.db.platformStaff.findFirst({ select: { platformRole: true, status: true } }),
-    );
-  }
 
   /** After a correct console password: issue the MFA token and say which step comes next. */
   async begin(userId: string): Promise<{ step: 'enrol' | 'verify'; token: string }> {

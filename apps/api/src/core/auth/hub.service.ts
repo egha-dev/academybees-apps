@@ -1,7 +1,7 @@
 import { generateToken, hashToken } from '@academybee/auth';
 import { type RoleKey, ROLE_TEMPLATES } from '@academybee/contracts';
 import { type TenantBoundClient } from '@academybee/database';
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { type Response } from 'express';
 import { type Redis } from 'ioredis';
 import { z } from 'zod';
@@ -40,7 +40,7 @@ export class HubService {
     @Inject(REDIS) private readonly redis: Redis,
     private readonly context: TenantContext,
     private readonly memberships: MembershipService,
-    @Inject(forwardRef(() => SessionService)) private readonly sessions: SessionService,
+    private readonly sessions: SessionService,
     private readonly audit: AuditService,
     private readonly rate: RateLimiter,
   ) {}

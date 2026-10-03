@@ -1,6 +1,6 @@
 'use client';
 
-import { type LoginResponse } from '@academybee/contracts';
+import { type LoginOutcome } from '@academybee/contracts';
 import { Button, TextLink } from '@academybee/ui/components/actions';
 import { InlineAlert } from '@academybee/ui/components/alert';
 import { PasswordInput, TextInput } from '@academybee/ui/components/fields';
@@ -34,12 +34,20 @@ export function LoginForm({
   next,
   defaultIdentifier = '',
   onSignedIn,
+  hubOrigin,
+  onMfa,
+  showForgot = true,
 }: {
   labels: LoginFormLabels;
   next?: string | undefined;
   defaultIdentifier?: string;
   /** Re-login dialog: stay on the page instead of navigating. */
   onSignedIn?: () => void;
+  /** Academy sign-in: where parents and students continue (Family Hub, C-61). */
+  hubOrigin?: string | undefined;
+  /** Console sign-in: the second step (C-66). */
+  onMfa?: (mfa: { step: 'enrol' | 'verify'; token: string }) => void;
+  showForgot?: boolean;
 }) {
   const online = useOnline();
   const hydrated = useHydrated();
@@ -58,18 +66,41 @@ export function LoginForm({
     if (gaps.identifier || gaps.password) return;
     setBusy(true);
     setError(undefined);
-    const res = await api<LoginResponse>('/auth/login', {
+    const res = await api<LoginOutcome>('/auth/login', {
       method: 'POST',
       body: { identifier, password },
       anonymous: true,
     });
-    if (res.ok) {
+    const data = res.ok ? res.data : undefined;
+    if (data && 'handoff' in data) {
+      // Parents and students continue on the Family Hub. The one-time code travels in the
+      // fragment, which browsers never send to a server or put in a Referer (C-61, C-73).
+      if (hubOrigin) {
+        // Another origin (app.), so a full load is the only way there.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+        window.location.assign(
+          `${hubOrigin}/auth/handoff#code=${encodeURIComponent(data.handoff.code)}`,
+        );
+        return;
+      }
+      setBusy(false);
+      setError(labels.errors.generic);
+      return;
+    }
+    if (data && 'mfa' in data) {
+      setBusy(false);
+      if (onMfa) onMfa(data.mfa);
+      else setError(labels.errors.generic);
+      return;
+    }
+    if (data) {
       if (onSignedIn) {
         setBusy(false);
         onSignedIn();
-      } else window.location.assign(next ?? res.data.redirectTo);
+      } else window.location.assign(next ?? data.redirectTo);
       return;
     }
+    if (res.ok) return;
     setBusy(false);
     if (res.error.code === 'TENANT_UNAVAILABLE') {
       // The academy's status changed: its status page explains.
@@ -111,7 +142,7 @@ export function LoginForm({
         <Button type="submit" loading={busy} disabled={!hydrated || !online} fullWidth>
           {labels.submit}
         </Button>
-        {!onSignedIn && <TextLink href="/forgot-password">{labels.forgot}</TextLink>}
+        {!onSignedIn && showForgot && <TextLink href="/forgot-password">{labels.forgot}</TextLink>}
       </Stack>
     </form>
   );

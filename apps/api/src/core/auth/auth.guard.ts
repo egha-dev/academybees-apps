@@ -21,7 +21,6 @@ import { TenantContext } from '../tenant/tenant-context.service.js';
 import { hostAudience, readCookies } from './http.js';
 import { AUTH_KEYS } from './keys.js';
 import { MembershipService } from './membership.service.js';
-import { MfaService } from './mfa.service.js';
 import { IS_PUBLIC } from './public.decorator.js';
 import { SessionService } from './session.service.js';
 
@@ -45,7 +44,6 @@ export class AuthGuard implements CanActivate {
     private readonly cls: ClsService<RequestContext>,
     private readonly sessions: SessionService,
     private readonly memberships: MembershipService,
-    private readonly mfa: MfaService,
     private readonly audit: AuditService,
     private readonly tenantContext: TenantContext,
     @Inject(AUTH_KEYS) private readonly keys: KeyRing,
@@ -116,7 +114,7 @@ export class AuthGuard implements CanActivate {
     }
     if (audience === 'CONSOLE') {
       // Console access ends the moment platform staff are disabled (C-02).
-      const staff = await this.mfa.platformStaff(claims.sub);
+      const staff = await this.sessions.platformStaff(claims.sub);
       if (staff?.status !== 'ACTIVE')
         return new DomainError('UNAUTHENTICATED', 'platform staff inactive');
     }

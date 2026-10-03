@@ -9,8 +9,8 @@ import { hostUrl } from '../support/hosts.js';
  * are marked `data-i18n-exempt`.
  */
 const PAGES = ['/', '/offline', '/dev/design-system', '/does-not-exist'];
-/** Academy hosts: sign-in (Phase 2), status pages and the Family Hub placeholder. */
-const HOST_PAGES = ['demo-a', 'nope', 'paused', 'closed-demo', 'setup-demo', 'app'];
+/** Academy hosts: sign-in (Phase 2), status pages, Family Hub and console sign-in. */
+const HOST_PAGES = ['demo-a', 'nope', 'paused', 'closed-demo', 'setup-demo', 'app', 'console'];
 /** Phase 2 sign-in screens on an academy host (`demo-a` above shows the login page). */
 const AUTH_PATHS = [
   '/forgot-password',

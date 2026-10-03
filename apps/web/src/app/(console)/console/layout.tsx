@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
 
+export const dynamic = 'force-dynamic';
+
 /**
- * Route group: Console (console.academybees.com) — Phase 3 provisioning slice, Phase 14 full console.
- * Host routing in src/proxy.ts rewrites into this group once the phase lands; until then it has
- * no pages (hidden navigation — no "coming soon" screens, CLAUDE.md §10).
+ * Route group: Console (`console.`, C-02). Phase 2: sign-in with mandatory TOTP (C-66), the
+ * set-password link from `platform:create-admin`, and a signed-in placeholder behind
+ * `p2-console-home`. Phase 3 adds provisioning; Phase 14 the full console.
  */
 export default function Layout({ children }: { children: ReactNode }) {
   return children;
