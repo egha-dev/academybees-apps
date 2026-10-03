@@ -332,6 +332,22 @@ describe('team, invitations and password recovery', () => {
       expect((await memberOf(a.user.membershipId)).isYou).toBe(true);
     });
 
+    it('lists staff only: family members are not part of the team', async () => {
+      const parent = await addMemberFixture(urls.migrator, a.id, {
+        email: `family-${a.slug}@example.test`,
+        roleKey: 'parent',
+        grants: templateGrants('parent'),
+      });
+      await su.query(`UPDATE membership_role SET role_id = $1 WHERE membership_id = $2`, [
+        a.roleIds.parent,
+        parent.membershipId,
+      ]);
+      const list = await (await as(a, a.user.email)).get('/api/v1/team/members?limit=100');
+      const ids = (list.body.items as Array<{ id: string }>).map((m) => m.id);
+      expect(ids).toContain(teacher.membershipId);
+      expect(ids).not.toContain(parent.membershipId);
+    });
+
     it('nobody changes their own access', async () => {
       const me = await memberOf(a.user.membershipId);
       const res = await (

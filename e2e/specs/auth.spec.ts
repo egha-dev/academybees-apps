@@ -3,6 +3,7 @@ import { type BrowserContext, expect, type Page, test, type TestInfo } from '@pl
 import { ownClientIp } from '../support/client-ip.js';
 import { hostUrl, requireSeededAcademies } from '../support/hosts.js';
 import { waitForEmail } from '../support/mail.js';
+import { signOut } from '../support/session.js';
 
 /**
  * Phase 2 sign-in journeys (plan 2.16, UX Tier 1 Login): academy-branded login, role homes,
@@ -43,8 +44,7 @@ test('the academy URL opens its own sign-in; the owner lands on Today and signs 
   await page.goto(hostUrl(testInfo, 'demo-a', '/login'));
   await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/today'));
 
-  await page.getByRole('button', { name: 'Sign out' }).click();
-  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/login'));
+  await signOut(page, testInfo);
   await page.goto(hostUrl(testInfo, 'demo-a', '/today'));
   await expect(page).toHaveURL(/\/login\?next=%2Ftoday$/);
 });
@@ -147,11 +147,10 @@ test('invite → accept → signed in; then forgot → reset → sign in with th
   await page.getByLabel('Create a password').fill('Garden-Tiger#2026');
   await page.getByRole('button', { name: 'Accept and join' }).click();
   await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/teach'));
-  await expect(page.getByText('signed in as Esha Teacher')).toBeVisible();
+  await expect(page.getByRole('main').getByText("You're signed in as Esha Teacher.")).toBeVisible();
 
   // The link is single use.
-  await page.getByRole('button', { name: 'Sign out' }).click();
-  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/login'));
+  await signOut(page, testInfo);
   await page.goto(invite.link);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText("This invitation can't be used");
 

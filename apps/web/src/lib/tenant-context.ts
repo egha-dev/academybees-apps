@@ -76,6 +76,11 @@ export function clearTenantContextCache(): void {
 export const CONTEXT_HEADER = 'x-ab-context';
 /** Request header carrying the marketing origin (for "Go to AcademyBee" links). */
 export const APEX_HEADER = 'x-ab-apex';
+/**
+ * Request header carrying the path the browser asked for (before the rewrite to `/t/<slug>`), so
+ * layouts can pick the experience and send people back after sign-in. Set only by proxy.ts.
+ */
+export const PATH_HEADER = 'x-ab-path';
 
 /** Header values must be ASCII; academy names may be in any script. */
 export function encodeContextHeader(context: TenantContextResponse): string {

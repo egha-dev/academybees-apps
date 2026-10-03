@@ -3,7 +3,7 @@ import 'server-only';
 import { type TenantContextResponse } from '@academybee/contracts';
 import { headers } from 'next/headers';
 
-import { APEX_HEADER, CONTEXT_HEADER, decodeContextHeader } from './tenant-context';
+import { APEX_HEADER, CONTEXT_HEADER, decodeContextHeader, PATH_HEADER } from './tenant-context';
 
 /** What `proxy.ts` resolved for this request (academy context and the marketing origin). */
 export async function hostContext(): Promise<{
@@ -25,4 +25,14 @@ export function academyName(context: TenantContextResponse | undefined): string 
 /** The academy's brand colour when the context carries branding (ACTIVE / SETUP). */
 export function academyColor(context: TenantContextResponse | undefined): string | null {
   return context && 'branding' in context ? context.branding.primaryColor : null;
+}
+
+/** The path (and query) the browser requested, as set by proxy.ts. */
+export async function requestPath(): Promise<string> {
+  return (await headers()).get(PATH_HEADER) ?? '/';
+}
+
+/** The academy's time zone when the context carries settings (for dates and times). */
+export function academyTimeZone(context: TenantContextResponse | undefined): string | undefined {
+  return context && 'timezone' in context ? context.timezone : undefined;
 }

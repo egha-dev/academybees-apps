@@ -24,8 +24,9 @@ const BUDGETS = [
   { route: '/forgot-password', page: `${ACADEMY}/forgot-password`, kb: 200 },
   { route: '/reset-password', page: `${ACADEMY}/reset-password/[token]`, kb: 200 },
   { route: '/invite', page: `${ACADEMY}/invite/[token]`, kb: 200 },
-  { route: '/today', page: `${ACADEMY}/today`, kb: 200 },
-  { route: '/teach', page: `${ACADEMY}/teach`, kb: 200 },
+  { route: '/today', page: `${ACADEMY}/(app)/today`, kb: 200 },
+  { route: '/teach', page: `${ACADEMY}/(app)/teach`, kb: 200 },
+  { route: '/more', page: `${ACADEMY}/(app)/more`, kb: 200 },
 ];
 
 const distArg = process.argv.indexOf('--dist');

@@ -10,6 +10,7 @@ import {
   type ContextLookup,
   encodeContextHeader,
   lookupTenantContext,
+  PATH_HEADER,
 } from './lib/tenant-context';
 
 /**
@@ -59,6 +60,7 @@ export async function proxy(request: NextRequest) {
 
   const root = normalizeRootDomain(platformRootDomain());
   headers.set(APEX_HEADER, `${protocol}//${root}${port ? `:${port}` : ''}`);
+  headers.set(PATH_HEADER, `${pathname}${search}`.slice(0, 512));
   if (lookup && lookup !== 'unavailable' && lookup.found)
     headers.set(CONTEXT_HEADER, encodeContextHeader(lookup.context));
 

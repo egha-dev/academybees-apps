@@ -4,10 +4,12 @@ import { ToastProvider } from '@academybee/ui/components/feedback';
 import { AppRouterCacheProvider } from '@academybee/ui/next';
 import { UiProvider } from '@academybee/ui/provider';
 import { SerwistProvider } from '@serwist/turbopack/react';
-import { type ReactNode } from 'react';
+import { lazy, type ReactNode, Suspense } from 'react';
 
-import { PwaPrompts } from './pwa-prompts';
 import { type ShellLabels, ShellLabelsProvider } from './shell-labels';
+
+// Install/update prompts appear only after a browser event: load them after the page (G-24).
+const PwaPrompts = lazy(() => import('./pwa-prompts').then((m) => ({ default: m.PwaPrompts })));
 
 export function Providers({
   children,
@@ -30,7 +32,11 @@ export function Providers({
           >
             <ToastProvider closeLabel={labels.close}>
               {children}
-              {serviceWorker && <PwaPrompts />}
+              {serviceWorker && (
+                <Suspense fallback={null}>
+                  <PwaPrompts />
+                </Suspense>
+              )}
             </ToastProvider>
           </SerwistProvider>
         </ShellLabelsProvider>

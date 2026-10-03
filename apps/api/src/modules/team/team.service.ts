@@ -45,6 +45,7 @@ type MemberRow = {
 };
 
 const CursorKeys = z.object({ id: z.uuid() });
+const FAMILY_ROLE_KEYS = ['parent', 'student'] as const;
 
 /**
  * The academy team (ARCHITECTURE §7, C-67): who works here, with which roles. Members are
@@ -68,6 +69,9 @@ export class TeamService {
       where: {
         AND: [
           scopedWhere(this.cls, 'team.read', membershipPolicy),
+          // The team is staff: members holding at least one role outside the Family Hub. Parents
+          // and students are managed with their children's records (Phase 4, G-31).
+          { roles: { some: { role: { key: { notIn: [...FAMILY_ROLE_KEYS] } } } } },
           after ? { id: { gt: after.id } } : {},
         ],
       },
