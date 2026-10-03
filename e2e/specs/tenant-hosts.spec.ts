@@ -109,15 +109,13 @@ test('a forged x-ab-context header never changes the academy shown (review L9)',
 
 test('app. is the Family Hub host (G-31)', async ({ page }, testInfo) => {
   await page.goto(hostUrl(testInfo, 'app'));
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('AcademyBee Family Hub');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sign in to the Family Hub');
 });
 
-test('console. is the platform console host (no pages before Phase 2)', async ({
-  page,
-}, testInfo) => {
-  const res = await page.goto(hostUrl(testInfo, 'console'));
-  expect(res?.status()).toBe(404);
-  await expect(page.getByText('Page not found')).toBeVisible();
+test('console. is the platform console host (C-02)', async ({ page }, testInfo) => {
+  await page.goto(hostUrl(testInfo, 'console'));
+  await expect(page).toHaveURL(hostUrl(testInfo, 'console', '/login'));
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('AcademyBee console');
 });
 
 test('the apex is the marketing site', async ({ page }, testInfo) => {

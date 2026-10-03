@@ -7,7 +7,7 @@ import { signOut } from '../support/session.js';
 
 /**
  * Phase 2 sign-in journeys (plan 2.16, UX Tier 1 Login): academy-branded login, role homes,
- * return-to after sign-in, Family Hub users, sign-out, and the emailed flows end to end —
+ * return-to after sign-in, sign-out (Family Hub users: hub-console.spec.ts), and the emailed flows end to end —
  * invite → accept → signed in, forgot → reset → sign in — through the worker and Mailpit.
  * Seeded users (local/ci only): `<role>@demo-a.test` with the dev password.
  */
@@ -81,15 +81,6 @@ test('empty fields are explained before anything is sent', async ({ page }, test
   await page.goto(hostUrl(testInfo, 'demo-a', '/login'));
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByText('Enter this to continue.')).toHaveCount(2);
-});
-
-test('a parent is pointed to the Family Hub instead of being signed in here', async ({
-  page,
-}, testInfo) => {
-  await page.goto(hostUrl(testInfo, 'demo-a', '/login'));
-  await signIn(page, 'parent@demo-a.test');
-  await expect(formAlert(page)).toContainText('Family Hub');
-  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/login'));
 });
 
 test('a demo-a account cannot sign in on demo-b', async ({ page }, testInfo) => {

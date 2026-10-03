@@ -13,7 +13,6 @@ export type FieldLabels = {
 export type ErrorLabels = {
   invalidCredentials: string;
   rateLimited: string;
-  familyHub: string;
   offline: string;
   network: string;
   generic: string;
@@ -30,10 +29,6 @@ export function errorMessage(error: ApiError, labels: ErrorLabels): string {
       return labels.offline;
     case 'NETWORK':
       return labels.network;
-    case 'FORBIDDEN':
-      return error.details?.some((d) => d.issue === 'family_hub')
-        ? labels.familyHub
-        : labels.generic;
     default:
       return labels.generic;
   }

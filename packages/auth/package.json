@@ -25,11 +25,13 @@
   "dependencies": {
     "@node-rs/argon2": "catalog:",
     "jose": "catalog:",
-    "otpauth": "catalog:"
+    "otpauth": "catalog:",
+    "qrcode": "catalog:"
   },
   "devDependencies": {
     "@academybee/config": "workspace:*",
     "@types/node": "catalog:",
+    "@types/qrcode": "catalog:",
     "eslint": "catalog:",
     "fast-check": "catalog:",
     "typescript": "catalog:",

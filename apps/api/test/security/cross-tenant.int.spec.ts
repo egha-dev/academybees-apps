@@ -62,7 +62,9 @@ describe('cross-tenant suite', () => {
 
   it('every route that resolves an academy is in the registry', () => {
     const tenantRoutes = listRoutes(app).filter(
-      (r) => r.policy !== 'none' && !NOT_TENANT_ROUTES.has(`${r.method} ${r.path}`),
+      (r) =>
+        (r.policy === 'tenant' || r.policy === 'any') &&
+        !NOT_TENANT_ROUTES.has(`${r.method} ${r.path}`),
     );
     expect(missingFromRegistry(tenantRoutes, CROSS_TENANT_ROUTES)).toEqual([]);
   });

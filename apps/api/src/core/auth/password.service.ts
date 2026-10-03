@@ -111,8 +111,14 @@ export class PasswordService {
     );
   }
 
+  /**
+   * Set a new password with a reset link: on an academy host, or on the console for the
+   * set-password link `platform:create-admin` issues (C-66).
+   */
   async reset(token: string, password: string): Promise<void> {
-    this.academyId();
+    const kind = this.cls.get('resolvedHost')?.kind;
+    if (kind !== 'tenant' && kind !== 'console')
+      throw new DomainError('NOT_FOUND', 'no reset here');
     await this.rate.consume(RATE_RULES.tokenAttempts, this.cls.get('ip') ?? 'unknown');
     const hash = hashToken(token);
     const found = await this.db.$withLookup({ token: hash }, async (tx) => {
@@ -160,7 +166,9 @@ export class PasswordService {
             template: 'password_changed',
             to: found.user.email,
             locale: 'en-IN',
-            ...(await this.emails.academySender(tx)),
+            ...(kind === 'tenant'
+              ? await this.emails.academySender(tx)
+              : { host: { kind: 'console' as const } }),
             vars: {},
           });
         }

@@ -22,5 +22,12 @@
     "heading": "Your password was changed",
     "body": "The password for your AcademyBee account was just changed, and you were signed out of every device.",
     "notYou": "If you didn't change it, reset your password now and tell {academy}."
+  },
+  "platformAdminInvite": {
+    "subject": "Set up your AcademyBee console account",
+    "heading": "Set up your console account",
+    "body": "An AcademyBee console account was created for you. Choose a password, then set up two-step sign-in with an authenticator app.",
+    "cta": "Choose a password",
+    "expiry": "This link expires in 24 hours and works once. If you didn't expect it, tell the AcademyBee team."
   }
 }

@@ -399,6 +399,21 @@ export function createTenantBoundClient(
         ]);
         return row;
       },
+      /**
+       * The current user's own ACTIVE memberships, outside any academy context — the first step of
+       * the Family Hub fan-out (ADR-039). RLS `own_memberships` shows only rows whose user_id is
+       * `app.user_id` and only while no tenant is set; each academy is then read in its own context.
+       */
+      async $listOwnMemberships(): Promise<{ tenantId: string }[]> {
+        if (getTenantId() !== undefined)
+          throw new Error('Own memberships are listed outside an academy context');
+        if (getUserId() === undefined) throw new Error('Own memberships need a user context');
+        return base.membership.findMany({
+          where: { status: 'ACTIVE' },
+          select: { tenantId: true },
+          orderBy: { createdAt: 'asc' },
+        });
+      },
     },
   });
   return bound as unknown as TenantBoundClient;
@@ -410,6 +425,7 @@ export function createTenantBoundClient(
  */
 export type TenantBoundClient = PrismaClient & {
   $lookupTenantDomain(lookupKey: string): Promise<ResolvedDomainRow | null>;
+  $listOwnMemberships(): Promise<{ tenantId: string }[]>;
   $withLookup<T>(
     lookup: { identifier?: string; token?: string },
     fn: (tx: Prisma.TransactionClient) => Promise<T>,

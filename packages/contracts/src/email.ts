@@ -7,7 +7,12 @@ import { z } from 'zod';
  */
 export const EMAIL_OUTBOX_TYPE = 'email.requested';
 
-export const EmailTemplateSchema = z.enum(['invite', 'password_reset', 'password_changed']);
+export const EmailTemplateSchema = z.enum([
+  'invite',
+  'password_reset',
+  'password_changed',
+  'platform_admin_invite',
+]);
 export type EmailTemplate = z.infer<typeof EmailTemplateSchema>;
 
 export const EmailRequestSchema = z.object({

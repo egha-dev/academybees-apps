@@ -1,5 +1,7 @@
-import { type CookieMode, type CookieSpec, cookieSpecs } from '@academybee/auth';
+import { type Audience, type CookieMode, type CookieSpec, cookieSpecs } from '@academybee/auth';
 import { type Request, type Response } from 'express';
+
+import { type ResolvedHost } from '../context/request-context.js';
 
 /** Parse the Cookie header (no dependency; values are URI-decoded, malformed pairs skipped). */
 export function readCookies(req: Request): Record<string, string> {
@@ -71,4 +73,18 @@ export function deviceLabel(userAgent: string | undefined): string {
             ? 'linux'
             : 'other';
   return `${browser}/${os}`;
+}
+
+/** The only audience accepted on each host kind (ADR-003/039, C-32). */
+export function hostAudience(resolved: ResolvedHost | undefined): Audience | undefined {
+  switch (resolved?.kind) {
+    case 'tenant':
+      return 'TENANT';
+    case 'hub':
+      return 'HUB';
+    case 'console':
+      return 'CONSOLE';
+    default:
+      return undefined;
+  }
 }

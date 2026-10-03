@@ -1,3 +1,5 @@
+import { isIP } from 'node:net';
+
 import { AppEnvSchema } from '@academybee/contracts';
 import { z } from 'zod';
 
@@ -54,6 +56,25 @@ export const ApiConfigSchema = z
       ),
     /** `insecure-dev` (unprefixed, non-Secure cookies) is allowed on local/ci http hosts only (C-64). */
     COOKIE_MODE: z.enum(['secure', 'insecure-dev']).default('secure'),
+    /**
+     * Console host allow-list (C-66, C-73): IPs or CIDR ranges, comma-separated. Empty = no
+     * allow-list (local/ci); set it on staging/production as an extra layer over password + TOTP.
+     */
+    CONSOLE_IP_ALLOWLIST: csv.pipe(
+      z.array(
+        z.string().refine(
+          (v) => {
+            const [address = '', prefix] = v.split('/');
+            const family = isIP(address);
+            if (!family) return false;
+            if (prefix === undefined) return true;
+            const n = Number(prefix);
+            return /^\d+$/.test(prefix) && n >= 0 && n <= (family === 6 ? 128 : 32);
+          },
+          { message: 'entries must be IP addresses or CIDR ranges' },
+        ),
+      ),
+    ),
     CUSTOM_DOMAINS_ENABLED: z
       .enum(['true', 'false'])
       .default('false')

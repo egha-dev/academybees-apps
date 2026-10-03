@@ -1,8 +1,15 @@
 import { cookieSpecs } from '@academybee/auth';
 import {
   ForgotPasswordSchema,
+  HandoffRequestSchema,
+  LoginOutcomeSchema,
   LoginRequestSchema,
   LoginResponseSchema,
+  MfaEnrolConfirmRequestSchema,
+  MfaEnrolConfirmResponseSchema,
+  MfaEnrolStartRequestSchema,
+  MfaEnrolStartResponseSchema,
+  MfaVerifyRequestSchema,
   LogoutRequestSchema,
   type MeResponse,
   MeResponseSchema,
@@ -21,10 +28,13 @@ import { type RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { DomainError } from '../errors/domain-error.js';
 import { SignedIn } from '../rbac/can.decorator.js';
-import { AnyHost, TenantHost } from '../tenant/host-policy.js';
+import { AnyHost, ConsoleHost, HubHost, TenantHost } from '../tenant/host-policy.js';
 import { TenantContext } from '../tenant/tenant-context.service.js';
 import { createZodDto, ZodResponse } from '../validation/zod-dto.js';
 import { readCookies } from './http.js';
+import { HubService } from './hub.service.js';
+import { LoginService } from './login.service.js';
+import { MfaService } from './mfa.service.js';
 import { PasswordService } from './password.service.js';
 import { Public } from './public.decorator.js';
 import { SessionService } from './session.service.js';
@@ -33,6 +43,10 @@ class LoginDto extends createZodDto(LoginRequestSchema) {}
 class LogoutDto extends createZodDto(LogoutRequestSchema) {}
 class ForgotPasswordDto extends createZodDto(ForgotPasswordSchema) {}
 class ResetPasswordDto extends createZodDto(ResetPasswordSchema) {}
+class HandoffDto extends createZodDto(HandoffRequestSchema) {}
+class MfaEnrolStartDto extends createZodDto(MfaEnrolStartRequestSchema) {}
+class MfaEnrolConfirmDto extends createZodDto(MfaEnrolConfirmRequestSchema) {}
+class MfaVerifyDto extends createZodDto(MfaVerifyRequestSchema) {}
 
 /**
  * Sign-in, session refresh, sign-out, password recovery and the current user (ARCHITECTURE §9.3,
@@ -43,7 +57,10 @@ class ResetPasswordDto extends createZodDto(ResetPasswordSchema) {}
 export class AuthController {
   constructor(
     private readonly sessions: SessionService,
+    private readonly logins: LoginService,
     private readonly passwords: PasswordService,
+    private readonly hub: HubService,
+    private readonly mfa: MfaService,
     private readonly cls: ClsService<RequestContext>,
     private readonly context: TenantContext,
     @Inject(TENANT_DB) private readonly db: TenantBoundClient,
@@ -53,9 +70,51 @@ export class AuthController {
   @Post('login')
   @Public()
   @HttpCode(200)
-  @ZodResponse(LoginResponseSchema)
+  @ZodResponse(LoginOutcomeSchema)
   login(@Body() body: LoginDto, @Res({ passthrough: true }) res: Response) {
-    return this.sessions.login(body, res);
+    return this.logins.login(body, res);
+  }
+
+  /** Family Hub: exchange the one-time code from an academy sign-in for a HUB session (C-61). */
+  @Post('handoff')
+  @Public()
+  @HubHost()
+  @HttpCode(200)
+  @ZodResponse(LoginResponseSchema)
+  handoff(@Body() body: HandoffDto, @Res({ passthrough: true }) res: Response) {
+    return this.hub.exchangeHandoff(body.code, this.cls.get('ip') ?? 'unknown', res);
+  }
+
+  /** Console, first sign-in: a new TOTP secret to add to an authenticator app (C-66). */
+  @Post('mfa/enrol/start')
+  @Public()
+  @ConsoleHost()
+  @HttpCode(200)
+  @ZodResponse(MfaEnrolStartResponseSchema)
+  mfaEnrolStart(@Body() body: MfaEnrolStartDto) {
+    return this.mfa.enrolStart(body.token);
+  }
+
+  /** Console, first sign-in: confirm a code; returns the recovery codes once and signs in. */
+  @Post('mfa/enrol/confirm')
+  @Public()
+  @ConsoleHost()
+  @HttpCode(200)
+  @ZodResponse(MfaEnrolConfirmResponseSchema)
+  mfaEnrolConfirm(@Body() body: MfaEnrolConfirmDto, @Res({ passthrough: true }) res: Response) {
+    return this.mfa.enrolConfirm(body.token, body.code, res);
+  }
+
+  /** Console sign-in second step: a TOTP code or a recovery code (C-66). */
+  @Post('mfa/verify')
+  @Public()
+  @ConsoleHost()
+  @HttpCode(200)
+  @ZodResponse(LoginResponseSchema)
+  mfaVerify(@Body() body: MfaVerifyDto, @Res({ passthrough: true }) res: Response) {
+    const input =
+      body.code !== undefined ? { code: body.code } : { recoveryCode: body.recoveryCode ?? '' };
+    return this.mfa.verify(body.token, input, res);
   }
 
   @Post('refresh')
@@ -82,9 +141,10 @@ export class AuthController {
     await this.passwords.forgot(body.email);
   }
 
+  /** On an academy host, or on the console for the set-password link of a new admin (C-66). */
   @Post('password/reset')
   @Public()
-  @TenantHost()
+  @AnyHost()
   @HttpCode(204)
   async resetPassword(@Body() body: ResetPasswordDto): Promise<void> {
     await this.passwords.reset(body.token, body.password);
@@ -104,6 +164,19 @@ export class AuthController {
       }),
     );
     if (!user) throw new DomainError('UNAUTHENTICATED', 'user missing');
+    if (session.audience === 'HUB') {
+      const academies = await this.hub.academies(userId);
+      return {
+        user,
+        audience: 'HUB',
+        hub: { academies: academies.map(({ slug, name, roles }) => ({ slug, name, roles })) },
+      };
+    }
+    if (session.audience === 'CONSOLE') {
+      const staff = await this.sessions.platformStaff(userId);
+      if (!staff) throw new DomainError('UNAUTHENTICATED', 'not platform staff');
+      return { user, audience: 'CONSOLE', platform: { role: staff.platformRole } };
+    }
     const membership = this.cls.get('membership');
     const experiences = membership
       ? [...new Set(membership.roles.map((r) => ROLE_TEMPLATES[r].experience))]

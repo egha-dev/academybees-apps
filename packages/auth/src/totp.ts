@@ -1,6 +1,7 @@
 import { randomInt } from 'node:crypto';
 
 import { Secret, TOTP } from 'otpauth';
+import QRCode from 'qrcode';
 
 import { hashToken } from './tokens.js';
 
@@ -71,4 +72,15 @@ export function generateRecoveryCodes(count = 10): string[] {
 
 export function hashRecoveryCode(code: string): string {
   return hashToken(code.trim().toLowerCase().replace(/[\s-]/g, ''));
+}
+
+/** The secret as an SVG QR code data URL for `<img>` (no script, no external request). */
+export async function totpQrSvgDataUrl(uri: string): Promise<string> {
+  const svg = await QRCode.toString(uri, { type: 'svg', errorCorrectionLevel: 'M', margin: 2 });
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+}
+
+/** The base32 secret in groups of four, easier to type into an authenticator app. */
+export function formatManualKey(secretBase32: string): string {
+  return secretBase32.replace(/(.{4})/g, '$1 ').trim();
 }
