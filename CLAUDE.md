@@ -90,7 +90,8 @@ pnpm workspaces + Turborepo · Node 24 LTS · TypeScript strict · Next.js App R
 ## 7. Repository map
 
 ```text
-apps/web        Next.js: marketing, console, academy experiences (manage, teach), Family Hub (parents, students), PWA
+apps/web        Next.js: console, academy experiences (manage, teach), Family Hub (parents, students), PWA
+apps/marketing  academybees.com — static Next.js export for Cloudflare Pages (C-74)
 apps/api        NestJS: src/core (tenant, auth, rbac, audit, idempotency, outbox, errors),
                 src/modules/<domain>, src/platform (Super Admin, cross-tenant — only place using ab_platform client)
 apps/worker     NestJS standalone BullMQ processors
@@ -124,7 +125,8 @@ pnpm e2e:run             # Playwright only, against existing builds
 pnpm perf:budget         # route JS budget (< 200 KB gz, G-24) — after build
 pnpm perf:lighthouse     # Lighthouse CI: LCP/CLS/a11y budgets — after build
 pnpm i18n:check | pnpm flags:check
-pnpm platform:create-admin --email you@example.com   # from Phase 2
+pnpm platform:create-admin --email you@example.com   # console admin + set-password link (C-66)
+pnpm --filter @academybee/marketing dev  # academybees.com on :3100 (build → out/, preview serves out/)
 ```
 
 Phase 0: web `http://localhost:3000` (design system at `/dev/design-system`), API `http://localhost:4000/api/docs`. From Phase 1: academies `http://demo-a.localhost:3000`, `http://demo-b.localhost:3000` · Family Hub (parents/students): `http://app.localhost:3000` · Console: `http://console.localhost:3000`. (Keep these scripts accurate; update this section when they change. Verified 2026-10-02.)
