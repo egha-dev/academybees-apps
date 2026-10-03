@@ -9,8 +9,13 @@ import { hostUrl } from '../support/hosts.js';
  * are marked `data-i18n-exempt`.
  */
 const PAGES = ['/', '/offline', '/dev/design-system', '/does-not-exist'];
-/** Academy hosts (Phase 1): academy home, status pages and the Family Hub placeholder. */
+/** Academy hosts: sign-in (Phase 2), status pages and the Family Hub placeholder. */
 const HOST_PAGES = ['demo-a', 'nope', 'paused', 'closed-demo', 'setup-demo', 'app'];
+/** Phase 2 sign-in screens on an academy host (`demo-a` above shows the login page). */
+const AUTH_PATHS = [
+  '/forgot-password',
+  '/reset-password/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+];
 /** Seeded academy names are data, not catalogue text (C-54). */
 const DATA_VALUES = ['Demo A Academy', 'Paused Karate Club', 'Setup Music School'];
 const VIEWPORTS = [
@@ -77,6 +82,22 @@ for (const viewport of VIEWPORTS) {
         path: `artifacts/screenshots/${testInfo.project.name}-${viewport.name}_${subdomain}.png`,
         fullPage: true,
       });
+    });
+  }
+}
+
+for (const viewport of VIEWPORTS) {
+  for (const path of AUTH_PATHS) {
+    test(`demo-a${path.slice(0, 20)} (${viewport.name}) has no hard-coded text or overflow`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto(hostUrl(testInfo, 'demo-a', path));
+      await page.waitForLoadState('networkidle');
+      if (testInfo.project.name === 'pseudo-accented') {
+        expect(await hardCodedText(page)).toEqual([]);
+      }
+      expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
     });
   }
 }

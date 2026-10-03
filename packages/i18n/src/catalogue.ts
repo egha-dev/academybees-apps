@@ -1,3 +1,4 @@
+import auth from '../messages/en-IN/auth.json' with { type: 'json' };
 import common from '../messages/en-IN/common.json' with { type: 'json' };
 import designSystem from '../messages/en-IN/design-system.json' with { type: 'json' };
 import email from '../messages/en-IN/email.json' with { type: 'json' };
@@ -12,6 +13,7 @@ import tenant from '../messages/en-IN/tenant.json' with { type: 'json' };
  */
 export const EN_IN_MESSAGES = {
   common,
+  auth,
   errors,
   email,
   shell,
@@ -26,6 +28,7 @@ export type Namespace = keyof Messages;
 /** Namespace name → catalogue file name. */
 export const NAMESPACE_FILES: Record<Namespace, string> = {
   common: 'common.json',
+  auth: 'auth.json',
   errors: 'errors.json',
   email: 'email.json',
   shell: 'shell.json',

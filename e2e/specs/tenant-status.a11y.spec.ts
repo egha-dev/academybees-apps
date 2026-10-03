@@ -5,7 +5,10 @@ import { hostUrl, requireSeededAcademies } from '../support/hosts.js';
 
 /** WCAG 2.1 AA on academy pages and status pages in both themes (C-49, UX v1.1 §7). */
 const PAGES = [
-  ['demo-a', '/'],
+  ['demo-a', '/login'],
+  ['demo-a', '/forgot-password'],
+  ['demo-a', '/reset-password/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+  ['demo-a', '/invite/not-a-real-invitation-token-123'],
   ['demo-a', '/access-denied'],
   ['nope', '/'],
   ['paused', '/'],

@@ -11,23 +11,19 @@ describe('feature flag registry', () => {
     }
   });
 
-  it('keeps unfinished Phase 1 screens off outside local and CI', () => {
-    for (const key of ['p1-tenant-home', 'p1-hub-placeholder'] as const)
-      expect(FEATURE_FLAGS[key].defaults).toEqual({
-        local: true,
-        ci: true,
-        staging: false,
-        production: false,
-      });
+  it('keeps unfinished screens off in production', () => {
+    for (const def of Object.values(FEATURE_FLAGS)) expect(def.defaults.production).toBe(false);
+    expect(FEATURE_FLAGS['p1-hub-placeholder'].defaults.staging).toBe(false);
   });
 
   it('lists expired flags', () => {
     expect(expiredFeatureFlags('2026-10-01')).toEqual([]);
-    expect(expiredFeatureFlags('2027-02-01')).toEqual(['p1-tenant-home']);
+    expect(expiredFeatureFlags('2027-04-01')).toEqual(['p2-role-homes']);
   });
 
   it('recognises registered keys only', () => {
-    expect(isFeatureFlagKey('p1-tenant-home')).toBe(true);
+    expect(isFeatureFlagKey('p2-role-homes')).toBe(true);
+    expect(isFeatureFlagKey('p1-tenant-home')).toBe(false);
     expect(isFeatureFlagKey('p0-flag-probe')).toBe(false);
     expect(isFeatureFlagKey('constructor')).toBe(false);
   });

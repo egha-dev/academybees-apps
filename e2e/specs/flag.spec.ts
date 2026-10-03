@@ -1,23 +1,28 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
+import { ownClientIp } from '../support/client-ip.js';
 import { asMigrator } from '../support/db.js';
 import { DEMO_B_ID, hostUrl, requireSeededAcademies } from '../support/hosts.js';
 
 const OVERRIDE_ID = '0199a0a0-0000-7000-8000-0000000e2e01';
+const FLAG = 'p2-role-homes';
 
 /**
- * ADR-041: a release flag hides unfinished work. `p1-tenant-home` is turned off for demo-b only
- * (a per-tenant override, written under demo-b's RLS context) so parallel specs are unaffected.
+ * ADR-041: a release flag hides unfinished work. `p2-role-homes` (the signed-in landing until the
+ * real homes ship) is turned off for demo-b only — a per-tenant override written under demo-b's
+ * RLS context — so parallel specs on demo-a are unaffected.
  */
 test.describe.configure({ mode: 'serial' });
 test.beforeAll(requireSeededAcademies);
+test.beforeEach(({ context }) => ownClientIp(context));
 
 async function setOverride(enabled: boolean | null) {
   await asMigrator(async (db) => {
     // The definition normally comes from `pnpm db:seed`; make the spec independent of it.
     await db.query(
       `INSERT INTO feature_flag (key, description, owner, expires_on, updated_at)
-       VALUES ('p1-tenant-home', 'e2e', 'PO', '2027-01-31', now()) ON CONFLICT (key) DO NOTHING`,
+       VALUES ($1, 'e2e', 'PO', '2027-03-31', now()) ON CONFLICT (key) DO NOTHING`,
+      [FLAG],
     );
     await db.query('BEGIN');
     await db.query(`SELECT set_config('app.tenant_id', $1, true)`, [DEMO_B_ID]);
@@ -25,8 +30,8 @@ async function setOverride(enabled: boolean | null) {
     if (enabled !== null)
       await db.query(
         `INSERT INTO feature_flag_override (id, flag_key, environment, tenant_id, enabled, reason, updated_at)
-         VALUES ($1, 'p1-tenant-home', NULL, $2, $3, 'e2e', now())`,
-        [OVERRIDE_ID, DEMO_B_ID, enabled],
+         VALUES ($1, $2, NULL, $3, $4, 'e2e', now())`,
+        [OVERRIDE_ID, FLAG, DEMO_B_ID, enabled],
       );
     await db.query('COMMIT');
   });
@@ -34,22 +39,26 @@ async function setOverride(enabled: boolean | null) {
 
 test.afterAll(() => setOverride(null));
 
-test('the academy home is visible while p1-tenant-home is on', async ({ page }, testInfo) => {
-  await page.goto(hostUrl(testInfo, 'demo-b'));
+async function signInToDemoB(page: Page, url: string) {
+  await page.goto(url);
+  await page.getByLabel('Email or mobile number').fill('owner@demo-b.test');
+  await page.getByLabel('Password', { exact: true }).fill('AcademyBees#2026');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+}
+
+test('the signed-in landing is visible while p2-role-homes is on', async ({ page }, testInfo) => {
+  await signInToDemoB(page, hostUrl(testInfo, 'demo-b', '/login'));
+  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-b', '/today'));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'Welcome to Demo B Dance Studio',
+    'Signed in to Demo B Dance Studio',
   );
 });
 
-test('turning the flag off for one academy hides the unfinished home', async ({
+test('turning the flag off for one academy hides the unfinished page', async ({
   page,
 }, testInfo) => {
   await setOverride(false);
-  await page.goto(hostUrl(testInfo, 'demo-b'));
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'Demo B Dance Studio on AcademyBee',
-  );
-  await expect(page.getByText('Staff sign-in arrives')).toHaveCount(0);
-  await page.goto(hostUrl(testInfo, 'demo-a'));
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome to Demo A Academy');
+  await signInToDemoB(page, hostUrl(testInfo, 'demo-b', '/login'));
+  await expect(page.getByText('Page not found')).toBeVisible();
+  await expect(page.getByText('Signed in to Demo B Dance Studio')).toHaveCount(0);
 });

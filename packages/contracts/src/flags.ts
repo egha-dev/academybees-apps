@@ -19,12 +19,12 @@ export type FeatureFlagDefinition = {
 };
 
 export const FEATURE_FLAGS = {
-  'p1-tenant-home': {
+  'p2-role-homes': {
     description:
-      'Branded placeholder home on academy hosts (Phase 1). Replaced by sign-in and the staff home in Phase 2 — remove then.',
+      'Signed-in landing pages at /today (Manage) and /teach (Teacher) until their real homes ship (Phase 5/6) — remove then.',
     owner: 'PO',
-    expiresOn: '2027-01-31',
-    defaults: { local: true, ci: true, staging: false, production: false },
+    expiresOn: '2027-03-31',
+    defaults: { local: true, ci: true, staging: true, production: false },
   },
   'p1-hub-placeholder': {
     description:
