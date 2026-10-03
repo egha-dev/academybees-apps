@@ -126,3 +126,44 @@ export function Sheet({
     </Drawer>
   );
 }
+
+/**
+ * A modal that holds a short form over the current page, e.g. signing in again after the session
+ * ended (plan 2.15). It closes only through its own actions, so the page and its unsaved input
+ * stay exactly as they were underneath.
+ */
+export function FormDialog({
+  open,
+  title,
+  body,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  body?: string;
+  children: ReactNode;
+}) {
+  const titleId = useId();
+  const bodyId = useId();
+  return (
+    <Dialog
+      open={open}
+      aria-labelledby={titleId}
+      {...(body ? { 'aria-describedby': bodyId } : {})}
+      maxWidth="xs"
+      fullWidth
+    >
+      <DialogTitle id={titleId}>{title}</DialogTitle>
+      <DialogContent>
+        <Stack spacing={4} sx={{ paddingBlockStart: 1 }}>
+          {body && (
+            <Text tone="secondary" id={bodyId}>
+              {body}
+            </Text>
+          )}
+          {children}
+        </Stack>
+      </DialogContent>
+    </Dialog>
+  );
+}
