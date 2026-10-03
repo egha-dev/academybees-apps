@@ -3,6 +3,7 @@ import common from '../messages/en-IN/common.json' with { type: 'json' };
 import designSystem from '../messages/en-IN/design-system.json' with { type: 'json' };
 import email from '../messages/en-IN/email.json' with { type: 'json' };
 import errors from '../messages/en-IN/errors.json' with { type: 'json' };
+import marketing from '../messages/en-IN/marketing.json' with { type: 'json' };
 import offline from '../messages/en-IN/offline.json' with { type: 'json' };
 import shell from '../messages/en-IN/shell.json' with { type: 'json' };
 import team from '../messages/en-IN/team.json' with { type: 'json' };
@@ -20,6 +21,7 @@ export const EN_IN_MESSAGES = {
   shell,
   team,
   tenant,
+  marketing,
   offline,
   designSystem,
 };
@@ -35,6 +37,7 @@ export const NAMESPACE_FILES: Record<Namespace, string> = {
   email: 'email.json',
   shell: 'shell.json',
   team: 'team.json',
+  marketing: 'marketing.json',
   tenant: 'tenant.json',
   offline: 'offline.json',
   designSystem: 'design-system.json',

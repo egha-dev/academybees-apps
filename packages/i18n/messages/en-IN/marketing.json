@@ -1,0 +1,255 @@
+{
+  "meta": {
+    "title": "AcademyBee — run your academy, keep parents in the loop",
+    "description": "Attendance, fees with receipts and parent updates for dance, music, sports and tuition academies in India. Now inviting academies for early access.",
+    "ogAlt": "AcademyBee: the operating system for coaching academies",
+    "brand": "AcademyBee",
+    "ogLine": "For academies across India · academybees.com"
+  },
+  "nav": {
+    "features": "Features",
+    "how": "How it works",
+    "faq": "FAQ",
+    "cta": "Get early access",
+    "skip": "Skip to content",
+    "home": "AcademyBee home",
+    "theme": {
+      "label": "Colour theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "Match device"
+    }
+  },
+  "hero": {
+    "eyebrow": "For academies across India",
+    "title": "Run your academy. Keep every parent in the loop.",
+    "body": "AcademyBee brings attendance, fees and parent communication into one place for dance, music, sports and tuition academies — built for phones and patchy internet.",
+    "cta": "Get early access",
+    "secondary": "See how it works",
+    "note": "We're inviting a small group of academies to try it first.",
+    "types": {
+      "label": "Built for",
+      "dance": "Dance",
+      "music": "Music",
+      "sports": "Sports",
+      "tuition": "Tuition",
+      "martial": "Martial arts",
+      "more": "and more"
+    }
+  },
+  "features": {
+    "title": "Everything your front desk juggles, in one place",
+    "body": "Less time on registers, reminders and receipt books. More time teaching.",
+    "later": "Coming later",
+    "items": {
+      "attendance": {
+        "title": "Attendance in seconds",
+        "body": "Mark a whole batch from your phone in a few taps. Teachers can keep marking when the internet drops; it syncs when they're back online."
+      },
+      "fees": {
+        "title": "Fees and receipts",
+        "body": "Record cash, UPI and cheque payments, send reminders, and give parents a numbered receipt every time."
+      },
+      "parents": {
+        "title": "One app for parents",
+        "body": "Parents see attendance, fees and announcements for each of their children's academies in one Family Hub — no extra app store download needed."
+      },
+      "branches": {
+        "title": "More than one centre",
+        "body": "Keep several branches, their batches and staff organised under one academy."
+      },
+      "updates": {
+        "title": "WhatsApp and email updates",
+        "body": "Announcements and reminders by email, with WhatsApp once approved message templates are in place."
+      },
+      "address": {
+        "title": "Your academy's own address",
+        "body": "Your academy gets its own web address, like youracademy.academybees.com, with your name and colours."
+      }
+    }
+  },
+  "how": {
+    "title": "How it works",
+    "steps": {
+      "setup": {
+        "title": "Tell us about your academy",
+        "body": "Share your academy type, batches and fee plans. We set up your academy's own space with you."
+      },
+      "invite": {
+        "title": "Invite your team and families",
+        "body": "Add teachers and staff. Parents and students join by invitation from your academy."
+      },
+      "run": {
+        "title": "Run the day from your phone",
+        "body": "Take attendance, collect fees and send updates — and see what needs attention each morning."
+      }
+    }
+  },
+  "earlyAccess": {
+    "title": "Get early access",
+    "body": "We're opening AcademyBee to a small number of academies first. Tell us a little about yours and we'll be in touch.",
+    "cta": "Email us to join",
+    "note": "This opens your email app with a few short questions. Prefer to write directly? Email <link>{email}</link>.",
+    "mailSubject": "Early access request",
+    "mailBody": "Academy name:\nCity:\nType (dance, music, sports, tuition, other):\nApproximate number of students:\nPhone number (optional):\n\nAnything else we should know:\n"
+  },
+  "faq": {
+    "title": "Questions academies ask",
+    "items": {
+      "who": {
+        "q": "Who is AcademyBee for?",
+        "a": "Coaching academies of any kind — dance, music, sports, martial arts, tuition, languages, fitness and more — from a single teacher to several centres."
+      },
+      "phone": {
+        "q": "Does it work on a phone?",
+        "a": "Yes. AcademyBee is designed for phones first, including budget Android phones, and also works on a laptop or tablet."
+      },
+      "app": {
+        "q": "Do parents need to install an app?",
+        "a": "No. Parents open the Family Hub in their phone's browser and can add it to their home screen if they like."
+      },
+      "payments": {
+        "q": "How are fee payments handled?",
+        "a": "Your staff record cash, UPI and cheque payments, and parents can tell you about a UPI payment for your staff to confirm. AcademyBee never holds your fee money."
+      },
+      "data": {
+        "q": "Is my academy's data kept private?",
+        "a": "Each academy's data is kept separate from every other academy's, and children's details are handled with their parents' consent. Our privacy policy will explain exactly what we collect and why."
+      },
+      "price": {
+        "q": "How much does it cost?",
+        "a": "Pricing isn't final yet. We'll share it with early-access academies before anything is charged."
+      },
+      "language": {
+        "q": "Which languages does it support?",
+        "a": "English for now. More Indian languages are planned."
+      }
+    }
+  },
+  "footer": {
+    "tagline": "Manage Your Academy. Grow Together.",
+    "contact": "Contact",
+    "privacy": "Privacy policy (draft)",
+    "terms": "Terms of service (draft)",
+    "copyright": "© {year} AcademyBee"
+  },
+  "legal": {
+    "draftBanner": "DRAFT for review — not yet in effect. This text has not been reviewed by a lawyer and must not be relied on.",
+    "updated": "Draft prepared {date}",
+    "back": "Back to home"
+  },
+  "privacy": {
+    "metaTitle": "Privacy policy (draft)",
+    "title": "Privacy policy",
+    "intro": "This draft explains how AcademyBee would collect and use personal data, with reference to India's Digital Personal Data Protection Act, 2023 (the DPDP Act) and the rules made under it. Items in [square brackets] must be confirmed before publishing.",
+    "sections": {
+      "who": {
+        "title": "Who we are",
+        "p1": "AcademyBee is operated by [legal entity name], [registered address]. Contact: hello@academybees.com."
+      },
+      "roles": {
+        "title": "Our role and the academy's role",
+        "p1": "When you visit this website, ask for early access or hold an AcademyBee account, we decide why and how your personal data is used, so we act as the Data Fiduciary under the DPDP Act.",
+        "p2": "Academies use AcademyBee to keep records about their students, parents and staff. For those records, the academy decides the purpose and is the Data Fiduciary; AcademyBee processes the data on the academy's behalf as a Data Processor, under our agreement with the academy. Questions about those records should go to the academy first."
+      },
+      "collect": {
+        "title": "What we collect",
+        "p1": "Early-access requests: what you put in your email, such as your name, academy name, city, phone number and email address.",
+        "p2": "Accounts: name, email address and/or mobile number, password (stored only in hashed form) and sign-in records such as device type and time.",
+        "p3": "Academy records entered by academies: for example student and parent names, contact details, batches, attendance and fee payments. [Confirm the final list before launch.]",
+        "p4": "This website does not use analytics or advertising cookies. The AcademyBee app uses only the cookies needed to keep you signed in securely."
+      },
+      "purposes": {
+        "title": "Why we use it",
+        "p1": "To reply to early-access requests, provide and secure the service, send messages you or your academy asked for (such as receipts, reminders and sign-in alerts), and meet legal obligations. We do not sell personal data."
+      },
+      "consent": {
+        "title": "Consent and children",
+        "p1": "Where we rely on consent, it must be free, specific, informed and unambiguous, and you can withdraw it as easily as you gave it.",
+        "p2": "Under the DPDP Act, a child is anyone under 18. Before a child's personal data is processed, verifiable consent of a parent or lawful guardian is required, and children must not be tracked, behaviourally monitored or targeted with advertising. AcademyBee is designed so that a parent account is not activated without a recorded consent. [Describe the consent process once final.]"
+      },
+      "rights": {
+        "title": "Your rights",
+        "p1": "As a Data Principal you may ask for a summary of your personal data and how it is used, ask us to correct, complete, update or erase it, withdraw consent, nominate someone to exercise your rights if you die or become unable to, and have grievances addressed.",
+        "p2": "If you are a student, parent or staff member of an academy, please contact the academy first; we will help the academy respond."
+      },
+      "retention": {
+        "title": "How long we keep data",
+        "p1": "We keep personal data only as long as needed for the purposes above or as required by law, and then delete it. [Set retention periods, including for financial records academies must keep.]"
+      },
+      "security": {
+        "title": "How we protect data",
+        "p1": "We use reasonable security safeguards to prevent personal data breaches, including keeping each academy's data separate and limiting who can access it. If a breach occurs, we will notify the Data Protection Board of India and affected people as the law requires. [Confirm the safeguards to list.]"
+      },
+      "sharing": {
+        "title": "Who we share data with",
+        "p1": "Service providers who help us run AcademyBee, such as hosting, email delivery and message delivery providers, under contracts that limit their use of the data. [List providers and where data is stored and processed.]"
+      },
+      "grievance": {
+        "title": "Grievances",
+        "p1": "Grievance Officer: [name], [email], [address]. If you are not satisfied with our response, you may complain to the Data Protection Board of India."
+      },
+      "changes": {
+        "title": "Changes to this policy",
+        "p1": "We will post any changes here and, for significant changes, tell account holders in advance."
+      }
+    }
+  },
+  "terms": {
+    "metaTitle": "Terms of service (draft)",
+    "title": "Terms of service",
+    "intro": "This draft sets out the proposed terms for using AcademyBee. Items in [square brackets] must be confirmed, and the whole text needs legal review before publishing.",
+    "sections": {
+      "agreement": {
+        "title": "Agreement",
+        "p1": "These terms are between [legal entity name] (\"AcademyBee\") and the academy or person using AcademyBee. By using the service you agree to them."
+      },
+      "service": {
+        "title": "The service",
+        "p1": "AcademyBee provides software for academies to manage students, classes, attendance, fees and communication with parents. During early access, features may change and the service is provided without a service-level commitment. [Confirm early-access terms.]"
+      },
+      "accounts": {
+        "title": "Accounts",
+        "p1": "You must give accurate information, keep your password and sign-in codes secret, and tell us promptly if you suspect misuse. Academies are responsible for who they invite and what access they give."
+      },
+      "academyData": {
+        "title": "Academy data and responsibilities",
+        "p1": "Academies own the data they put into AcademyBee. Each academy is responsible for having a lawful basis for that data, including verifiable consent from parents or guardians before entering a child's personal data, and for keeping it accurate.",
+        "p2": "We process academy data only to provide the service and as described in our privacy policy and our agreement with the academy."
+      },
+      "payments": {
+        "title": "Fees collected by academies",
+        "p1": "AcademyBee does not collect, hold or transfer the fees academies charge their students. Payments recorded in AcademyBee are between the academy and the payer. [Add AcademyBee subscription and billing terms once pricing is set.]"
+      },
+      "use": {
+        "title": "Acceptable use",
+        "p1": "Do not use AcademyBee to break the law, send unsolicited messages, upload harmful content, try to access another academy's data, or disrupt the service."
+      },
+      "ip": {
+        "title": "Intellectual property",
+        "p1": "AcademyBee and its software remain ours. Your academy keeps its name, logo and content and lets us use them only to provide the service."
+      },
+      "suspension": {
+        "title": "Suspension and ending",
+        "p1": "You can stop using AcademyBee at any time. We may suspend access for serious breaches of these terms. [Set out notice periods and how academies can export their data.]"
+      },
+      "liability": {
+        "title": "Disclaimers and liability",
+        "p1": "[To be drafted by legal counsel.]"
+      },
+      "law": {
+        "title": "Governing law",
+        "p1": "[To be confirmed: governing law and courts.]"
+      },
+      "contact": {
+        "title": "Contact",
+        "p1": "Questions about these terms: hello@academybees.com."
+      }
+    }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "This page doesn't exist. It may have moved.",
+    "home": "Go to the home page"
+  }
+}
