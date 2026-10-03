@@ -1,29 +1,187 @@
 # Runbook — Environments, deploys and secrets
 
-Decisions: OD-03 (vendors), OD-21 (Sentry, remote cache), C-44 (free GitHub plan), C-48 (deploy mechanics).
+Decisions:
+- C-69: staging and hosting (Railway, Cloudflare DNS, Vercel and Cloudflare Pages policy);
+- C-70: media;
+- C-71: custom domains and capacity;
+- OD-22: production database;
+- C-44: free GitHub plan;
+- C-48: image build, migrate-before-deploy, smoke checks;
+- OD-21: Sentry, remote cache.
+
 **Secrets are listed by name only. Never paste a value into the repository, an issue or a PR.**
 
 ## Environments
 
-| | local | ci | staging | production |
+| | local | ci | staging | production (from Phase 7P) |
 | --- | --- | --- | --- | --- |
 | `APP_ENV` | `local` | `ci` | `staging` | `production` |
-| Web | `next dev` :3000 | `next start` (E2E) | Vercel project *academybee-staging* | Vercel project *academybee* (Phase 7P) |
-| API / worker | `pnpm dev` :4000 | built `dist/` | Render Docker services, Singapore | Render (India region re-checked before 7P) |
-| PostgreSQL 17 | compose | Testcontainers / compose | Supabase, Mumbai | Supabase |
-| Redis | compose | Testcontainers / compose | Upstash, Mumbai | Upstash |
-| Deployed by | — | — | `deploy-staging.yml` after green CI on `main` | `deploy-production.yml`, PO-only `workflow_dispatch` of a `v*` tag |
+| Web (Next.js) | `next dev` :3000 | `next start` (E2E) | Railway service `web` | Railway `web`; Vercel Pro from ~10 academies (C-69) |
+| API / worker | `pnpm dev` :4000 | built `dist/` | Railway services `api`, `worker` | Railway |
+| PostgreSQL 17 | compose | Testcontainers / compose | Railway service `postgres` | Railway Postgres with HA + PITR, or managed (OD-22, before 7P) |
+| Redis | compose | Testcontainers / compose | Railway service `redis` (persistent volume) | Railway |
+| Region | — | — | **Singapore**, everything in one project | Singapore (an India region is re-checked before 7P) |
+| Email | Mailpit :8025 | Mailpit | Resend, `mail.staging.academybees.com` | Resend, `mail.academybees.com` |
+| Media | SeaweedFS (C-45) | SeaweedFS | ImageKit when uploads ship (C-70) | ImageKit |
+| DNS | `*.localhost` | `*.localhost` | Cloudflare (DNS-only records) | Cloudflare |
+| Marketing site | in the web app | in the web app | — | Cloudflare Pages, if built (C-69) |
+| Railway plan | — | — | Hobby | **Pro** (before the first real academy, C-71) |
 
-## How a staging deploy works (C-48)
+## Railway staging project (set up in slice S7b)
 
-1. A PR merges to `main` → **CI** runs → on success **Deploy staging** starts (only if `STAGING_ENABLED` is `true`).
-2. **build images**: `apps/api/Dockerfile` and `apps/worker/Dockerfile` → `ghcr.io/egha-dev/academybee-{api,worker}:<sha>` and `:staging`.
-3. **migrate**: `pnpm db:deploy` as `ab_migrator` (direct connection) — migrations and `prisma/sql/*.sql` grants run **before** new code.
-4. **backend**: Render deploy hooks pull the new images.
-5. **web**: Vercel CLI builds and deploys the web app (prebuilt).
-6. **smoke**: waits until `<web>/api/v1/health/live` reports the new commit, then checks `/api/health/ready` (DB + Redis through the web origin), `/`, `/offline`, and that the internal route `/t/demo-a` is **404** (academies are reached only through their own host).
+One project, **`academybee-staging`**, region **Southeast Asia (Singapore)**. Confirm the region when you create it: every service must be in the same region (C-55).
 
-Rollback: re-run *Deploy staging* (`workflow_dispatch`) on the previous good commit, or redeploy the previous image tag from the Render dashboard. Migrations are forward-only (expand → migrate → contract), so the previous code keeps working against the newer schema.
+| Service | Source | Notes |
+| --- | --- | --- |
+| `postgres` | Railway PostgreSQL 17 template | Create the `ab_*` roles once with `infra/postgres/managed/roles.sql`; the passwords live only in Railway variables |
+| `redis` | Railway Redis template | Persistent volume; `maxmemory-policy noeviction`, because BullMQ must never lose jobs |
+| `api` | Docker image `ghcr.io/egha-dev/academybee-api:<sha>` | Port 4000; health check `/api/v1/health/live`; private networking to `postgres` and `redis` |
+| `worker` | Docker image `ghcr.io/egha-dev/academybee-worker:<sha>` | No public domain |
+| `web` | Docker image of the Next.js standalone build (added in S7b) | Public; the custom domains below |
+
+### Variables
+
+Set them with Railway's shared variables. Values never go in the repo.
+
+| Variable | Services | Value / source |
+| --- | --- | --- |
+| `APP_ENV` | all | `staging` |
+| `DATABASE_URL` | api, worker | `ab_app` over the private network (PgBouncer later, C-71) |
+| `PLATFORM_DATABASE_URL` | worker | `ab_platform` |
+| `REDIS_URL` | api, worker | private network URL |
+| `TRUSTED_PROXY_SECRET` | api, web | random ≥ 32 chars; the **same value** on both |
+| `AUTH_SIGNING_KEYS` | api | Ed25519 key set (C-64). Generate with `node -e "const c=require('crypto');const k=c.generateKeyPairSync('ed25519').privateKey.export({format:'jwk'});console.log(JSON.stringify({current:'s1',keys:[{...k,kid:'s1',alg:'EdDSA'}]}))"` |
+| `SECRETS_MASTER_KEY` | api, worker | `s1:` + `openssl rand -base64 32`; the **same value** on both (C-62) |
+| `COOKIE_MODE` | api | `secure` (never `insecure-dev` outside local/ci) |
+| `PLATFORM_ROOT_DOMAIN` | api, web, worker | `staging.academybees.com` (C-52) |
+| `CUSTOM_DOMAINS_ENABLED` | api, web | `false` until custom domains ship |
+| `TRUSTED_CLIENT_IP_HEADER` | web | the header Railway's edge sets with the client IP (verified in S7b; review M1) |
+| `SMTP_URL`, `EMAIL_FROM` | worker | Resend SMTP (`smtps://resend:<API key>@smtp.resend.com:465`); `AcademyBee <no-reply@mail.staging.academybees.com>` |
+| `WEB_PUBLIC_PROTOCOL` | worker | `https` |
+| `ANALYTICS_HASH_SALT` | api, worker | random ≥ 32 chars, the same on both |
+| `SENTRY_DSN`, `POSTHOG_*` | api, worker, web | optional |
+| `PAYMENT_PROVIDERS` | api | `manual` |
+
+**Deploys:** the current `deploy-staging.yml` still targets Render and Vercel (C-48). S7b re-points it at Railway and keeps the rest of the order:
+1. build the images;
+2. migrate as `ab_migrator` before deploying;
+3. deploy;
+4. run the smoke checks.
+
+S7b also updates the GitHub secrets list here (`RAILWAY_TOKEN` and the migrator URL).
+
+**Academies on staging:** dev seeds refuse to run outside local/ci. S7b adds a reviewed one-off bootstrap that creates the two gate academies and one user per role.
+
+## DNS on Cloudflare
+
+The registrar stays **Namecheap** (auto-renew and domain lock on); only the nameservers move to Cloudflare.
+
+### Moving academybees.com from Namecheap to Cloudflare
+
+1. **Cloudflare account:** sign up at `dash.cloudflare.com` and verify your email.
+2. **Add the domain:** **Add a domain** → enter `academybees.com` → choose **Quick scan for DNS records** → **Continue** → select the **Free** plan.
+3. **Review the scanned records:**
+   - Delete Namecheap's parking records: the `www` CNAME to `parkingpage.namecheap.com` and any URL-redirect `A` records.
+   - Keep anything you actually use.
+   - Note whether there are **MX** records for Namecheap email forwarding. They stop working after the switch; see step 9.
+   - Click **Continue to activation**.
+4. **Copy the two Cloudflare nameservers** shown (they look like `xxx.ns.cloudflare.com`).
+5. **Check DNSSEC at Namecheap first:**
+   - Sign in at `namecheap.com` → **Domain List** → **Manage** next to `academybees.com` → **Advanced DNS** tab → **DNSSEC**.
+   - If it is on, **turn it off** and wait about 30 minutes. A stale DS record breaks resolution after the switch.
+6. **Switch the nameservers:**
+   - **Domain** tab → **Nameservers** → change *Namecheap BasicDNS* to **Custom DNS**.
+   - Enter the two Cloudflare nameservers.
+   - Click the **green check mark** to save.
+7. **Wait for activation:** usually under an hour, at most 24–48 hours. In Cloudflare, use **Check nameservers now** on the overview page. Cloudflare emails you when the zone is **Active**.
+8. **After activation:**
+   - **SSL/TLS** → mode **Full (strict)**, which applies to proxied records only.
+   - **DNS → Settings → Enable DNSSEC**, then add the DS record Cloudflare shows at Namecheap under **Advanced DNS → DNSSEC → Add new DS**. Copy key tag, algorithm, digest type and digest exactly.
+9. **Email forwarding:** **Namecheap email forwarding stops when the nameservers change.** If you need `hello@academybees.com`-style forwarding, use **Cloudflare Email Routing**:
+   - **Email → Email Routing → Get started**.
+   - Add and verify the destination inbox.
+   - Create the custom addresses. Cloudflare adds the MX and SPF records at the apex.
+10. **Keep at Namecheap:** auto-renew and domain lock stay on there, because Namecheap is still the registrar.
+
+### Record layout
+
+Explicit records always win over the `*` wildcard. Every label used explicitly is a **reserved slug** (`packages/tenant/src/reserved.ts`: `www`, `staging`, `mail`, `app`, `console`, …), so no academy can be shadowed by a DNS record.
+
+| Name | Type | Target | Proxy | When |
+| --- | --- | --- | --- | --- |
+| `staging` | CNAME | Railway `web` target | DNS-only | S7b |
+| `*.staging` | CNAME | Railway `web` target | DNS-only | S7b (Universal SSL covers only one wildcard level; Railway issues the certificate) |
+| `_acme-challenge.staging` | CNAME | as shown by Railway for the wildcard | DNS-only | S7b |
+| `mail.staging` | Resend's DKIM/SPF/MX records | as shown by Resend | DNS-only | S7b |
+| `@` and `www` | CNAME (flattened) | Cloudflare Pages project | Proxied | Only if a marketing site is built (C-69) |
+| `*` | CNAME | Railway production `web` target | DNS-only to start | 7P |
+| `_acme-challenge` | CNAME | as shown by Railway for `*.academybees.com` | DNS-only | 7P |
+| `mail` | Resend records | as shown by Resend | DNS-only | 7P |
+| MX / TXT at `@` | Cloudflare Email Routing | automatic | — | If forwarding is needed |
+
+**Moving the web app to Vercel Pro later (C-69):**
+1. Add `*.academybees.com` to the Vercel project.
+2. Delegate **`_acme-challenge`** to Vercel with NS records (`ns1.vercel-dns.com`, `ns2.vercel-dns.com`) instead of moving DNS.
+3. Point `*` at Vercel and set the functions region to **`sin1`**.
+
+This replaces Railway's `_acme-challenge` record, so cut the wildcard over in one step. Then check that the Cloudflare-served apex certificate still renews: Cloudflare uses HTTP validation for proxied names. Staging's `_acme-challenge.staging` is a separate name and is unaffected.
+
+## Email (Resend)
+
+Sign up when S7b starts. Add the domain `mail.staging.academybees.com` and paste the DKIM, SPF and MX records it shows into Cloudflare (DNS-only). Create an API key with **sending access only** and put it in the worker's `SMTP_URL`.
+
+Sending from the `mail.` subdomain keeps the apex free for Email Routing, and `mail` is a reserved slug.
+
+## Capacity and upgrade triggers (C-71)
+
+**Assumptions:**
+- About **200 users per academy** (staff, parents, students).
+- About 40 % active on a given day; the busiest hour carries 20 % of them at about 30 API requests each, with short bursts of 5× that.
+- Every request makes about 3 queries.
+- Prices are 2026-10 list prices and the costs are **estimates**. Railway bills per use: about $20 per vCPU-month, $10 per GB-month of RAM, $0.15 per GB-month of volume and $0.05 per GB of egress, against the plan's included credit.
+
+| | 10 academies | 50 academies | 200 academies |
+| --- | --- | --- | --- |
+| Users / daily active | 2,000 / 800 | 10,000 / 4,000 | 40,000 / 16,000 |
+| Busiest hour → burst | ≈ 1.5 → 7 req/s | ≈ 7 → 35 req/s | ≈ 27 → 130 req/s |
+| Railway plan | Pro (from the first real academy) | Pro | Pro |
+| Services | 1 each of web, api, worker; Postgres 0.5–1 GB RAM | web ×2, api ×2, worker ×1; Postgres 2 GB | web ×3, api ×3, worker ×2; Postgres 4–8 GB + HA replica; PgBouncer |
+| Postgres connections (pool 10 per API, 7 per worker) | ≈ 17 | ≈ 27 | ≈ 45 direct → PgBouncer in transaction mode (safe, C-55) |
+| RLS overhead | +3 round trips per statement; in-region about 1–3 ms per query, flat with academy count (re-measure on staging, C-55) | same | same; indexes lead with `tenant_id` |
+| Redis / worker | well under 1 job/s | ≈ 1 job/s | a few jobs/s at peak (notifications from Phase 10); one worker handles hundreds/s |
+| Email per month (Resend) | ≈ 4k → **Pro $20** (the free 100/day cap is too low for real use) | ≈ 20k → Pro $20 | ≈ 80k → **Pro 100k $90** |
+| Media (ImageKit, from Phase 3) | ≈ 2 GB stored, 5 GB/month → **Lite ≈ $9** (Free stops at its caps: not for production) | ≈ 6 GB, 25 GB/month → Lite ≈ $10–25 | ≈ 15–25 GB, 100 GB/month → Lite ≈ $60 or **Pro $89** (225 GB included) |
+| Academy custom domains | 0–2 → Railway Pro native | ≈ 5–15 → Railway Pro native (20 per service, more on request) | ≈ 40–60 → **Cloudflare for SaaS + Worker** (100 included, then $0.10 each; Workers Paid $5) |
+| Railway usage | ≈ $25–35 | ≈ $80–110 | ≈ $220–300 (incl. Postgres HA) |
+| Other | Cloudflare $0; Sentry free | Sentry Team ≈ $26; Vercel Pro ≈ $20–50 if moved | Sentry ≈ $26–80; Vercel Pro ≈ $40–100 |
+| **Estimated total per month** | **≈ $55–65** | **≈ $160–230** | **≈ $450–650** (≈ $2–3 per academy) |
+
+**Custom domains for academies** (e.g. `learn.sunriseacademy.in`, PRD v3.1 §G; off until `CUSTOM_DOMAINS_ENABLED`):
+
+| | Railway Pro native | Cloudflare for SaaS + Worker |
+| --- | --- | --- |
+| Academy's DNS | CNAME to Railway's target; Railway issues the certificate | CNAME to our fallback hostname; Cloudflare issues the certificate |
+| Scale | 20 per service, more on request | 100 included, up to 50,000 |
+| Cost | Included in Pro | $0.10 per hostname per month after 100; Workers Paid $5/month |
+| Gotchas | Each domain is added through Railway's API; requests go straight to Railway | Below Enterprise, no Host/SNI rewrite and no apex proxying. A Worker on `*/*` forwards to our Railway domain and passes the original host in a header the web trusts only with the proxy secret. Academies must use a **subdomain** |
+| Use when | Up to about 20 custom domains | More than about 20, or self-serve setup at scale |
+
+**Upgrade triggers:**
+
+| Component | Upgrade when |
+| --- | --- |
+| Railway Hobby → **Pro** | Before the first real academy (7P), or earlier for more than 2 domains on a service, volumes over 5 GB, more than 3 team members, or logs older than 7 days |
+| Web on Railway → **Vercel Pro** (`sin1`) | About 10 academies, or PR preview deploys or web performance needed; **never Vercel Hobby** with real academies |
+| More `api` / `web` replicas | p95 API latency > 300 ms or CPU > 70 % for 15 minutes in the busiest hour |
+| **PgBouncer** (transaction mode) | Over 60 % of Postgres `max_connections` in use, or more than 2 API replicas |
+| Postgres size / **HA + PITR** | Before real data (OD-22); resize when CPU > 70 % or the cache-hit ratio drops below 99 % |
+| More `worker`s | Outbox lag > 30 s, or a BullMQ queue waiting > 1 minute |
+| Redis memory | Over 70 % used |
+| Resend Free → Pro → Pro 100k | The first real academy; then more than 50k emails/month |
+| ImageKit Free → Lite → Pro | Uploads go live (Free halts at its caps); Lite overage costs more than Pro ($89) |
+| Railway native domains → **Cloudflare for SaaS** | About 20 academy custom domains, or self-serve domain setup |
+| Sentry free → Team | Error volume above the free quota, or a second developer |
+| India region | A data-residency requirement, or latency from India above budget (re-checked before 7P) |
 
 ## GitHub repository variables (Settings → Secrets and variables → Actions → Variables)
 
@@ -34,107 +192,20 @@ Rollback: re-run *Deploy staging* (`workflow_dispatch`) on the previous good com
 | `PRODUCTION_ENABLED` | *(unset until 7P)* | Allows `deploy-production.yml` |
 | `PRODUCTION_WEB_URL` | `https://academybees.com` | Smoke-check target |
 | `PO_LOGIN` | `egha-dev` | The only account allowed to deploy production |
-| `TURBO_TEAM` | *(Vercel team slug)* | Turborepo remote cache (optional) |
+| `TURBO_TEAM` | *(team slug)* | Turborepo remote cache (optional) |
 
-## GitHub repository secrets
+Secrets: `STAGING_MIGRATOR_DATABASE_URL` (`ab_migrator`, direct connection) stays. The Render and Vercel secrets are replaced by `RAILWAY_TOKEN` in S7b. `GITHUB_TOKEN` pushes the images to GHCR.
 
-| Name | Used by | Notes |
-| --- | --- | --- |
-| `STAGING_MIGRATOR_DATABASE_URL` | migrate | `ab_migrator`, **direct** Postgres connection (port 5432) |
-| `STAGING_RENDER_DEPLOY_HOOK_API` | backend | Render → API service → Settings → Deploy hook |
-| `STAGING_RENDER_DEPLOY_HOOK_WORKER` | backend | Render → worker service → Deploy hook |
-| `STAGING_VERCEL_PROJECT_ID` | web | Vercel project settings |
-| `VERCEL_TOKEN` | web | Vercel account token (scoped to the team) |
-| `VERCEL_ORG_ID` | web | Vercel team ID |
-| `TURBO_TOKEN` | CI | Turborepo remote cache (optional) |
-| `PRODUCTION_*` | production | Same names with the `PRODUCTION_` prefix (Phase 7P) |
+## Turning staging on (S7b)
 
-`GITHUB_TOKEN` pushes images to GHCR; no extra secret is needed.
-
-## Render services (staging)
-
-Both services: **Deploy an existing image** from `ghcr.io/egha-dev/academybee-<app>:staging`, with a GHCR registry credential (a GitHub token with `read:packages`). Region: Singapore. Auto-deploy **off** (the workflow triggers deploys).
-
-**academybee-api-staging** — Web Service, port `4000`, health check path `/api/v1/health/live`.
-
-| Env var | Value / source |
-| --- | --- |
-| `APP_ENV` | `staging` |
-| `PORT` | `4000` |
-| `DATABASE_URL` | `ab_app` via the Supabase **transaction pooler** (port 6543) |
-| `REDIS_URL` | Upstash `rediss://…` |
-| `TRUSTED_PROXY_SECRET` | random ≥ 32 chars; **same value** as on Vercel |
-| `AUTH_SIGNING_KEYS` | Ed25519 key set for access tokens (C-64): generate with `node -e "const c=require('crypto');const k=c.generateKeyPairSync('ed25519').privateKey.export({format:'jwk'});console.log(JSON.stringify({current:'s1',keys:[{...k,kid:'s1',alg:'EdDSA'}]}))"`; rotate by adding a key and switching `current` |
-| `SECRETS_MASTER_KEY` | `s1:` + 32 random bytes base64 (`openssl rand -base64 32`); **same value** on the worker (C-62) |
-| `COOKIE_MODE` | `secure` (never `insecure-dev` outside local/ci) |
-| `TRUSTED_PROXY_IPS` | empty (the secret header is used instead) |
-| `PLATFORM_ROOT_DOMAIN` | `staging.academybees.com` (C-52) |
-| `CUSTOM_DOMAINS_ENABLED` | `false` until custom domains ship (same as the web) |
-| `ANALYTICS_HASH_SALT` | random ≥ 32 chars |
-| `POSTHOG_API_KEY`, `POSTHOG_HOST` | optional (no-op adapter when empty) |
-| `SENTRY_DSN` | optional (off when empty) |
-| `PAYMENT_PROVIDERS` | `manual` (the simulator is refused in production by config validation) |
-
-**academybee-worker-staging** — Background Worker.
-
-| Env var | Value / source |
-| --- | --- |
-| `APP_ENV` | `staging` |
-| `DATABASE_URL` | `ab_app` via the transaction pooler |
-| `PLATFORM_DATABASE_URL` | `ab_platform` via the transaction pooler |
-| `REDIS_URL` | same Upstash database as the API |
-| `ANALYTICS_HASH_SALT` | same value as the API |
-| `POSTHOG_API_KEY`, `POSTHOG_HOST`, `SENTRY_DSN` | optional |
-
-## Vercel project (staging)
-
-*academybee-staging*: import the GitHub repo, **Root Directory `apps/web`**, framework Next.js; `apps/web/vercel.json` sets install/build. Git auto-deploys **off** (the workflow deploys).
-
-| Env var (Production scope of this project) | Value |
-| --- | --- |
-| `APP_ENV` | `staging` |
-| `API_ORIGIN` | the Render API URL, e.g. `https://academybee-api-staging.onrender.com` |
-| `TRUSTED_PROXY_SECRET` | same value as the API |
-| `PLATFORM_ROOT_DOMAIN` | `staging.academybees.com` (C-52) |
-| `TRUSTED_CLIENT_IP_HEADER` | `x-real-ip` (Vercel overwrites it with the real client IP; review M1) |
-| `CUSTOM_DOMAINS_ENABLED` | `false` (same as the API) |
-| `NEXT_PUBLIC_APP_ENV` | `staging` |
-| `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN` | optional (off when empty; the browser DSN is fixed at build time) |
-
-Domains: `staging.academybees.com` and the wildcard `*.staging.academybees.com` (see *Academy hosts on staging*).
-
-## Academy hosts on staging (Phase 1 wildcard; live with staging, C-50)
-
-Every academy, the Family Hub (`app.`) and the console (`console.`) are subdomains of `PLATFORM_ROOT_DOMAIN`, routed by `apps/web/src/proxy.ts` (ARCHITECTURE §10.2). Nothing per academy is configured at the edge.
-
-1. **DNS:** `academybees.com` uses **Vercel nameservers** (C-31; needed for Vercel-issued wildcard certificates).
-2. **Vercel → academybee-staging → Domains:** add `staging.academybees.com` and `*.staging.academybees.com`. Vercel issues the wildcard certificate (DNS-01) automatically. One wildcard covers academies, `app.staging…` and `console.staging…`.
-3. **Env:** `PLATFORM_ROOT_DOMAIN=staging.academybees.com` on Vercel **and** Render (API). A mismatch makes every academy host "unknown".
-4. **Academies on staging:** dev seeds refuse to run outside `local`/`ci`. Until Phase 3 provisioning exists, create the two gate academies with `packages/database/src/seed/tenants.ts` semantics through a one-off, reviewed SQL script run as `ab_migrator`:
-   - one transaction per academy;
-   - `SELECT set_config('app.tenant_id', '<uuid>', true)` first (FORCE RLS applies to the owner too);
-   - then `tenant`, `tenant_domain` (PRIMARY SUBDOMAIN, **label only** — C-52), `tenant_branding`, `tenant_settings` and the default `branch`.
-5. **Check:** `https://demo-a.staging.academybees.com` shows the academy home with a valid certificate. `https://nope.staging.academybees.com` shows "We couldn't find this academy" (404). `curl -sI https://demo-a.staging.academybees.com/manifest.webmanifest` returns `application/manifest+json`.
-6. **Same region:** run the API/worker in the same region as the database before measuring or going live (C-55: each extra round trip is paid three times per query).
-7. **Supabase transaction pooler:** the tenant context is transaction-local (`set_config(…, true)`, C-55), so pooling is safe. Never switch the app to session-level `SET`.
-
-## Supabase (staging)
-
-1. Create the project in Mumbai (PostgreSQL 17).
-2. Create the roles once: `infra/postgres/managed/roles.sql` (instructions in the file), with three new random passwords stored only in the secret store.
-3. Connection strings: **direct** (5432) for `ab_migrator` (GitHub secret); **transaction pooler** (6543) for `ab_app` / `ab_platform` (Render env).
-4. First deploy runs the migrations; verify with `pnpm db:drift` from a machine that has the migrator URL.
-
-## Upstash (staging)
-
-Redis database in Mumbai with TLS. Set **eviction off** (`noeviction`): BullMQ must never lose queued jobs.
-
-## Turning staging on
-
-1. Create the accounts and services above; add the secrets and variables.
-2. Set `STAGING_ENABLED=true`.
-3. Run **Deploy staging** manually once (Actions → Deploy staging → Run workflow) and watch the smoke job.
-4. From then on every green merge to `main` deploys automatically.
+1. Create the Railway project, Cloudflare zone and Resend domain as above. I will tell you when.
+2. S7b merges the Railway workflow, the web image and the staging bootstrap.
+3. Add the secrets and set `STAGING_ENABLED=true`.
+4. Run **Deploy staging** once by hand and watch the smoke job.
+5. Check on a phone:
+   - `https://demo-a.staging.academybees.com` shows the academy's sign-in page with a valid certificate;
+   - `https://nope.staging.academybees.com` shows "We couldn't find this academy".
+6. Re-measure the RLS overhead in the same region (C-55).
 
 ## Local Docker check
 

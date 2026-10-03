@@ -1,6 +1,12 @@
 # Staging proposal (Phase 2, before S8)
 
-> **Proposal for PO approval (2026-10-02).** Nothing is created until you approve and sign up. If approved, it supersedes the staging parts of OD-03, C-31 and C-48 (production hosting is still decided before Phase 7P), and it ends the C-50 deferral early.
+> **Approved by the PO on 2026-10-03 → C-69.** Railway Hobby, one project in Singapore (web, api, worker, postgres, redis), Cloudflare DNS-only. It supersedes the staging parts of OD-03, C-31 and C-48 and ends the C-50 deferral early. The PO's additions on the same day are recorded as:
+> - **C-69:** web stays on Railway; Vercel Pro from about 10 academies; marketing site on Cloudflare Pages; Vercel Hobby never with real academies.
+> - **C-70:** ImageKit for media.
+> - **C-71:** custom domains and the capacity analysis.
+> - **OD-22:** production database, decided before 7P.
+>
+> Setup steps, the Namecheap → Cloudflare move and the upgrade triggers are in `docs/runbooks/environments.md`.
 
 ## Goal
 
@@ -50,12 +56,14 @@ The Hobby limit of 2 custom domains per service fits exactly: `staging.academybe
 
 ## What you need to sign up for (no accounts are created by me)
 
-1. **Cloudflare** (free): add `academybees.com` and change the nameservers at your domain registrar to the two Cloudflare gives you. Tell me the registrar if you want click-by-click steps.
-2. **Railway** (Hobby, $5/month, card required): sign in with the GitHub account `egha-dev`. Create an empty project named `academybee-staging` in the Singapore region. Then create a **project token** and add it as the GitHub secret `RAILWAY_TOKEN` (I'll give exact steps when S7b starts).
-3. **Transactional email** for invites and password resets on staging. Recommended: **Resend** (free tier ≈ 3,000 emails/month) or Amazon SES. Verify `staging.academybees.com` as a sending domain; it gives you SPF/DKIM records to paste into Cloudflare. This is also A6 in the EXECUTION_GUIDE.
-4. Optional: **Sentry** (free developer plan) if you want staging error reports.
+| When | What |
+| --- | --- |
+| **Any time now** (propagation can take up to 48 h) | **Cloudflare** (free): add `academybees.com` and switch Namecheap's nameservers to Cloudflare. Steps: runbook → *Moving academybees.com from Namecheap to Cloudflare*. Namecheap email forwarding stops at the switch; use Cloudflare Email Routing if you need it |
+| **When S7b starts** (I will tell you) | **Railway Hobby** ($5/month, card required): sign in with GitHub `egha-dev`, create the empty project `academybee-staging` in Singapore, create a project token and save it as the GitHub secret `RAILWAY_TOKEN` |
+| **When S7b starts** | **Resend** (free to start; Pro $20/month before the first real academy): add the domain `mail.staging.academybees.com` and paste its DNS records into Cloudflare |
+| Optional | **Sentry** (free developer plan) for staging error reports |
 
-Not needed any more for staging if approved: Vercel, Render, Supabase, Upstash (OD-03). Production choices are revisited before Phase 7P.
+Not needed for staging any more: Vercel, Render, Supabase, Upstash (OD-03). Production choices: Railway Pro before the first real academy (C-71); the production database per OD-22, before 7P.
 
 ## Risks
 
