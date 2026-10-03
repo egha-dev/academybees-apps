@@ -1,5 +1,5 @@
-import { hashPassword } from '@academybee/auth';
-import { newId } from '@academybee/contracts';
+import { generateToken, hashPassword, hashToken } from '@academybee/auth';
+import { newId, ROLE_KEYS, ROLE_TEMPLATES, type RoleKey } from '@academybee/contracts';
 import pg from 'pg';
 
 import { defineFactory } from './index.js';
@@ -35,9 +35,13 @@ export const buildTenant = defineFactory<TenantSeed>(() => {
 
 export type TenantFixture = TenantSeed & {
   branchId: string;
-  /** A member (role `owner`) of this academy only. */
+  /** A member (role `owner`, with the owner template's grants) of this academy only. */
   user: { id: string; email: string; membershipId: string; roleId: string };
   invitationId: string;
+  /** The raw link token of that invitation (teacher role, to `invitee-<slug>@example.test`). */
+  invitationToken: string;
+  /** System role ids by key (owner = `user.roleId`). */
+  roleIds: Record<RoleKey, string>;
 };
 
 /**
@@ -58,6 +62,8 @@ export async function createTenantFixture(
     roleId: newId(),
   };
   const invitationId = newId();
+  const invitationToken = generateToken();
+  const roleIds = {} as Record<RoleKey, string>;
   const client = new pg.Client({ connectionString });
   await client.connect();
   try {
@@ -102,15 +108,20 @@ export async function createTenantFixture(
        VALUES ($1, $2, $3, 'ACTIVE', now())`,
       [user.membershipId, t.id, user.id],
     );
-    await client.query(
-      `INSERT INTO role (id, tenant_id, key, name, updated_at) VALUES ($1, $2, 'owner', 'Owner', now())`,
-      [user.roleId, t.id],
-    );
-    await client.query(
-      `INSERT INTO role_permission (tenant_id, role_id, capability, scope)
-       VALUES ($1, $2, 'academy.settings.manage', 'TENANT'), ($1, $2, 'team.read', 'TENANT')`,
-      [t.id, user.roleId],
-    );
+    // Every system role with its template grants, as provisioning does (C-60, Phase 3).
+    for (const key of ROLE_KEYS) {
+      const roleId = key === 'owner' ? user.roleId : newId();
+      roleIds[key] = roleId;
+      await client.query(
+        `INSERT INTO role (id, tenant_id, key, name, updated_at) VALUES ($1, $2, $3, $4, now())`,
+        [roleId, t.id, key, key[0]!.toUpperCase() + key.slice(1)],
+      );
+      for (const [capability, scope] of Object.entries(ROLE_TEMPLATES[key].grants))
+        await client.query(
+          `INSERT INTO role_permission (tenant_id, role_id, capability, scope) VALUES ($1, $2, $3, $4)`,
+          [t.id, roleId, capability, scope],
+        );
+    }
     await client.query(
       `INSERT INTO membership_role (tenant_id, membership_id, role_id) VALUES ($1, $2, $3)`,
       [t.id, user.membershipId, user.roleId],
@@ -118,12 +129,7 @@ export async function createTenantFixture(
     await client.query(
       `INSERT INTO invitation (id, tenant_id, email, role_keys, token_hash, expires_at)
        VALUES ($1, $2, $3, '{teacher}', $4, now() + interval '7 days')`,
-      [
-        invitationId,
-        t.id,
-        `invitee-${t.slug}@example.test`,
-        invitationId.replace(/-/g, '').padEnd(64, '0'),
-      ],
+      [invitationId, t.id, `invitee-${t.slug}@example.test`, hashToken(invitationToken)],
     );
     await client.query('COMMIT');
   } catch (error) {
@@ -132,5 +138,5 @@ export async function createTenantFixture(
   } finally {
     await client.end();
   }
-  return { ...t, branchId, user, invitationId };
+  return { ...t, branchId, user, invitationId, invitationToken, roleIds };
 }

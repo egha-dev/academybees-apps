@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { isCapability, isPlatformCapability, type Capability } from './permissions.js';
 import {
+  canGrantRole,
   mergeGrants,
   PLATFORM_ROLE_GRANTS,
   primaryExperience,
   ROLE_KEYS,
   ROLE_TEMPLATES,
+  STAFF_ROLE_KEYS,
 } from './roles.js';
 
 const caps = (key: (typeof ROLE_KEYS)[number]) =>
@@ -71,5 +73,31 @@ describe('role templates (ARCHITECTURE §7.3)', () => {
         { capability: 'attendance.mark', scope: 'ASSIGNED' },
       ]),
     ).toEqual({ 'student.read': 'BRANCH', 'attendance.mark': 'ASSIGNED' });
+  });
+});
+
+describe('canGrantRole (C-67)', () => {
+  const as = (key: keyof typeof ROLE_TEMPLATES) => ({
+    roles: [key],
+    capabilities: ROLE_TEMPLATES[key].grants,
+  });
+
+  it('owners grant every staff role, including owner', () => {
+    for (const role of STAFF_ROLE_KEYS) expect(canGrantRole(as('owner'), role), role).toBe(true);
+  });
+
+  it('admins add admins, teachers and receptionists, not accountants or owners', () => {
+    const admin = as('admin');
+    expect(canGrantRole(admin, 'teacher')).toBe(true);
+    expect(canGrantRole(admin, 'receptionist')).toBe(true);
+    expect(canGrantRole(admin, 'accountant')).toBe(false);
+    expect(canGrantRole(admin, 'admin')).toBe(true);
+    expect(canGrantRole(admin, 'owner')).toBe(false);
+  });
+
+  it('nobody grants family or unknown roles through the team', () => {
+    for (const role of ['parent', 'student', 'superuser']) {
+      expect(canGrantRole(as('owner'), role), role).toBe(false);
+    }
   });
 });

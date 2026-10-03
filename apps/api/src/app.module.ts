@@ -9,6 +9,7 @@ import { type ApiConfig } from './core/config/config.schema.js';
 import { ContextModule } from './core/context/context.module.js';
 import { DatabaseModule } from './core/database/database.module.js';
 import { DocsModule } from './core/docs/docs.module.js';
+import { EmailModule } from './core/email/email.module.js';
 import { FlagsModule } from './core/flags/flags.module.js';
 import { HealthModule } from './core/health/health.module.js';
 import { IdempotencyModule } from './core/idempotency/idempotency.module.js';
@@ -20,6 +21,7 @@ import { RedisModule } from './core/redis/redis.module.js';
 import { TenantModule } from './core/tenant/tenant.module.js';
 import { ZodResponseInterceptor } from './core/validation/zod-response.interceptor.js';
 import { ZodValidationPipe } from './core/validation/zod-validation.pipe.js';
+import { TeamModule } from './modules/team/team.module.js';
 
 /** Root module. Domain modules (src/modules/*) are added by their phases. */
 @Module({})
@@ -36,6 +38,7 @@ export class AppModule {
         TenantModule,
         RateLimitModule,
         AuthModule,
+        EmailModule,
         RbacModule,
         AuditModule,
         OutboxModule,
@@ -43,6 +46,8 @@ export class AppModule {
         IdempotencyModule,
         FlagsModule,
         HealthModule,
+        // Domain modules.
+        TeamModule,
         ...(config.APP_ENV === 'production' ? [] : [DocsModule]),
         ...extra,
       ],

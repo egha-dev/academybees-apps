@@ -1,3 +1,4 @@
+import { generateMasterKey } from '@academybee/auth';
 import 'reflect-metadata';
 
 import { type INestApplicationContext } from '@nestjs/common';
@@ -41,6 +42,7 @@ describe('worker process', () => {
       OUTBOX_POLL_INTERVAL_MS: '100',
       HEARTBEAT_EVERY_MS: '1000',
       ANALYTICS_HASH_SALT: 'test-salt',
+      SECRETS_MASTER_KEY: generateMasterKey(),
     });
     ctx = await NestFactory.createApplicationContext(WorkerModule.forRoot(config), {
       logger: false,

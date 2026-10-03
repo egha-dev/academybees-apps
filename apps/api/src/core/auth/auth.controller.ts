@@ -1,11 +1,13 @@
 import { cookieSpecs } from '@academybee/auth';
 import {
+  ForgotPasswordSchema,
   LoginRequestSchema,
   LoginResponseSchema,
   LogoutRequestSchema,
   type MeResponse,
   MeResponseSchema,
   primaryExperience,
+  ResetPasswordSchema,
   ROLE_TEMPLATES,
 } from '@academybee/contracts';
 import { type TenantBoundClient } from '@academybee/database';
@@ -19,22 +21,29 @@ import { type RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { DomainError } from '../errors/domain-error.js';
 import { SignedIn } from '../rbac/can.decorator.js';
-import { AnyHost } from '../tenant/host-policy.js';
+import { AnyHost, TenantHost } from '../tenant/host-policy.js';
 import { TenantContext } from '../tenant/tenant-context.service.js';
 import { createZodDto, ZodResponse } from '../validation/zod-dto.js';
 import { readCookies } from './http.js';
+import { PasswordService } from './password.service.js';
 import { Public } from './public.decorator.js';
 import { SessionService } from './session.service.js';
 
 class LoginDto extends createZodDto(LoginRequestSchema) {}
 class LogoutDto extends createZodDto(LogoutRequestSchema) {}
+class ForgotPasswordDto extends createZodDto(ForgotPasswordSchema) {}
+class ResetPasswordDto extends createZodDto(ResetPasswordSchema) {}
 
-/** Sign-in, session refresh, sign-out and the current user (ARCHITECTURE §9.3, ADR-007). */
+/**
+ * Sign-in, session refresh, sign-out, password recovery and the current user (ARCHITECTURE §9.3,
+ * ADR-007).
+ */
 @Controller({ path: 'auth', version: '1' })
 @AnyHost()
 export class AuthController {
   constructor(
     private readonly sessions: SessionService,
+    private readonly passwords: PasswordService,
     private readonly cls: ClsService<RequestContext>,
     private readonly context: TenantContext,
     @Inject(TENANT_DB) private readonly db: TenantBoundClient,
@@ -62,6 +71,23 @@ export class AuthController {
   @HttpCode(204)
   async logout(@Body() body: LogoutDto, @Res({ passthrough: true }) res: Response): Promise<void> {
     await this.sessions.logout(this.cls.get('session')?.id, body.everywhere ?? false, res);
+  }
+
+  /** Always 202, whether or not the email has an account here (C-67). */
+  @Post('password/forgot')
+  @Public()
+  @TenantHost()
+  @HttpCode(202)
+  async forgotPassword(@Body() body: ForgotPasswordDto): Promise<void> {
+    await this.passwords.forgot(body.email);
+  }
+
+  @Post('password/reset')
+  @Public()
+  @TenantHost()
+  @HttpCode(204)
+  async resetPassword(@Body() body: ResetPasswordDto): Promise<void> {
+    await this.passwords.reset(body.token, body.password);
   }
 
   @Get('me')

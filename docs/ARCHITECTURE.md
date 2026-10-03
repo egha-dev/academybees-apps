@@ -536,7 +536,7 @@ Decorators: `@Public()`, `@PlatformOnly()`, `@Can(cap)`, `@Idempotent()`, `@Audi
 | health | `GET /health/live`, `GET /health/ready` | 0 |
 | tenant | `GET /tenant/context` (public: name, slug, branding, status, terminology) | 1 |
 | auth | `POST /auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/password/forgot`, `/auth/password/reset`, `GET /auth/me`, `GET/POST /invitations/:token` | 2 |
-| team | `GET /team/members`, `POST /team/invitations`, `PATCH /team/members/:id`, `GET /roles` | 2/4 |
+| team | `GET /team/members`, `PATCH /team/members/:id`, `GET /team/roles`, `GET|POST /team/invitations`, `POST /team/invitations/:id/{resend,revoke}`, public `GET /invitations/:token` + `POST /invitations/:token/accept` (C-67) | 2/4 |
 | platform/tenants | `GET /platform/slug-availability?slug=`, `POST /platform/tenants`, `GET /platform/tenants`, `GET/PATCH /platform/tenants/:id`, `POST /platform/tenants/:id/(suspend|reactivate|archive)`, `POST /platform/tenants/:id/domains` | 3 (+14) |
 | onboarding | `GET /onboarding`, `PUT /onboarding/steps/:step`, `POST /onboarding/complete` | 3 |
 | academy | `GET/PATCH /academy/settings`, `PATCH /academy/branding`, `POST /academy/branding/logo-upload-url` | 3 |

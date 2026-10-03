@@ -1,4 +1,4 @@
-import { definePolicy } from './scope.js';
+import { definePolicy } from '../../core/rbac/scope.js';
 
 type MembershipRow = { id: string; userId: string; branchIds: readonly string[] };
 

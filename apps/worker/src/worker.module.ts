@@ -6,6 +6,9 @@ import { AnalyticsHandler } from './analytics/analytics.handler.js';
 import { analyticsPortProvider } from './analytics/analytics.module.js';
 import { WorkerStartedEmitter } from './analytics/service-started.js';
 import { WORKER_CONFIG, type WorkerConfig } from './config/config.js';
+import { EmailHandler } from './email/email.handler.js';
+import { EMAIL_PORT } from './email/email.port.js';
+import { SmtpEmailAdapter } from './email/smtp.adapter.js';
 import { DomainEventsWorker } from './events/domain-events.worker.js';
 import { OutboxRelayService } from './platform/outbox-relay.service.js';
 import { redisProvider, RedisShutdown } from './queues/redis.provider.js';
@@ -38,6 +41,11 @@ export class WorkerModule {
         OutboxRelayService,
         analyticsPortProvider,
         AnalyticsHandler,
+        {
+          provide: EMAIL_PORT,
+          useFactory: () => new SmtpEmailAdapter(config.SMTP_URL, config.EMAIL_FROM),
+        },
+        EmailHandler,
         WorkerStartedEmitter,
       ],
       exports: [DomainEventsWorker],

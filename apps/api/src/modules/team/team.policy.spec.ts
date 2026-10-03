@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { membershipPolicy } from './membership.policy.js';
+import { membershipPolicy } from './team.policy.js';
 
 const ctx = { userId: 'u1', membershipId: 'm1', branchIds: ['b1'] };
 const row = (userId: string, branchIds: string[]) => ({ id: `m-${userId}`, userId, branchIds });

@@ -44,6 +44,17 @@ describe('cross-tenant suite', () => {
       roleKey: 'limited',
       grants: [{ capability: 'announcement.read', scope: 'TENANT' }],
     });
+    // A pending invitation for resend/revoke, so the fixture's own link keeps working.
+    const owner = await signIn(a);
+    const spare = await request(app.getHttpServer())
+      .post('/api/v1/team/invitations')
+      .set('Host', ref(a).host)
+      .set('Cookie', owner.cookie)
+      .set('x-csrf-token', owner.csrf)
+      .set('Idempotency-Key', crypto.randomUUID())
+      .send({ email: `spare-${a.slug}@example.test`, roles: ['teacher'] });
+    expect(spare.status, 'spare invitation').toBe(201);
+    spareInvitationId = spare.body.id as string;
   });
   afterAll(async () => {
     await app.close();
@@ -56,9 +67,27 @@ describe('cross-tenant suite', () => {
     expect(missingFromRegistry(tenantRoutes, CROSS_TENANT_ROUTES)).toEqual([]);
   });
 
-  /** Path parameters are filled with academy A's records. */
+  /** Path parameters are filled with academy A's records (`params` names them). */
+  let spareInvitationId = '';
+  const fixtureValue = (name: string): string => {
+    switch (name) {
+      case 'limited-membership':
+        return limited.membershipId;
+      case 'spare-invitation':
+        return spareInvitationId;
+      case 'invitation-token':
+        return a.invitationToken;
+      default:
+        throw new Error(`unknown fixture ${name}`);
+    }
+  };
   const pathFor = (route: (typeof CROSS_TENANT_ROUTES)[number]) =>
-    route.path.replace(':id', a.user.membershipId);
+    route.path.replace(/:(\w+)/g, (_, name: string) =>
+      route.params?.[name] ? fixtureValue(route.params[name]) : a.user.membershipId,
+    );
+  const verb = (method: string) =>
+    ({ GET: 'get', POST: 'post', PUT: 'put', PATCH: 'patch', DELETE: 'delete' })[method] as
+      'get' | 'post' | 'put' | 'patch' | 'delete';
 
   /** Sign in; returns the cookies and CSRF token (insecure-dev names). */
   const signIn = async (t: TenantFixture, email = t.user.email) => {
@@ -81,10 +110,9 @@ describe('cross-tenant suite', () => {
   ) => {
     // Sign in first: supertest binds its server when a request is created.
     const session = route.session ? await signIn(a) : undefined;
-    let req = request(app.getHttpServer())
-      [route.method === 'GET' ? 'get' : route.method === 'POST' ? 'post' : 'put'](pathFor(route))
-      .set('Host', host);
+    let req = request(app.getHttpServer())[verb(route.method)](pathFor(route)).set('Host', host);
     if (session) req = req.set('Cookie', session.cookie).set('x-csrf-token', session.csrf);
+    if (route.idempotent) req = req.set('Idempotency-Key', crypto.randomUUID());
     if (extra.query) req = req.query(extra.query);
     for (const [k, v] of Object.entries(extra.headers ?? {})) req = req.set(k, v);
     const body =
@@ -115,10 +143,9 @@ describe('cross-tenant suite', () => {
     host: string,
     session?: { cookie: string; csrf: string },
   ) => {
-    let req = request(app.getHttpServer())
-      [route.method === 'GET' ? 'get' : route.method === 'POST' ? 'post' : 'put'](pathFor(route))
-      .set('Host', host);
+    let req = request(app.getHttpServer())[verb(route.method)](pathFor(route)).set('Host', host);
     if (session) req = req.set('Cookie', session.cookie).set('x-csrf-token', session.csrf);
+    if (route.idempotent) req = req.set('Idempotency-Key', crypto.randomUUID());
     return route.method === 'GET' ? req : req.send(route.body ?? {});
   };
 
@@ -146,21 +173,35 @@ describe('cross-tenant suite', () => {
       });
   });
 
-  describe.each(CROSS_TENANT_ROUTES)('$method $path', (route) => {
-    it.each(tenantSpoofAttempts({ id: '', slug: '', name: '', host: '' }).map((x) => x.name))(
-      'ignores %s',
-      async (attemptName) => {
-        const victim = ref(b);
-        const attempt = tenantSpoofAttempts(victim).find((x) => x.name === attemptName)!;
-        const baseline = await send(route, ref(a).host);
-        // Not vacuous: the route really serves academy A here (a 404 on both would prove nothing).
-        expect(baseline.status, 'baseline must succeed on A').toBeLessThan(400);
-        const spoofed = await send(route, ref(a).host, attempt);
-        expect(spoofed.status).toBe(baseline.status);
-        expect(spoofed.body).toEqual(baseline.body);
-        expect(leaksTenant(spoofed.body, victim)).toEqual([]);
-      },
-    );
+  describe.each(CROSS_TENANT_ROUTES.filter((r) => typeof r.spoof !== 'object'))(
+    '$method $path',
+    (route) => {
+      it.each(tenantSpoofAttempts({ id: '', slug: '', name: '', host: '' }).map((x) => x.name))(
+        'ignores %s',
+        async (attemptName) => {
+          const victim = ref(b);
+          const attempt = tenantSpoofAttempts(victim).find((x) => x.name === attemptName)!;
+          const baseline = await send(route, ref(a).host);
+          // Not vacuous: the route really serves academy A here (a 404 on both proves nothing).
+          expect(baseline.status, 'baseline must succeed on A').toBeLessThan(400);
+          const spoofed = await send(route, ref(a).host, attempt);
+          expect(spoofed.status).toBe(baseline.status);
+          const stable = (body: unknown): unknown =>
+            JSON.parse(
+              JSON.stringify(body, (k, v: unknown) =>
+                route.volatile?.includes(k) ? undefined : v,
+              ),
+            );
+          if (route.spoof !== 'status') expect(stable(spoofed.body)).toEqual(stable(baseline.body));
+          expect(leaksTenant(spoofed.body, victim)).toEqual([]);
+        },
+      );
+    },
+  );
+
+  it('single-use routes skipped above name the test that covers them', () => {
+    for (const route of CROSS_TENANT_ROUTES)
+      if (typeof route.spoof === 'object') expect(route.spoof.skip).toMatch(/\.int\.spec\.ts › /);
   });
 
   it('the probe sees each academy only on its own host', async () => {

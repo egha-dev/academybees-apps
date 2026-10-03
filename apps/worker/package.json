@@ -14,14 +14,17 @@
     "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
+    "@academybee/auth": "workspace:*",
     "@academybee/contracts": "workspace:*",
     "@academybee/database": "workspace:*",
+    "@academybee/i18n": "workspace:*",
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
     "@sentry/node": "catalog:",
     "bullmq": "catalog:",
     "ioredis": "catalog:",
     "nestjs-pino": "catalog:",
+    "nodemailer": "catalog:",
     "pino": "catalog:",
     "pino-http": "catalog:",
     "posthog-node": "catalog:",

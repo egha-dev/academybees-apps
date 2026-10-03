@@ -12,7 +12,7 @@ import { DomainError } from '../../src/core/errors/domain-error.js';
 import { Idempotent } from '../../src/core/idempotency/idempotent.js';
 import { Public } from '../../src/core/auth/public.decorator.js';
 import { Can } from '../../src/core/rbac/can.decorator.js';
-import { membershipPolicy } from '../../src/core/rbac/membership.policy.js';
+import { membershipPolicy } from '../../src/modules/team/team.policy.js';
 import { assertInScope, scopedWhere } from '../../src/core/rbac/scope.js';
 import { AnyHost, TenantHost } from '../../src/core/tenant/host-policy.js';
 import { createZodDto, ZodResponse } from '../../src/core/validation/zod-dto.js';

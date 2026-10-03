@@ -13,6 +13,71 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
   { method: 'POST', path: '/api/v1/auth/refresh', session: true },
   { method: 'POST', path: '/api/v1/auth/logout', session: true, body: {} },
   { method: 'GET', path: '/api/v1/auth/me', session: true },
+  // Password recovery (C-67): uniform 202; the reset link is single-use.
+  { method: 'POST', path: '/api/v1/auth/password/forgot', body: { email: 'nobody@example.test' } },
+  {
+    method: 'POST',
+    path: '/api/v1/auth/password/reset',
+    body: { token: 'x'.repeat(43), password: 'Another#Pass2026' },
+    spoof: { skip: 'team.int.spec.ts › password reset' },
+  },
+  // Team (C-67).
+  {
+    method: 'GET',
+    path: '/api/v1/team/members',
+    session: true,
+    capability: 'team.read',
+    volatile: ['lastLoginAt'],
+  },
+  {
+    method: 'PATCH',
+    path: '/api/v1/team/members/:id',
+    session: true,
+    capability: 'team.manage',
+    params: { id: 'limited-membership' },
+    // A no-op change (same status, version 1) is repeatable.
+    body: { version: 1, status: 'ACTIVE' },
+  },
+  { method: 'GET', path: '/api/v1/team/roles', session: true, capability: 'team.read' },
+  { method: 'GET', path: '/api/v1/team/invitations', session: true, capability: 'team.read' },
+  {
+    method: 'POST',
+    path: '/api/v1/team/invitations',
+    session: true,
+    capability: 'team.invite',
+    idempotent: true,
+    body: { email: 'new-teacher@example.test', roles: ['teacher'] },
+    spoof: 'status',
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/team/invitations/:id/resend',
+    session: true,
+    capability: 'team.invite',
+    params: { id: 'spare-invitation' },
+    spoof: 'status',
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/team/invitations/:id/revoke',
+    session: true,
+    capability: 'team.invite',
+    params: { id: 'spare-invitation' },
+    spoof: { skip: 'team.int.spec.ts › invitations › revoke' },
+  },
+  // The invite link (public; the token is the credential).
+  {
+    method: 'GET',
+    path: '/api/v1/invitations/:token',
+    params: { token: 'invitation-token' },
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/invitations/:token/accept',
+    params: { token: 'invitation-token' },
+    body: { name: 'New Teacher', password: 'Another#Pass2026' },
+    spoof: { skip: 'team.int.spec.ts › accept' },
+  },
   // Test-only signed-in routes guarded by @Can + a scope policy (shape of domain endpoints).
   {
     method: 'GET',

@@ -15,6 +15,10 @@ export const RATE_RULES = {
   loginIp: { name: 'login-ip', limit: 30, windowSeconds: 60 },
   /** Reset and invite emails per identifier. */
   resetOrInvite: { name: 'reset-invite', limit: 3, windowSeconds: 3600 },
+  /** Invitations sent per inviting member. */
+  invitesPerMember: { name: 'invites-member', limit: 50, windowSeconds: 3600 },
+  /** Link-token checks (invite preview/accept, password reset) per IP: no token guessing. */
+  tokenAttempts: { name: 'token', limit: 20, windowSeconds: 60 },
 } as const satisfies Record<string, RateRule>;
 
 /**
