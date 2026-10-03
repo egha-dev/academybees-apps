@@ -43,11 +43,11 @@ Engineering will stall at Phases 7 and 10 without these. Start them all this wee
 | # | Task | Who helps | Needed by | Done |
 | --- | --- | --- | --- | --- |
 | A1 | Register or confirm the legal entity, PAN and a current bank account | CA | Razorpay KYC | ☐ |
-| A2 | Buy or confirm `academybees.com`. Move its DNS to **Vercel DNS** (point the domain's nameservers to Vercel): Vercel can only issue the wildcard `*.academybees.com` certificate when it runs the DNS (C-31) | — | Phase 1 | ☐ |
+| A2 | `academybees.com` is registered at Namecheap (auto-renew and domain lock on). Move its **DNS to Cloudflare** by switching Namecheap's nameservers to the two Cloudflare gives you (C-69; steps in `docs/runbooks/environments.md`). Namecheap email forwarding stops at the switch; use Cloudflare Email Routing if needed | — | Before S7b (Phase 2) | ☐ |
 | A3 | Apply for GST registration | CA | Razorpay, Phase 13 | ☐ |
 | A4 | Create an AcademyBee Razorpay account and start KYC. **Not needed for Phases 7–16** (payments work via UPI and manual recording, G-30); needed only when you run Phase G | — | Phase G | ☐ |
 | A5 | Brief a lawyer: Terms of Service, Privacy Policy, Data Processing Agreement, DPDP Act review (children's data, consent), and the fee-collection model (academies use their own gateway accounts, OD-13) | Lawyer | Terms: Phase 3 · Payments: Phase 7 | ☐ |
-| A6 | Pick an email provider (Resend, Postmark or Amazon SES). Add SPF, DKIM and DMARC records for `mail.academybees.com` | — | Phase 2 | ☐ |
+| A6 | Email provider: **Resend** (C-69). Add its SPF, DKIM and DMARC records for `mail.staging.academybees.com` (staging, S7b) and `mail.academybees.com` (production, 7P) | — | S7b (Phase 2) | ☐ |
 | A7 | Meta Business verification → WhatsApp Business Account → Cloud API phone number | — | Phase 10 | ☐ |
 | A8 | TRAI DLT registration (entity, sender header "ACDBEE" or similar, message templates) | SMS provider | Phase 10 | ☐ |
 | A9 | Recruit **two pilot academies** (one tuition, one dance/karate/sports). Agree pilot terms (OD-16): free during the pilot + 3 months, a weekly 30-minute feedback call | You | Phase 7P | ☐ |
@@ -63,11 +63,11 @@ Engineering will stall at Phases 7 and 10 without these. Start them all this wee
 | --- | --- | --- |
 | GitHub: the repository `egha-dev/academybees-apps` with a **paid plan** — GitHub **Pro** on the personal account (or **Team** if you later move it to an `academybee` organisation). Protected branches and required checks on a private repository need a paid plan; check GitHub's current pricing (OD-19) | Code, CI, pull requests, protected `main` | Phase 0 |
 | Anthropic / Claude plan with Claude Code access | The engineering team | Phase 0 |
-| Vercel | Hosts the web app with wildcard domains | Phase 0 (staging) |
-| API host (Render, Railway, Fly.io or AWS; pick one per OD-03) | Runs the API and worker | Phase 0 (staging) |
-| Managed PostgreSQL (India region preferred) | Database | Phase 0 |
-| Managed Redis (for example Upstash) | Cache and background jobs | Phase 0 |
-| Cloudflare R2 | Files (logos, receipts, homework) | Phase 3 |
+| Cloudflare (free) | DNS for `academybees.com` (C-69); later Pages for a marketing site and, at scale, Cloudflare for SaaS for academy domains (C-71) | Before S7b (Phase 2) |
+| Railway (Hobby for staging; **Pro** before the first real academy) | Web, API, worker, PostgreSQL and Redis in one Singapore project (C-69, C-71) | S7b (Phase 2) |
+| Resend | Transactional email (C-69) | S7b (Phase 2) |
+| ImageKit | Images and other media (C-70); compared with Cloudflare R2 for PDFs then | Phase 3 (first uploads) |
+| Vercel **Pro** (never Hobby with real academies) | Web app once there are about 10 academies (C-69) | About 10 academies |
 | Sentry | Error tracking | Phase 0 |
 | PostHog (or keep analytics internal, OD-14) | Product analytics | Phase 0 |
 | Email provider (A6) | Invites, password resets | Phase 2 |
