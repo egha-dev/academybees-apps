@@ -12,6 +12,10 @@ export type HostPolicy =
   | { kind: 'tenant'; statuses: readonly TenantStatus[] }
   /** Any host; the tenant context is still resolved when the host is an academy. */
   | { kind: 'any' }
+  /** The Family Hub host `app.` only (ADR-039); no academy context. */
+  | { kind: 'hub' }
+  /** The console host `console.` only (C-02); no academy context. */
+  | { kind: 'console' }
   /** No host resolution at all (liveness/readiness, docs). */
   | { kind: 'none' };
 
@@ -33,6 +37,12 @@ export const TenantHost = (...statuses: TenantStatus[]) =>
 
 /** Served on every host (marketing, console, hub, academies). */
 export const AnyHost = () => SetMetadata(HOST_POLICY, { kind: 'any' } satisfies HostPolicy);
+
+/** Family Hub host only (`app.`); other hosts get 404. */
+export const HubHost = () => SetMetadata(HOST_POLICY, { kind: 'hub' } satisfies HostPolicy);
+
+/** Console host only (`console.`); other hosts get 404. */
+export const ConsoleHost = () => SetMetadata(HOST_POLICY, { kind: 'console' } satisfies HostPolicy);
 
 /** Skips host resolution entirely (health checks must not depend on tenant lookups). */
 export const NoHostResolution = () =>

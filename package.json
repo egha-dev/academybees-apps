@@ -27,6 +27,7 @@
     "db:seed": "pnpm --filter @academybee/database db:seed",
     "db:drift": "pnpm --filter @academybee/database db:drift",
     "db:generate": "turbo run generate",
+    "platform:create-admin": "turbo run build --filter=@academybee/api --output-logs=errors-only && pnpm --filter @academybee/api platform:create-admin",
     "i18n:check": "pnpm --filter @academybee/i18n i18n:check",
     "i18n:pseudo": "pnpm --filter @academybee/i18n i18n:pseudo",
     "e2e": "pnpm build && pnpm --filter @academybee/web build:pseudo && pnpm --filter @academybee/e2e e2e",

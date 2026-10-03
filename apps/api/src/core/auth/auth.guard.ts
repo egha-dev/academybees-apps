@@ -1,6 +1,5 @@
 import {
   AccessTokenError,
-  type Audience,
   cookieSpecs,
   CSRF_HEADER,
   csrfMatches,
@@ -15,38 +14,26 @@ import { ClsService } from 'nestjs-cls';
 import { AuditService } from '../audit/audit.service.js';
 import { API_CONFIG } from '../config/config.module.js';
 import { type ApiConfig } from '../config/config.schema.js';
-import { type RequestContext, type ResolvedHost } from '../context/request-context.js';
+import { type RequestContext } from '../context/request-context.js';
 import { DomainError } from '../errors/domain-error.js';
 import { HOST_POLICY, type HostPolicy } from '../tenant/host-policy.js';
 import { TenantContext } from '../tenant/tenant-context.service.js';
-import { readCookies } from './http.js';
+import { hostAudience, readCookies } from './http.js';
 import { AUTH_KEYS } from './keys.js';
 import { MembershipService } from './membership.service.js';
+import { MfaService } from './mfa.service.js';
 import { IS_PUBLIC } from './public.decorator.js';
 import { SessionService } from './session.service.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-
-/** The only audience accepted on each host kind (ADR-003/039, C-32). */
-export function hostAudience(resolved: ResolvedHost | undefined): Audience | undefined {
-  switch (resolved?.kind) {
-    case 'tenant':
-      return 'TENANT';
-    case 'hub':
-      return 'HUB';
-    case 'console':
-      return 'CONSOLE';
-    default:
-      return undefined;
-  }
-}
 
 /**
  * Authentication + membership + CSRF (ARCHITECTURE §9.2: TenantResolver → Auth → Membership).
  * Runs after the TenantGuard (registered first):
  * - the access token must be signed by us, unexpired, and have the host's audience;
  * - a TENANT token's `tid` must equal the resolved academy → else 401 TENANT_MISMATCH (audited);
- * - the session must not be revoked; a TENANT session needs an ACTIVE membership in this academy;
+ * - the session must not be revoked; a TENANT session needs an ACTIVE membership in this academy,
+ *   a CONSOLE session ACTIVE platform staff;
  * - every mutation sent with session cookies needs the CSRF double-submit header; anonymous
  *   mutations need a same-origin `Origin`/`Referer` when the browser sends one.
  * Routes are private unless `@Public()`; host policy `none` (health, docs) skips all of this.
@@ -58,6 +45,7 @@ export class AuthGuard implements CanActivate {
     private readonly cls: ClsService<RequestContext>,
     private readonly sessions: SessionService,
     private readonly memberships: MembershipService,
+    private readonly mfa: MfaService,
     private readonly audit: AuditService,
     private readonly tenantContext: TenantContext,
     @Inject(AUTH_KEYS) private readonly keys: KeyRing,
@@ -126,9 +114,18 @@ export class AuthGuard implements CanActivate {
         return new DomainError('UNAUTHENTICATED', 'membership inactive');
       this.cls.set('membership', membership);
     }
+    if (audience === 'CONSOLE') {
+      // Console access ends the moment platform staff are disabled (C-02).
+      const staff = await this.mfa.platformStaff(claims.sub);
+      if (staff?.status !== 'ACTIVE')
+        return new DomainError('UNAUTHENTICATED', 'platform staff inactive');
+    }
     this.cls.set('userId', claims.sub);
     this.cls.set('session', { id: claims.sid, audience });
-    this.cls.set('actor', { type: 'USER', id: claims.sub });
+    this.cls.set('actor', {
+      type: audience === 'CONSOLE' ? 'PLATFORM_STAFF' : 'USER',
+      id: claims.sub,
+    });
     return undefined;
   }
 

@@ -4,7 +4,9 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthController } from './auth.controller.js';
 import { AuthGuard } from './auth.guard.js';
 import { keyProviders } from './keys.js';
+import { HubService } from './hub.service.js';
 import { MembershipService } from './membership.service.js';
+import { MfaService } from './mfa.service.js';
 import { PasswordService } from './password.service.js';
 import { SessionService } from './session.service.js';
 
@@ -20,6 +22,8 @@ import { SessionService } from './session.service.js';
     MembershipService,
     SessionService,
     PasswordService,
+    HubService,
+    MfaService,
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
   exports: [

@@ -1,7 +1,11 @@
-import { type CanActivate, type ExecutionContext, Injectable } from '@nestjs/common';
+import { BlockList, isIP } from 'node:net';
+
+import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ClsService } from 'nestjs-cls';
 
+import { API_CONFIG } from '../config/config.module.js';
+import { type ApiConfig } from '../config/config.schema.js';
 import { type RequestContext } from '../context/request-context.js';
 import { DomainError } from '../errors/domain-error.js';
 import { DEFAULT_TENANT_STATUSES, HOST_POLICY, type HostPolicy } from './host-policy.js';
@@ -13,7 +17,10 @@ import { TenantResolver } from './tenant-resolver.service.js';
  * tenant-bound database client, audit, outbox and idempotency read it — and applies the route's
  * host policy. Client-supplied tenant IDs (body, query, headers) are never consulted.
  * - non-academy or unknown host on an academy route → 404 NOT_FOUND (nothing leaks);
- * - academy not in an allowed status → 403 TENANT_UNAVAILABLE (UI shows the status page).
+ * - academy not in an allowed status → 403 TENANT_UNAVAILABLE (UI shows the status page);
+ * - hub/console routes on any other host → 404;
+ * - the console host from an IP outside `CONSOLE_IP_ALLOWLIST` (when set) → 404, on every route
+ *   (C-66: an extra layer on top of password + TOTP).
  */
 @Injectable()
 export class TenantGuard implements CanActivate {
@@ -21,7 +28,12 @@ export class TenantGuard implements CanActivate {
     private readonly resolver: TenantResolver,
     private readonly reflector: Reflector,
     private readonly cls: ClsService<RequestContext>,
-  ) {}
+    @Inject(API_CONFIG) config: ApiConfig,
+  ) {
+    this.consoleAllowList = consoleAllowList(config.CONSOLE_IP_ALLOWLIST);
+  }
+
+  private readonly consoleAllowList: BlockList | undefined;
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const policy = this.reflector.getAllAndOverride<HostPolicy | undefined>(HOST_POLICY, [
@@ -33,11 +45,39 @@ export class TenantGuard implements CanActivate {
     const resolved = await this.resolver.resolve(this.cls.get('host'));
     this.cls.set('resolvedHost', resolved);
     if (resolved.kind === 'tenant') this.cls.set('tenantId', resolved.tenant.id);
+    if (resolved.kind === 'console' && !this.consoleIpAllowed())
+      throw new DomainError('NOT_FOUND', 'console ip not allowed');
 
     if (policy.kind === 'any') return true;
+    if (policy.kind === 'hub' || policy.kind === 'console') {
+      if (resolved.kind !== policy.kind)
+        throw new DomainError('NOT_FOUND', `host is ${resolved.kind}`);
+      return true;
+    }
     if (resolved.kind !== 'tenant') throw new DomainError('NOT_FOUND', `host is ${resolved.kind}`);
     if (!policy.statuses.includes(resolved.tenant.status))
       throw new DomainError('TENANT_UNAVAILABLE', `academy is ${resolved.tenant.status}`);
     return true;
   }
+
+  private consoleIpAllowed(): boolean {
+    if (!this.consoleAllowList) return true;
+    const ip = (this.cls.get('ip') ?? '').replace(/^::ffff:/, '');
+    const family = isIP(ip);
+    if (!family) return false;
+    return this.consoleAllowList.check(ip, family === 6 ? 'ipv6' : 'ipv4');
+  }
+}
+
+/** `CONSOLE_IP_ALLOWLIST` entries are IPs or CIDR ranges (IPv4/IPv6); empty = no allow-list. */
+export function consoleAllowList(entries: readonly string[]): BlockList | undefined {
+  if (!entries.length) return undefined;
+  const list = new BlockList();
+  for (const entry of entries) {
+    const [address = '', prefix] = entry.split('/');
+    const family = isIP(address) === 6 ? 'ipv6' : 'ipv4';
+    if (prefix === undefined) list.addAddress(address, family);
+    else list.addSubnet(address, Number(prefix), family);
+  }
+  return list;
 }

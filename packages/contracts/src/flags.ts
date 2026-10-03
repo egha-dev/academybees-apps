@@ -33,6 +33,13 @@ export const FEATURE_FLAGS = {
     expiresOn: '2027-06-30',
     defaults: { local: true, ci: true, staging: false, production: false },
   },
+  'p2-console-home': {
+    description:
+      'Console signed-in placeholder on console. until the academies list ships (Phase 3) — remove then.',
+    owner: 'PO',
+    expiresOn: '2027-01-31',
+    defaults: { local: true, ci: true, staging: true, production: false },
+  },
 } as const satisfies Record<string, FeatureFlagDefinition>;
 
 export type FeatureFlagKey = keyof typeof FEATURE_FLAGS;

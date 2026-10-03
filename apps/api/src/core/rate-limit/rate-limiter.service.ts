@@ -19,6 +19,8 @@ export const RATE_RULES = {
   invitesPerMember: { name: 'invites-member', limit: 50, windowSeconds: 3600 },
   /** Link-token checks (invite preview/accept, password reset) per IP: no token guessing. */
   tokenAttempts: { name: 'token', limit: 20, windowSeconds: 60 },
+  /** Second-factor attempts per user, across MFA tokens (C-66). */
+  mfa: { name: 'mfa', limit: 10, windowSeconds: 300 },
 } as const satisfies Record<string, RateRule>;
 
 /**

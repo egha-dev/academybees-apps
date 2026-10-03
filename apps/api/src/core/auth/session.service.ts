@@ -12,12 +12,13 @@ import {
   newId,
   primaryExperience,
   type ExperienceName,
+  type LoginOutcome,
   type LoginRequest,
   type LoginResponse,
   type RoleKey,
 } from '@academybee/contracts';
 import { bindUser, type TenantBoundClient } from '@academybee/database';
-import { Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { type Response } from 'express';
 import { type Redis } from 'ioredis';
 import { ClsService } from 'nestjs-cls';
@@ -32,7 +33,15 @@ import { RATE_RULES, RateLimiter } from '../rate-limit/rate-limiter.service.js';
 import { REDIS } from '../redis/redis.module.js';
 import { TenantContext } from '../tenant/tenant-context.service.js';
 import { normalizeIdentifier } from './identifier.js';
-import { clearSessionCookies, deviceLabel, REFRESH_TTL_MS, setSessionCookies } from './http.js';
+import { HubService } from './hub.service.js';
+import { MfaService } from './mfa.service.js';
+import {
+  clearSessionCookies,
+  deviceLabel,
+  hostAudience,
+  REFRESH_TTL_MS,
+  setSessionCookies,
+} from './http.js';
 import { AUTH_KEYS } from './keys.js';
 import { MembershipService } from './membership.service.js';
 
@@ -45,7 +54,7 @@ const ROTATION_GRACE_MS = 20_000;
 const SESSION_KEY = (sid: string) => `auth:sess:${sid}`;
 
 /** Where each experience starts (ARCHITECTURE §10.2; homes behind `p2-role-homes` until 5/6). */
-const HOME: Record<ExperienceName, string> = { manage: '/today', teach: '/teach', hub: '/' };
+export const HOME: Record<ExperienceName, string> = { manage: '/today', teach: '/teach', hub: '/' };
 
 @Injectable()
 export class SessionService {
@@ -59,14 +68,90 @@ export class SessionService {
     private readonly memberships: MembershipService,
     private readonly audit: AuditService,
     private readonly rate: RateLimiter,
+    @Inject(forwardRef(() => HubService)) private readonly hub: HubService,
+    @Inject(forwardRef(() => MfaService)) private readonly mfa: MfaService,
   ) {}
 
-  /** Staff sign-in on an academy host (TENANT audience). Hub and console arrive in S8. */
-  async login(input: LoginRequest, res: Response) {
+  /**
+   * Sign-in on any host (ARCHITECTURE §9.3). The password check is shared; what happens next
+   * depends on the host:
+   * - academy: an ACTIVE member of this academy gets a TENANT session; a parent/student is handed
+   *   off to the Family Hub with a one-time code (C-61);
+   * - Family Hub: a user with an ACTIVE parent/student membership anywhere gets a HUB session;
+   * - console: ACTIVE platform staff get an MFA step (enrol or verify) — never a session yet (C-66).
+   * Everyone else gets the same answer as a wrong password, so nothing about other hosts, academies
+   * or staff accounts is revealed (ADR-006).
+   */
+  async login(input: LoginRequest, res: Response): Promise<LoginOutcome> {
     const resolved = this.cls.get('resolvedHost');
-    if (resolved?.kind !== 'tenant')
-      throw new DomainError('NOT_FOUND', 'sign-in host not supported yet');
-    const tenantId = resolved.tenant.id;
+    if (resolved?.kind !== 'tenant' && resolved?.kind !== 'hub' && resolved?.kind !== 'console')
+      throw new DomainError('NOT_FOUND', 'no sign-in on this host');
+    const user = await this.verifyPassword(input);
+
+    if (resolved.kind === 'tenant') {
+      const tenantId = resolved.tenant.id;
+      // Correct password: only an ACTIVE member of THIS academy may sign in here.
+      const membership = await this.memberships.load(tenantId, user.id);
+      if (!membership || membership.status !== 'ACTIVE')
+        return this.refuse(user.id, 'not_a_member');
+      await this.passwordSucceeded(user.id, input.identifier);
+      if (primaryExperience(membership.roles) === 'hub') {
+        // Parents and students use the Family Hub (G-31): continue there (C-61).
+        return { handoff: { code: await this.hub.issueHandoff(user.id, tenantId) } };
+      }
+      return this.signInToAcademy(res, user, tenantId, membership.roles);
+    }
+
+    if (resolved.kind === 'hub') {
+      if (!(await this.hub.academies(user.id)).length) return this.refuse(user.id, 'not_family');
+      await this.passwordSucceeded(user.id, input.identifier);
+      return this.signInToHub(res, user, 'password');
+    }
+
+    const staff = await this.mfa.platformStaff(user.id);
+    if (staff?.status !== 'ACTIVE') return this.refuse(user.id, 'not_platform_staff');
+    await this.passwordSucceeded(user.id, input.identifier);
+    return { mfa: await this.mfa.begin(user.id) };
+  }
+
+  /** Start a HUB session (sign-in on `app.` or a handoff, C-61). */
+  async signInToHub(
+    res: Response,
+    user: { id: string; name: string },
+    via: 'password' | 'handoff',
+  ): Promise<LoginResponse> {
+    await this.startSession(res, { userId: user.id, audience: 'HUB' });
+    await this.audit.record({
+      action: 'auth.login',
+      tenantId: null,
+      actor: { type: 'USER', id: user.id },
+      entityType: 'User',
+      entityId: user.id,
+      metadata: { audience: 'HUB', via },
+    });
+    return { user: { name: user.name }, experience: 'hub', redirectTo: HOME.hub };
+  }
+
+  /** Start a CONSOLE session once the second factor is verified (C-66). */
+  async signInToConsole(res: Response, user: { id: string; name: string }): Promise<LoginResponse> {
+    await this.startSession(res, {
+      userId: user.id,
+      audience: 'CONSOLE',
+      mfaVerifiedAt: new Date(),
+    });
+    await this.audit.record({
+      action: 'auth.login',
+      tenantId: null,
+      actor: { type: 'PLATFORM_STAFF', id: user.id },
+      entityType: 'User',
+      entityId: user.id,
+      metadata: { audience: 'CONSOLE' },
+    });
+    return { user: { name: user.name }, redirectTo: '/' };
+  }
+
+  /** Identifier + password with rate limits and the account lock; returns the ACTIVE user. */
+  private async verifyPassword(input: LoginRequest): Promise<{ id: string; name: string }> {
     const ip = this.cls.get('ip') ?? 'unknown';
     const identifier = normalizeIdentifier(input.identifier);
 
@@ -106,41 +191,39 @@ export class SessionService {
         (credential.lockedUntil.getTime() - Date.now()) / 1000,
       );
     }
-
     if (!(await verifyPassword(credential.passwordHash, input.password))) {
       await this.recordFailure(user.id, credential.failedCount + 1);
       throw new DomainError('INVALID_CREDENTIALS');
     }
+    return { id: user.id, name: user.name };
+  }
 
-    // Correct password: only an ACTIVE member of THIS academy may sign in here. Everyone else gets
-    // the same answer as a wrong password, so other academies' members are not revealed (ADR-006).
-    const membership = await this.memberships.load(tenantId, user.id);
-    if (!membership || membership.status !== 'ACTIVE') {
-      await this.audit.record({
-        action: 'auth.login_failed',
-        actor: { type: 'USER', id: user.id },
-        metadata: { reason: 'not_a_member' },
-      });
-      throw new DomainError('INVALID_CREDENTIALS');
-    }
-    if (primaryExperience(membership.roles) === 'hub') {
-      // Parents and students use the Family Hub (G-31). The hand-off (C-61) arrives in S8.
-      throw new DomainError('FORBIDDEN', 'family hub user', [
-        { path: 'experience', issue: 'family_hub' },
-      ]);
-    }
+  /** A correct password that may not sign in on this host: the wrong-password answer, audited. */
+  private async refuse(userId: string, reason: string): Promise<never> {
+    await this.audit.record({
+      action: 'auth.login_failed',
+      actor: { type: 'USER', id: userId },
+      metadata: { reason },
+    });
+    throw new DomainError('INVALID_CREDENTIALS');
+  }
 
-    await this.context.runAsUser(user.id, () =>
+  private async passwordSucceeded(userId: string, rawIdentifier: string): Promise<void> {
+    const identifier = normalizeIdentifier(rawIdentifier);
+    await this.context.runAsUser(userId, () =>
       this.db.$transaction(async (tx) => {
         await tx.userCredential.update({
-          where: { userId: user.id },
+          where: { userId },
           data: { failedCount: 0, lockedUntil: null },
         });
-        await tx.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+        await tx.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
       }),
     );
-    await this.rate.reset(RATE_RULES.login, ip, identifier?.value ?? input.identifier);
-    return this.signInToAcademy(res, { id: user.id, name: user.name }, tenantId, membership.roles);
+    await this.rate.reset(
+      RATE_RULES.login,
+      this.cls.get('ip') ?? 'unknown',
+      identifier?.value ?? rawIdentifier,
+    );
   }
 
   /**
@@ -243,6 +326,14 @@ export class SessionService {
         throw new DomainError('UNAUTHENTICATED', 'membership inactive');
       }
     }
+    if (session.audience === 'CONSOLE') {
+      const staff = await this.mfa.platformStaff(session.userId);
+      if (staff?.status !== 'ACTIVE' || !session.mfaVerifiedAt) {
+        await this.revokeFamily(session.userId, session.familyId, 'staff_inactive');
+        clearSessionCookies(res, this.config.COOKIE_MODE);
+        throw new DomainError('UNAUTHENTICATED', 'platform staff inactive');
+      }
+    }
 
     await this.context.runAsUser(session.userId, () =>
       this.db.authSession.update({
@@ -257,6 +348,7 @@ export class SessionService {
       tenantId: session.tenantId ?? undefined,
       familyId: session.familyId,
       deviceLabel: session.deviceLabel ?? undefined,
+      mfaVerifiedAt: session.mfaVerifiedAt ?? undefined,
     });
   }
 
@@ -309,15 +401,8 @@ export class SessionService {
 
   private assertSessionHost(audience: Audience, tenantId: string | null, userId: string): void {
     const resolved = this.cls.get('resolvedHost');
-    const hostAudience: Audience | undefined =
-      resolved?.kind === 'tenant'
-        ? 'TENANT'
-        : resolved?.kind === 'hub'
-          ? 'HUB'
-          : resolved?.kind === 'console'
-            ? 'CONSOLE'
-            : undefined;
-    if (audience !== hostAudience) throw new DomainError('UNAUTHENTICATED', 'session audience');
+    if (audience !== hostAudience(resolved))
+      throw new DomainError('UNAUTHENTICATED', 'session audience');
     if (audience === 'TENANT' && resolved?.kind === 'tenant' && tenantId !== resolved.tenant.id) {
       void this.context.run(undefined, () =>
         this.audit.record({
@@ -339,8 +424,12 @@ export class SessionService {
       tenantId?: string | undefined;
       familyId?: string;
       deviceLabel?: string | undefined;
+      mfaVerifiedAt?: Date | undefined;
     },
   ): Promise<void> {
+    // Console sessions exist only after the second factor (C-66).
+    if (input.audience === 'CONSOLE' && !input.mfaVerifiedAt)
+      throw new Error('console sessions need a verified second factor');
     const refresh = generateToken();
     const sessionId = newId();
     await this.context.runAsUser(input.userId, () =>
@@ -356,6 +445,7 @@ export class SessionService {
           ip: this.cls.get('ip') ?? null,
           userAgent: this.cls.get('userAgent') ?? null,
           expiresAt: new Date(Date.now() + REFRESH_TTL_MS[input.audience] * DAY),
+          mfaVerifiedAt: input.mfaVerifiedAt ?? null,
         },
       }),
     );
