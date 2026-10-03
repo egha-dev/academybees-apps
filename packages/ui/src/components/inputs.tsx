@@ -17,6 +17,7 @@ export type TextFieldProps = {
   disabled?: boolean;
   type?: 'text' | 'email' | 'tel' | 'password' | 'number' | 'search';
   autoComplete?: string;
+  autoFocus?: boolean;
   inputMode?: 'text' | 'numeric' | 'decimal' | 'tel' | 'email' | 'search';
 };
 

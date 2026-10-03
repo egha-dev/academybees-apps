@@ -305,7 +305,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 - Staging deferred (C-50).
 
 *Release flags (ADR-041).*
-- `p1-tenant-home`: owner PO; on in local/ci, off in staging/production; **remove in Phase 2** when sign-in replaces it (expires 2027-01-31).
+- `p1-tenant-home`: owner PO; on in local/ci, off in staging/production; **removed in Phase 2 S6** (sign-in replaced it, C-68).
 - `p1-hub-placeholder`: owner PO; on in local/ci, off in staging/production (`app.` → marketing); **remove in Phase 7P** (expires 2027-06-30).
 
 *Review follow-ups.* Listed above under **Independent review (P1-4)**, by phase: Phase 2 (L6, L7, 404 for tenant mismatch), Phase 3 (L1, custom-domain REDIRECT verification), staging go-live (L2, https `API_ORIGIN`, secret check, root-domain validation, apex port), Phase 15 (C-58 LCP headroom).
@@ -333,8 +333,8 @@ Phase 2 is **not** started.
 | S2 | `p2/auth-core` | 2.5 `packages/auth`, 2.6 config + keys | ✅ #34 |
 | S3 | `p2/sessions` | 2.7 sessions + endpoints, 2.8 guards, 2.9 rate limits + lockout | ✅ #35 |
 | S4 | `p2/rbac` | 2.10 capabilities + `@Can`, 2.11 scope policies, 2.12 cross-tenant suite + Phase 1 L6/L7 | ✅ #36 |
-| S5 | `p2/email-invites` | 2.13 email (worker), 2.14 invitations, reset, team API (C-67) | 🟨 |
-| S6 | `p2/web-auth` | 2.15 web auth plumbing (cookie spike), 2.16 Login, forgot/reset, invite accept | ⬜ |
+| S5 | `p2/email-invites` | 2.13 email (worker), 2.14 invitations, reset, team API (C-67) | ✅ #37 |
+| S6 | `p2/web-auth` | 2.15 web auth plumbing (cookie spike), 2.16 Login, forgot/reset, invite accept (C-68; flag `p2-role-homes` added, `p1-tenant-home` removed) | 🟨 |
 | S7 | `p2/web-shell` | 2.17 signed-in shell (flag `p2-role-homes`), 2.18 Team page | ⬜ |
 | S7b | `p2/staging` | staging on the approved host (needs PO approval + accounts) | ⬜ |
 | S8 | `p2/hub-console` | 2.19 HUB sessions + handoff, 2.20 console + mandatory TOTP (flag `p2-console-home`) | ⬜ |

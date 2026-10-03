@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { type FlagOverride, resolveFlag } from './resolve-flag.js';
 
-const KEY = 'p1-tenant-home';
+const KEY = 'p1-hub-placeholder';
 const T1 = '0199a0a0-0000-7000-8000-000000000001';
 const o = (
   environment: string | null,

@@ -2,6 +2,8 @@ import { generateKeyPairSync, randomBytes } from 'node:crypto';
 
 import { defineConfig, devices } from '@playwright/test';
 
+import { E2E_CLIENT_IP_HEADER } from './support/client-ip.js';
+
 /**
  * E2E (ADR-022, ADR-035, C-47). `pnpm e2e` from the repo root builds everything (including the
  * en-XA and en-LONG pseudo-locale web builds), then this config starts the built API and the
@@ -20,6 +22,9 @@ const signingKey = {
   alg: 'EdDSA',
 };
 
+/** Seals link tokens in the API and opens them in the worker (C-62): one value for both. */
+const SECRETS_MASTER_KEY = `e2e:${randomBytes(32).toString('base64')}`;
+
 const API_ENV = {
   APP_ENV,
   NODE_ENV: 'production',
@@ -31,8 +36,8 @@ const API_ENV = {
   TRUSTED_PROXY_SECRET: 'local-proxy-secret',
   ANALYTICS_HASH_SALT: 'e2e-analytics-salt',
   AUTH_SIGNING_KEYS: JSON.stringify({ current: 'e2e', keys: [signingKey] }),
-  SECRETS_MASTER_KEY: `e2e:${randomBytes(32).toString('base64')}`,
-  // Playwright drives plain-http *.localhost hosts; the S6 spike decides whether WebKit needs this (C-64).
+  SECRETS_MASTER_KEY,
+  // WebKit drops Secure cookies on plain-http *.localhost (S6 spike, C-64).
   COOKIE_MODE: 'insecure-dev',
   FLAGS_CACHE_MS: '0',
   PLATFORM_ROOT_DOMAIN: 'localhost',
@@ -43,6 +48,29 @@ const WEB_ENV = {
   API_ORIGIN: 'http://localhost:4000',
   TRUSTED_PROXY_SECRET: 'local-proxy-secret',
   PLATFORM_ROOT_DOMAIN: 'localhost',
+  // Every E2E browser comes from 127.0.0.1; specs send their own address in this header so the
+  // per-IP sign-in limits apply per test, as they would per person (support/client-ip.ts).
+  TRUSTED_CLIENT_IP_HEADER: E2E_CLIENT_IP_HEADER,
+};
+
+/** Delivers invite and reset emails to Mailpit (http://localhost:8025) for the auth journeys. */
+const WORKER_ENV = {
+  APP_ENV,
+  NODE_ENV: 'production',
+  // `info` so the start-up line Playwright waits for is printed.
+  LOG_LEVEL: 'info',
+  DATABASE_URL: API_ENV.DATABASE_URL,
+  PLATFORM_DATABASE_URL:
+    process.env.E2E_PLATFORM_DATABASE_URL ??
+    'postgresql://ab_platform:ab_platform_local@localhost:5432/academybee',
+  REDIS_URL: API_ENV.REDIS_URL,
+  OUTBOX_POLL_INTERVAL_MS: '250',
+  ANALYTICS_HASH_SALT: 'e2e-analytics-salt',
+  SECRETS_MASTER_KEY,
+  SMTP_URL: process.env.E2E_SMTP_URL ?? 'smtp://localhost:1025',
+  PLATFORM_ROOT_DOMAIN: 'localhost',
+  WEB_PUBLIC_PROTOCOL: 'http',
+  WEB_PUBLIC_PORT: '3000',
 };
 
 const webServer = (port: number, distDir: string, locale = '') => ({
@@ -99,6 +127,15 @@ export default defineConfig({
           url: 'http://localhost:4000/api/v1/health/ready',
           env: API_ENV,
           reuseExistingServer: !process.env.CI,
+          timeout: 60_000,
+        },
+        {
+          command: 'node dist/main.js',
+          cwd: '../apps/worker',
+          // No HTTP port: ready when it logs that it started (always a fresh worker, so emails
+          // are sealed and opened with this run's key).
+          wait: { stdout: /Worker started/ },
+          env: WORKER_ENV,
           timeout: 60_000,
         },
         webServer(3000, '.next'),

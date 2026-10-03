@@ -211,7 +211,7 @@ Unauthenticated `/` on an academy host goes to `/login`, and **`p1-tenant-home` 
 - `AppShell` with academy identity, user menu (Security, Sign out) and capability-filtered navigation config (UX §8, §25) showing **only built modules** (Phase 2: Team and Security under ACADEMY).
 - Experience switcher for multi-role users (manage / teach).
 - `PermissionState` page for 403.
-- Role homes: `/today` and `/teach` are **placeholders behind release flag `p2-role-homes`** (owner PO, remove in Phase 5/6 when Owner Today and Teacher Today ship). With the flag off, staff land on `/settings/security`, which is real.
+- Role homes: `/today` and `/teach` are **placeholders behind release flag `p2-role-homes`** (owner PO, remove in Phase 5/6 when Owner Today and Teacher Today ship). With the flag off, staff land on `/settings/security`, which is real (from S9; until then the landing answers not found, C-68).
 
 **2.18 Team page** (`/settings/team`): members and pending invites, an "Invite member" sheet (email + roles), change roles, disable/enable, resend/revoke invite. All UI states; phone-first.
 
@@ -270,7 +270,7 @@ Docs: ARCHITECTURE §6/§7/§9.2 as built, README (demo logins), CLAUDE.md §8, 
 | S3 | `p2/sessions` | 2.7–2.9 | — |
 | S4 | `p2/rbac` | 2.10–2.12 | — |
 | S5 | `p2/email-invites` | 2.13, 2.14 | — |
-| S6 | `p2/web-auth` | 2.15, 2.16 | removes `p1-tenant-home` |
+| S6 | `p2/web-auth` | 2.15, 2.16 | removes `p1-tenant-home`; adds `p2-role-homes` (pulled from S7, C-68) |
 | S7 | `p2/web-shell` | 2.17, 2.18 | `p2-role-homes` (→ Phase 5/6) |
 | S7b | `p2/staging` | staging on the approved host (only after you approve the proposal and create the accounts) | — |
 | S8 | `p2/hub-console` | 2.19, 2.20 | `p2-console-home` (→ Phase 3); `p1-hub-placeholder` stays (→ 7P) |

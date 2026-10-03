@@ -12,7 +12,7 @@ test.beforeAll(requireSeededAcademies);
 test('demo-a shows Demo A branding, title and manifest', async ({ page }, testInfo) => {
   const res = await page.goto(hostUrl(testInfo, 'demo-a'));
   expect(res?.status()).toBe(200);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome to Demo A Academy');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sign in to Demo A Academy');
   await expect(page.getByRole('banner').getByText('Demo A Academy')).toBeVisible();
   await expect(page).toHaveTitle(/Demo A Academy/);
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
@@ -96,7 +96,7 @@ test('a forged x-ab-context header never changes the academy shown (review L9)',
     'x-ab-apex': 'https://evil.example',
   });
   await page.goto(hostUrl(testInfo, 'demo-a'));
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome to Demo A Academy');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sign in to Demo A Academy');
   await expect(page.getByText('Demo B Dance Studio')).toHaveCount(0);
 
   const unknown = await page.goto(hostUrl(testInfo, 'nope'));
