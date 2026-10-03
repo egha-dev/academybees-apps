@@ -11,3 +11,4 @@ export * from './tenant.js';
 export * from './roles.js';
 export * from './auth.js';
 export * from './email.js';
+export * from './team.js';

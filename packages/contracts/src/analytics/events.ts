@@ -13,6 +13,27 @@ export const ANALYTICS_EVENTS = {
       appEnv: z.enum(['local', 'ci', 'staging', 'production']),
     }),
   }),
+  'team.invitation_sent': defineAnalyticsEvent({
+    name: 'team.invitation_sent',
+    version: 1,
+    description: 'A staff member invited someone to the academy team.',
+    properties: z.strictObject({
+      roles: z.array(z.enum(['owner', 'admin', 'teacher', 'accountant', 'receptionist'])),
+      resend: z.boolean(),
+    }),
+  }),
+  'team.invitation_accepted': defineAnalyticsEvent({
+    name: 'team.invitation_accepted',
+    version: 1,
+    description: 'An invited person joined the academy team.',
+    properties: z.strictObject({ newAccount: z.boolean() }),
+  }),
+  'auth.password_reset': defineAnalyticsEvent({
+    name: 'auth.password_reset',
+    version: 1,
+    description: 'A user chose a new password from a reset link.',
+    properties: z.strictObject({}),
+  }),
 } as const;
 
 export type AnalyticsEventName = keyof typeof ANALYTICS_EVENTS;

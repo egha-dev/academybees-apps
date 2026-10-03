@@ -20,6 +20,18 @@ export type CrossTenantRoute = {
   session?: boolean;
   /** The `@Can` capability: a member of A without it must get 403. */
   capability?: string;
+  /** Path parameters as symbolic fixture names the suite resolves (default `:id` = A's owner membership). */
+  params?: Record<string, string>;
+  /** Send a fresh `Idempotency-Key` with every request (`@Idempotent` routes). */
+  idempotent?: boolean;
+  /**
+   * How the spoof cases compare with the baseline: the whole response (default), the status only
+   * (writes whose bodies differ per call), or skipped for single-use links — `reason` names the
+   * dedicated test that covers them instead.
+   */
+  spoof?: 'body' | 'status' | { skip: string };
+  /** Fields that change with every sign-in (e.g. `lastLoginAt`), left out of the body comparison. */
+  volatile?: string[];
 };
 
 export type RouteRef = { method: string; path: string };

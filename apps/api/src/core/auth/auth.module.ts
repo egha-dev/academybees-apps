@@ -5,6 +5,7 @@ import { AuthController } from './auth.controller.js';
 import { AuthGuard } from './auth.guard.js';
 import { keyProviders } from './keys.js';
 import { MembershipService } from './membership.service.js';
+import { PasswordService } from './password.service.js';
 import { SessionService } from './session.service.js';
 
 /**
@@ -18,6 +19,7 @@ import { SessionService } from './session.service.js';
     ...keyProviders,
     MembershipService,
     SessionService,
+    PasswordService,
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
   exports: [

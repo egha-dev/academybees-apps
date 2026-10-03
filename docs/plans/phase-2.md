@@ -184,9 +184,10 @@ Privilege-escalation tests (teacher → owner endpoints). Phase 1 follow-ups **L
 - `POST /auth/password/reset`: revokes all sessions, sends the "password changed" alert;
 - `GET /team/members`;
 - `PATCH /team/members/:id`: roles, disable/enable, bumps `permissionsVersion`;
-- `GET /roles`.
+- `GET /team/roles` (with `grantable` per role);
+- `GET /team/invitations`, `POST /team/invitations/:id/{resend,revoke}`.
 
-Idempotency on invite creation. Every endpoint in the cross-tenant registry.
+Idempotency on invite creation. Every endpoint in the cross-tenant registry. Rules: C-67.
 
 ### S6 `p2/web-auth` — sign-in screens
 

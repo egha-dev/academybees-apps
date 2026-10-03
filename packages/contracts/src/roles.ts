@@ -334,3 +334,26 @@ export function mergeGrants(
   }
   return out;
 }
+
+/** Roles the Team screen can grant. Parents and students join through the Family Hub (G-31, Phase 4). */
+export const STAFF_ROLE_KEYS = ['owner', 'admin', 'teacher', 'accountant', 'receptionist'] as const;
+export type StaffRoleKey = (typeof STAFF_ROLE_KEYS)[number];
+export const StaffRoleKeySchema = z.enum(STAFF_ROLE_KEYS);
+
+/**
+ * May someone grant (or take away) a role? No privilege escalation (C-67): only owners grant the
+ * owner role; any other staff role only by someone who already holds every capability it grants.
+ * So an admin can add admins, teachers and receptionists, while accountants (refunds, finance
+ * reports) are added by an owner.
+ */
+export function canGrantRole(
+  granter: { roles: readonly string[]; capabilities: Partial<Record<Capability, Scope>> },
+  role: string,
+): boolean {
+  const parsed = StaffRoleKeySchema.safeParse(role);
+  if (!parsed.success) return false;
+  if (parsed.data === 'owner') return granter.roles.includes('owner');
+  return Object.keys(ROLE_TEMPLATES[parsed.data].grants).every(
+    (capability) => granter.capabilities[capability as Capability] !== undefined,
+  );
+}

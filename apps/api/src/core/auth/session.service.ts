@@ -13,6 +13,8 @@ import {
   primaryExperience,
   type ExperienceName,
   type LoginRequest,
+  type LoginResponse,
+  type RoleKey,
 } from '@academybee/contracts';
 import { bindUser, type TenantBoundClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
@@ -121,8 +123,7 @@ export class SessionService {
       });
       throw new DomainError('INVALID_CREDENTIALS');
     }
-    const experience = primaryExperience(membership.roles);
-    if (experience === 'hub') {
+    if (primaryExperience(membership.roles) === 'hub') {
       // Parents and students use the Family Hub (G-31). The hand-off (C-61) arrives in S8.
       throw new DomainError('FORBIDDEN', 'family hub user', [
         { path: 'experience', issue: 'family_hub' },
@@ -139,6 +140,20 @@ export class SessionService {
       }),
     );
     await this.rate.reset(RATE_RULES.login, ip, identifier?.value ?? input.identifier);
+    return this.signInToAcademy(res, { id: user.id, name: user.name }, tenantId, membership.roles);
+  }
+
+  /**
+   * Start a TENANT session for a verified user who is an ACTIVE member of this academy (sign-in,
+   * invitation accept) and say where to go.
+   */
+  async signInToAcademy(
+    res: Response,
+    user: { id: string; name: string },
+    tenantId: string,
+    roles: readonly RoleKey[],
+  ): Promise<LoginResponse> {
+    const experience = primaryExperience(roles);
     await this.startSession(res, { userId: user.id, audience: 'TENANT', tenantId });
     await this.audit.record({
       action: 'auth.login',
@@ -151,6 +166,36 @@ export class SessionService {
       ...(experience ? { experience } : {}),
       redirectTo: experience ? HOME[experience] : '/',
     };
+  }
+
+  /**
+   * Revoke a user's live sessions — every one, or only those in one academy — and drop them from
+   * the validity cache (password reset, disabled membership). Server-decided, so it binds the
+   * target user for RLS (C-59).
+   */
+  async revokeUserSessions(
+    userId: string,
+    reason: string,
+    only?: { tenantId: string },
+  ): Promise<number> {
+    const where = { revokedAt: null, ...(only ? { tenantId: only.tenantId } : {}) };
+    const sessions = await this.context.runAsUser(userId, () =>
+      this.db.authSession.findMany({ where, select: { id: true } }),
+    );
+    if (!sessions.length) return 0;
+    await this.context.runAsUser(userId, () =>
+      this.db.authSession.updateMany({
+        where: { id: { in: sessions.map((x) => x.id) }, revokedAt: null },
+        data: { revokedAt: new Date(), revokeReason: reason },
+      }),
+    );
+    await this.redis.del(...sessions.map((x) => SESSION_KEY(x.id))).catch(() => undefined);
+    return sessions.length;
+  }
+
+  /** A wrong password for a known user: counts towards the account lock (ADR-006). */
+  async passwordFailed(userId: string, failedCount: number): Promise<void> {
+    await this.recordFailure(userId, failedCount);
   }
 
   /** Rotate the refresh token (ADR-007). A rotated token presented again revokes the family. */
