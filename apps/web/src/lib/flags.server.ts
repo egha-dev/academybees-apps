@@ -1,6 +1,8 @@
 import 'server-only';
 
 import { type FeatureFlagKey } from '@academybee/contracts';
+import { headers } from 'next/headers';
+import { cache } from 'react';
 
 import { serverEnv } from './env';
 import { type FlagsResponse, isFlagOn } from './flags';
@@ -23,3 +25,8 @@ export async function flagEnabled(key: FeatureFlagKey, host: string): Promise<bo
     return false;
   }
 }
+
+/** `p2-role-homes` for the current request's academy (C-68): the signed-in landings. */
+export const roleHomesEnabled = cache(async (): Promise<boolean> =>
+  flagEnabled('p2-role-homes', (await headers()).get('host') ?? ''),
+);

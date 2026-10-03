@@ -5,6 +5,7 @@ import email from '../messages/en-IN/email.json' with { type: 'json' };
 import errors from '../messages/en-IN/errors.json' with { type: 'json' };
 import offline from '../messages/en-IN/offline.json' with { type: 'json' };
 import shell from '../messages/en-IN/shell.json' with { type: 'json' };
+import team from '../messages/en-IN/team.json' with { type: 'json' };
 import tenant from '../messages/en-IN/tenant.json' with { type: 'json' };
 
 /**
@@ -17,6 +18,7 @@ export const EN_IN_MESSAGES = {
   errors,
   email,
   shell,
+  team,
   tenant,
   offline,
   designSystem,
@@ -32,6 +34,7 @@ export const NAMESPACE_FILES: Record<Namespace, string> = {
   errors: 'errors.json',
   email: 'email.json',
   shell: 'shell.json',
+  team: 'team.json',
   tenant: 'tenant.json',
   offline: 'offline.json',
   designSystem: 'design-system.json',

@@ -30,6 +30,26 @@
     "classes": "Classes",
     "fees": "Fees",
     "more": "More",
-    "menu": "Menu"
+    "menu": "Menu",
+    "label": "Main navigation",
+    "home": "Home",
+    "team": "Team",
+    "groups": {
+      "home": "Home",
+      "academy": "Academy"
+    }
+  },
+  "account": {
+    "signedInAs": "Signed in as {name}",
+    "switchToTeach": "Switch to teaching",
+    "switchToManage": "Switch to managing",
+    "signOut": "Sign out",
+    "moreTitle": "More",
+    "moreBody": "Everything else in {academy}."
+  },
+  "permission": {
+    "title": "You don't have access to this page",
+    "body": "Your role at {academy} can't open this page. If you need it, ask an owner or admin to change your role.",
+    "action": "Go to your home page"
   }
 }

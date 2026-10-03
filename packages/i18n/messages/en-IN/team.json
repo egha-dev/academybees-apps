@@ -1,0 +1,78 @@
+{
+  "metaTitle": "Team",
+  "title": "Team",
+  "body": "Everyone who works at {academy}, their roles and pending invitations.",
+  "invite": "Invite member",
+  "loading": "Loading the team…",
+  "members": {
+    "heading": "Members",
+    "count": "{count, plural, one {# member} other {# members}}",
+    "you": "You",
+    "noEmail": "No email on file",
+    "lastActive": "Last signed in {date}",
+    "neverSignedIn": "Hasn't signed in yet",
+    "manage": "Manage",
+    "loadMore": "Show more members"
+  },
+  "status": {
+    "ACTIVE": "Active",
+    "DISABLED": "Disabled",
+    "INVITED": "Invited",
+    "PENDING": "Pending",
+    "EXPIRED": "Expired"
+  },
+  "invitations": {
+    "heading": "Pending invitations",
+    "emptyTitle": "No pending invitations",
+    "emptyBody": "Invite teachers and office staff by email. They choose their own password.",
+    "expires": "Link expires {date}",
+    "expired": "Link expired on {date}",
+    "resend": "Resend",
+    "revoke": "Revoke",
+    "resent": "Invitation sent again to {email}",
+    "revoked": "Invitation revoked",
+    "revokeTitle": "Revoke this invitation?",
+    "revokeBody": "The link sent to {email} will stop working. You can invite them again later.",
+    "keep": "Keep it"
+  },
+  "inviteSheet": {
+    "title": "Invite a team member",
+    "body": "We'll email a link to join {academy}. It expires in 7 days.",
+    "email": "Email",
+    "roles": "Roles",
+    "rolesHint": "Choose at least one. You can only give roles you hold yourself.",
+    "submit": "Send invitation",
+    "sent": "Invitation sent to {email}",
+    "cancel": "Cancel"
+  },
+  "memberSheet": {
+    "title": "Manage {name}",
+    "roles": "Roles",
+    "rolesHint": "Roles you can't give are shown but can't be changed.",
+    "save": "Save roles",
+    "saved": "Roles updated",
+    "accessHeading": "Access",
+    "disable": "Disable access",
+    "enable": "Restore access",
+    "disableTitle": "Disable {name}'s access?",
+    "disableBody": "They'll be signed out of {academy} at once and can't sign in until you restore access. Nothing they did is deleted.",
+    "disabled": "Access disabled",
+    "enabled": "Access restored",
+    "cancel": "Cancel"
+  },
+  "errors": {
+    "alreadyMember": "This person is already a member of {academy}.",
+    "notGrantable": "You can't give that role. Ask an owner.",
+    "ownerOnly": "Only an owner can change another owner.",
+    "lastOwner": "{academy} needs at least one active owner.",
+    "versionConflict": "Someone else changed this member a moment ago. The latest details are now shown — try again.",
+    "rateLimited": "Too many invitations in a short time. Try again in a while.",
+    "gone": "This invitation is no longer pending.",
+    "offline": "You're offline. Team changes need a connection.",
+    "generic": "Something went wrong on our side. Please try again."
+  },
+  "permission": {
+    "title": "You can't view the team",
+    "body": "Ask an owner or admin of {academy} if you need access to the team."
+  }
+}
