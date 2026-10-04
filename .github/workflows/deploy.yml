@@ -63,6 +63,13 @@ jobs:
           # Where this token deploys — project, environment and services, names and IDs only.
           railway status --json | jq -c '[.. | objects | select(has("id") and has("name")) | {id, name}] | unique'
           railway up --ci --service "$SERVICE"
+      # On failure, the service's runtime log (config errors name variables, never values).
+      - name: deploy log of the failed deployment
+        if: failure()
+        env:
+          RAILWAY_TOKEN: ${{ inputs.prefix == 'STAGING' && secrets.RAILWAY_TOKEN || secrets.PRODUCTION_RAILWAY_TOKEN }}
+          SERVICE: ${{ matrix.service }}
+        run: timeout 60 railway logs --service "$SERVICE" --deployment 2>&1 | tail -n 80 || true
 
   smoke:
     name: smoke check
