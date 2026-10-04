@@ -1,7 +1,9 @@
 name: Deploy (reusable)
 
-# Shared deploy steps for staging and production (C-48). Secrets are repository secrets
-# named <PREFIX>_* (STAGING_* / PRODUCTION_*) — see docs/runbooks/environments.md.
+# Shared deploy steps for staging and production on Railway (C-69, C-75): roles + migrations as
+# ab_migrator → `railway up` per service (Railway builds each Dockerfile) → smoke checks.
+# Secrets are named <PREFIX>_* (STAGING_* / PRODUCTION_*), except the staging project token,
+# which is RAILWAY_TOKEN — see docs/runbooks/environments.md. Values never appear in logs.
 on:
   workflow_call:
     inputs:
@@ -14,9 +16,9 @@ on:
         type: string
         required: true
       image_tag:
-        description: Extra image tag (staging / production)
+        description: Kept for the callers; Railway builds from source, so it is unused (C-75)
         type: string
-        required: true
+        required: false
       web_url_var:
         description: Name of the repository variable holding the public web URL
         type: string
@@ -24,46 +26,15 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 env:
-  REGISTRY: ghcr.io/egha-dev
   TURBO_TELEMETRY_DISABLED: 1
   NEXT_TELEMETRY_DISABLED: 1
+  RAILWAY_CLI_VERSION: 5.63.1
 
 jobs:
-  images:
-    name: build images
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    strategy:
-      matrix:
-        app: [api, worker]
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.sha }}
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: apps/${{ matrix.app }}/Dockerfile
-          push: true
-          build-args: RELEASE_SHA=${{ inputs.sha }}
-          tags: |
-            ${{ env.REGISTRY }}/academybee-${{ matrix.app }}:${{ inputs.sha }}
-            ${{ env.REGISTRY }}/academybee-${{ matrix.app }}:${{ inputs.image_tag }}
-          cache-from: type=gha,scope=${{ matrix.app }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
-
   migrate:
-    name: migrate (ab_migrator)
-    needs: images
+    name: roles + migrate (ab_migrator)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -76,61 +47,66 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: ensure database roles (idempotent, as the provider's admin user)
+        env:
+          ADMIN_DATABASE_URL: ${{ secrets[format('{0}_ADMIN_DATABASE_URL', inputs.prefix)] }}
+          MIGRATOR_PW: ${{ secrets[format('{0}_DB_MIGRATOR_PASSWORD', inputs.prefix)] }}
+          APP_PW: ${{ secrets[format('{0}_DB_APP_PASSWORD', inputs.prefix)] }}
+          PLATFORM_PW: ${{ secrets[format('{0}_DB_PLATFORM_PASSWORD', inputs.prefix)] }}
+        run: |
+          for v in ADMIN_DATABASE_URL MIGRATOR_PW APP_PW PLATFORM_PW; do
+            [ -n "${!v}" ] || { echo "::error::Missing secret for $v (docs/runbooks/environments.md)"; exit 1; }
+          done
+          psql "$ADMIN_DATABASE_URL" -q -v ON_ERROR_STOP=1 \
+            -v migrator_password="$MIGRATOR_PW" -v app_password="$APP_PW" \
+            -v platform_password="$PLATFORM_PW" \
+            -f infra/postgres/managed/ensure-roles.sql
       # Expand → migrate → contract: migrations run before new code is deployed.
       - name: prisma migrate deploy + grants
         env:
-          MIGRATOR_DATABASE_URL: ${{ secrets[format('{0}_MIGRATOR_DATABASE_URL', inputs.prefix)] }}
-        run: pnpm db:deploy
+          ADMIN_DATABASE_URL: ${{ secrets[format('{0}_ADMIN_DATABASE_URL', inputs.prefix)] }}
+          MIGRATOR_PW: ${{ secrets[format('{0}_DB_MIGRATOR_PASSWORD', inputs.prefix)] }}
+        run: |
+          # The same public endpoint as the admin URL, as ab_migrator.
+          MIGRATOR_DATABASE_URL=$(node -e '
+            const u = new URL(process.env.ADMIN_DATABASE_URL);
+            u.username = "ab_migrator";
+            u.password = process.env.MIGRATOR_PW;
+            process.stdout.write(u.toString());')
+          echo "::add-mask::$MIGRATOR_DATABASE_URL"
+          MIGRATOR_DATABASE_URL="$MIGRATOR_DATABASE_URL" pnpm db:deploy
 
-  backend:
-    name: deploy API + worker (Render)
+  deploy:
+    name: deploy ${{ matrix.service }}
     needs: migrate
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: trigger Render deploys with the new image
-        env:
-          API_HOOK: ${{ secrets[format('{0}_RENDER_DEPLOY_HOOK_API', inputs.prefix)] }}
-          WORKER_HOOK: ${{ secrets[format('{0}_RENDER_DEPLOY_HOOK_WORKER', inputs.prefix)] }}
-          SHA: ${{ inputs.sha }}
-        run: |
-          deploy() {
-            local image
-            image=$(jq -rn --arg i "$REGISTRY/academybee-$1:$SHA" '$i|@uri')
-            curl --fail --silent --show-error -X POST "$2&imgURL=$image" > /dev/null
-            echo "Deploy of $1 ($SHA) requested"
-          }
-          deploy api "$API_HOOK"
-          deploy worker "$WORKER_HOOK"
-
-  web:
-    name: deploy web (Vercel)
-    needs: backend
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets[format('{0}_VERCEL_PROJECT_ID', inputs.prefix)] }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [api, worker, web]
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sha }}
-      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: build and deploy (prebuilt)
+      - run: npm install --global "@railway/cli@${RAILWAY_CLI_VERSION}"
+      # Railway builds from the uploaded source (Hobby can't pull private images, C-75); the image
+      # reads the commit from this file, and /api/v1/health/live reports it.
+      - run: echo "${{ inputs.sha }}" > .release-sha
+      - name: railway up (build logs; fails if the build fails)
+        env:
+          RAILWAY_TOKEN: ${{ inputs.prefix == 'STAGING' && secrets.RAILWAY_TOKEN || secrets.PRODUCTION_RAILWAY_TOKEN }}
+          SERVICE: ${{ matrix.service }}
         run: |
-          pnpm dlx vercel@62.1.0 pull --yes --environment=production --token "$VERCEL_TOKEN"
-          pnpm dlx vercel@62.1.0 build --prod --token "$VERCEL_TOKEN"
-          pnpm dlx vercel@62.1.0 deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+          [ -n "$RAILWAY_TOKEN" ] || { echo "::error::Missing Railway project token"; exit 1; }
+          railway up --ci --service "$SERVICE"
 
   smoke:
     name: smoke check
-    needs: web
+    needs: deploy
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -139,6 +115,7 @@ jobs:
     steps:
       - name: wait for the new release behind the web origin
         run: |
+          [ -n "$WEB_URL" ] || { echo "::error::Set the repository variable ${{ inputs.web_url_var }}"; exit 1; }
           for _ in $(seq 1 60); do
             release=$(curl -fsS "$WEB_URL/api/v1/health/live" | jq -r .release || true)
             [ "$release" = "$SHA" ] && break
@@ -146,7 +123,7 @@ jobs:
           done
           [ "$release" = "$SHA" ] || { echo "::error::$SHA is not serving after 10 minutes"; exit 1; }
       - name: readiness (DB + Redis) through the web origin
-        run: curl -fsS "$WEB_URL/api/health/ready" | tee /dev/stderr | jq -e '.status == "ok"'
+        run: curl -fsS "$WEB_URL/api/v1/health/ready" | tee /dev/stderr | jq -e '.status == "ok"'
       - name: web shell and offline page
         run: |
           curl -fsS -o /dev/null "$WEB_URL/"

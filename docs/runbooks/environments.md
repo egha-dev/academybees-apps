@@ -27,53 +27,129 @@ Decisions:
 | Marketing site | in the web app | in the web app | — | Cloudflare Pages, if built (C-69) |
 | Railway plan | — | — | Hobby | **Pro** (before the first real academy, C-71) |
 
-## Railway staging project (set up in slice S7b)
+## Railway staging project (S7b, C-75)
 
-One project, **`academybee-staging`**, region **Southeast Asia (Singapore)**. Confirm the region when you create it: every service must be in the same region (C-55).
+One project, **`academybee-staging`** (its single environment keeps Railway's default name `production`), every service in **Southeast Asia (Singapore)** (C-55).
 
 | Service | Source | Notes |
 | --- | --- | --- |
-| `postgres` | Railway PostgreSQL 17 template | Create the `ab_*` roles once with `infra/postgres/managed/roles.sql`; the passwords live only in Railway variables |
-| `redis` | Railway Redis template | Persistent volume; `maxmemory-policy noeviction`, because BullMQ must never lose jobs |
-| `api` | Docker image `ghcr.io/egha-dev/academybee-api:<sha>` | Port 4000; health check `/api/v1/health/live`; private networking to `postgres` and `redis` |
-| `worker` | Docker image `ghcr.io/egha-dev/academybee-worker:<sha>` | No public domain |
-| `web` | Docker image of the Next.js standalone build (added in S7b) | Public; the custom domains below |
+| `postgres` | Railway PostgreSQL template, version **17** | Public TCP proxy on (`DATABASE_PUBLIC_URL`) so GitHub Actions can create roles and migrate. The app roles are created by the deploy workflow (`infra/postgres/managed/ensure-roles.sql`) |
+| `redis` | Railway Redis template | Persistent volume. Redis's default `maxmemory-policy` is `noeviction`, which BullMQ needs; don't change it |
+| `api` | `railway up` from GitHub Actions, `RAILWAY_DOCKERFILE_PATH=apps/api/Dockerfile` | Private only. Health check `/api/v1/health/live` |
+| `worker` | `railway up`, `apps/worker/Dockerfile` | Private only, no health check (Redis heartbeat) |
+| `web` | `railway up`, `apps/web/Dockerfile` (Next.js standalone) | Public: `staging.academybees.com` and `*.staging.academybees.com` on port 3000. Health check `/offline` |
 
-### Variables
+**Why `railway up`:** Railway can pull private images only on Pro, so on Hobby it builds each service from its Dockerfile in the uploaded source (C-75). The Dockerfiles therefore use no BuildKit cache mounts (Railway accepts only its own cache IDs), and they read the deployed commit from `.release-sha`, which the workflow writes before uploading.
 
-Set them with Railway's shared variables. Values never go in the repo.
+### Secrets: generate locally, paste directly (never in chat, issues or PRs)
 
-| Variable | Services | Value / source |
+`scripts/staging/secrets.sh` generates every staging secret once into `~/.academybee-staging-secrets/` (mode 700), copies one value at a time to the clipboard, and can set GitHub secrets with the `gh` CLI. Values never appear on screen.
+
+```bash
+scripts/staging/secrets.sh generate                       # once
+scripts/staging/secrets.sh copy SECRETS_MASTER_KEY        # → clipboard, then paste in Railway
+scripts/staging/secrets.sh gh DB_APP_PASSWORD STAGING_DB_APP_PASSWORD   # → GitHub secret
+scripts/staging/secrets.sh wipe                           # when everything is set
+```
+
+To rotate a value: delete its file, run `generate`, update Railway and GitHub, then redeploy. The deploy workflow re-applies database passwords on every run.
+
+### Railway variables
+
+**Shared variables** (project → **Settings → Shared Variables**):
+
+| Name | Value |
+| --- | --- |
+| `APP_ENV` | `staging` |
+| `PLATFORM_ROOT_DOMAIN` | `staging.academybees.com` |
+| `TRUSTED_PROXY_SECRET` | `copy TRUSTED_PROXY_SECRET` |
+| `SECRETS_MASTER_KEY` | `copy SECRETS_MASTER_KEY` |
+| `ANALYTICS_HASH_SALT` | `copy ANALYTICS_HASH_SALT` |
+| `DB_APP_PASSWORD` | `copy DB_APP_PASSWORD` |
+| `DB_PLATFORM_PASSWORD` | `copy DB_PLATFORM_PASSWORD` |
+
+`copy X` means `scripts/staging/secrets.sh copy X` and paste. The `ab_migrator` password is only in GitHub. The runtime services never need it.
+
+**`api`** (service → **Variables → Raw Editor**, paste, **Update Variables**):
+
+```text
+APP_ENV=${{shared.APP_ENV}}
+PORT=4000
+LOG_LEVEL=info
+DATABASE_URL=postgresql://ab_app:${{shared.DB_APP_PASSWORD}}@${{postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{postgres.PGDATABASE}}
+REDIS_URL=${{redis.REDIS_URL}}?family=0
+TRUSTED_PROXY_SECRET=${{shared.TRUSTED_PROXY_SECRET}}
+SECRETS_MASTER_KEY=${{shared.SECRETS_MASTER_KEY}}
+ANALYTICS_HASH_SALT=${{shared.ANALYTICS_HASH_SALT}}
+PLATFORM_ROOT_DOMAIN=${{shared.PLATFORM_ROOT_DOMAIN}}
+COOKIE_MODE=secure
+CUSTOM_DOMAINS_ENABLED=false
+PAYMENT_PROVIDERS=manual
+```
+
+Then add **`AUTH_SIGNING_KEYS`** as its own variable (**New Variable**, `copy AUTH_SIGNING_KEYS`). It is JSON: paste it as is, without quotes. `CONSOLE_IP_ALLOWLIST` stays unset on staging (sign-in still needs password + TOTP).
+
+**`worker`**:
+
+```text
+APP_ENV=${{shared.APP_ENV}}
+LOG_LEVEL=info
+DATABASE_URL=postgresql://ab_app:${{shared.DB_APP_PASSWORD}}@${{postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{postgres.PGDATABASE}}
+PLATFORM_DATABASE_URL=postgresql://ab_platform:${{shared.DB_PLATFORM_PASSWORD}}@${{postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{postgres.PGDATABASE}}
+REDIS_URL=${{redis.REDIS_URL}}?family=0
+SECRETS_MASTER_KEY=${{shared.SECRETS_MASTER_KEY}}
+ANALYTICS_HASH_SALT=${{shared.ANALYTICS_HASH_SALT}}
+PLATFORM_ROOT_DOMAIN=${{shared.PLATFORM_ROOT_DOMAIN}}
+WEB_PUBLIC_PROTOCOL=https
+EMAIL_FROM=AcademyBee <no-reply@mail.staging.academybees.com>
+SMTP_URL=smtps://resend:${{RESEND_API_KEY}}@smtp.resend.com:465
+```
+
+Then add **`RESEND_API_KEY`** as its own variable and paste the Resend sending-only key. `SMTP_URL` references it, so the key is stored in one place.
+
+**`web`**:
+
+```text
+APP_ENV=${{shared.APP_ENV}}
+PORT=3000
+API_ORIGIN=http://${{api.RAILWAY_PRIVATE_DOMAIN}}:4000
+TRUSTED_PROXY_SECRET=${{shared.TRUSTED_PROXY_SECRET}}
+PLATFORM_ROOT_DOMAIN=${{shared.PLATFORM_ROOT_DOMAIN}}
+CUSTOM_DOMAINS_ENABLED=false
+TRUSTED_CLIENT_IP_HEADER=x-real-ip
+NEXT_PUBLIC_APP_ENV=staging
+```
+
+Notes:
+- **Service names in references:** `${{postgres…}}`, `${{redis…}}` and `${{api…}}` are the service names. If yours differ in case (`Postgres`), match them.
+- **`?family=0`:** lets ioredis use IPv6 on Railway's private network.
+- **Client IP:** Railway's edge sets `X-Real-IP`. It is verified after the first deploy (review M1).
+- **Optional:** `SENTRY_DSN` / `POSTHOG_*`.
+
+### GitHub (repository → Settings → Secrets and variables → Actions)
+
+| Kind | Name | Value |
 | --- | --- | --- |
-| `APP_ENV` | all | `staging` |
-| `DATABASE_URL` | api, worker | `ab_app` over the private network (PgBouncer later, C-71) |
-| `PLATFORM_DATABASE_URL` | worker | `ab_platform` |
-| `REDIS_URL` | api, worker | private network URL |
-| `TRUSTED_PROXY_SECRET` | api, web | random ≥ 32 chars; the **same value** on both |
-| `AUTH_SIGNING_KEYS` | api | Ed25519 key set (C-64). Generate with `node -e "const c=require('crypto');const k=c.generateKeyPairSync('ed25519').privateKey.export({format:'jwk'});console.log(JSON.stringify({current:'s1',keys:[{...k,kid:'s1',alg:'EdDSA'}]}))"` |
-| `SECRETS_MASTER_KEY` | api, worker | `s1:` + `openssl rand -base64 32`; the **same value** on both (C-62) |
-| `COOKIE_MODE` | api | `secure` (never `insecure-dev` outside local/ci) |
-| `PLATFORM_ROOT_DOMAIN` | api, web, worker | `staging.academybees.com` (C-52) |
-| `CUSTOM_DOMAINS_ENABLED` | api, web | `false` until custom domains ship |
-| `TRUSTED_CLIENT_IP_HEADER` | web | the header Railway's edge sets with the client IP (verified in S7b; review M1) |
-| `SMTP_URL`, `EMAIL_FROM` | worker | Resend SMTP (`smtps://resend:<API key>@smtp.resend.com:465`); `AcademyBee <no-reply@mail.staging.academybees.com>` |
-| `WEB_PUBLIC_PROTOCOL` | worker | `https` |
-| `ANALYTICS_HASH_SALT` | api, worker | random ≥ 32 chars, the same on both |
-| `SENTRY_DSN`, `POSTHOG_*` | api, worker, web | optional |
-| `PAYMENT_PROVIDERS` | api | `manual` |
-| `CONSOLE_IP_ALLOWLIST` | api | the office/VPN IPs or CIDRs allowed on `console.` (C-66, C-73); empty = no allow-list. Console sign-in always needs password + TOTP |
+| Secret | `RAILWAY_TOKEN` | Railway project token (`academybee-staging`, environment `production`) |
+| Secret | `STAGING_ADMIN_DATABASE_URL` | Railway `postgres` → Variables → `DATABASE_PUBLIC_URL` (copy icon) |
+| Secret | `STAGING_DB_MIGRATOR_PASSWORD` | `gh DB_MIGRATOR_PASSWORD STAGING_DB_MIGRATOR_PASSWORD` |
+| Secret | `STAGING_DB_APP_PASSWORD` | `gh DB_APP_PASSWORD STAGING_DB_APP_PASSWORD` |
+| Secret | `STAGING_DB_PLATFORM_PASSWORD` | `gh DB_PLATFORM_PASSWORD STAGING_DB_PLATFORM_PASSWORD` |
+| Variable | `STAGING_WEB_URL` | `https://staging.academybees.com` |
+| Variable | `STAGING_ENABLED` | `true`. Set it last: from then on every merge to `main` deploys |
 
-**First console admin:** run `pnpm platform:create-admin --email <you>` in a one-off job with `APP_ENV`, `PLATFORM_DATABASE_URL`, `SECRETS_MASTER_KEY` (same as api/worker), `PLATFORM_ROOT_DOMAIN` set. It prints a 24-hour set-password link for `console.` and emails it; the first sign-in sets up an authenticator app and shows ten recovery codes once. `--new-link` issues a fresh link for existing staff.
+### Deploys (`deploy-staging.yml` → `deploy.yml`)
 
-**Deploys:** the current `deploy-staging.yml` still targets Render and Vercel (C-48). S7b re-points it at Railway and keeps the rest of the order:
-1. build the images;
-2. migrate as `ab_migrator` before deploying;
-3. deploy;
-4. run the smoke checks.
+1. **Roles:** `ensure-roles.sql` as the admin user. Idempotent; passwords are re-applied.
+2. **Migrations:** `pnpm db:deploy` as `ab_migrator` over the public endpoint, before any new code runs.
+3. **Build and deploy:** `railway up --ci` for `api`, `worker` and `web` in parallel. Railway builds each Dockerfile, and a failed build fails the job.
+4. **Smoke checks** through `STAGING_WEB_URL`:
+   - the new commit is serving;
+   - DB and Redis are ready;
+   - the shell and offline page load;
+   - `/t/*` is not reachable.
 
-S7b also updates the GitHub secrets list here (`RAILWAY_TOKEN` and the migrator URL).
-
-**Academies on staging:** dev seeds refuse to run outside local/ci. S7b adds a reviewed one-off bootstrap that creates the two gate academies and one user per role.
+**First console admin (after the first deploy):** see "Turning staging on". **Academies on staging:** dev seeds refuse to run outside local/ci. A reviewed staging bootstrap (the two gate academies and one user per role, with no shared demo password) follows in a separate S7b PR.
 
 ## DNS on Cloudflare
 
@@ -197,18 +273,19 @@ Sending from the `mail.` subdomain keeps the apex free for Email Routing, and `m
 | `PO_LOGIN` | `egha-dev` | The only account allowed to deploy production |
 | `TURBO_TEAM` | *(team slug)* | Turborepo remote cache (optional) |
 
-Secrets: `STAGING_MIGRATOR_DATABASE_URL` (`ab_migrator`, direct connection) stays. The Render and Vercel secrets are replaced by `RAILWAY_TOKEN` in S7b. `GITHUB_TOKEN` pushes the images to GHCR.
+Staging secrets are listed under "Railway staging project → GitHub". Production uses the same names with `PRODUCTION_` (and `PRODUCTION_RAILWAY_TOKEN`) from 7P.
 
 ## Turning staging on (S7b)
 
-1. Create the Railway project, Cloudflare zone and Resend domain as above. I will tell you when.
-2. S7b merges the Railway workflow, the web image and the staging bootstrap.
-3. Add the secrets and set `STAGING_ENABLED=true`.
-4. Run **Deploy staging** once by hand and watch the smoke job.
+1. Railway project, Cloudflare records and Resend domain: done 2026-10-04.
+2. Merge the S7b PR (web image, Railway workflow, roles script).
+3. Generate the secrets, then fill in the Railway variables, the health-check paths and the GitHub secrets/variables above.
+4. Set `STAGING_ENABLED=true` and run **Actions → Deploy staging → Run workflow** once; watch the smoke job.
 5. Check on a phone:
-   - `https://demo-a.staging.academybees.com` shows the academy's sign-in page with a valid certificate;
-   - `https://nope.staging.academybees.com` shows "We couldn't find this academy".
-6. Re-measure the RLS overhead in the same region (C-55).
+   - `https://demo-a.staging.academybees.com` answers with a valid certificate (until the staging bootstrap, "We couldn't find this academy" is the expected page);
+   - `https://staging.academybees.com/api/v1/health/ready` reports `ok`.
+6. First console admin: comes with the staging bootstrap PR, which runs `platform:create-admin` where `PLATFORM_DATABASE_URL` is available. Until then the console has no staff.
+7. Re-measure the RLS overhead in the same region (C-55).
 
 ## Local Docker check
 
