@@ -47,6 +47,7 @@ jobs:
     with:
       prefix: PRODUCTION
       sha: ${{ needs.guard.outputs.sha }}
-      image_tag: production
       web_url_var: PRODUCTION_WEB_URL
+      # Production on Railway Pro (7P) is set up then (C-71, C-76); migrations run here first.
+      migrate: true
     secrets: inherit

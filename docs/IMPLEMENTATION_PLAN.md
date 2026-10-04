@@ -336,7 +336,7 @@ Phase 2 is **not** started.
 | S5 | `p2/email-invites` | 2.13 email (worker), 2.14 invitations, reset, team API (C-67) | ✅ #37 |
 | S6 | `p2/web-auth` | 2.15 web auth plumbing (cookie spike), 2.16 Login, forgot/reset, invite accept (C-68; flag `p2-role-homes` added, `p1-tenant-home` removed) | ✅ #38 |
 | S7 | `p2/web-shell` | 2.17 signed-in shell (flag `p2-role-homes`), 2.18 Team page (C-72) | ✅ #40 |
-| S7b | `p2/staging` | staging on Railway + Cloudflare DNS (C-69, C-75): web image, Railway deploy, roles; then the staging bootstrap | 🟨 |
+| S7b | `p2/staging` | staging on Railway + Cloudflare DNS (C-69, C-75, C-76): web image, roles, CI migrations + GitHub-connected Railway services; then the staging bootstrap | 🟨 |
 | S8 | `p2/hub-console` | 2.19 HUB sessions + handoff, 2.20 console + mandatory TOTP (flag `p2-console-home`; C-73) | ✅ #41 |
 | S9 | `p2/account-security` | 2.21 TOTP 2FA, 2.22 devices & sessions, alerts | ⬜ |
 | S10 | `p2/hardening-e2e` | 2.23 Phase 0 idempotency/logging follow-ups, 2.24 E2E + docs | ⬜ |

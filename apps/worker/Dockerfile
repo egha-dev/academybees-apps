@@ -26,8 +26,8 @@ RUN pnpm --filter @academybee/worker deploy --prod --legacy /prod/worker
 
 # 3. Runtime: no build tools, non-root.
 FROM ${NODE_IMAGE} AS runner
-# The deployed commit: a build arg (docker build), else `.release-sha` written by the deploy
-# workflow before `railway up` (C-75), else "dev".
+# The deployed commit: a build arg (docker build), else Railway's RAILWAY_GIT_COMMIT_SHA at runtime
+# (GitHub deploys, C-76), else `.release-sha`, else "dev".
 ARG RELEASE_SHA=
 ENV RELEASE_SHA=${RELEASE_SHA}
 # tini as PID 1: forwards SIGTERM and reaps children so graceful shutdown works on deploys.
@@ -39,4 +39,4 @@ COPY --from=builder --chown=node:node /repo/.release-sha ./RELEASE_SHA
 USER node
 # No HTTP port: liveness is the heartbeat key in Redis (worker:heartbeat).
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["/bin/sh", "-c", "export RELEASE_SHA=\"${RELEASE_SHA:-$(cat RELEASE_SHA)}\"; exec node dist/main.js"]
+CMD ["/bin/sh", "-c", "export RELEASE_SHA=\"${RELEASE_SHA:-${RAILWAY_GIT_COMMIT_SHA:-$(cat RELEASE_SHA)}}\"; exec node dist/main.js"]
