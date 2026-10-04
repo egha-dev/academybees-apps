@@ -52,7 +52,10 @@ case "${1:-}" in
     echo "Copied $2 to the clipboard. Paste it, then copy something else to clear it."
     ;;
   gh)
-    [ -s "$DIR/${2:-}" ] && [ -n "${3:-}" ] || { echo "Usage: $0 gh NAME SECRET_NAME" >&2; exit 1; }
+    if [ ! -s "$DIR/${2:-}" ] || [ -z "${3:-}" ]; then
+      echo "Usage: $0 gh NAME SECRET_NAME" >&2
+      exit 1
+    fi
     gh secret set "$3" --repo egha-dev/academybees-apps < "$DIR/$2"
     ;;
   list) ls -1 "$DIR" ;;
