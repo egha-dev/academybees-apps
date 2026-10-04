@@ -56,6 +56,8 @@ To rotate a value: delete its file, run `generate`, update Railway and GitHub, t
 
 ### Railway variables
 
+Step-by-step checklist with every Raw Editor block: [`staging-variables.md`](staging-variables.md).
+
 **Shared variables** (project → **Settings → Shared Variables**):
 
 | Name | Value |
