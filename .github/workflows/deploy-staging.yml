@@ -1,7 +1,9 @@
 name: Deploy staging
 
 # Every merge to main deploys to staging once CI is green (ADR-041), only while the repository
-# variable STAGING_ENABLED is 'true' (C-48). Accounts and secrets: docs/runbooks/environments.md.
+# variable STAGING_ENABLED is 'true'. Railway builds and deploys from GitHub itself after CI (which
+# ends with the staging migrations); this workflow waits for the commit to serve and smoke-checks it
+# (C-76). A manual run re-applies migrations first. Setup: docs/runbooks/environments.md.
 on:
   workflow_run:
     workflows: [CI]
@@ -15,7 +17,6 @@ concurrency:
 
 permissions:
   contents: read
-  packages: read
 
 jobs:
   disabled:
@@ -33,6 +34,6 @@ jobs:
     with:
       prefix: STAGING
       sha: ${{ github.event.workflow_run.head_sha || github.sha }}
-      image_tag: staging
       web_url_var: STAGING_WEB_URL
+      migrate: ${{ github.event_name == 'workflow_dispatch' }}
     secrets: inherit

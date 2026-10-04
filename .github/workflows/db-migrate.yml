@@ -1,0 +1,64 @@
+name: Database migrate (reusable)
+
+# Roles + migrations on a managed PostgreSQL (C-75, C-76): the idempotent role script as the
+# provider's admin user, then `prisma migrate deploy` + RLS SQL as ab_migrator, over the database's
+# public endpoint. Secrets are named <PREFIX>_* (see docs/runbooks/environments.md); values never
+# appear in logs.
+on:
+  workflow_call:
+    inputs:
+      prefix:
+        description: STAGING or PRODUCTION
+        type: string
+        required: true
+      sha:
+        description: Commit whose migrations to apply (default the calling commit)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: roles + migrate (ab_migrator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: ensure database roles (idempotent, as the provider's admin user)
+        env:
+          ADMIN_DATABASE_URL: ${{ secrets[format('{0}_ADMIN_DATABASE_URL', inputs.prefix)] }}
+          MIGRATOR_PW: ${{ secrets[format('{0}_DB_MIGRATOR_PASSWORD', inputs.prefix)] }}
+          APP_PW: ${{ secrets[format('{0}_DB_APP_PASSWORD', inputs.prefix)] }}
+          PLATFORM_PW: ${{ secrets[format('{0}_DB_PLATFORM_PASSWORD', inputs.prefix)] }}
+        run: |
+          for v in ADMIN_DATABASE_URL MIGRATOR_PW APP_PW PLATFORM_PW; do
+            [ -n "${!v}" ] || { echo "::error::Missing secret for $v (docs/runbooks/environments.md)"; exit 1; }
+          done
+          psql "$ADMIN_DATABASE_URL" -q -v ON_ERROR_STOP=1 \
+            -v migrator_password="$MIGRATOR_PW" -v app_password="$APP_PW" \
+            -v platform_password="$PLATFORM_PW" \
+            -f infra/postgres/managed/ensure-roles.sql
+      # Expand → migrate → contract: migrations finish before Railway starts the new code (C-76).
+      - name: prisma migrate deploy + grants
+        env:
+          ADMIN_DATABASE_URL: ${{ secrets[format('{0}_ADMIN_DATABASE_URL', inputs.prefix)] }}
+          MIGRATOR_PW: ${{ secrets[format('{0}_DB_MIGRATOR_PASSWORD', inputs.prefix)] }}
+        run: |
+          # The same public endpoint as the admin URL, as ab_migrator.
+          MIGRATOR_DATABASE_URL=$(node -e '
+            const u = new URL(process.env.ADMIN_DATABASE_URL);
+            u.username = "ab_migrator";
+            u.password = process.env.MIGRATOR_PW;
+            process.stdout.write(u.toString());')
+          echo "::add-mask::$MIGRATOR_DATABASE_URL"
+          MIGRATOR_DATABASE_URL="$MIGRATOR_DATABASE_URL" pnpm db:deploy

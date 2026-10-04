@@ -24,15 +24,19 @@ COPY --from=pruner /repo/out/full/ .
 # Inlined into browser code at build time (Railway passes service variables as build args).
 ARG NEXT_PUBLIC_APP_ENV=
 ARG NEXT_PUBLIC_SENTRY_DSN=
+# The commit Railway is building (GitHub deploys, C-76): the service worker's offline revision.
+ARG RAILWAY_GIT_COMMIT_SHA=
 ENV NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV} NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN} \
     NEXT_OUTPUT=standalone
-RUN RELEASE_SHA="$(cat .release-sha)" pnpm turbo run build --filter=@academybee/web
+RUN RELEASE_SHA="${RAILWAY_GIT_COMMIT_SHA:-$(cat .release-sha)}" pnpm turbo run build --filter=@academybee/web
 
 # 3. Runtime: the traced server only, non-root.
 FROM ${NODE_IMAGE} AS runner
 RUN apk add --no-cache tini
 # HOSTNAME=:: listens on IPv4 and IPv6 (Railway's edge and private network).
 ENV NODE_ENV=production PORT=3000 HOSTNAME=:: NEXT_TELEMETRY_DISABLED=1
+# The deployed commit: a build arg (docker build), else Railway's RAILWAY_GIT_COMMIT_SHA at runtime
+# (GitHub deploys, C-76), else `.release-sha`, else "dev".
 ARG RELEASE_SHA=
 ENV RELEASE_SHA=${RELEASE_SHA}
 WORKDIR /app
@@ -44,4 +48,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
   CMD wget -q -O /dev/null "http://127.0.0.1:${PORT}/offline" || exit 1
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["/bin/sh", "-c", "export RELEASE_SHA=\"${RELEASE_SHA:-$(cat RELEASE_SHA)}\"; exec node apps/web/server.js"]
+CMD ["/bin/sh", "-c", "export RELEASE_SHA=\"${RELEASE_SHA:-${RAILWAY_GIT_COMMIT_SHA:-$(cat RELEASE_SHA)}}\"; exec node apps/web/server.js"]

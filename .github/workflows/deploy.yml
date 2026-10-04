@@ -1,9 +1,9 @@
-name: Deploy (reusable)
+name: Deploy checks (reusable)
 
-# Shared deploy steps for staging and production on Railway (C-69, C-75): roles + migrations as
-# ab_migrator → `railway up` per service (Railway builds each Dockerfile) → smoke checks.
-# Secrets are named <PREFIX>_* (STAGING_* / PRODUCTION_*), except the staging project token,
-# which is RAILWAY_TOKEN — see docs/runbooks/environments.md. Values never appear in logs.
+# Railway builds and deploys each service itself from the GitHub repo once every check on the
+# commit has passed ("Wait for CI", C-76). Migrations run as the last CI job on main, so they finish
+# before Railway starts the new code. This workflow optionally (re)applies migrations and then
+# waits for the commit to serve and runs the smoke checks.
 on:
   workflow_call:
     inputs:
@@ -12,116 +12,49 @@ on:
         type: string
         required: true
       sha:
-        description: Commit to deploy
+        description: Commit that should be serving
         type: string
         required: true
-      image_tag:
-        description: Kept for the callers; Railway builds from source, so it is unused (C-75)
-        type: string
-        required: false
       web_url_var:
         description: Name of the repository variable holding the public web URL
         type: string
         required: true
+      migrate:
+        description: Apply roles + migrations first (manual runs; CI already did it on main)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
-env:
-  TURBO_TELEMETRY_DISABLED: 1
-  NEXT_TELEMETRY_DISABLED: 1
-  RAILWAY_CLI_VERSION: 5.63.1
-
 jobs:
   migrate:
-    name: roles + migrate (ab_migrator)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.sha }}
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: ensure database roles (idempotent, as the provider's admin user)
-        env:
-          ADMIN_DATABASE_URL: ${{ secrets[format('{0}_ADMIN_DATABASE_URL', inputs.prefix)] }}
-          MIGRATOR_PW: ${{ secrets[format('{0}_DB_MIGRATOR_PASSWORD', inputs.prefix)] }}
-          APP_PW: ${{ secrets[format('{0}_DB_APP_PASSWORD', inputs.prefix)] }}
-          PLATFORM_PW: ${{ secrets[format('{0}_DB_PLATFORM_PASSWORD', inputs.prefix)] }}
-        run: |
-          for v in ADMIN_DATABASE_URL MIGRATOR_PW APP_PW PLATFORM_PW; do
-            [ -n "${!v}" ] || { echo "::error::Missing secret for $v (docs/runbooks/environments.md)"; exit 1; }
-          done
-          psql "$ADMIN_DATABASE_URL" -q -v ON_ERROR_STOP=1 \
-            -v migrator_password="$MIGRATOR_PW" -v app_password="$APP_PW" \
-            -v platform_password="$PLATFORM_PW" \
-            -f infra/postgres/managed/ensure-roles.sql
-      # Expand → migrate → contract: migrations run before new code is deployed.
-      - name: prisma migrate deploy + grants
-        env:
-          ADMIN_DATABASE_URL: ${{ secrets[format('{0}_ADMIN_DATABASE_URL', inputs.prefix)] }}
-          MIGRATOR_PW: ${{ secrets[format('{0}_DB_MIGRATOR_PASSWORD', inputs.prefix)] }}
-        run: |
-          # The same public endpoint as the admin URL, as ab_migrator.
-          MIGRATOR_DATABASE_URL=$(node -e '
-            const u = new URL(process.env.ADMIN_DATABASE_URL);
-            u.username = "ab_migrator";
-            u.password = process.env.MIGRATOR_PW;
-            process.stdout.write(u.toString());')
-          echo "::add-mask::$MIGRATOR_DATABASE_URL"
-          MIGRATOR_DATABASE_URL="$MIGRATOR_DATABASE_URL" pnpm db:deploy
-
-  deploy:
-    name: deploy ${{ matrix.service }}
-    needs: migrate
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        service: [api, worker, web]
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.sha }}
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-      - run: npm install --global "@railway/cli@${RAILWAY_CLI_VERSION}"
-      # Railway builds from the uploaded source (Hobby can't pull private images, C-75); the image
-      # reads the commit from this file, and /api/v1/health/live reports it.
-      - run: echo "${{ inputs.sha }}" > .release-sha
-      - name: railway up (build logs; fails if the build fails)
-        env:
-          RAILWAY_TOKEN: ${{ inputs.prefix == 'STAGING' && secrets.RAILWAY_TOKEN || secrets.PRODUCTION_RAILWAY_TOKEN }}
-          SERVICE: ${{ matrix.service }}
-        run: |
-          [ -n "$RAILWAY_TOKEN" ] || { echo "::error::Missing Railway project token"; exit 1; }
-          railway up --ci --service "$SERVICE"
+    if: inputs.migrate
+    uses: ./.github/workflows/db-migrate.yml
+    with:
+      prefix: ${{ inputs.prefix }}
+      sha: ${{ inputs.sha }}
+    secrets: inherit
 
   smoke:
     name: smoke check
-    needs: deploy
+    needs: migrate
+    if: always() && (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 35
     env:
       WEB_URL: ${{ vars[inputs.web_url_var] }}
       SHA: ${{ inputs.sha }}
     steps:
-      - name: wait for the new release behind the web origin
+      - name: wait for the commit behind the web origin (Railway builds after CI)
         run: |
           [ -n "$WEB_URL" ] || { echo "::error::Set the repository variable ${{ inputs.web_url_var }}"; exit 1; }
-          for _ in $(seq 1 60); do
+          for _ in $(seq 1 180); do
             release=$(curl -fsS "$WEB_URL/api/v1/health/live" | jq -r .release || true)
             [ "$release" = "$SHA" ] && break
             echo "waiting for release $SHA (serving: ${release:-none})"; sleep 10
           done
-          [ "$release" = "$SHA" ] || { echo "::error::$SHA is not serving after 10 minutes"; exit 1; }
+          [ "$release" = "$SHA" ] || { echo "::error::$SHA is not serving after 30 minutes"; exit 1; }
       - name: readiness (DB + Redis) through the web origin
         run: curl -fsS "$WEB_URL/api/v1/health/ready" | tee /dev/stderr | jq -e '.status == "ok"'
       - name: web shell and offline page

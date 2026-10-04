@@ -26,8 +26,8 @@ RUN pnpm --filter @academybee/api deploy --prod --legacy /prod/api
 
 # 3. Runtime: no build tools, non-root.
 FROM ${NODE_IMAGE} AS runner
-# The deployed commit: a build arg (docker build), else `.release-sha` written by the deploy
-# workflow before `railway up` (C-75), else "dev".
+# The deployed commit: a build arg (docker build), else Railway's RAILWAY_GIT_COMMIT_SHA at runtime
+# (GitHub deploys, C-76), else `.release-sha`, else "dev".
 ARG RELEASE_SHA=
 ENV RELEASE_SHA=${RELEASE_SHA}
 # tini as PID 1: forwards SIGTERM and reaps children so graceful shutdown works on deploys.
@@ -41,4 +41,4 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
   CMD wget -q -O /dev/null "http://127.0.0.1:${PORT}/api/v1/health/live" || exit 1
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["/bin/sh", "-c", "export RELEASE_SHA=\"${RELEASE_SHA:-$(cat RELEASE_SHA)}\"; exec node dist/main.js"]
+CMD ["/bin/sh", "-c", "export RELEASE_SHA=\"${RELEASE_SHA:-${RAILWAY_GIT_COMMIT_SHA:-$(cat RELEASE_SHA)}}\"; exec node dist/main.js"]
