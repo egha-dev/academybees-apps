@@ -149,15 +149,3 @@ jobs:
           path: e2e/artifacts/
           retention-days: 14
           if-no-files-found: ignore
-
-  # Staging migrations as the last CI job on main (C-76). Railway's "Wait for CI" deploys a commit
-  # only after every check on it has passed, so this always finishes before new code starts, and a
-  # failed migration means no deploy. Skipped on pull requests, nightly runs and while staging is off.
-  migrate-staging:
-    name: migrate staging
-    needs: [verify, integration, build, e2e]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.STAGING_ENABLED == 'true'
-    uses: ./.github/workflows/db-migrate.yml
-    with:
-      prefix: STAGING
-    secrets: inherit

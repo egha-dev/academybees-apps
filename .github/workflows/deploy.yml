@@ -1,9 +1,10 @@
-name: Deploy checks (reusable)
+name: Deploy (reusable)
 
-# Railway builds and deploys each service itself from the GitHub repo once every check on the
-# commit has passed ("Wait for CI", C-76). Migrations run as the last CI job on main, so they finish
-# before Railway starts the new code. This workflow optionally (re)applies migrations and then
-# waits for the commit to serve and runs the smoke checks.
+# Staging/production deploys on Railway (C-75, C-77): roles + migrations as ab_migrator →
+# `railway up` per service (Railway builds each Dockerfile from the uploaded source) → smoke checks.
+# The Railway project token is scoped to ONE environment (staging: `academybees-staging`), so the
+# CLI needs no project/environment flags. Secrets: docs/runbooks/environments.md; values never
+# appear in logs.
 on:
   workflow_call:
     inputs:
@@ -12,49 +13,75 @@ on:
         type: string
         required: true
       sha:
-        description: Commit that should be serving
+        description: Commit to deploy
         type: string
         required: true
       web_url_var:
         description: Name of the repository variable holding the public web URL
         type: string
         required: true
-      migrate:
-        description: Apply roles + migrations first (manual runs; CI already did it on main)
-        type: boolean
-        default: false
 
 permissions:
   contents: read
 
+env:
+  RAILWAY_CLI_VERSION: 5.63.1
+
 jobs:
   migrate:
-    if: inputs.migrate
     uses: ./.github/workflows/db-migrate.yml
     with:
       prefix: ${{ inputs.prefix }}
       sha: ${{ inputs.sha }}
     secrets: inherit
 
+  deploy:
+    name: deploy ${{ matrix.service }}
+    needs: migrate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [api, worker, web]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: npm install --global "@railway/cli@${RAILWAY_CLI_VERSION}"
+      # The image reads the commit from this file; /api/v1/health/live reports it.
+      - run: echo "${{ inputs.sha }}" > .release-sha
+      - name: railway up (build logs; fails if the build fails)
+        env:
+          RAILWAY_TOKEN: ${{ inputs.prefix == 'STAGING' && secrets.RAILWAY_TOKEN || secrets.PRODUCTION_RAILWAY_TOKEN }}
+          SERVICE: ${{ matrix.service }}
+        run: |
+          [ -n "$RAILWAY_TOKEN" ] || { echo "::error::Missing the Railway project token secret"; exit 1; }
+          # Where this token deploys — project, environment and services, names and IDs only.
+          railway status --json | jq -c '[.. | objects | select(has("id") and has("name")) | {id, name}] | unique'
+          railway up --ci --service "$SERVICE"
+
   smoke:
     name: smoke check
-    needs: migrate
-    if: always() && (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
+    needs: deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 15
     env:
       WEB_URL: ${{ vars[inputs.web_url_var] }}
       SHA: ${{ inputs.sha }}
     steps:
-      - name: wait for the commit behind the web origin (Railway builds after CI)
+      - name: wait for the new release behind the web origin
         run: |
           [ -n "$WEB_URL" ] || { echo "::error::Set the repository variable ${{ inputs.web_url_var }}"; exit 1; }
-          for _ in $(seq 1 180); do
+          for _ in $(seq 1 60); do
             release=$(curl -fsS "$WEB_URL/api/v1/health/live" | jq -r .release || true)
             [ "$release" = "$SHA" ] && break
             echo "waiting for release $SHA (serving: ${release:-none})"; sleep 10
           done
-          [ "$release" = "$SHA" ] || { echo "::error::$SHA is not serving after 30 minutes"; exit 1; }
+          [ "$release" = "$SHA" ] || { echo "::error::$SHA is not serving after 10 minutes"; exit 1; }
       - name: readiness (DB + Redis) through the web origin
         run: curl -fsS "$WEB_URL/api/v1/health/ready" | tee /dev/stderr | jq -e '.status == "ok"'
       - name: web shell and offline page
