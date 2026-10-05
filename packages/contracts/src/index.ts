@@ -1,5 +1,6 @@
 export * from './analytics/index.js';
 export * from './errors.js';
+export * from './config.js';
 export * from './flags.js';
 export * from './ids.js';
 export * from './jobs.js';

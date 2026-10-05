@@ -1,4 +1,8 @@
-import { AppEnvSchema } from '@academybee/contracts';
+import {
+  AppEnvSchema,
+  CONNECTION_URL_VARIABLES,
+  describeConnectionUrl,
+} from '@academybee/contracts';
 import { z } from 'zod';
 
 /** Worker configuration, validated at boot; refuses to start when invalid. */
@@ -62,7 +66,14 @@ export function loadWorkerConfig(env: NodeJS.ProcessEnv = process.env): WorkerCo
   const parsed = WorkerConfigSchema.safeParse(env);
   if (!parsed.success) {
     throw new InvalidWorkerConfigError(
-      parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`),
+      parsed.error.issues.map((i) => {
+        const name = i.path.join('.') || '(root)';
+        // Connection URLs get a redacted shape (password as a length only), never the value (C-77).
+        const shape = (CONNECTION_URL_VARIABLES as readonly string[]).includes(name)
+          ? ` — got ${describeConnectionUrl(env[name])}`
+          : '';
+        return `${name}: ${i.message}${shape}`;
+      }),
     );
   }
   return parsed.data;
