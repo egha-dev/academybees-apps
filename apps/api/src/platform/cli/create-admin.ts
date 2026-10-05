@@ -42,60 +42,66 @@ export async function createAdmin(
   const db = createPlatformClient(cfg.PLATFORM_DATABASE_URL, { maxConnections: 1 });
   try {
     const token = generateToken();
-    const result = await db.$transaction(async (tx) => {
-      const existing = await tx.user.findUnique({
-        where: { email },
-        select: { id: true, status: true, platformStaff: { select: { status: true } } },
-      });
-      if (existing?.status === 'DISABLED') throw new Error('this user is disabled');
-      if (existing?.platformStaff && !input.newLink)
-        throw new Error(
-          'already platform staff — pass --new-link to issue a new set-password link',
-        );
-      const userId = existing?.id ?? newId();
-      if (!existing) await tx.user.create({ data: { id: userId, email, name } });
-      await tx.platformStaff.upsert({
-        where: { userId },
-        create: { userId, platformRole: 'SUPER_ADMIN' },
-        update: {},
-      });
-      // Only the newest link works.
-      await tx.passwordResetToken.updateMany({
-        where: { userId, usedAt: null },
-        data: { usedAt: new Date() },
-      });
-      await tx.passwordResetToken.create({
-        data: {
-          id: newId(),
-          userId,
-          tokenHash: hashToken(token),
-          expiresAt: new Date(Date.now() + LINK_TTL_MS),
-        },
-      });
-      const email_ = EmailRequestSchema.parse({
-        template: 'platform_admin_invite',
-        to: email,
-        locale: 'en-IN',
-        host: { kind: 'console' },
-        vars: {},
-        link: { path: '/set-password/{token}', sealedToken: encryptSecret(token, keys) },
-      });
-      await tx.outboxEvent.create({
-        data: { id: newId(), tenantId: null, type: EMAIL_OUTBOX_TYPE, payload: email_ },
-      });
-      await tx.auditLog.createMany({
-        data: {
-          id: newId(),
-          tenantId: null,
-          actorType: 'SYSTEM',
-          action: existing?.platformStaff ? 'platform.staff_link_issued' : 'platform.staff_created',
-          entityType: 'User',
-          entityId: userId,
-          metadata: { role: 'SUPER_ADMIN', via: 'cli', newUser: !existing },
-        },
-      });
-      return { userId, created: !existing };
-    });
+    const result = await db.$transaction(
+      async (tx) => {
+        const existing = await tx.user.findUnique({
+          where: { email },
+          select: { id: true, status: true, platformStaff: { select: { status: true } } },
+        });
+        if (existing?.status === 'DISABLED') throw new Error('this user is disabled');
+        if (existing?.platformStaff && !input.newLink)
+          throw new Error(
+            'already platform staff — pass --new-link to issue a new set-password link',
+          );
+        const userId = existing?.id ?? newId();
+        if (!existing) await tx.user.create({ data: { id: userId, email, name } });
+        await tx.platformStaff.upsert({
+          where: { userId },
+          create: { userId, platformRole: 'SUPER_ADMIN' },
+          update: {},
+        });
+        // Only the newest link works.
+        await tx.passwordResetToken.updateMany({
+          where: { userId, usedAt: null },
+          data: { usedAt: new Date() },
+        });
+        await tx.passwordResetToken.create({
+          data: {
+            id: newId(),
+            userId,
+            tokenHash: hashToken(token),
+            expiresAt: new Date(Date.now() + LINK_TTL_MS),
+          },
+        });
+        const email_ = EmailRequestSchema.parse({
+          template: 'platform_admin_invite',
+          to: email,
+          locale: 'en-IN',
+          host: { kind: 'console' },
+          vars: {},
+          link: { path: '/set-password/{token}', sealedToken: encryptSecret(token, keys) },
+        });
+        await tx.outboxEvent.create({
+          data: { id: newId(), tenantId: null, type: EMAIL_OUTBOX_TYPE, payload: email_ },
+        });
+        await tx.auditLog.createMany({
+          data: {
+            id: newId(),
+            tenantId: null,
+            actorType: 'SYSTEM',
+            action: existing?.platformStaff
+              ? 'platform.staff_link_issued'
+              : 'platform.staff_created',
+            entityType: 'User',
+            entityId: userId,
+            metadata: { role: 'SUPER_ADMIN', via: 'cli', newUser: !existing },
+          },
+        });
+        return { userId, created: !existing };
+        // A remote database (staging from GitHub's runners) needs more than Prisma's default 5 s.
+      },
+      { timeout: 60_000, maxWait: 15_000 },
+    );
     const link = `${protocol}://console.${root}${port ? `:${port}` : ''}/set-password/${token}`;
     return { ...result, link };
   } finally {
