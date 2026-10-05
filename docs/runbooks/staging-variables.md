@@ -112,7 +112,6 @@ ANALYTICS_HASH_SALT=${{shared.ANALYTICS_HASH_SALT}}
 PLATFORM_ROOT_DOMAIN=${{shared.PLATFORM_ROOT_DOMAIN}}
 WEB_PUBLIC_PROTOCOL=https
 EMAIL_FROM=AcademyBee <no-reply@mail.staging.academybees.com>
-SMTP_URL=smtps://resend:${{RESEND_API_KEY}}@smtp.resend.com:465
 ```
 
 Then add the Resend key as a separate variable:
@@ -122,7 +121,7 @@ Then add the Resend key as a separate variable:
 3. Value: paste your Resend **sending-only** API key (from Resend → API Keys).
 4. Click **Add**.
 
-`SMTP_URL` above references `RESEND_API_KEY`, so the key is stored in one place only.
+The worker sends through **Resend's HTTPS API** whenever `RESEND_API_KEY` is set. Railway blocks outbound SMTP ports below the Pro plan (C-79), so don't set `SMTP_URL` on staging; if it exists from an earlier version of this checklist, you can delete it.
 
 ### C3. `web`
 

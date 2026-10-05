@@ -13,7 +13,7 @@ export class SmtpEmailAdapter implements EmailPort {
     this.transport = createTransport(url);
   }
 
-  async send(email: OutgoingEmail): Promise<void> {
+  async send({ idempotencyKey: _key, ...email }: OutgoingEmail): Promise<void> {
     await this.transport.sendMail({ from: this.from, ...email });
   }
 

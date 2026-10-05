@@ -47,3 +47,26 @@ describe('loadWorkerConfig', () => {
     expect(ok.WEB_PUBLIC_PROTOCOL).toBe('https');
   });
 });
+
+describe('email transport (C-79)', () => {
+  it('accepts Resend over HTTPS on staging instead of SMTP', () => {
+    const cfg = loadWorkerConfig({
+      ...base,
+      APP_ENV: 'staging',
+      WEB_PUBLIC_PROTOCOL: 'https',
+      RESEND_API_KEY: 're_abc_123',
+    });
+    expect(cfg.RESEND_API_KEY).toBe('re_abc_123');
+  });
+
+  it('rejects a malformed key without echoing it', () => {
+    expect(() => loadWorkerConfig({ ...base, RESEND_API_KEY: 'sk-not-resend' })).toThrow(
+      /RESEND_API_KEY: must be a Resend API key/,
+    );
+    try {
+      loadWorkerConfig({ ...base, RESEND_API_KEY: 'sk-not-resend' });
+    } catch (e) {
+      expect((e as Error).message).not.toContain('sk-not-resend');
+    }
+  });
+});
