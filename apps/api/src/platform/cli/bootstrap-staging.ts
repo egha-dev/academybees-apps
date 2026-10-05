@@ -18,6 +18,12 @@ import { z } from 'zod';
 import { createAdmin } from './create-admin.js';
 
 const LINK_TTL_MS = 72 * 3600 * 1000;
+/**
+ * The bootstrap runs from GitHub's runners (often in the US) against the database in Singapore, so
+ * each query is a ~200 ms round trip. An academy with its 7 roles is ~25 queries in one transaction,
+ * well past Prisma's default 5 s; allow a minute (C-78).
+ */
+export const BOOTSTRAP_TX = { timeout: 60_000, maxWait: 15_000 } as const;
 
 export type StagingAcademy = {
   slug: string;
@@ -171,7 +177,7 @@ async function ensureAcademy(
     }
     const roles = await ensureSystemRoles(tx, tenantId, newId);
     return { created: !existing, tenantId, roles };
-  });
+  }, BOOTSTRAP_TX);
 }
 
 async function ensureUser(
@@ -248,7 +254,7 @@ async function ensureUser(
       academies: u.memberships.map((m) => m.slug),
     });
     return 'link-emailed';
-  });
+  }, BOOTSTRAP_TX);
 }
 
 async function ensureConsoleAdmin(
