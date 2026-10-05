@@ -27,24 +27,25 @@ Decisions:
 | Marketing site | in the web app | in the web app | — | Cloudflare Pages, if built (C-69) |
 | Railway plan | — | — | Hobby | **Pro** (before the first real academy, C-71) |
 
-## Railway staging project (S7b, C-75)
+## Railway staging project (S7b, C-75, C-77)
 
-One project, **`academybees-staging`** (ID `ec0b3a3d-3b6c-4381-a2db-0abdf4b748f2`; its single environment keeps Railway's default name `production`), every service in **Southeast Asia (Singapore)** (C-55).
+One project, **`academybees-staging`** (ID `ec0b3a3d-3b6c-4381-a2db-0abdf4b748f2`), with **exactly one environment, also named `academybees-staging`** (ID `e6bc64a9-…`). Every service is in **Southeast Asia (Singapore)** (C-55). Keep it to one environment: a second one (the default `production`) once received every deploy while all the setup lived in the other (C-77).
 
 | Service | Source | Notes |
 | --- | --- | --- |
 | `postgres` | Railway PostgreSQL template, version **17** | Public TCP proxy on (`DATABASE_PUBLIC_URL`) so GitHub Actions can create roles and migrate. The app roles are created by the deploy workflow (`infra/postgres/managed/ensure-roles.sql`) |
 | `redis` | Railway Redis template | Persistent volume. Redis's default `maxmemory-policy` is `noeviction`, which BullMQ needs; don't change it |
-| `api` | GitHub repo `egha-dev/academybees-apps`, branch `main`, **Wait for CI**; `RAILWAY_DOCKERFILE_PATH=apps/api/Dockerfile` | Private only. Health check `/api/v1/health/live` |
-| `worker` | Same repo and branch, **Wait for CI**; `apps/worker/Dockerfile` | Private only, no health check (Redis heartbeat) |
-| `web` | Same repo and branch, **Wait for CI**; `apps/web/Dockerfile` (Next.js standalone) | Public: `staging.academybees.com` and `*.staging.academybees.com` on port 3000. Health check `/offline` |
+| `api` | `railway up` from GitHub Actions (no source connected); `RAILWAY_DOCKERFILE_PATH=apps/api/Dockerfile` | Private only. Health check `/api/v1/health/live` |
+| `worker` | `railway up`; `apps/worker/Dockerfile` | Private only, no health check (Redis heartbeat) |
+| `web` | `railway up`; `apps/web/Dockerfile` (Next.js standalone) | Public: `staging.academybees.com` and `*.staging.academybees.com` on port 3000. Health check `/offline` |
 
-**How deploys work (C-76):**
-- Railway builds each service from its Dockerfile in the GitHub repo, once **every check on the `main` commit has passed** (Wait for CI).
-- The last CI job on `main` applies the staging migrations, so new code never starts before its migrations, and a failed migration means no deploy.
-- The Dockerfiles use no BuildKit cache mounts (Railway accepts only its own cache IDs).
-- The running commit comes from Railway's `RAILWAY_GIT_COMMIT_SHA`.
-- `railway up` from Actions was abandoned: Railway answered 404 to every upload, with project and account tokens alike (C-75, C-76).
+**How deploys work (C-77):**
+- After CI passes on `main`, **Deploy staging** first applies roles and migrations, then runs `railway up` for each service with the **project token `RAILWAY_TOKEN`**.
+- That token is scoped to the `academybees-staging` environment, so the CLI needs no project or environment flags.
+- Railway builds each Dockerfile from the uploaded source (Hobby can't pull private images) and swaps the service over once its health check passes.
+- **Uploads:** `.railwayignore` decides what is uploaded. It uses gitignore syntax, where a bare name matches at **any** depth, so root-only folders are anchored (`/docs`).
+- **Dockerfiles:** no BuildKit cache mounts (Railway accepts only its own cache IDs). The running commit comes from `.release-sha`, which the workflow writes.
+- **When a deploy fails:** the job prints the service's Railway deploy log. Startup config errors name the variable. For connection URLs they show a **redacted shape** (password as a length, empty parts and unresolved `${{…}}` references flagged), never the value.
 
 ### Secrets: generate locally, paste directly (never in chat, issues or PRs)
 
@@ -137,6 +138,7 @@ Notes:
 
 | Kind | Name | Value |
 | --- | --- | --- |
+| Secret | `RAILWAY_TOKEN` | Railway **project** token for environment `academybees-staging` (project → Settings → Tokens) |
 | Secret | `STAGING_ADMIN_DATABASE_URL` | Railway `postgres` → Variables → `DATABASE_PUBLIC_URL` (copy icon) |
 | Secret | `STAGING_DB_MIGRATOR_PASSWORD` | `gh DB_MIGRATOR_PASSWORD STAGING_DB_MIGRATOR_PASSWORD` |
 | Secret | `STAGING_DB_APP_PASSWORD` | `gh DB_APP_PASSWORD STAGING_DB_APP_PASSWORD` |
@@ -144,18 +146,23 @@ Notes:
 | Variable | `STAGING_WEB_URL` | `https://staging.academybees.com` |
 | Variable | `STAGING_ENABLED` | `true`. Set it last: from then on every merge to `main` deploys |
 
-### Deploys (CI → Railway → `deploy-staging.yml`)
+### Deploys (`deploy-staging.yml` → `deploy.yml`)
 
-1. **CI on `main`** (`ci.yml`): verify, integration, build and E2E, then **`migrate staging`** (`db-migrate.yml`):
+Runs after CI passes on a push to `main` (while `STAGING_ENABLED` is true), or by hand from **Actions → Deploy staging → Run workflow**.
+
+1. **Roles and migrations** (`db-migrate.yml`):
    - `ensure-roles.sql` as the admin user (idempotent, re-applies passwords);
    - `pnpm db:deploy` as `ab_migrator` over the public endpoint.
-2. **Railway** sees every check on the commit pass and builds `api`, `worker` and `web` from GitHub. A failed build keeps the previous deployment serving.
-3. **Smoke checks** (`deploy-staging.yml` → `deploy.yml`, through `STAGING_WEB_URL`). It waits up to 30 minutes for the new commit, then checks:
+
+   This finishes before any new code is built.
+2. **Build and deploy:** `railway up --ci` for `api`, `worker` and `web` in parallel. A failed build or health check fails the job, prints the deploy log, and leaves the previous deployment serving.
+3. **Smoke checks** through `STAGING_WEB_URL`:
+   - the new commit is serving;
    - DB and Redis are ready;
    - the shell and offline page load;
    - `/t/*` is not reachable.
 
-**Manual run:** **Actions → Deploy staging → Run workflow** re-applies roles and migrations, then runs the smoke checks against whatever is serving. To rebuild without a new commit, use **Redeploy** on the service in Railway.
+**Variable changes in Railway are staged:** apply them (**Deploy / Apply changes** on the project canvas) before redeploying. Deployments use only applied variables.
 
 **First console admin (after the first deploy):** see "Turning staging on". **Academies on staging:** dev seeds refuse to run outside local/ci. A reviewed staging bootstrap (the two gate academies and one user per role, with no shared demo password) follows in a separate S7b PR.
 
@@ -281,14 +288,14 @@ Sending from the `mail.` subdomain keeps the apex free for Email Routing, and `m
 | `PO_LOGIN` | `egha-dev` | The only account allowed to deploy production |
 | `TURBO_TEAM` | *(team slug)* | Turborepo remote cache (optional) |
 
-Staging secrets are listed under "Railway staging project → GitHub". Production uses the same names with `PRODUCTION_` from 7P; how production deploys from a release tag on Railway Pro is decided then (C-76).
+Staging secrets are listed under "Railway staging project → GitHub". Production uses the same names with `PRODUCTION_` from 7P; how production deploys from a release tag on Railway Pro is decided then (C-77).
 
 ## Turning staging on (S7b)
 
 1. Railway project, Cloudflare records and Resend domain: done 2026-10-04.
-2. Merge the S7b PRs (web image, roles script, CI migrations, GitHub-connected services: `staging-variables.md` section G).
+2. Merge the S7b PRs (web image, roles script, `railway up` deploys with the environment-scoped project token).
 3. Generate the secrets, then fill in the Railway variables, the health-check paths and the GitHub secrets/variables above.
-4. Set `STAGING_ENABLED=true`. The next merge to `main` migrates in CI and Railway deploys after it; **Deploy staging** smoke-checks it.
+4. Set `STAGING_ENABLED=true`. First successful deploy: 2026-10-05 (run 37268721175). From then on every merge to `main` deploys after CI.
 5. Check on a phone:
    - `https://demo-a.staging.academybees.com` answers with a valid certificate (until the staging bootstrap, "We couldn't find this academy" is the expected page);
    - `https://staging.academybees.com/api/v1/health/ready` reports `ok`.

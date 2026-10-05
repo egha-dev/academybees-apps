@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { classifyRequestHost, platformRootDomain } from './host.js';
+import { browserPort, classifyRequestHost, platformRootDomain } from './host.js';
 
 describe('platformRootDomain', () => {
   it('uses the configured root', () => {
@@ -29,5 +29,15 @@ describe('classifyRequestHost', () => {
     ['127.0.0.1:3000', 'invalid'],
   ])('%s → %s', (host, kind) => {
     expect(classifyRequestHost(host, env).kind).toBe(kind);
+  });
+});
+
+describe('browserPort', () => {
+  it('keeps the port the browser used and never invents one', () => {
+    expect(browserPort('demo-a.localhost:3000')).toBe('3000');
+    expect(browserPort('[::1]:3000')).toBe('3000');
+    expect(browserPort('app.staging.academybees.com')).toBe('');
+    expect(browserPort('[::1]')).toBe('');
+    expect(browserPort(null)).toBe('');
   });
 });

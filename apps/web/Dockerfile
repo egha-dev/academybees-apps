@@ -24,7 +24,7 @@ COPY --from=pruner /repo/out/full/ .
 # Inlined into browser code at build time (Railway passes service variables as build args).
 ARG NEXT_PUBLIC_APP_ENV=
 ARG NEXT_PUBLIC_SENTRY_DSN=
-# The commit Railway is building (GitHub deploys, C-76): the service worker's offline revision.
+# The commit Railway builds when GitHub-connected; `railway up` uses `.release-sha` (C-77).
 ARG RAILWAY_GIT_COMMIT_SHA=
 ENV NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV} NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN} \
     NEXT_OUTPUT=standalone
@@ -36,7 +36,7 @@ RUN apk add --no-cache tini
 # HOSTNAME=:: listens on IPv4 and IPv6 (Railway's edge and private network).
 ENV NODE_ENV=production PORT=3000 HOSTNAME=:: NEXT_TELEMETRY_DISABLED=1
 # The deployed commit: a build arg (docker build), else Railway's RAILWAY_GIT_COMMIT_SHA at runtime
-# (GitHub deploys, C-76), else `.release-sha`, else "dev".
+# (only if a service is ever GitHub-connected), else `.release-sha` from `railway up` (C-77), else "dev".
 ARG RELEASE_SHA=
 ENV RELEASE_SHA=${RELEASE_SHA}
 WORKDIR /app

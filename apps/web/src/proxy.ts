@@ -1,7 +1,7 @@
 import { normalizeRootDomain } from '@academybee/tenant';
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { classifyRequestHost, platformRootDomain } from './lib/host';
+import { browserPort, classifyRequestHost, platformRootDomain } from './lib/host';
 import { apiForwardHeaders, stripInternalHeaders } from './lib/forward-headers';
 import { decideRoute } from './lib/routing';
 import {
@@ -54,7 +54,9 @@ export async function proxy(request: NextRequest) {
     }).catch(() => 'unavailable' as const);
   }
 
-  const { pathname, search, port, protocol } = request.nextUrl;
+  const { pathname, search, protocol } = request.nextUrl;
+  // The browser's port (Host header), never the server's internal one (staging/production).
+  const port = browserPort(host);
   const decision = decideRoute({ hostClass, pathname, search, port, protocol, lookup });
   if (decision.type === 'redirect') return NextResponse.redirect(decision.location, 301);
 

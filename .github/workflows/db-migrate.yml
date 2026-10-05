@@ -1,6 +1,6 @@
 name: Database migrate (reusable)
 
-# Roles + migrations on a managed PostgreSQL (C-75, C-76): the idempotent role script as the
+# Roles + migrations on a managed PostgreSQL (C-75, C-77): the idempotent role script as the
 # provider's admin user, then `prisma migrate deploy` + RLS SQL as ab_migrator, over the database's
 # public endpoint. Secrets are named <PREFIX>_* (see docs/runbooks/environments.md); values never
 # appear in logs.
@@ -48,7 +48,7 @@ jobs:
             -v migrator_password="$MIGRATOR_PW" -v app_password="$APP_PW" \
             -v platform_password="$PLATFORM_PW" \
             -f infra/postgres/managed/ensure-roles.sql
-      # Expand → migrate → contract: migrations finish before Railway starts the new code (C-76).
+      # Expand → migrate → contract: migrations finish before `railway up` builds new code (C-77).
       - name: prisma migrate deploy + grants
         env:
           ADMIN_DATABASE_URL: ${{ secrets[format('{0}_ADMIN_DATABASE_URL', inputs.prefix)] }}
