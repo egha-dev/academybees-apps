@@ -22,6 +22,15 @@ describe('describeConnectionUrl', () => {
     );
   });
 
+  it('never prints an unknown user part, which may be a token', () => {
+    const out = describeConnectionUrl('http://pw-secret@x');
+    expect(out).toBe('http://<9-character user>@x');
+    expect(out).not.toContain('pw-secret');
+    expect(describeConnectionUrl('redis://:pw@redis:6379')).toBe(
+      'redis://<empty user>:<2-character password>@redis:6379',
+    );
+  });
+
   it('reports whitespace, query names only, missing and empty values', () => {
     expect(describeConnectionUrl('redis://default:pw@redis:6379?family=0 ')).toContain(
       'whitespace at character',

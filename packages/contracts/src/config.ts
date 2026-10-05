@@ -10,12 +10,23 @@ export const CONNECTION_URL_VARIABLES = [
   'MIGRATOR_DATABASE_URL',
 ] as const;
 
+/** User names safe to print; any other user part may be a token and is shown by length only. */
+const KNOWN_USERS = new Set([
+  'ab_app',
+  'ab_migrator',
+  'ab_platform',
+  'postgres',
+  'default',
+  'resend',
+]);
+
 const URL_PARTS =
   /^([a-z][a-z0-9+.-]*):\/\/(?:([^:@/]*)(?::([^@]*))?@)?(\[[^\]]*\]|[^:/?#]*)(?::([^/?#]*))?(\/[^?#]*)?(?:\?([^#]*))?$/i;
 
 /**
- * A safe description of a connection URL: scheme, user, host, port and path as given; the
- * password only as its length; query parameters by name only. Reports empty values, unresolved
+ * A safe description of a connection URL: scheme, host, port and path as given; known user names
+ * (ab_app, postgres, …) as given and any other user part only as its length (it may be a token);
+ * the password only as its length; query parameters by name only. Reports empty values, unresolved
  * `${{…}}` references and whitespace. Never returns the password or any query value.
  */
 export function describeConnectionUrl(raw: string | undefined): string {
@@ -31,7 +42,7 @@ export function describeConnectionUrl(raw: string | undefined): string {
   const shape =
     `${scheme}://` +
     (user !== undefined || password !== undefined
-      ? `${user || '<empty user>'}:${password ? `<${password.length}-character password>` : '<empty password>'}@`
+      ? `${describeUser(user)}${password !== undefined ? `:${password ? `<${password.length}-character password>` : '<empty password>'}` : ''}@`
       : '') +
     (host || '<EMPTY HOST>') +
     (port !== undefined ? `:${port || '<empty port>'}` : '') +
@@ -43,4 +54,9 @@ export function describeConnectionUrl(raw: string | undefined): string {
           .join('&')}`
       : '');
   return [shape, ...notes].join('; ');
+}
+
+function describeUser(user: string | undefined): string {
+  if (!user) return '<empty user>';
+  return KNOWN_USERS.has(user) ? user : `<${user.length}-character user>`;
 }
