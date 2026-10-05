@@ -27,7 +27,7 @@ RUN pnpm --filter @academybee/worker deploy --prod --legacy /prod/worker
 # 3. Runtime: no build tools, non-root.
 FROM ${NODE_IMAGE} AS runner
 # The deployed commit: a build arg (docker build), else Railway's RAILWAY_GIT_COMMIT_SHA at runtime
-# (GitHub deploys, C-76), else `.release-sha`, else "dev".
+# (only if a service is ever GitHub-connected), else `.release-sha` from `railway up` (C-77), else "dev".
 ARG RELEASE_SHA=
 ENV RELEASE_SHA=${RELEASE_SHA}
 # tini as PID 1: forwards SIGTERM and reaps children so graceful shutdown works on deploys.

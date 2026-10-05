@@ -82,3 +82,21 @@ describe('loadApiConfig', () => {
     ).toThrow(/must be a real key in production/);
   });
 });
+
+describe('invalid connection URLs (C-77)', () => {
+  it('describes the URL shape without revealing the password', () => {
+    let message = '';
+    try {
+      loadApiConfig({
+        APP_ENV: 'staging',
+        DATABASE_URL: 'postgresql://ab_app:topsecretpw@:5432/',
+      });
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toContain(
+      'DATABASE_URL: Invalid URL — got postgresql://ab_app:<11-character password>@<EMPTY HOST>:5432/<empty database>',
+    );
+    expect(message).not.toContain('topsecretpw');
+  });
+});

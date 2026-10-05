@@ -1,0 +1,13 @@
+# Files `railway up` does not upload (C-75, C-77); .gitignore'd files are skipped as well.
+# gitignore syntax: a bare name matches at ANY depth — anchor root-only folders with a leading `/`
+# (a bare `docs` once dropped apps/api/src/core/docs and the API could not start).
+.git
+**/node_modules
+**/.next
+**/.next-*
+**/out
+**/dist
+**/.turbo
+e2e/artifacts
+.lighthouseci
+/docs

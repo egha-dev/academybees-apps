@@ -17,3 +17,12 @@ export function platformRootDomain(env: Env = process.env): string {
 export function classifyRequestHost(host: string | null, env?: Env): HostClass {
   return classifyHost(host, platformRootDomain(env));
 }
+
+/**
+ * The port the browser used, from the Host header (`demo-a.localhost:3000` → `3000`, a deployed
+ * `app.staging.academybees.com` → ``). Never the server's own listening port: behind Railway's edge
+ * that is the internal 3000, which must not leak into redirects.
+ */
+export function browserPort(host: string | null): string {
+  return /:(\d{1,5})$/.exec(host ?? '')?.[1] ?? '';
+}

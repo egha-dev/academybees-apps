@@ -188,6 +188,7 @@ scripts/staging/secrets.sh gh DB_PLATFORM_PASSWORD STAGING_DB_PLATFORM_PASSWORD
 The **Secrets** tab should now show exactly these staging secrets (values hidden):
 
 ```text
+RAILWAY_TOKEN
 STAGING_ADMIN_DATABASE_URL
 STAGING_DB_MIGRATOR_PASSWORD
 STAGING_DB_APP_PASSWORD
@@ -206,7 +207,7 @@ STAGING_DB_PLATFORM_PASSWORD
 
 1. Tell Claude "A–E done". Don't send any values.
 2. When asked, add the repository variable `STAGING_ENABLED` = `true` (**Variables** tab → **New repository variable**).
-3. Connect the services to GitHub (section G). Claude then runs **Actions → Deploy staging** and watches it through the smoke checks.
+3. Create the Railway project token (section G). Claude then runs **Actions → Deploy staging** and watches it through the smoke checks.
 4. After the first deploy succeeds, delete the local copies:
 
    ```bash
@@ -217,53 +218,28 @@ STAGING_DB_PLATFORM_PASSWORD
 
 ---
 
-## G. Deploy each service from GitHub (C-76)
+## G. Railway project token for deploys (C-77)
 
-Railway builds `api`, `worker` and `web` from the repository itself, but only after **every GitHub check on the `main` commit has passed**. The last CI job applies the staging migrations, so new code never starts before its migrations.
+GitHub Actions deploys with `railway up` using a **project token**. A project token only works for **one environment**, so the project must have exactly one: `academybees-staging`.
 
-Do **G1 once**, then **G2 for each of `api`, `worker` and `web`**. Leave `postgres` and `redis` as they are.
+1. On the project canvas, open the **environment switcher** (top left, next to the project name). Only **`academybees-staging`** should be listed. If another environment exists (for example the default `production`) and has none of your setup, delete it: environment → **Settings** → **Danger** → **Delete environment**.
+2. Project → **Settings** → **Tokens** → **Create token**:
+   - **Environment:** `academybees-staging`;
+   - **Name:** `github-actions`;
+   - click **Create** and copy the token; it is shown once.
+3. GitHub → repository → **Settings** → **Secrets and variables** → **Actions** → **Secrets**:
+   - if `RAILWAY_TOKEN` exists, click its pencil → paste → **Update secret**;
+   - otherwise **New repository secret** → name `RAILWAY_TOKEN` → paste → **Add secret**.
+4. Clear your clipboard.
 
-### G1. Give Railway access to the repository (once)
-
-1. In Railway, open any of the three services → **Settings** → **Source** → **Connect Repo**.
-2. If the repository list doesn't show `egha-dev/academybees-apps`, click **Configure GitHub App** (it may also read *Install / Configure*). GitHub opens:
-   - choose the **egha-dev** account;
-   - under **Repository access**, select **Only select repositories** → **academybees-apps**;
-   - click **Save** (or **Install**);
-   - return to Railway. The repository now appears in the list.
-
-### G2. Connect one service (repeat for `api`, `worker`, `web`)
-
-1. Open the service → **Settings**.
-2. **Source** → **Connect Repo** → select **`egha-dev/academybees-apps`**.
-3. **Branch:** `main`.
-4. **Root Directory:** leave **empty**. The Dockerfile builds from the repo root.
-5. **Wait for CI:** turn it **on**. Railway then waits until all GitHub checks on the commit have passed, including `migrate staging`.
-6. **Watch Paths:** leave empty, so every merge to `main` deploys.
-7. **Build** section: **Builder** should show **Dockerfile**, with the path from `RAILWAY_DOCKERFILE_PATH`. If it shows Nixpacks or Railpack, check that the variable is set on this service (section C).
-8. Leave **Networking** as it is: the domains stay on `web`, and `api`/`worker` stay private.
-9. If a "changes to apply" banner appears, click **Deploy** / **Apply**.
-
-Railway may build the latest `main` commit straight away; its checks have already passed. Builds take a few minutes per service (`web` is the longest).
-
-### G3. Check
-
-After the three builds finish, all three services show **Active**, and in a browser:
-
-- `https://staging.academybees.com/api/v1/health/ready` shows `"status":"ok"`;
-- `https://demo-a.staging.academybees.com` answers with a valid certificate. Until the staging bootstrap PR, "We couldn't find this academy" is the expected page.
-
-Then tell Claude "connected"; Claude runs the smoke checks.
+**After changing variables in Railway:** click **Deploy / Apply changes** on the project canvas before a redeploy. Deployments use only applied variables.
 
 ---
 
-## H. Remove the Railway tokens (no longer used)
+## H. Remove what is no longer used
 
-GitHub-connected services don't need any Railway token in GitHub. The account token can manage every project on your Railway account, so remove it.
-
-1. **Railway** → your avatar → **Account Settings** → **Tokens**: delete **`github-actions-staging`** (the account token).
-2. **Railway** → project **`academybees-staging`** → **Settings** → **Tokens**: delete **`github-actions`** (the project token).
-3. **GitHub** → repository → **Settings** → **Secrets and variables** → **Actions**:
-   - **Secrets** tab: delete `RAILWAY_API_TOKEN` and `RAILWAY_TOKEN`;
+1. **Railway** → your avatar → **Account Settings** → **Tokens**: delete the account token **`github-actions-staging`**. It can manage every project on your account, and deploys don't use it.
+2. **GitHub** → repository → **Settings** → **Secrets and variables** → **Actions**:
+   - **Secrets** tab: delete `RAILWAY_API_TOKEN`;
    - **Variables** tab: delete `STAGING_RAILWAY_PROJECT_ID`.
-
+3. Keep `RAILWAY_TOKEN` (the project token from G).
