@@ -1,0 +1,63 @@
+name: Staging bootstrap
+
+# One-off, re-runnable setup of the staging gate data (S7b, C-78): academies demo-a and demo-b, one
+# user per role on the PO's inbox (hello+<tag>@academybees.com), and the first console admin.
+# Users get one-time set-password links by email only — never printed here. Only the PO may run it.
+on:
+  workflow_dispatch:
+    inputs:
+      resend:
+        description: Send fresh links to users who haven't chosen a password yet
+        type: boolean
+        default: false
+
+concurrency:
+  group: staging-bootstrap
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: only the PO
+        env:
+          ACTOR: ${{ github.actor }}
+          PO: ${{ vars.PO_LOGIN || 'egha-dev' }}
+        run: '[ "$ACTOR" = "$PO" ] || { echo "::error::Only the PO ($PO) may run the staging bootstrap."; exit 1; }'
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build --filter=@academybee/api
+      - name: bootstrap (addresses and statuses only in this log)
+        env:
+          APP_ENV: staging
+          PLATFORM_ROOT_DOMAIN: staging.academybees.com
+          ADMIN_DATABASE_URL: ${{ secrets.STAGING_ADMIN_DATABASE_URL }}
+          PLATFORM_PW: ${{ secrets.STAGING_DB_PLATFORM_PASSWORD }}
+          SECRETS_MASTER_KEY: ${{ secrets.STAGING_SECRETS_MASTER_KEY }}
+          RESEND: ${{ inputs.resend }}
+        run: |
+          for v in ADMIN_DATABASE_URL PLATFORM_PW SECRETS_MASTER_KEY; do
+            [ -n "${!v}" ] || { echo "::error::Missing secret for $v (docs/runbooks/environments.md)"; exit 1; }
+          done
+          # The public endpoint as ab_platform (platform code only, ADR-005).
+          PLATFORM_DATABASE_URL=$(node -e '
+            const u = new URL(process.env.ADMIN_DATABASE_URL);
+            u.username = "ab_platform";
+            u.password = process.env.PLATFORM_PW;
+            process.stdout.write(u.toString());')
+          echo "::add-mask::$PLATFORM_DATABASE_URL"
+          export PLATFORM_DATABASE_URL
+          args=()
+          [ "$RESEND" = true ] && args+=(--resend)
+          node apps/api/dist/platform/cli/bootstrap-staging.js "${args[@]}"

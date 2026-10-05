@@ -143,6 +143,7 @@ Notes:
 | Secret | `STAGING_DB_MIGRATOR_PASSWORD` | `gh DB_MIGRATOR_PASSWORD STAGING_DB_MIGRATOR_PASSWORD` |
 | Secret | `STAGING_DB_APP_PASSWORD` | `gh DB_APP_PASSWORD STAGING_DB_APP_PASSWORD` |
 | Secret | `STAGING_DB_PLATFORM_PASSWORD` | `gh DB_PLATFORM_PASSWORD STAGING_DB_PLATFORM_PASSWORD` |
+| Secret | `STAGING_SECRETS_MASTER_KEY` | Same value as Railway's shared `SECRETS_MASTER_KEY` (staging bootstrap seals its email links, C-78) |
 | Variable | `STAGING_WEB_URL` | `https://staging.academybees.com` |
 | Variable | `STAGING_ENABLED` | `true`. Set it last: from then on every merge to `main` deploys |
 
@@ -164,7 +165,7 @@ Runs after CI passes on a push to `main` (while `STAGING_ENABLED` is true), or b
 
 **Variable changes in Railway are staged:** apply them (**Deploy / Apply changes** on the project canvas) before redeploying. Deployments use only applied variables.
 
-**First console admin (after the first deploy):** see "Turning staging on". **Academies on staging:** dev seeds refuse to run outside local/ci. A reviewed staging bootstrap (the two gate academies and one user per role, with no shared demo password) follows in a separate S7b PR.
+**Academies, users and the first console admin on staging (C-78):** dev seeds refuse to run outside local/ci. Use **Actions → Staging bootstrap** (PO only): it creates `demo-a`/`demo-b`, one user per role on `hello+<tag>@academybees.com`, and the console admin, and emails each a one-time set-password link. Steps and addresses: [`staging-variables.md`](staging-variables.md) section I.
 
 ## DNS on Cloudflare
 
@@ -299,7 +300,7 @@ Staging secrets are listed under "Railway staging project → GitHub". Productio
 5. Check on a phone:
    - `https://demo-a.staging.academybees.com` answers with a valid certificate (until the staging bootstrap, "We couldn't find this academy" is the expected page);
    - `https://staging.academybees.com/api/v1/health/ready` reports `ok`.
-6. First console admin: comes with the staging bootstrap PR, which runs `platform:create-admin` where `PLATFORM_DATABASE_URL` is available. Until then the console has no staff.
+6. Run **Staging bootstrap** (C-78): academies, users, console admin, each with an emailed one-time link.
 7. Re-measure the RLS overhead in the same region (C-55).
 
 ## Local Docker check
