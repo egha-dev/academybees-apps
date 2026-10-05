@@ -28,18 +28,21 @@ export class EmailHandler implements OnModuleInit {
 
   onModuleInit(): void {
     this.events.on(EMAIL_OUTBOX_TYPE, async (event) => {
-      await this.handle(event.payload);
+      await this.handle(event.payload, event.eventId);
     });
   }
 
-  async handle(payload: unknown): Promise<void> {
+  async handle(payload: unknown, eventId?: string): Promise<void> {
     const parsed = EmailRequestSchema.safeParse(payload);
     if (!parsed.success) {
       this.logger.warn('Dropped a malformed email request');
       return;
     }
     const url = parsed.data.link ? this.linkUrl(parsed.data) : undefined;
-    await this.port.send(renderEmail(parsed.data, url));
+    await this.port.send({
+      ...renderEmail(parsed.data, url),
+      ...(eventId ? { idempotencyKey: `email-${eventId}` } : {}),
+    });
     this.logger.log({ template: parsed.data.template }, 'Email sent');
   }
 

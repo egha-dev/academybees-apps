@@ -110,10 +110,9 @@ ANALYTICS_HASH_SALT=${{shared.ANALYTICS_HASH_SALT}}
 PLATFORM_ROOT_DOMAIN=${{shared.PLATFORM_ROOT_DOMAIN}}
 WEB_PUBLIC_PROTOCOL=https
 EMAIL_FROM=AcademyBee <no-reply@mail.staging.academybees.com>
-SMTP_URL=smtps://resend:${{RESEND_API_KEY}}@smtp.resend.com:465
 ```
 
-Then add **`RESEND_API_KEY`** as its own variable and paste the Resend sending-only key. `SMTP_URL` references it, so the key is stored in one place.
+Then add **`RESEND_API_KEY`** as its own variable and paste the Resend sending-only key. The worker then sends through **Resend's HTTPS API**: Railway blocks outbound SMTP ports below Pro (C-79), so `SMTP_URL` is not used on staging.
 
 **`web`**:
 
@@ -223,7 +222,7 @@ This replaces Railway's `_acme-challenge` record, so cut the wildcard over in on
 
 ## Email (Resend)
 
-Sign up when S7b starts. Add the domain `mail.staging.academybees.com` and paste the DKIM, SPF and MX records it shows into Cloudflare (DNS-only). Create an API key with **sending access only** and put it in the worker's `SMTP_URL`.
+Sign up when S7b starts. Add the domain `mail.staging.academybees.com` and paste the DKIM, SPF and MX records it shows into Cloudflare (DNS-only). Create an API key with **sending access only** and put it in the worker's `RESEND_API_KEY`. The worker uses Resend's HTTPS API, not SMTP (C-79).
 
 Sending from the `mail.` subdomain keeps the apex free for Email Routing, and `mail` is a reserved slug.
 

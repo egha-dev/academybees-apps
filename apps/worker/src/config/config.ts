@@ -30,6 +30,14 @@ export const WorkerConfigSchema = z
     /** SMTP server (Mailpit locally on :1025; the provider on staging, A6). */
     SMTP_URL: z.url({ protocol: /^smtps?$/ }).default('smtp://localhost:1025'),
     EMAIL_FROM: z.string().min(3).default('AcademyBee <no-reply@academybees.test>'),
+    /**
+     * Resend API key (sending access only). When set, email goes over Resend's HTTPS API instead of
+     * SMTP — required on Railway below Pro, which blocks outbound SMTP ports (C-79).
+     */
+    RESEND_API_KEY: z
+      .string()
+      .regex(/^re_[A-Za-z0-9_]+$/, 'must be a Resend API key (re_…)')
+      .optional(),
     /** Links in emails (C-52): https://<slug>.<root>[:port]/… */
     PLATFORM_ROOT_DOMAIN: z.string().trim().min(1).default('localhost'),
     WEB_PUBLIC_PROTOCOL: z.enum(['http', 'https']).default('https'),
@@ -38,7 +46,7 @@ export const WorkerConfigSchema = z
   .superRefine((c, ctx) => {
     if (c.APP_ENV === 'local' || c.APP_ENV === 'ci') return;
     // Deployed workers must send real email and link over https (C-04, C-64).
-    if (/^smtps?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(c.SMTP_URL)) {
+    if (!c.RESEND_API_KEY && /^smtps?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(c.SMTP_URL)) {
       ctx.addIssue({
         code: 'custom',
         path: ['SMTP_URL'],
