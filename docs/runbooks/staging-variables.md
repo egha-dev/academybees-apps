@@ -243,3 +243,52 @@ GitHub Actions deploys with `railway up` using a **project token**. A project to
    - **Secrets** tab: delete `RAILWAY_API_TOKEN`;
    - **Variables** tab: delete `STAGING_RAILWAY_PROJECT_ID`.
 3. Keep `RAILWAY_TOKEN` (the project token from G).
+
+---
+
+## I. Staging bootstrap: academies, users, console admin (C-78)
+
+Run it once after staging is live. It's safe to run again.
+
+### Before the first run
+
+1. **Rotate `AUTH_SIGNING_KEYS`** if the key ever left your machine. Generate it straight into the clipboard:
+
+   ```bash
+   node -e "const c=require('crypto');const k=c.generateKeyPairSync('ed25519').privateKey.export({format:'jwk'});process.stdout.write(JSON.stringify({current:'s2',keys:[{...k,kid:'s2',alg:'EdDSA'}]}))" | clip.exe
+   ```
+
+   Then: **`api` → Variables → `AUTH_SIGNING_KEYS` → ⋯ → Edit** → paste → **Save** → **Deploy / Apply changes** → redeploy. For the next rotation, use a new key ID (`s3`, …).
+2. **Cloudflare:** zone **academybees.com** → **Email** → **Email Routing** → **Settings** → turn on **Subaddressing**. Mail to `hello+anything@academybees.com` then reaches the `hello@` destination.
+3. **GitHub secret** `STAGING_SECRETS_MASTER_KEY`: in Railway, **Settings** → **Shared Variables** → copy icon on `SECRETS_MASTER_KEY`. In GitHub, **New repository secret** → paste.
+
+### Run
+
+1. GitHub → **Actions** → **Staging bootstrap** → **Run workflow** (branch `main`; leave **resend** off) → **Run workflow**.
+2. The log lists each address with `link-emailed`, `already-set-up` or `link-pending`. It never contains a password or link.
+3. Within a few minutes your inbox receives **14 emails** ("Your … account on AcademyBee is ready", plus the console set-up email). Check spam the first time.
+
+### Addresses (all `@academybees.com`)
+
+| | Owner | Admin | Accountant | Receptionist | Parent | Student |
+| --- | --- | --- | --- | --- | --- | --- |
+| `demo-a` | `hello+a-owner` | `hello+a-admin` | `hello+a-accountant` | `hello+a-reception` | `hello+a-parent` | `hello+a-student` |
+| `demo-b` | `hello+b-owner` | `hello+b-admin` | `hello+b-accountant` | `hello+b-reception` | `hello+b-parent` | `hello+b-student` |
+
+- **Teacher in both academies:** `hello+teacher`.
+- **Console admin (Super Admin):** `hello+console`.
+
+### Setting each password
+
+1. Open each link in a **separate browser profile or private window**. Sign-in cookies belong to each academy host, but two users on the same host would share one.
+2. Choose a password. Each link works **once** and expires after **72 hours**.
+3. Sign in at:
+   - `https://demo-a.staging.academybees.com/login` or `https://demo-b.staging.academybees.com/login`;
+   - **parents and students** are handed to the Family Hub;
+   - the **console** is at `https://console.staging.academybees.com/login`, and asks you to set up an authenticator app first.
+4. Store the passwords in a password manager. Never share them in chat.
+
+### Links expired or lost
+
+Run **Staging bootstrap** again with **resend** on. Only users who haven't chosen a password get a new link, and their old link stops working.
+

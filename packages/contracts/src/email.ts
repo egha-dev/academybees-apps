@@ -12,6 +12,7 @@ export const EmailTemplateSchema = z.enum([
   'password_reset',
   'password_changed',
   'platform_admin_invite',
+  'account_setup',
 ]);
 export type EmailTemplate = z.infer<typeof EmailTemplateSchema>;
 

@@ -29,5 +29,12 @@
     "body": "An AcademyBee console account was created for you. Choose a password, then set up two-step sign-in with an authenticator app.",
     "cta": "Choose a password",
     "expiry": "This link expires in 24 hours and works once. If you didn't expect it, tell the AcademyBee team."
+  },
+  "accountSetup": {
+    "subject": "Your {academy} account on AcademyBee is ready",
+    "heading": "Choose your password",
+    "body": "An AcademyBee account has been set up for you at {academy}. Choose a password to sign in.",
+    "cta": "Choose a password",
+    "expiry": "This link works once and expires in 3 days. If you didn't expect it, you can ignore this email."
   }
 }
