@@ -323,7 +323,7 @@ Phase 2 is **not** started.
 
 **Goal.** Staff sign in on their academy's URL and parents/students on the Family Hub; everyone gets exactly their capabilities and cannot use a session anywhere else.
 **Refs.** PRD v2 §4, §16 (auth), v3 §5, §13; UX §29 (Login Tier 1), v1.1 §8; ARCHITECTURE §6, §7.
-**Status.** 🟨 in progress — started 2026-10-02, `phase-2-start` = `be3e1a2`. Approved slice plan: [`docs/plans/phase-2.md`](plans/phase-2.md) (decisions C-59…C-66; staging proposal [`docs/plans/staging-proposal.md`](plans/staging-proposal.md) awaiting PO approval).
+**Status.** 🟨 in progress — started 2026-10-02, `phase-2-start` = `be3e1a2`. Approved slice plan: [`docs/plans/phase-2.md`](plans/phase-2.md) (decisions C-59…C-66; staging proposal [`docs/plans/staging-proposal.md`](plans/staging-proposal.md) approved 2026-10-03 → C-69).
 
 **Slices (each = one PR, ADR-041)**
 
@@ -336,10 +336,47 @@ Phase 2 is **not** started.
 | S5 | `p2/email-invites` | 2.13 email (worker), 2.14 invitations, reset, team API (C-67) | ✅ #37 |
 | S6 | `p2/web-auth` | 2.15 web auth plumbing (cookie spike), 2.16 Login, forgot/reset, invite accept (C-68; flag `p2-role-homes` added, `p1-tenant-home` removed) | ✅ #38 |
 | S7 | `p2/web-shell` | 2.17 signed-in shell (flag `p2-role-homes`), 2.18 Team page (C-72) | ✅ #40 |
-| S7b | `p2/staging` | staging on Railway + Cloudflare DNS (C-69, C-75, C-77): web image, roles, `railway up` deploys — staging live 2026-10-05; staging bootstrap (C-78) | 🟨 |
+| S7b | `p2/staging` | staging on Railway + Cloudflare DNS (C-69, C-75, C-77): web image, roles, `railway up` deploys; staging bootstrap (C-78); email over Resend HTTPS (C-79) — staging live 2026-10-05, PO signed in on staging | ✅ #43–#48 |
 | S8 | `p2/hub-console` | 2.19 HUB sessions + handoff, 2.20 console + mandatory TOTP (flag `p2-console-home`; C-73) | ✅ #41 |
 | S9 | `p2/account-security` | 2.21 TOTP 2FA, 2.22 devices & sessions, alerts | ⬜ |
 | S10 | `p2/hardening-e2e` | 2.23 Phase 0 idempotency/logging follow-ups, 2.24 E2E + docs | ⬜ |
+
+**Working notes (handover, 2026-10-05)**
+
+*Done:*
+- S1–S8 and S7b are merged; `main` = `82de9ef` plus this handover.
+- **Staging is live** at https://staging.academybees.com:
+  - Railway project `academybees-staging`, single environment `academybees-staging`, Singapore;
+  - every merge to `main` runs CI, then **Deploy staging**: roles + migrations → `railway up` (api, worker, web) → smoke.
+- **Staging data:** academies `demo-a`/`demo-b` and 14 users on `hello+<tag>@academybees.com`, created by the **Staging bootstrap** workflow.
+  - The PO received the emails, set passwords and signed in on staging (2026-10-05).
+  - Addresses and how-tos: `docs/runbooks/staging-variables.md` §I.
+- **Signing keys:** `AUTH_SIGNING_KEYS` rotated to key ID `s2` before any user existed; `s1` was dropped.
+
+*Next step:*
+- Start **S9 `p2/account-security`** (tasks 2.21, 2.22 in `docs/plans/phase-2.md`): optional TOTP for academy users, `security.requireMfaForRoles` with a strong prompt for Owner/Accountant, recovery codes, the `MFA_REQUIRED` login step, Devices & sessions (`/settings/security`), new-device and password-changed emails.
+- **Reuse** the console MFA pieces from S8: `MfaService`, `/auth/mfa/*`, `totpQrSvgDataUrl`, the recovery-code tables.
+- **Widen** `/auth/mfa/*` from `@ConsoleHost` to the tenant host as well, and add those routes to the cross-tenant registry.
+- **Then S10** `p2/hardening-e2e` (2.23 idempotency/logging follow-ups M1–M3, L1, L2, L4; 2.24 E2E journeys + docs).
+- **Then P2-3 Gate**, which can now use real staging.
+
+*Open items:*
+- **PO, checklist §H:** delete the Railway account token `github-actions-staging` and the variable `STAGING_RAILWAY_PROJECT_ID`, and remove the worker's unused `SMTP_URL` (optional). `RAILWAY_API_TOKEN` already appears deleted.
+- **Hub on staging:** the hub placeholder (`p1-hub-placeholder`) is off on staging, so parents and students are handed to `app.` and then redirected to the apex. Expected until 7P.
+- **Production (7P):** decide Railway Pro image deploys vs `railway up`, and SMTP vs the Resend API there (C-77, C-79).
+- **Before production:** the account-token risk is gone, since only the environment-scoped project token is used.
+
+*Decisions this stretch:*
+- **C-74:** the marketing site.
+- **C-75 → C-76 → C-77:** Railway deploys. The root cause of the upload 404s was two environments in one project; the deploy now uses `railway up` with an environment-scoped project token.
+- **C-78:** the staging bootstrap.
+- **C-79:** Resend over HTTPS, because Railway blocks SMTP below Pro.
+
+*Lessons:*
+- **`.railwayignore` matching:** a bare `docs` pattern matches at any depth. Anchor root-only paths (`/docs`).
+- **Railway variables:** edits are staged until applied.
+- **Remote database timeouts:** GitHub runners → Singapore database needs interactive transactions longer than Prisma's 5 s default.
+- **Secret-safe diagnostics:** startup errors describe connection URLs only in redacted form, and never print unknown user parts.
 
 **Scope**
 - DB: `User`, `UserCredential`, `Membership`, `Role`, `RolePermission`, `MembershipRole`, `PlatformStaff`, `AuthSession`, `Invitation`, `PasswordResetToken`.
