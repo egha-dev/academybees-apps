@@ -127,7 +127,7 @@ test('invite → accept → signed in; then forgot → reset → sign in with th
   await inviteAs(context, testInfo, email);
 
   const invite = await waitForEmail(email, /invited to join Demo A Academy/);
-  expect(invite.link).toMatch(/^http:\/\/demo-a\.localhost:3000\/invite\/[\w-]{20,}$/);
+  expect(invite.link).toMatch(/^http:\/\/demo-a\.localhost:\d+\/invite\/[\w-]{20,}$/);
   await page.goto(invite.link);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Join Demo A Academy');
   await expect(page.getByText('as Teacher')).toBeVisible();

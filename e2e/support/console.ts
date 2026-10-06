@@ -22,7 +22,7 @@ export function createConsoleAdmin(email: string): string {
         SECRETS_MASTER_KEY: process.env.E2E_SECRETS_MASTER_KEY ?? '',
         PLATFORM_ROOT_DOMAIN: 'localhost',
         WEB_PUBLIC_PROTOCOL: 'http',
-        WEB_PUBLIC_PORT: '3000',
+        WEB_PUBLIC_PORT: process.env.E2E_WEB_PORT ?? '3000',
       },
       encoding: 'utf8',
     },

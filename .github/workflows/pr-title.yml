@@ -11,7 +11,7 @@ jobs:
   # Squash merges use the PR title as the commit message, so it must be a Conventional Commit (ADR-041).
   pr-title:
     name: pr-title
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7

@@ -72,7 +72,9 @@ test('a new console admin sets a password, enrols TOTP and signs in again with a
   const consoleUrl = (path = '/') => hostUrl(testInfo, 'console', path);
 
   // Set the password from the CLI link (also emailed).
-  await page.goto(link.replace('http://console.localhost:3000', consoleUrl('').replace(/\/$/, '')));
+  await page.goto(
+    link.replace(/^http:\/\/console\.localhost:\d+/, consoleUrl('').replace(/\/$/, '')),
+  );
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Choose your console password');
   await page.getByLabel('New password', { exact: true }).fill(CONSOLE_PASSWORD);
   await page.getByLabel('Confirm new password', { exact: true }).fill(CONSOLE_PASSWORD);

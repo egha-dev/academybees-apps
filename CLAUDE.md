@@ -26,7 +26,7 @@ Every feature must serve one of five outcomes: **acquire students · run classes
 - **Current phase:** Phase 2 — Authentication + RBAC, **🟨 in progress** (tag `phase-2-start`; plan `docs/plans/phase-2.md`) (see `docs/IMPLEMENTATION_PLAN.md` §1 tracker). Phase 1 ✅ 2026-10-02 (tag `phase-1`; exit notes list review follow-ups for Phase 2, Phase 3, staging go-live and Phase 15). Phase 0 ✅ 2026-10-01 (tag `phase-0`). P-00 orientation done 2026-09-30 (C-29…C-41).
 - **Staging (C-69, approved 2026-10-03):** Railway (Singapore) + Cloudflare DNS, set up in Phase 2 slice S7b once the PO has created the accounts. Until it is live, gate items needing staging are reported DEFERRED with local evidence (C-50). Media: ImageKit (C-70). Capacity and upgrade triggers: C-71 and `docs/runbooks/environments.md`.
 - **Open decisions with defaults applied:** DECISIONS.md §B (OD-02, OD-04 … OD-13, OD-15, OD-16, OD-18, OD-22). Closed: OD-01, OD-03 (staging), OD-14, OD-17, OD-19, OD-20, OD-21. Do not re-litigate; follow the default until the PO changes it.
-- **Repository:** `egha-dev/academybees-apps` (OD-19) on the **free GitHub plan** (C-44): no ruleset, so Claude merges only after all checks pass (C-43) and never pushes to `main`. Development runs in WSL2 Ubuntu with the repo cloned inside Linux (OD-20).
+- **Repository:** `egha-dev/academybees-apps` (OD-19) on the **free GitHub plan** (C-44): no ruleset, so Claude merges only after all checks pass (C-43) and never pushes to `main`. CI runs on the PO's **self-hosted WSL runner** (`CI_RUNS_ON`, C-81, `docs/runbooks/self-hosted-runner.md`); keep the repo private while it is attached. Development runs in WSL2 Ubuntu with the repo cloned inside Linux (OD-20).
 
 ## 4. Build order (Product Owner, 2026-09-29)
 

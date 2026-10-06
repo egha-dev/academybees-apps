@@ -12,7 +12,7 @@ jobs:
   # One product version (SemVer vX.Y.Z) and CHANGELOG.md (ADR-041). Merging the release PR
   # creates the v* tag; production deploys from v* tags only after PO approval.
   release-please:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 5
     steps:
       - uses: googleapis/release-please-action@v5

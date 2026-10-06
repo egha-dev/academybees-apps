@@ -29,10 +29,12 @@ env:
   AFFECTED: ${{ github.event_name == 'pull_request' && !inputs.full && '--affected' || '' }}
 
 # Required checks (ADR-041, scripts/github/apply-governance.sh): verify, integration, build, e2e, pr-title.
+# Runner: the repository variable CI_RUNS_ON (JSON), e.g. '["self-hosted","academybee"]' for the
+# PO's WSL runner (C-81); unset = GitHub-hosted ubuntu-latest.
 jobs:
   verify:
     name: verify
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -59,7 +61,7 @@ jobs:
 
   integration:
     name: integration
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
@@ -76,7 +78,7 @@ jobs:
 
   build:
     name: build
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -92,11 +94,27 @@ jobs:
 
   e2e:
     name: e2e
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 35
+    # Its own Compose project, ports and a fresh database every run, so on the self-hosted runner
+    # it never touches the dev containers, their data or the dev servers on 3000/4000 (C-81).
     env:
-      MIGRATOR_DATABASE_URL: postgresql://ab_migrator:ab_migrator_local@localhost:5432/academybee
-      API_ORIGIN: http://localhost:4000
+      COMPOSE: docker compose -p academybee-ci -f infra/docker-compose.yml
+      AB_POSTGRES_PORT: '55432'
+      AB_REDIS_PORT: '56379'
+      AB_SMTP_PORT: '51025'
+      AB_MAILPIT_PORT: '58025'
+      E2E_WEB_PORT: '3300'
+      E2E_API_PORT: '4300'
+      LHCI_PORT: '3310'
+      MIGRATOR_DATABASE_URL: postgresql://ab_migrator:ab_migrator_local@localhost:55432/academybee
+      E2E_MIGRATOR_DATABASE_URL: postgresql://ab_migrator:ab_migrator_local@localhost:55432/academybee
+      E2E_DATABASE_URL: postgresql://ab_app:ab_app_local@localhost:55432/academybee
+      E2E_PLATFORM_DATABASE_URL: postgresql://ab_platform:ab_platform_local@localhost:55432/academybee
+      E2E_REDIS_URL: redis://localhost:56379
+      E2E_SMTP_URL: smtp://localhost:51025
+      E2E_MAILPIT_URL: http://localhost:58025
+      API_ORIGIN: http://localhost:4300
       TRUSTED_PROXY_SECRET: local-proxy-secret
     steps:
       - uses: actions/checkout@v7
@@ -106,8 +124,10 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: start Postgres, Redis and Mailpit
-        run: docker compose -f infra/docker-compose.yml up -d --wait postgres redis mailpit
+      - name: start Postgres, Redis and Mailpit (fresh)
+        run: |
+          $COMPOSE down -v --remove-orphans
+          $COMPOSE up -d --wait postgres redis mailpit
       - name: migrate
         run: pnpm db:deploy
       - name: seed demo academies (local/ci only, C-54)
@@ -121,7 +141,12 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-1.63.0
+      - name: install browsers (self-hosted; system libraries installed once by the PO, C-81)
+        if: runner.environment == 'self-hosted'
+        timeout-minutes: 15
+        run: pnpm --filter @academybee/e2e exec playwright install chromium webkit
       - name: install browsers
+        if: runner.environment != 'self-hosted'
         # The Ubuntu mirror sometimes stalls mid-download and apt has no timeout, which hung
         # the job until it was cancelled (2026-10-01). Give apt network timeouts and retries,
         # bound each attempt and retry the whole install.
@@ -149,3 +174,6 @@ jobs:
           path: e2e/artifacts/
           retention-days: 14
           if-no-files-found: ignore
+      - name: remove the CI infra
+        if: always()
+        run: $COMPOSE down -v --remove-orphans

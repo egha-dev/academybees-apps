@@ -20,7 +20,7 @@ permissions:
 jobs:
   disabled:
     if: vars.STAGING_ENABLED != 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     steps:
       - run: echo "::notice::Staging deploy skipped — set the repository variable STAGING_ENABLED=true once the staging accounts exist (docs/runbooks/environments.md)."
 

@@ -1,13 +1,16 @@
 // Lighthouse CI (ADR-035, G-24, C-47): performance + accessibility budgets on the shell, with
 // Lighthouse's default mobile emulation and simulated 4G throttling. Installability is checked
 // in Playwright (Lighthouse 12+ has no PWA category). Run after the web build: `pnpm perf:lighthouse`.
+const PORT = process.env.LHCI_PORT ?? '3000';
+
 module.exports = {
   ci: {
     collect: {
-      startServerCommand: 'pnpm --filter @academybee/web start',
+      // LHCI_PORT keeps CI off the dev port on the self-hosted runner (C-81).
+      startServerCommand: `pnpm --filter @academybee/web exec next start -p ${PORT}`,
       startServerReadyPattern: 'Ready in|Local:',
       startServerReadyTimeout: 60000,
-      url: ['http://localhost:3000/', 'http://localhost:3000/offline'],
+      url: [`http://localhost:${PORT}/`, `http://localhost:${PORT}/offline`],
       // 5 runs (median): CI runners vary ±0.5 s on the same build; 3 runs flapped around the
       // 2.5 s budget (C-58). The budget itself is unchanged.
       numberOfRuns: 5,

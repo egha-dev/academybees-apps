@@ -38,7 +38,7 @@ jobs:
   deploy:
     name: deploy ${{ matrix.service }}
     needs: migrate
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -74,7 +74,7 @@ jobs:
   smoke:
     name: smoke check
     needs: deploy
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 15
     env:
       WEB_URL: ${{ vars[inputs.web_url_var] }}
