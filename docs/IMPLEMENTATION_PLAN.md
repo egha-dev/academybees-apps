@@ -338,7 +338,7 @@ Phase 2 is **not** started.
 | S7 | `p2/web-shell` | 2.17 signed-in shell (flag `p2-role-homes`), 2.18 Team page (C-72) | ✅ #40 |
 | S7b | `p2/staging` | staging on Railway + Cloudflare DNS (C-69, C-75, C-77): web image, roles, `railway up` deploys; staging bootstrap (C-78); email over Resend HTTPS (C-79) — staging live 2026-10-05, PO signed in on staging | ✅ #43–#48 |
 | S8 | `p2/hub-console` | 2.19 HUB sessions + handoff, 2.20 console + mandatory TOTP (flag `p2-console-home`; C-73) | ✅ #41 |
-| S9 | `p2/account-security` | 2.21 TOTP 2FA on every host + academy rule, 2.22 devices & sessions, password change, alerts (C-80) | 🟨 |
+| S9 | `p2/account-security` | 2.21 TOTP 2FA on every host + academy rule, 2.22 devices & sessions, password change, alerts (C-80) | ✅ #50 |
 | S10 | `p2/hardening-e2e` | 2.23 Phase 0 idempotency/logging follow-ups, 2.24 E2E + docs | ⬜ |
 
 **Working notes (handover, 2026-10-05)**
@@ -354,7 +354,7 @@ Phase 2 is **not** started.
 - **Signing keys:** `AUTH_SIGNING_KEYS` rotated to key ID `s2` before any user existed; `s1` was dropped.
 
 *Next step:*
-- **S9 `p2/account-security`** is in review (C-80): 2FA on every host, the academy rule, the Security page (`/settings/security`), password change, devices and sessions, and the alerts.
+- **S9 `p2/account-security`** (#50, C-80) is done: 2FA on every host, the academy rule, the Security page (`/settings/security`), password change, devices and sessions, and the alerts.
 - **Then S10** `p2/hardening-e2e` (2.23 idempotency/logging follow-ups M1–M3, L1, L2, L4; 2.24 E2E journeys + docs).
 - **Then P2-3 Gate**, which can now use real staging.
 
