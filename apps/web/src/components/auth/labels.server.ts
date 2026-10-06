@@ -3,6 +3,7 @@ import 'server-only';
 import { getTranslations } from 'next-intl/server';
 
 import { type ErrorLabels, type FieldLabels } from './labels';
+import type { MfaLabels } from './mfa-steps';
 
 export async function authLabels(): Promise<{
   t: Awaited<ReturnType<typeof getTranslations<'auth'>>>;
@@ -52,6 +53,49 @@ export async function authLabels(): Promise<{
   };
 }
 
+/** The 2FA sign-in steps (C-66, C-80); `academy` adds why enrolment is needed there. */
+export async function mfaLabels(academy?: string): Promise<MfaLabels> {
+  const [{ fields, errors }, m] = await Promise.all([authLabels(), getTranslations('auth.mfa')]);
+  return {
+    loading: m('loading'),
+    enrol: {
+      title: m('enrol.title'),
+      body: m('enrol.body'),
+      loading: m('enrol.loading'),
+      qrAlt: m('enrol.qrAlt'),
+      manualKey: m('enrol.manualKey'),
+      submit: m('enrol.submit'),
+      ...(academy ? { requiredNotice: m('enrol.requiredNotice', { academy }) } : {}),
+    },
+    codes: {
+      title: m('codes.title'),
+      body: m('codes.body'),
+      listLabel: m('codes.listLabel'),
+      copy: m('codes.copy'),
+      copied: m('codes.copied'),
+      done: m('codes.done'),
+    },
+    verify: {
+      title: m('verify.title'),
+      body: m('verify.body'),
+      submit: m('verify.submit'),
+      useRecovery: m('verify.useRecovery'),
+      useCode: m('verify.useCode'),
+      recoveryBody: m('verify.recoveryBody'),
+    },
+    fields: {
+      code: m('fields.code'),
+      recoveryCode: m('fields.recoveryCode'),
+      required: fields.required,
+    },
+    errors: {
+      ...errors,
+      wrongCode: m('errors.wrongCode'),
+      expired: m('errors.expired'),
+    },
+  };
+}
+
 export async function loginLabels() {
   const { t, fields, errors } = await authLabels();
   return { fields, errors, submit: t('login.submit'), forgot: t('login.forgot') };
@@ -85,8 +129,9 @@ export async function resetLabels() {
 }
 
 export async function inviteLabels(academy: string) {
-  const { t, fields, errors } = await authLabels();
+  const [{ t, fields, errors }, mfa] = await Promise.all([authLabels(), mfaLabels(academy)]);
   return {
+    mfa,
     fields,
     errors,
     newAccountBody: t('invite.newAccountBody'),

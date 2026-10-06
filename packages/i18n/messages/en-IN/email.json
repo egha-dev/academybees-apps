@@ -44,9 +44,9 @@
     "notYou": "If this wasn't you, change your password now and sign out the device under Security. Tell {academy} too."
   },
   "mfaDisabled": {
-    "subject": "Two-step verification was turned off",
-    "heading": "Two-step verification is off",
-    "body": "Two-step verification was just turned off for your AcademyBee account at {academy}. Signing in now needs only your password.",
-    "notYou": "If you didn't do this, change your password now, turn two-step verification back on and tell {academy}."
+    "subject": "Two-step sign-in was turned off",
+    "heading": "Two-step sign-in is off",
+    "body": "Two-step sign-in was just turned off for your AcademyBee account at {academy}. Signing in now needs only your password.",
+    "notYou": "If you didn't do this, change your password now, turn two-step sign-in back on and tell {academy}."
   }
 }

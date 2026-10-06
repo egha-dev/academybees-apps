@@ -1,12 +1,12 @@
 'use client';
 
-import { type LoginResponse } from '@academybee/contracts';
+import { type AcceptInvitationResponse } from '@academybee/contracts';
 import { Button, TextLink } from '@academybee/ui/components/actions';
 import { InlineAlert } from '@academybee/ui/components/alert';
 import { PasswordInput, TextInput } from '@academybee/ui/components/fields';
 import { Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, lazy, Suspense, useState } from 'react';
 
 import { api } from '@/lib/api';
 import { useHydrated } from '@/lib/use-hydrated';
@@ -14,6 +14,10 @@ import { useOnline } from '@/lib/use-online';
 
 import { formValues } from './form-values';
 import { type ErrorLabels, errorMessage, type FieldLabels, passwordProblem } from './labels';
+import type { MfaLabels } from './mfa-steps';
+
+// Needed only when the user has 2FA or the role requires it (route budget, G-24).
+const MfaSteps = lazy(() => import('./mfa-steps').then((m) => ({ default: m.MfaSteps })));
 
 export type InviteFormLabels = {
   fields: FieldLabels & { name: string };
@@ -27,11 +31,14 @@ export type InviteFormLabels = {
   forgot: string;
   invalid: string;
   alreadyMember: string;
+  mfa: MfaLabels;
 };
 
 /**
  * Accept a staff invitation (C-67). A new person creates their account here; someone who already
- * has an AcademyBee account confirms with its password. Both end signed in at their home.
+ * has an AcademyBee account confirms with its password. Both end signed in at their home — after
+ * a 2FA code when they have 2FA or the academy requires it for the role (C-80). The membership
+ * exists by then, so an expired 2FA step continues at sign-in.
  */
 export function InviteForm({
   token,
@@ -47,6 +54,7 @@ export function InviteForm({
   const [errors, setErrors] = useState<{ name?: string; password?: string }>({});
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const [mfa, setMfa] = useState<{ step: 'enrol' | 'verify'; token: string }>();
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -61,13 +69,19 @@ export function InviteForm({
     if (next.name || next.password) return;
     setBusy(true);
     setError(undefined);
-    const res = await api<LoginResponse>(`/invitations/${encodeURIComponent(token)}/accept`, {
-      method: 'POST',
-      body: accountExists ? { password } : { name: name.trim(), password },
-      anonymous: true,
-    });
+    const res = await api<AcceptInvitationResponse>(
+      `/invitations/${encodeURIComponent(token)}/accept`,
+      {
+        method: 'POST',
+        body: accountExists ? { password } : { name: name.trim(), password },
+        anonymous: true,
+      },
+    );
     if (res.ok) {
-      window.location.assign(res.data.redirectTo);
+      if ('mfa' in res.data) {
+        setBusy(false);
+        setMfa(res.data.mfa);
+      } else window.location.assign(res.data.redirectTo);
       return;
     }
     setBusy(false);
@@ -78,6 +92,29 @@ export function InviteForm({
     if (problem) setErrors({ password: problem });
     else setError(errorMessage(res.error, labels.errors));
   }
+
+  if (mfa)
+    return (
+      <Suspense
+        fallback={
+          <Stack role="status">
+            <Text tone="secondary">{labels.mfa.loading}</Text>
+          </Stack>
+        }
+      >
+        <MfaSteps
+          mfa={mfa}
+          labels={labels.mfa}
+          // The membership exists now: an expired step continues at sign-in (a full load, like
+          // every signed-in navigation, C-72).
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+          onExpired={() => window.location.assign('/login')}
+          onDone={(outcome) =>
+            window.location.assign('redirectTo' in outcome ? outcome.redirectTo : '/login')
+          }
+        />
+      </Suspense>
+    );
 
   return (
     <form method="post" noValidate onSubmit={(e) => void submit(e)}>

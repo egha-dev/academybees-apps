@@ -47,7 +47,7 @@ describe('renderEmail', () => {
 
   it('renders mfa_disabled as an alert without a call to action', () => {
     const email = renderEmail({ ...base, template: 'mfa_disabled' }, undefined);
-    expect(email.subject).toContain('Two-step verification');
+    expect(email.subject).toContain('Two-step sign-in');
     expect(email.html).not.toContain('<a href');
   });
 });

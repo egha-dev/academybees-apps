@@ -329,6 +329,14 @@ PasswordResetToken   userId · tokenHash · expiresAt · usedAt
 
 Super Admin signs in only on `console.academybees.com`. Console sessions have `aud=CONSOLE`, shorter lifetime, mandatory TOTP 2FA (Phase 14 — before that, restricted to allow-listed accounts created by CLI). Console tokens are rejected on tenant hosts and vice versa.
 
+### 6.3a Two-step sign-in, devices and alerts (G-11, C-80)
+
+- **TOTP 2FA for any user**, with ten single-use recovery codes (hashed) and the secret envelope-encrypted (ADR-033). Mandatory on the console (C-66). On academy and hub hosts it is optional, strongly prompted for Owner/Accountant (they land on `/settings/security?prompt=mfa` after sign-in), and mandatory for the staff roles listed in `tenant_settings.security.requireMfaForRoles`.
+- **Sign-in:** a correct password for a user who has 2FA (or must enrol) returns `{ mfa: { step, token } }` and never a session. The MFA token (256-bit, 5 minutes in Redis, 5 wrong codes) is bound to the host's audience and, on an academy host, to that academy; `/auth/mfa/{enrol/start,enrol/confirm,verify}` answer 404 elsewhere. After the code, the host's normal outcome follows (TENANT session, Family Hub handoff, HUB or CONSOLE session) with `AuthSession.mfaVerifiedAt` set. Invitation accept follows the same rule.
+- **Rule changes:** when the rule starts covering a member, their sessions without `mfaVerifiedAt` end at the next refresh (≤ 15 min) and the next sign-in asks them to enrol. Turning 2FA off is refused while the academy requires it.
+- **Signed-in management** on the academy host (`/settings/security`): set up (current password first), new recovery codes and turn off (current password), change password (signs out every other device everywhere), and the devices list (live sessions of this audience in this academy only, location-free), with sign-out per device and for all others.
+- **Known devices:** a host-only, httpOnly device-id cookie (400 days, not a credential), stored as a hash per user in `KnownDevice`. The first sign-in from an unknown device emails a "new device" alert, except for the user's very first device. "Password changed" and "two-step sign-in turned off" alerts are emailed too.
+
 ### 6.4 Impersonation ("Login as Academy") — Phase 14
 
 Explicit capability `platform.impersonate`, reason required, time-boxed (30 min), creates a tenant session with `act` claim (actor = platform user), persistent red banner in UI, every request audited with both identities, finance-mutating and credential-changing actions blocked while impersonating.

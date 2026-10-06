@@ -1,9 +1,10 @@
-'use client';
+// Client code reached only through lazy() from client components: no 'use client' boundary,
+// so the route manifest doesn't count it as eager JS (G-24).
 
 import {
-  type LoginResponse,
   type MfaEnrolConfirmResponse,
   type MfaEnrolStartResponse,
+  type MfaVerifyResponse,
 } from '@academybee/contracts';
 import { Button } from '@academybee/ui/components/actions';
 import { InlineAlert } from '@academybee/ui/components/alert';
@@ -12,15 +13,15 @@ import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import { type FormEvent, useEffect, useState } from 'react';
 
-import { type LoginFormLabels, LoginForm } from '@/components/auth/login-form';
-import { formValues } from '@/components/auth/form-values';
-import { errorMessage } from '@/components/auth/labels';
 import { api, type ApiError } from '@/lib/api';
 import { useHydrated } from '@/lib/use-hydrated';
 import { useOnline } from '@/lib/use-online';
 
-export type ConsoleSignInLabels = {
-  login: LoginFormLabels;
+import { formValues } from './form-values';
+import { type ErrorLabels, errorMessage } from './labels';
+
+export type MfaLabels = {
+  loading: string;
   enrol: {
     title: string;
     body: string;
@@ -28,6 +29,8 @@ export type ConsoleSignInLabels = {
     qrAlt: string;
     manualKey: string;
     submit: string;
+    /** Academy hosts: why enrolment is needed now (the academy requires it). */
+    requiredNotice?: string;
   };
   codes: {
     title: string;
@@ -45,69 +48,51 @@ export type ConsoleSignInLabels = {
     useCode: string;
     recoveryBody: string;
   };
-  fields: { code: string; recoveryCode: string };
-  errors: { wrongCode: string; expired: string };
+  fields: { code: string; recoveryCode: string; required: string };
+  errors: { wrongCode: string; expired: string } & ErrorLabels;
 };
 
-type Step =
-  | { kind: 'password'; notice?: string }
-  | { kind: 'enrol'; token: string }
-  | { kind: 'verify'; token: string }
-  | { kind: 'codes'; codes: string[]; redirectTo: string };
-
 /**
- * Console sign-in (C-66): password, then the second factor. The first time, an authenticator app
- * is set up (QR code + manual key) and ten recovery codes are shown once; after that every
- * sign-in needs a code from the app or a recovery code. An MFA token lasts five minutes; when it
- * runs out, sign-in starts again from the password.
+ * The second step of a sign-in (C-66, C-80): `enrol` sets up an authenticator app when 2FA is
+ * mandatory and then shows the ten recovery codes once; `verify` takes a code from the app or a
+ * recovery code. An MFA token lasts five minutes; `onExpired` returns to the password.
+ * `onDone` receives the API's answer (signed in, or a handoff to the Family Hub).
  */
-export function ConsoleSignIn({ labels }: { labels: ConsoleSignInLabels }) {
-  const [step, setStep] = useState<Step>({ kind: 'password' });
-
-  const expired = () => setStep({ kind: 'password', notice: labels.errors.expired });
-
-  switch (step.kind) {
-    case 'password':
-      return (
-        <Stack spacing={4}>
-          {step.notice && <InlineAlert tone="warning">{step.notice}</InlineAlert>}
-          <LoginForm
-            labels={labels.login}
-            showForgot={false}
-            onMfa={(mfa) => setStep({ kind: mfa.step, token: mfa.token })}
-          />
-        </Stack>
-      );
-    case 'enrol':
-      return (
-        <Enrol
-          token={step.token}
-          labels={labels}
-          onExpired={expired}
-          onDone={(res) =>
-            setStep({ kind: 'codes', codes: res.recoveryCodes, redirectTo: res.redirectTo })
-          }
-        />
-      );
-    case 'codes':
-      return (
-        <RecoveryCodes codes={step.codes} redirectTo={step.redirectTo} labels={labels.codes} />
-      );
-    case 'verify':
-      return <Verify token={step.token} labels={labels} onExpired={expired} />;
-  }
+export function MfaSteps({
+  mfa,
+  labels,
+  onExpired,
+  onDone,
+}: {
+  mfa: { step: 'enrol' | 'verify'; token: string };
+  labels: MfaLabels;
+  onExpired: () => void;
+  onDone: (outcome: MfaVerifyResponse) => void;
+}) {
+  const [codes, setCodes] = useState<MfaEnrolConfirmResponse>();
+  if (codes)
+    return (
+      <RecoveryCodes
+        codes={codes.recoveryCodes}
+        labels={labels.codes}
+        onDone={() => onDone(codes)}
+      />
+    );
+  return mfa.step === 'enrol' ? (
+    <Enrol token={mfa.token} labels={labels} onExpired={onExpired} onDone={setCodes} />
+  ) : (
+    <Verify token={mfa.token} labels={labels} onExpired={onExpired} onDone={onDone} />
+  );
 }
 
-function useCodeForm(labels: ConsoleSignInLabels, onExpired: () => void) {
+export function useCodeForm(labels: MfaLabels, onExpired?: () => void) {
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const fail = (e: ApiError) => {
     setBusy(false);
-    if (e.code === 'SESSION_EXPIRED') return onExpired();
+    if (e.code === 'SESSION_EXPIRED' && onExpired) return onExpired();
     setError(
-      e.code === 'INVALID_CREDENTIALS'
-        ? labels.errors.wrongCode
-        : errorMessage(e, labels.login.errors),
+      e.code === 'INVALID_CREDENTIALS' ? labels.errors.wrongCode : errorMessage(e, labels.errors),
     );
   };
   return { error, setError, busy, setBusy, fail };
@@ -120,7 +105,7 @@ function Enrol({
   onDone,
 }: {
   token: string;
-  labels: ConsoleSignInLabels;
+  labels: MfaLabels;
   onExpired: () => void;
   onDone: (res: MfaEnrolConfirmResponse) => void;
 }) {
@@ -142,7 +127,7 @@ function Enrol({
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const code = formValues(e)('code').trim();
-    if (!code) return form.setError(labels.login.fields.required);
+    if (!code) return form.setError(labels.fields.required);
     form.setBusy(true);
     form.setError(undefined);
     const res = await api<MfaEnrolConfirmResponse>('/auth/mfa/enrol/confirm', {
@@ -159,34 +144,14 @@ function Enrol({
       <Text variant="section" as="h2">
         {labels.enrol.title}
       </Text>
+      {labels.enrol.requiredNotice && (
+        <InlineAlert tone="info">{labels.enrol.requiredNotice}</InlineAlert>
+      )}
       <Text tone="secondary">{labels.enrol.body}</Text>
       {form.error && <InlineAlert tone="danger">{form.error}</InlineAlert>}
       {secret ? (
         <>
-          <Box
-            component="img"
-            src={secret.qrSvgDataUrl}
-            alt={labels.enrol.qrAlt}
-            sx={{
-              inlineSize: 200,
-              blockSize: 200,
-              backgroundColor: '#FFFFFF', // a QR code needs a light quiet zone in both themes
-              borderRadius: 2,
-              padding: 1,
-            }}
-          />
-          <Stack spacing={1}>
-            <Text variant="bodySmall" tone="secondary">
-              {labels.enrol.manualKey}
-            </Text>
-            <Box
-              component="code"
-              data-testid="manual-key"
-              sx={{ fontFamily: 'monospace', fontSize: 16, overflowWrap: 'anywhere' }}
-            >
-              {secret.manualKey}
-            </Box>
-          </Stack>
+          <QrSecret secret={secret} labels={labels.enrol} />
           <CodeForm
             name="code"
             label={labels.fields.code}
@@ -211,10 +176,12 @@ function Verify({
   token,
   labels,
   onExpired,
+  onDone,
 }: {
   token: string;
-  labels: ConsoleSignInLabels;
+  labels: MfaLabels;
   onExpired: () => void;
+  onDone: (outcome: MfaVerifyResponse) => void;
 }) {
   const online = useOnline();
   const [recovery, setRecovery] = useState(false);
@@ -223,15 +190,15 @@ function Verify({
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const value = formValues(e)('code').trim();
-    if (!value) return form.setError(labels.login.fields.required);
+    if (!value) return form.setError(labels.fields.required);
     form.setBusy(true);
     form.setError(undefined);
-    const res = await api<LoginResponse>('/auth/mfa/verify', {
+    const res = await api<MfaVerifyResponse>('/auth/mfa/verify', {
       method: 'POST',
       body: recovery ? { token, recoveryCode: value } : { token, code: value },
       anonymous: true,
     });
-    if (res.ok) window.location.assign(res.data.redirectTo);
+    if (res.ok) onDone(res.data);
     else form.fail(res.error);
   }
 
@@ -265,7 +232,45 @@ function Verify({
   );
 }
 
-function CodeForm({
+/** The QR code and manual key for an authenticator app. */
+export function QrSecret({
+  secret,
+  labels,
+}: {
+  secret: MfaEnrolStartResponse;
+  labels: { qrAlt: string; manualKey: string };
+}) {
+  return (
+    <>
+      <Box
+        component="img"
+        src={secret.qrSvgDataUrl}
+        alt={labels.qrAlt}
+        sx={{
+          inlineSize: 200,
+          blockSize: 200,
+          backgroundColor: '#FFFFFF', // a QR code needs a light quiet zone in both themes
+          borderRadius: 2,
+          padding: 1,
+        }}
+      />
+      <Stack spacing={1}>
+        <Text variant="bodySmall" tone="secondary">
+          {labels.manualKey}
+        </Text>
+        <Box
+          component="code"
+          data-testid="manual-key"
+          sx={{ fontFamily: 'monospace', fontSize: 16, overflowWrap: 'anywhere' }}
+        >
+          {secret.manualKey}
+        </Box>
+      </Stack>
+    </>
+  );
+}
+
+export function CodeForm({
   name,
   label,
   submit,
@@ -302,14 +307,15 @@ function CodeForm({
   );
 }
 
-function RecoveryCodes({
+/** Ten recovery codes, shown once, with copy. */
+export function RecoveryCodes({
   codes,
-  redirectTo,
   labels,
+  onDone,
 }: {
   codes: string[];
-  redirectTo: string;
-  labels: ConsoleSignInLabels['codes'];
+  labels: MfaLabels['codes'];
+  onDone: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -349,7 +355,7 @@ function RecoveryCodes({
       >
         {copied ? labels.copied : labels.copy}
       </Button>
-      <Button onClick={() => window.location.assign(redirectTo)} fullWidth>
+      <Button onClick={onDone} fullWidth>
         {labels.done}
       </Button>
     </Stack>

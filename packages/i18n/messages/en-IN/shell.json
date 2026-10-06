@@ -36,8 +36,10 @@
     "team": "Team",
     "groups": {
       "home": "Home",
-      "academy": "Academy"
-    }
+      "academy": "Academy",
+      "account": "Your account"
+    },
+    "security": "Security"
   },
   "account": {
     "signedInAs": "Signed in as {name}",

@@ -37,7 +37,7 @@ export const ANALYTICS_EVENTS = {
   'auth.mfa_enabled': defineAnalyticsEvent({
     name: 'auth.mfa_enabled',
     version: 1,
-    description: 'An academy user turned on two-step verification.',
+    description: 'An academy user turned on two-step sign-in.',
     properties: z.strictObject({
       /** Set up from the sign-in step because the academy requires it. */
       required: z.boolean(),
@@ -46,7 +46,7 @@ export const ANALYTICS_EVENTS = {
   'auth.mfa_disabled': defineAnalyticsEvent({
     name: 'auth.mfa_disabled',
     version: 1,
-    description: 'An academy user turned off two-step verification.',
+    description: 'An academy user turned off two-step sign-in.',
     properties: z.strictObject({}),
   }),
   'auth.password_changed': defineAnalyticsEvent({
@@ -58,7 +58,7 @@ export const ANALYTICS_EVENTS = {
   'academy.mfa_rule_changed': defineAnalyticsEvent({
     name: 'academy.mfa_rule_changed',
     version: 1,
-    description: 'An academy changed which staff roles must use two-step verification.',
+    description: 'An academy changed which staff roles must use two-step sign-in.',
     properties: z.strictObject({
       roles: z.array(z.enum(['owner', 'admin', 'teacher', 'accountant', 'receptionist'])),
     }),
