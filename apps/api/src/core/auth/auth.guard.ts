@@ -60,6 +60,8 @@ export class AuthGuard implements CanActivate {
     const cookies = readCookies(req);
     const names = cookieSpecs(this.config.COOKIE_MODE);
     const hasSessionCookie = Boolean(cookies[names.access.name] ?? cookies[names.refresh.name]);
+    const device = cookies[names.device.name];
+    if (device) this.cls.set('deviceCookie', device);
 
     const failure = await this.authenticate(cookies[names.access.name]);
     if (failure && !isPublic) throw failure;

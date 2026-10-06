@@ -28,8 +28,9 @@ export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export const LoginHandoffSchema = z.object({ handoff: z.object({ code: z.string() }) });
 
 /**
- * Password accepted, second factor needed (C-66): `enrol` the first time (console), `verify`
- * after. `token` is a short-lived MFA token for `/auth/mfa/*`; no session exists yet.
+ * Password accepted, second factor needed (C-66, C-80): `enrol` when 2FA is mandatory and not set
+ * up yet (console; an academy that requires it for the user's roles), `verify` for everyone who
+ * has it. `token` is a short-lived MFA token for `/auth/mfa/*` on the same host; no session yet.
  */
 export const MfaStepSchema = z.enum(['enrol', 'verify']);
 export const LoginMfaSchema = z.object({
@@ -48,7 +49,7 @@ export type LoginOutcome = z.infer<typeof LoginOutcomeSchema>;
 export const HandoffRequestSchema = z.object({ code: z.string().min(20).max(100) });
 
 const MfaTokenSchema = z.string().min(20).max(100);
-const TotpCodeSchema = z
+export const TotpCodeSchema = z
   .string()
   .trim()
   .regex(/^\d{3}\s?\d{3}$/);
@@ -70,6 +71,10 @@ export const MfaEnrolConfirmResponseSchema = LoginResponseSchema.extend({
   recoveryCodes: z.array(z.string()).length(10),
 });
 export type MfaEnrolConfirmResponse = z.infer<typeof MfaEnrolConfirmResponseSchema>;
+
+/** After the second factor: signed in, or (parent/student on an academy host) the handoff. */
+export const MfaVerifyResponseSchema = z.union([LoginResponseSchema, LoginHandoffSchema]);
+export type MfaVerifyResponse = z.infer<typeof MfaVerifyResponseSchema>;
 
 /** Sign-in second step: a TOTP code or one recovery code. */
 export const MfaVerifyRequestSchema = z

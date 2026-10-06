@@ -115,7 +115,10 @@ describe('staging bootstrap', () => {
       .set('Host', 'demo-a.localhost')
       .send({ identifier: to, password: 'Harbour#Lantern2026' });
     expect(login.status).toBe(200);
-    expect(login.body).toMatchObject({ experience: 'manage', redirectTo: '/today' });
+    expect(login.body).toMatchObject({
+      experience: 'manage',
+      redirectTo: '/settings/security?prompt=mfa',
+    });
   });
 
   it('is idempotent; --resend replaces the links of users without a password only', async () => {

@@ -29,6 +29,8 @@ export interface RequestContext extends ClsStore {
   host?: string;
   ip?: string;
   userAgent?: string;
+  /** The browser's device-id cookie (new-device alerts, G-11); set by the AuthGuard. */
+  deviceCookie?: string;
   resolvedHost?: ResolvedHost;
   /**
    * The resolved academy. Set only from the request host (never from client input), read by the

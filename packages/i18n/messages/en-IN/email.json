@@ -20,7 +20,7 @@
   "passwordChanged": {
     "subject": "Your AcademyBee password was changed",
     "heading": "Your password was changed",
-    "body": "The password for your AcademyBee account was just changed, and you were signed out of every device.",
+    "body": "The password for your AcademyBee account was just changed. Other devices that were signed in now need the new password.",
     "notYou": "If you didn't change it, reset your password now and tell {academy}."
   },
   "platformAdminInvite": {
@@ -36,5 +36,17 @@
     "body": "An AcademyBee account has been set up for you at {academy}. Choose a password to sign in.",
     "cta": "Choose a password",
     "expiry": "This link works once and expires in 3 days. If you didn't expect it, you can ignore this email."
+  },
+  "newDevice": {
+    "subject": "New sign-in to your AcademyBee account",
+    "heading": "A new device signed in",
+    "body": "Your account at {academy} was just used to sign in on {browser, select, chrome {Chrome} edge {Edge} firefox {Firefox} safari {Safari} other {a browser}} on {os, select, android {Android} ios {iPhone or iPad} windows {Windows} macos {Mac} linux {Linux} other {an unknown device}}.",
+    "notYou": "If this wasn't you, change your password now and sign out the device under Security. Tell {academy} too."
+  },
+  "mfaDisabled": {
+    "subject": "Two-step verification was turned off",
+    "heading": "Two-step verification is off",
+    "body": "Two-step verification was just turned off for your AcademyBee account at {academy}. Signing in now needs only your password.",
+    "notYou": "If you didn't do this, change your password now, turn two-step verification back on and tell {academy}."
   }
 }
