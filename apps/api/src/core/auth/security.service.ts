@@ -78,9 +78,13 @@ export class SecurityService {
     return { recoveryCodes: await this.mfa.regenerateRecoveryCodes(userId) };
   }
 
-  /** Turn 2FA off — never while this academy requires it for the user's roles. */
+  /**
+   * Turn 2FA off — never while this academy requires it for the user's roles. Every other device
+   * (in every academy and the hub) is signed out, so no session verified with the old factor
+   * outlives it — including one in an academy that requires 2FA (C-80).
+   */
   async disableMfa(password: string): Promise<void> {
-    const { userId, roles } = this.me();
+    const { userId, sessionId, roles } = this.me();
     await this.reauthenticate(userId, password);
     if (await this.mfaPolicy.isRequiredFor(roles))
       throw new DomainError('CONFLICT', 'required by the academy', [
@@ -98,6 +102,7 @@ export class SecurityService {
         });
       await this.analytics.track(tx, 'auth.mfa_disabled', {});
     });
+    await this.sessions.revokeUserSessions(userId, 'mfa_disabled', undefined, { sessionId });
   }
 
   /** Change the password; every other device (in every academy and the hub) is signed out. */

@@ -417,15 +417,23 @@ describe('account security', () => {
   });
 
   describe('turn 2FA off', () => {
-    it('needs the password, sends an alert, and sign-in no longer asks for a code', async () => {
+    it('needs the password, signs out other devices, sends an alert; sign-in asks no code', async () => {
       const teacher = await member(a, 'teacher');
       const s = await signIn(a, teacher.email);
-      await enableMfa(a, s);
+      const { secret } = await enableMfa(a, s);
+      await allowStepAgain(teacher.userId);
+      const step = (await login(host(a), teacher.email)).body.mfa as { token: string };
+      const elsewhere = toSession(
+        await mfa(host(a), 'verify', { token: step.token, code: totpCode(secret) }),
+      );
       expect((await post(a, s, '/auth/mfa/disable', { password: 'Wrong#Pass2026' })).status).toBe(
         401,
       );
       const off = await post(a, s, '/auth/mfa/disable', { password: FIXTURE_PASSWORD });
       expect(off.status).toBe(204);
+      // Other devices (verified with the old factor) are signed out; this one stays.
+      expect((await get(a, elsewhere, '/auth/me')).status).toBe(401);
+      expect((await get(a, s, '/auth/me')).status).toBe(200);
       const sent = await emails(teacher.email, 'mfa_disabled');
       expect(sent).toHaveLength(1);
       expect(sent[0]!.host).toEqual({ kind: 'academy', slug: a.slug });
