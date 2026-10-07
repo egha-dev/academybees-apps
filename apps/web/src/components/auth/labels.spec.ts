@@ -18,6 +18,27 @@ describe('auth error copy', () => {
     expect(errorMessage({ code: 'INTERNAL', status: 500 }, errors)).toBe('generic');
   });
 
+  it('says how long to wait when the API sends Retry-After, rounded up', () => {
+    const withWaits = {
+      ...errors,
+      rateLimitedIn: { 1: 'in 1', 2: 'in 2', 10: 'in 10', 60: 'in 60' },
+    };
+    const limited = (retryAfterSeconds?: number) =>
+      errorMessage(
+        { code: 'RATE_LIMITED', status: 429, ...(retryAfterSeconds ? { retryAfterSeconds } : {}) },
+        withWaits,
+      );
+    expect(limited(42)).toBe('in 1');
+    expect(limited(61)).toBe('in 2');
+    expect(limited(7 * 60)).toBe('in 10');
+    expect(limited(3 * 3600)).toBe('in 60');
+    expect(limited()).toBe('rate');
+    // Without the pre-translated waits (older labels), the general message.
+    expect(errorMessage({ code: 'RATE_LIMITED', status: 429, retryAfterSeconds: 42 }, errors)).toBe(
+      'rate',
+    );
+  });
+
   it('explains a password-policy problem on the field', () => {
     const labels = { problems: { too_common: 'common' } } as unknown as FieldLabels;
     expect(

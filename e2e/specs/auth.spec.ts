@@ -39,7 +39,9 @@ test('the academy URL opens its own sign-in; the owner is asked for 2FA, then To
 
   await signIn(page, 'owner@demo-a.test');
   // An Owner without two-step sign-in gets the strong prompt first (G-11, C-80).
-  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/settings/security?prompt=mfa'));
+  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/settings/security?prompt=mfa'), {
+    timeout: 15_000, // the first sign-in of a run can meet a cold server
+  });
   await expect(
     page.getByRole('heading', { name: "Protect Demo A Academy's money and records" }),
   ).toBeVisible();
@@ -198,6 +200,20 @@ test('a broken invite or reset link explains what to do next', async ({ page }, 
     "This link doesn't work any more",
   );
   await expect(page.getByRole('link', { name: 'Get a new link' })).toBeVisible();
+});
+
+test('too many wrong passwords say when to try again', async ({ page }, testInfo) => {
+  // An unknown address: the per-identifier limit (5 a minute) applies without locking a real user.
+  const identifier = unique(testInfo, 'too-many');
+  await page.goto(hostUrl(testInfo, 'demo-a', '/login'));
+  for (let i = 0; i < 5; i++) {
+    await signIn(page, identifier, `Wrong#Pass${i}2026`);
+    await expect(formAlert(page)).toContainText("doesn't match");
+  }
+  await signIn(page, identifier, 'Wrong#Pass52026');
+  await expect(formAlert(page)).toHaveText(
+    'Too many attempts. For your security, try again in 1 minute, or reset your password.',
+  );
 });
 
 test('a teacher of two academies signs in to each one separately', async ({ page }, testInfo) => {

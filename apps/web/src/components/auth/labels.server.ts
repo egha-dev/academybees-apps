@@ -2,7 +2,7 @@ import 'server-only';
 
 import { getTranslations } from 'next-intl/server';
 
-import { type ErrorLabels, type FieldLabels } from './labels';
+import { type ErrorLabels, type FieldLabels, RETRY_MINUTES } from './labels';
 import type { MfaLabels } from './mfa-steps';
 
 export async function authLabels(): Promise<{
@@ -46,6 +46,9 @@ export async function authLabels(): Promise<{
     errors: {
       invalidCredentials: t('errors.invalidCredentials'),
       rateLimited: t('errors.rateLimited'),
+      rateLimitedIn: Object.fromEntries(
+        RETRY_MINUTES.map((minutes) => [minutes, t('errors.rateLimitedIn', { minutes })]),
+      ),
       offline: t('errors.offline'),
       network: t('errors.network'),
       generic: t('errors.generic'),

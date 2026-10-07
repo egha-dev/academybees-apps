@@ -10,9 +10,17 @@ export type FieldLabels = {
   problems: Record<'too_short' | 'too_long' | 'too_common' | 'contains_identifier', string>;
 };
 
+/**
+ * Waits (minutes) the "try again in …" message is pre-translated for on the server (ICU plurals,
+ * no ICU runtime in the browser, G-24). The real wait is rounded up to the next one.
+ */
+export const RETRY_MINUTES = [1, 2, 3, 4, 5, 10, 15, 20, 30, 45, 60] as const;
+
 export type ErrorLabels = {
   invalidCredentials: string;
   rateLimited: string;
+  /** "Try again in N minutes" for each of RETRY_MINUTES. */
+  rateLimitedIn?: Partial<Record<number, string>>;
   offline: string;
   network: string;
   generic: string;
@@ -23,8 +31,13 @@ export function errorMessage(error: ApiError, labels: ErrorLabels): string {
   switch (error.code) {
     case 'INVALID_CREDENTIALS':
       return labels.invalidCredentials;
-    case 'RATE_LIMITED':
-      return labels.rateLimited;
+    case 'RATE_LIMITED': {
+      const seconds = error.retryAfterSeconds;
+      if (!seconds || !labels.rateLimitedIn) return labels.rateLimited;
+      const minutes = Math.ceil(seconds / 60);
+      const bucket = RETRY_MINUTES.find((m) => m >= minutes) ?? RETRY_MINUTES.at(-1)!;
+      return labels.rateLimitedIn[bucket] ?? labels.rateLimited;
+    }
     case 'OFFLINE':
       return labels.offline;
     case 'NETWORK':
