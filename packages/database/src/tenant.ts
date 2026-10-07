@@ -23,13 +23,36 @@ export type TenantIdSource = () => string | undefined;
 /** Returns the signed-in (or flow-resolved) user, or undefined (C-59). */
 export type UserIdSource = () => string | undefined;
 
-type DbContext = { tenantId: string | undefined; userId: string | undefined };
+/**
+ * The idempotency claim the current request holds (review M1): its record id, the attempt it owns
+ * (bumped when a stale claim is taken over) and the record's tenant.
+ */
+export type IdempotencyClaimRef = { id: string; attempt: number; tenantId: string | undefined };
+/** Returns the claim of the current request, if it holds one. */
+export type IdempotencyClaimSource = () => IdempotencyClaimRef | undefined;
+
+type DbContext = {
+  tenantId: string | undefined;
+  userId: string | undefined;
+  claim?: IdempotencyClaimRef | undefined;
+};
 
 /** A tenant-owned table was used without a tenant context (fails closed). */
 export class TenantContextMissingError extends Error {
   constructor(model: string, operation: string) {
     super(`Tenant context required for ${model}.${operation}`);
     this.name = 'TenantContextMissingError';
+  }
+}
+
+/**
+ * The request's idempotency claim was taken over by a retry after its lease ran out, so this
+ * request may no longer commit: its transaction is rolled back (review M1, fencing).
+ */
+export class IdempotencyClaimLostError extends Error {
+  constructor() {
+    super('idempotency claim lost: a retry took over this key');
+    this.name = 'IdempotencyClaimLostError';
   }
 }
 
@@ -212,7 +235,66 @@ function setContextQuery({ tenantId, userId }: DbContext): SqlQuery {
   };
 }
 
-const hasContext = (ctx: DbContext) => ctx.tenantId !== undefined || ctx.userId !== undefined;
+const hasContext = (ctx: DbContext) =>
+  ctx.tenantId !== undefined || ctx.userId !== undefined || ctx.claim !== undefined;
+
+const isCommit = (query: SqlQuery) => query.sql.trim().toUpperCase() === 'COMMIT';
+
+/**
+ * Runs inside every transaction of a request that holds an idempotency claim, right before its
+ * COMMIT (review M1). It records that the request committed something — atomically with the side
+ * effect — so a stale claim is taken over only when nothing was ever committed. It also fences:
+ * when a retry has taken the claim over, the UPDATE matches no row and this transaction is rolled
+ * back, so two attempts can never both commit. The record's own tenant is set first because the
+ * statement must see the row whatever context the transaction ran in (the GUC is transaction-local
+ * and the transaction ends right after).
+ */
+async function markClaimCommitted(tx: Transaction, claim: IdempotencyClaimRef): Promise<void> {
+  if (claim.tenantId !== undefined && !UUID.test(claim.tenantId))
+    throw new Error('Claim tenant is not a UUID');
+  if (!UUID.test(claim.id)) throw new Error('Claim id is not a UUID');
+  await tx.executeRaw({
+    sql: `SELECT set_config('app.tenant_id', $1, true)`,
+    args: [claim.tenantId ?? ''],
+    argTypes: [{ scalarType: 'string', arity: 'scalar' }],
+  });
+  const marked = await tx.queryRaw({
+    sql: `UPDATE idempotency_record SET committed_at = COALESCE(committed_at, now())
+           WHERE id = $1::uuid AND attempt = $2 AND status = 'IN_PROGRESS' RETURNING id`,
+    args: [claim.id, claim.attempt],
+    argTypes: [
+      { scalarType: 'string', arity: 'scalar' },
+      { scalarType: 'int', arity: 'scalar' },
+    ],
+  });
+  if (marked.rows.length !== 1) throw new IdempotencyClaimLostError();
+}
+
+/** A transaction whose COMMIT first marks the request's idempotency claim. */
+function withClaimMarker(tx: Transaction, claim: IdempotencyClaimRef): Transaction {
+  return new Proxy(tx, {
+    get(target, prop, receiver) {
+      if (prop === 'executeRaw')
+        return async (query: SqlQuery) => {
+          if (isCommit(query)) {
+            try {
+              await markClaimCommitted(target, claim);
+            } catch (error) {
+              // Prisma's rollback() only returns the connection to the pool; without an explicit
+              // ROLLBACK the open transaction would be committed by the connection's next user.
+              await target.executeRaw(STATEMENT('ROLLBACK')).catch(() => undefined);
+              throw error;
+            }
+          }
+          return target.executeRaw(query);
+        };
+      const value: unknown = Reflect.get(target, prop, receiver);
+      return typeof value === 'function'
+        ? (value as (...a: unknown[]) => unknown).bind(target)
+        : value;
+    },
+  });
+}
 
 /**
  * Driver-level context. Every statement Prisma sends outside a transaction runs as
@@ -228,8 +310,10 @@ function tenantScopedAdapter(
   const inContext = async <T>(ctx: DbContext, run: (tx: Transaction) => Promise<T>): Promise<T> => {
     const tx = await adapter.startTransaction();
     try {
-      await tx.executeRaw(setContextQuery(ctx));
+      if (ctx.tenantId !== undefined || ctx.userId !== undefined)
+        await tx.executeRaw(setContextQuery(ctx));
       const result = await run(tx);
+      if (ctx.claim) await markClaimCommitted(tx, ctx.claim);
       await tx.executeRaw(STATEMENT('COMMIT'));
       await tx.commit();
       return result;
@@ -261,7 +345,7 @@ function tenantScopedAdapter(
           return async (isolationLevel?: IsolationLevel) => {
             const ctx = getContext();
             const tx = await target.startTransaction(isolationLevel);
-            if (hasContext(ctx)) {
+            if (ctx.tenantId !== undefined || ctx.userId !== undefined) {
               try {
                 await tx.executeRaw(setContextQuery(ctx));
               } catch (error) {
@@ -270,7 +354,7 @@ function tenantScopedAdapter(
                 throw error;
               }
             }
-            return tx;
+            return ctx.claim ? withClaimMarker(tx, ctx.claim) : tx;
           };
         case 'executeScript':
           return () =>
@@ -314,14 +398,19 @@ function tenantScopedAdapterFactory(
 export function createTenantBoundClient(
   url: string,
   getTenantId: TenantIdSource,
-  options: DatabaseClientOptions & { getUserId?: UserIdSource } = {},
+  options: DatabaseClientOptions & {
+    getUserId?: UserIdSource;
+    getIdempotencyClaim?: IdempotencyClaimSource;
+  } = {},
 ): TenantBoundClient {
   const getUserId = options.getUserId ?? (() => undefined);
+  const getClaim = options.getIdempotencyClaim ?? (() => undefined);
   const adapter = new PrismaPg({ connectionString: url, max: options.maxConnections ?? 10 });
   const base = new PrismaClient({
     adapter: tenantScopedAdapterFactory(adapter, () => ({
       tenantId: getTenantId(),
       userId: getUserId(),
+      claim: getClaim(),
     })),
     log: options.log ?? [],
   });

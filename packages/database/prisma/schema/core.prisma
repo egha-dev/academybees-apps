@@ -49,6 +49,12 @@ model IdempotencyRecord {
   status         IdempotencyStatus
   responseStatus Int?              @map("response_status")
   responseBody   Json?             @map("response_body")
+  /// The attempt that owns the key; a retry that takes over a stale claim bumps it (review M1).
+  attempt        Int               @default(1)
+  /// IN_PROGRESS claims are leased; after this a retry may take over, if nothing was committed.
+  lockedUntil    DateTime          @default(now()) @map("locked_until") @db.Timestamptz(3)
+  /// Set in the same transaction as the request's first commit: the side effect happened.
+  committedAt    DateTime?         @map("committed_at") @db.Timestamptz(3)
   createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   expiresAt      DateTime          @map("expires_at") @db.Timestamptz(3)
 

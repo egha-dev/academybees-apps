@@ -33,7 +33,10 @@ class DatabaseShutdown implements OnApplicationShutdown {
         createTenantBoundClient(
           config.DATABASE_URL,
           () => (cls.isActive() ? cls.get('tenantId') : undefined),
-          { getUserId: () => (cls.isActive() ? cls.get('userId') : undefined) },
+          {
+            getUserId: () => (cls.isActive() ? cls.get('userId') : undefined),
+            getIdempotencyClaim: () => (cls.isActive() ? cls.get('idempotencyClaim') : undefined),
+          },
         ),
     },
     DatabaseShutdown,

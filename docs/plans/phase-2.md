@@ -253,6 +253,8 @@ Unauthenticated `/` on an academy host goes to `/login`, and **`p1-tenant-home` 
 - **L2** log URLs without query strings, deep redaction;
 - **L4** unmapped 4xx logged and mapped.
 
+*As built (C-82):* M1 is a 60 s lease with a commit marker written in the same transaction as the side effect, and fencing on the attempt number. M2/M3 come from a fixed interceptor order. L1/L2 cover API and worker logs. L4 maps any other 4xx to 400 and logs it. The Phase 1 follow-ups assigned here (L6, L7, tenantId mismatch → 404) were already done in S4.
+
 **2.24 E2E journeys + docs.**
 - invite → accept → sign in → role home;
 - forgot → Mailpit link → reset → sign in;
@@ -262,6 +264,8 @@ Unauthenticated `/` on an academy host goes to `/login`, and **`p1-tenant-home` 
 - 2FA enrol + sign in;
 - sign out everywhere;
 - axe in both themes on all new screens; pseudo-locale on Login.
+
+*As built:* the journeys above live in `auth.spec.ts`, `hub-console.spec.ts`, `team.spec.ts` and `security.spec.ts`. S10 added the teacher of two academies (each host signs in separately; signing out of one leaves the other), axe on the academy sign-in screens (login, forgot, reset, invite) in both themes, and the pseudo-locale check on the signed-in Security and Team pages (Intl dates are ignored as data). The Team test now follows "Show more members", so it doesn't depend on how many members the database already has.
 
 Docs: ARCHITECTURE §6/§7/§9.2 as built, README (demo logins), CLAUDE.md §8, runbook (secrets, email provider, console allow-list).
 

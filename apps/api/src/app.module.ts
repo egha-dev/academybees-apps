@@ -3,6 +3,7 @@ import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 
 import { AnalyticsModule } from './core/analytics/analytics.module.js';
 import { AuditModule } from './core/audit/audit.module.js';
+import { AuditedInterceptor } from './core/audit/audited.js';
 import { AuthModule } from './core/auth/auth.module.js';
 import { ConfigModule } from './core/config/config.module.js';
 import { type ApiConfig } from './core/config/config.schema.js';
@@ -13,6 +14,7 @@ import { EmailModule } from './core/email/email.module.js';
 import { FlagsModule } from './core/flags/flags.module.js';
 import { HealthModule } from './core/health/health.module.js';
 import { IdempotencyModule } from './core/idempotency/idempotency.module.js';
+import { IdempotencyInterceptor } from './core/idempotency/idempotent.js';
 import { LoggingModule } from './core/logging/logging.module.js';
 import { OutboxModule } from './core/outbox/outbox.module.js';
 import { RateLimitModule } from './core/rate-limit/rate-limit.module.js';
@@ -55,6 +57,13 @@ export class AppModule {
       ],
       providers: [
         { provide: APP_PIPE, useClass: ZodValidationPipe },
+        // Global interceptors run outermost-first in this order (review M2/M3):
+        // 1. idempotency — a replay returns before anything else runs (no second audit row) and
+        //    the stored body is the one the client got (already filtered by its schema);
+        // 2. @Audited — records only real executions;
+        // 3. response schema — closest to the handler.
+        { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },
+        { provide: APP_INTERCEPTOR, useClass: AuditedInterceptor },
         { provide: APP_INTERCEPTOR, useClass: ZodResponseInterceptor },
       ],
     };

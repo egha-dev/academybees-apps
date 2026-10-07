@@ -339,7 +339,7 @@ Phase 2 is **not** started.
 | S7b | `p2/staging` | staging on Railway + Cloudflare DNS (C-69, C-75, C-77): web image, roles, `railway up` deploys; staging bootstrap (C-78); email over Resend HTTPS (C-79) — staging live 2026-10-05, PO signed in on staging | ✅ #43–#48 |
 | S8 | `p2/hub-console` | 2.19 HUB sessions + handoff, 2.20 console + mandatory TOTP (flag `p2-console-home`; C-73) | ✅ #41 |
 | S9 | `p2/account-security` | 2.21 TOTP 2FA on every host + academy rule, 2.22 devices & sessions, password change, alerts (C-80) | ✅ #50 |
-| S10 | `p2/hardening-e2e` | 2.23 Phase 0 idempotency/logging follow-ups, 2.24 E2E + docs | ⬜ |
+| S10 | `p2/hardening-e2e` | 2.23 idempotency lease + fencing, interceptor order, log safety (C-82), 2.24 E2E + docs | ✅ #52 |
 
 **Working notes (handover, 2026-10-05)**
 
@@ -355,8 +355,9 @@ Phase 2 is **not** started.
 
 *Next step:*
 - **S9 `p2/account-security`** (#50, C-80) is done: 2FA on every host, the academy rule, the Security page (`/settings/security`), password change, devices and sessions, and the alerts.
-- **Then S10** `p2/hardening-e2e` (2.23 idempotency/logging follow-ups M1–M3, L1, L2, L4; 2.24 E2E journeys + docs).
+- **S10** `p2/hardening-e2e` (C-82): idempotency lease + commit marker + fencing (M1), interceptor order (M2, M3), log safety (L1, L2, L4), the remaining E2E journeys and docs.
 - **Then P2-3 Gate**, which can now use real staging.
+- **Repository (C-81):** public until stable, so CI runs on GitHub-hosted runners. The self-hosted runner is parked on branch `ci/self-hosted-runner` (PR #51 closed).
 
 *Open items:*
 - **PO, checklist §H:** delete the Railway account token `github-actions-staging` and the variable `STAGING_RAILWAY_PROJECT_ID`, and remove the worker's unused `SMTP_URL` (optional). `RAILWAY_API_TOKEN` already appears deleted.

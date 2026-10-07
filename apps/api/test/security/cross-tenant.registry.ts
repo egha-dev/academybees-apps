@@ -194,4 +194,5 @@ export const NOT_TENANT_ROUTES = new Set([
   'POST /api/v1/test/unique',
   'POST /api/v1/test/payments',
   'POST /api/v1/test/failing-payments',
+  'POST /api/v1/test/ledger',
 ]);

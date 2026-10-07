@@ -27,6 +27,11 @@ export class ErrorEnvelopeFilter implements ExceptionFilter {
     if (mapped.unexpected) {
       this.logger.error({ err: exception, requestId }, 'Unhandled error');
       reportError(exception, { requestId });
+    } else if (mapped.unmappedStatus !== undefined) {
+      this.logger.warn(
+        { status: mapped.unmappedStatus, err: exception, requestId },
+        'Unmapped client error status',
+      );
     } else if (exception instanceof DomainError && exception.reason) {
       this.logger.debug({ code: mapped.code, reason: exception.reason, requestId }, 'Domain error');
     }

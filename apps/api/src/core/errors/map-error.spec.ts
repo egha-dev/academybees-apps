@@ -1,5 +1,10 @@
-import { Prisma, TenantMismatchError } from '@academybee/database';
-import { BadRequestException, NotFoundException, PayloadTooLargeException } from '@nestjs/common';
+import { IdempotencyClaimLostError, Prisma, TenantMismatchError } from '@academybee/database';
+import {
+  BadRequestException,
+  HttpException,
+  NotFoundException,
+  PayloadTooLargeException,
+} from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
@@ -45,6 +50,29 @@ describe('mapError', () => {
     expect(mapError(new NotFoundException()).code).toBe('NOT_FOUND');
     expect(mapError(new BadRequestException()).code).toBe('VALIDATION_FAILED');
     expect(mapError(new PayloadTooLargeException()).code).toBe('VALIDATION_FAILED');
+  });
+
+  it('maps any other 4xx to 400 and marks it for logging, never a silent 500 (review L4)', () => {
+    expect(mapError(new HttpException('gone', 410))).toEqual({
+      status: 400,
+      code: 'VALIDATION_FAILED',
+      unexpected: false,
+      unmappedStatus: 410,
+    });
+    expect(mapError(Object.assign(new Error('timeout'), { status: 408 }))).toMatchObject({
+      code: 'VALIDATION_FAILED',
+      unmappedStatus: 408,
+    });
+    expect(mapError(new HttpException('bad gateway', 502))).toMatchObject({
+      code: 'INTERNAL',
+      unexpected: true,
+    });
+  });
+
+  it('a lost idempotency claim answers IDEMPOTENCY_KEY_IN_PROGRESS, even wrapped (review M1)', () => {
+    expect(mapError(new IdempotencyClaimLostError()).code).toBe('IDEMPOTENCY_KEY_IN_PROGRESS');
+    const wrapped = new Error('driver failed', { cause: new IdempotencyClaimLostError() });
+    expect(mapError(wrapped).code).toBe('IDEMPOTENCY_KEY_IN_PROGRESS');
   });
 
   it('treats anything else as INTERNAL and flags it for logging', () => {

@@ -4,6 +4,7 @@ import {
   type Scope,
   type TenantStatus,
 } from '@academybee/contracts';
+import { type IdempotencyClaimRef } from '@academybee/database';
 import { type ClsStore } from 'nestjs-cls';
 
 /** Who performed a request or job (filled by auth in Phase 2). */
@@ -42,6 +43,8 @@ export interface RequestContext extends ClsStore {
   userId?: string;
   /** Current session (set by the AuthGuard). */
   session?: { id: string; audience: 'TENANT' | 'CONSOLE' | 'HUB' };
+  /** The idempotency claim held while an `@Idempotent()` handler runs (review M1). */
+  idempotencyClaim?: IdempotencyClaimRef | undefined;
   /** The user's membership in the request's academy (TENANT sessions). */
   membership?: MembershipInfo;
 }
