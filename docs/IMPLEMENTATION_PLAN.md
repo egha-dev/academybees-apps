@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-07 · Current phase: **Phase 3 — Academy Provisioning + Onboarding (⬜ next)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**)
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-07 · Current phase: **Phase 3 — Academy Provisioning + Onboarding (🟨 in progress since 2026-10-07)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -14,7 +14,7 @@
 | 0 | Foundation | ✅ 2026-10-01 | Outbox, audit, idempotency tables; English-only i18n foundation, multilingual-ready (G-08, G-32), analytics port, perf budgets (G-09, G-24) | ADR-001/002/012/013/014/015/016/022/030/031/032/035/040 |
 | 1 | Multi-Tenant + Wildcard Domain | ✅ 2026-10-02 | Default branch per tenant; `app.` Family Hub host reserved + classified (G-31) | ADR-003/004/005/039, C-07 |
 | 2 | Authentication + RBAC | ✅ | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
-| 3 | Academy Provisioning + Onboarding | ⬜ | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, ADR-028/034 |
+| 3 | Academy Provisioning + Onboarding | 🟨 | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, ADR-028/034 |
 | 4 | Students + Parents + Teachers | ⬜ | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
 | 5 | Courses + Batches + Timetable | ⬜ | Owner Today v1; terminology; holidays (G-03); transfer (G-27) | ADR-024/029/037 |
 | 6 | Attendance + Offline Sync | ⬜ | Teacher PWA core; outbox → in-app notifications; teacher nudge (G-16) | ADR-016/017, C-04, C-06 |
@@ -456,6 +456,20 @@ Phase 2 is **not** started.
 
 **Goal.** Super Admin creates an academy and hands over a URL; the owner opens it and is guided to a ready-to-run academy.
 **Refs.** PRD v3.1 §A–J, v3 §6, §19, §20; UX §22, v1.1 §2–6, §9–10; DECISIONS C-02, C-03, C-08, C-09.
+**Status.** 🟨 started 2026-10-07 (`phase-3-start` = `afd72c2`). Approved slice plan: [`docs/plans/phase-3.md`](plans/phase-3.md) (decisions C-85…C-96; logos on ImageKit, C-93).
+
+**Slices (each = one PR, ADR-041)**
+
+| Slice | Branch | Tasks | State |
+| --- | --- | --- | --- |
+| S1 | `p3/plans-legal` | 3.1 plan + decisions, 3.2 plans/entitlements/trial, 3.3 legal documents + acceptance | 🟨 |
+| S2 | `p3/people-scheduling-schema` | 3.4 people schema, 3.5 scheduling + onboarding schema, 3.6 RLS, seeds, factories | ⬜ |
+| S3 | `p3/provisioning-api` | 3.7 ProvisioningService, 3.8 console academy management API, 3.9 status enforcement (C-86, C-96) + tests | ⬜ |
+| S4 | `p3/console-ui` | 3.10 console shell + Academies list (removes `p2-console-home`), 3.11 Create Academy + Provisioning Success, 3.12 academy detail | ⬜ |
+| S5 | `p3/onboarding-api` | 3.13 onboarding state, 3.14 minimal create commands, 3.15 SETUP routing (flag `p3-onboarding`) | ⬜ |
+| S6 | `p3/media-branding` | 3.16 media storage (ImageKit / SeaweedFS), 3.17 Settings → Academy, Branding & Domain, 3.18 logo everywhere | ⬜ |
+| S7 | `p3/onboarding-ui` | 3.19 legal + Welcome, 3.20 Profile/Type/Course/Teacher, 3.21 Batch/Students/Timetable/Ready (flag `p3-onboarding`) | ⬜ |
+| S8 | `p3/journey-e2e` | 3.22 journey E2E, 3.23 flag removal + docs | ⬜ |
 
 **Scope**
 - ⤴ C-03 `Plan`, `PlanEntitlement`, `Subscription` (TRIAL only), `EntitlementService`, `@Feature/@Limit` guards, seeded plans per G-25 hypothesis (OD-12). Limits enforced (e.g. student cap) with friendly `ENTITLEMENT_LIMIT_REACHED` UI.
