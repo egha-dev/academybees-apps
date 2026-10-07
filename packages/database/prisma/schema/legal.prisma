@@ -1,0 +1,47 @@
+// Legal documents and acceptance (Phase 3, G-06, ADR-034, G-32). Documents are platform reference
+// data synced from the catalogue in @academybee/contracts; acceptances are append-only and
+// user-owned (user-bound RLS, C-59), optionally recording the academy where they were given.
+
+enum LegalDocumentKind {
+  TERMS
+  PRIVACY
+  DPA
+  ACADEMY_PRIVACY_TEMPLATE
+
+  @@map("legal_document_kind")
+}
+
+/// One published version of a document. The current version of a kind is the latest one whose
+/// `publishedAt` has passed; publishing a new version asks everyone to accept again.
+model LegalDocument {
+  id          String            @id @db.Uuid
+  kind        LegalDocumentKind
+  version     String            @db.VarChar(20)
+  publishedAt DateTime          @map("published_at") @db.Timestamptz(3)
+  /// `{ "en-IN": { title, summary, url } }` — locale variants (ADR-040); en-IN only until Phase L.
+  variants    Json
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  acceptances LegalAcceptance[]
+
+  @@unique([kind, version])
+  @@map("legal_document")
+}
+
+/// "This person accepted this version, shown in this locale, at this time" (never updated).
+model LegalAcceptance {
+  id         String        @id @db.Uuid
+  userId     String        @map("user_id") @db.Uuid
+  user       User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  /// The academy where it was accepted (owner onboarding); null on the hub or console.
+  tenantId   String?       @map("tenant_id") @db.Uuid
+  documentId String        @map("document_id") @db.Uuid
+  document   LegalDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  locale     String        @db.VarChar(20)
+  ip         String?       @db.VarChar(64)
+  acceptedAt DateTime      @default(now()) @map("accepted_at") @db.Timestamptz(3)
+
+  @@unique([userId, documentId])
+  @@index([tenantId])
+  @@map("legal_acceptance")
+}

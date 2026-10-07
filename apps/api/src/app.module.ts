@@ -11,6 +11,7 @@ import { ContextModule } from './core/context/context.module.js';
 import { DatabaseModule } from './core/database/database.module.js';
 import { DocsModule } from './core/docs/docs.module.js';
 import { EmailModule } from './core/email/email.module.js';
+import { EntitlementsModule } from './core/entitlements/entitlements.module.js';
 import { FlagsModule } from './core/flags/flags.module.js';
 import { HealthModule } from './core/health/health.module.js';
 import { IdempotencyModule } from './core/idempotency/idempotency.module.js';
@@ -43,6 +44,7 @@ export class AppModule {
         AuthModule,
         EmailModule,
         RbacModule,
+        EntitlementsModule,
         AuditModule,
         OutboxModule,
         AnalyticsModule,

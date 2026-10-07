@@ -178,6 +178,20 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     session: true,
     capability: 'team.read',
   },
+  {
+    method: 'POST',
+    path: '/api/v1/test/secure/branches',
+    session: true,
+    capability: 'academy.settings.manage',
+    body: {},
+  },
+  // Academy A is on Pro (advanced reports, 5 branches) so the baseline succeeds.
+  {
+    method: 'GET',
+    path: '/api/v1/test/secure/advanced-reports',
+    session: true,
+    capability: 'academy.settings.read',
+  },
   // Test-only academy routes (the shape of every domain endpoint from Phase 2).
   { method: 'GET', path: '/api/v1/test/academy/probe' },
   { method: 'POST', path: '/api/v1/test/academy/probe', body: { note: 'x' } },

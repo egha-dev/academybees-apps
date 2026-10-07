@@ -7,6 +7,8 @@ import { promisify } from 'node:util';
 
 import pg from 'pg';
 
+import { syncReferenceData } from './reference.js';
+
 const run = promisify(execFile);
 
 /** packages/database (works from src/ and dist/). */
@@ -34,7 +36,10 @@ export async function migrateDeploy(migratorUrl: string): Promise<void> {
   });
 }
 
-/** Apply the idempotent grant/RLS SQL files (prisma/sql/*.sql, in name order). */
+/**
+ * Apply the idempotent grant/RLS SQL files (prisma/sql/*.sql, in name order), then sync the
+ * platform reference data (plans, legal documents) from the contracts catalogues.
+ */
 export async function applySqlFolder(migratorUrl: string): Promise<string[]> {
   const files = (await readdir(SQL_DIR)).filter((f) => f.endsWith('.sql')).sort();
   const client = new pg.Client({ connectionString: migratorUrl });
@@ -43,6 +48,7 @@ export async function applySqlFolder(migratorUrl: string): Promise<string[]> {
     for (const file of files) {
       await client.query(await readFile(path.join(SQL_DIR, file), 'utf8'));
     }
+    await syncReferenceData(client);
   } finally {
     await client.end();
   }

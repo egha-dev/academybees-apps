@@ -35,3 +35,15 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON platform_staff FROM ab_app;
 GRANT SELECT ON platform_staff TO ab_app;
 REVOKE TRUNCATE ON role, role_permission, membership_role, mfa_factor, mfa_recovery_code,
   known_device, otp_challenge FROM ab_app;
+
+-- Plans, entitlements and subscriptions (Phase 3, C-89): reference data is synced by the migrator;
+-- an academy's subscription and overrides are written only by platform code. Tenant code reads.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON plan, plan_entitlement, subscription,
+  subscription_override FROM ab_app;
+GRANT SELECT ON plan, plan_entitlement, subscription, subscription_override TO ab_app;
+
+-- Legal documents are reference data; acceptances are append-only (ADR-034).
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON legal_document FROM ab_app;
+GRANT SELECT ON legal_document TO ab_app;
+REVOKE UPDATE, DELETE, TRUNCATE ON legal_acceptance FROM ab_app, ab_platform;
+GRANT SELECT, INSERT ON legal_acceptance TO ab_app, ab_platform;

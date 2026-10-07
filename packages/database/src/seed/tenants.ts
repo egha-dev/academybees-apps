@@ -1,4 +1,4 @@
-import { newId } from '@academybee/contracts';
+import { newId, startTrialSubscription } from '@academybee/contracts';
 
 import type { PrismaClient, TenantStatus } from '../generated/prisma/client.js';
 
@@ -65,7 +65,7 @@ export const DEV_TENANTS: readonly DevTenant[] = [
 ];
 
 /**
- * Upsert the demo academies with a default branch, branding and settings. Runs as the schema
+ * Upsert the demo academies with a default branch, branding, settings and a Trial subscription. Runs as the schema
  * owner, which is still subject to FORCE RLS, so each tenant is written inside a transaction that
  * sets `app.tenant_id` to that tenant (ARCHITECTURE §8.2).
  */
@@ -119,6 +119,13 @@ export async function seedDevTenants(db: PrismaClient): Promise<number> {
       await tx.branch.upsert({
         where: { id: t.branchId },
         create: { id: t.branchId, tenantId: t.id, name: 'Main branch', isDefault: true },
+        update: {},
+      });
+      // Every academy has a subscription from provisioning (C-89): demo academies are on Trial.
+      const trial = startTrialSubscription('trial', new Date());
+      await tx.subscription.upsert({
+        where: { tenantId: t.id },
+        create: { tenantId: t.id, ...trial },
         update: {},
       });
     });

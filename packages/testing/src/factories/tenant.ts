@@ -1,5 +1,12 @@
 import { generateToken, hashPassword, hashToken } from '@academybee/auth';
-import { newId, ROLE_KEYS, ROLE_TEMPLATES, type RoleKey } from '@academybee/contracts';
+import {
+  newId,
+  type PlanKey,
+  ROLE_KEYS,
+  ROLE_TEMPLATES,
+  type RoleKey,
+  startTrialSubscription,
+} from '@academybee/contracts';
 import pg from 'pg';
 
 import { defineFactory } from './index.js';
@@ -11,6 +18,8 @@ export type TenantSeed = {
   academyType: string;
   status: 'PENDING_APPROVAL' | 'SETUP' | 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
   primaryColor: string;
+  /** The academy's Trial subscription plan (C-89); null = no subscription (nothing granted). */
+  plan: PlanKey | null;
 };
 
 let counter = 0;
@@ -30,6 +39,7 @@ export const buildTenant = defineFactory<TenantSeed>(() => {
     academyType: 'tuition',
     status: 'ACTIVE',
     primaryColor: '#1F6F5C',
+    plan: 'trial',
   };
 });
 
@@ -45,7 +55,8 @@ export type TenantFixture = TenantSeed & {
 };
 
 /**
- * Insert a tenant with its PRIMARY subdomain, branding, settings and default branch, the way
+ * Insert a tenant with its PRIMARY subdomain, branding, settings, default branch and Trial
+ * subscription, the way
  * provisioning will (Phase 3). Pass a connection that may write tenant rows — the migrator (FORCE
  * RLS applies, so the context is set per transaction) or the superuser.
  */
@@ -92,6 +103,20 @@ export async function createTenantFixture(
        VALUES ($1, $2, 'Main branch', true, now())`,
       [branchId, t.id],
     );
+    if (t.plan) {
+      const sub = startTrialSubscription(t.plan, new Date());
+      await client.query(
+        `INSERT INTO subscription (tenant_id, plan_key, status, trial_ends_at, entitlements, updated_at)
+         VALUES ($1, $2, 'TRIAL', $3, $4, now())`,
+        [t.id, sub.planKey, sub.trialEndsAt, JSON.stringify(sub.entitlements)],
+      );
+      // A neutral override (same value as the plan) so every tenant table has fixture rows.
+      await client.query(
+        `INSERT INTO subscription_override (id, tenant_id, key, kind, "limit", reason)
+         VALUES ($1, $2, 'messagesPerMonth', 'LIMIT', $3, 'fixture')`,
+        [newId(), t.id, sub.entitlements.limits.messagesPerMonth],
+      );
+    }
     // Identity rows (C-59): a user may be created only for the identifier being looked up.
     await client.query(`SELECT set_config('app.lookup_identifier', $1, true)`, [user.email]);
     await client.query(
