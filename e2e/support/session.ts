@@ -57,10 +57,12 @@ export async function acceptViaApi(
   password: string,
 ) {
   const invite = await waitForEmail(email, /invited to join/);
-  const token = invite.link.split('/invite/')[1]!;
+  const token = invite.link.split('#token=')[1]!;
   const res = await context.request.post(
-    hostUrl(testInfo, 'demo-a', `/api/v1/invitations/${token}/accept`),
-    { data: { name, password } },
+    hostUrl(testInfo, 'demo-a', '/api/v1/invitations/accept'),
+    {
+      data: { token, name, password },
+    },
   );
   expect(res.status()).toBe(200);
   await context.clearCookies();

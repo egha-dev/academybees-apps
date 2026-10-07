@@ -23,7 +23,7 @@ export async function AuthFrame({
   primaryColor: string | null;
   title: string;
   body?: string | undefined;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   const t = await getTranslations('tenant');
   return (

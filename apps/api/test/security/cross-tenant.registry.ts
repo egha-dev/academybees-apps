@@ -145,17 +145,16 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     params: { id: 'spare-invitation' },
     spoof: { skip: 'team.int.spec.ts › invitations › revoke' },
   },
-  // The invite link (public; the token is the credential).
+  // The invite link (public; the token is the credential, sent in the body — C-83).
   {
-    method: 'GET',
-    path: '/api/v1/invitations/:token',
-    params: { token: 'invitation-token' },
+    method: 'POST',
+    path: '/api/v1/invitations/preview',
+    body: { token: '@fixture:invitation-token' },
   },
   {
     method: 'POST',
-    path: '/api/v1/invitations/:token/accept',
-    params: { token: 'invitation-token' },
-    body: { name: 'New Teacher', password: 'Another#Pass2026' },
+    path: '/api/v1/invitations/accept',
+    body: { token: '@fixture:invitation-token', name: 'New Teacher', password: 'Another#Pass2026' },
     spoof: { skip: 'team.int.spec.ts › accept' },
   },
   // Test-only signed-in routes guarded by @Can + a scope policy (shape of domain endpoints).

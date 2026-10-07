@@ -191,12 +191,17 @@ export class LoginService {
     }
     const { user, credential } = found;
     if (credential.lockedUntil && credential.lockedUntil.getTime() > Date.now()) {
-      throw new DomainError(
-        'RATE_LIMITED',
-        'account locked',
-        undefined,
-        (credential.lockedUntil.getTime() - Date.now()) / 1000,
-      );
+      // Answered exactly like a wrong password (same code, same password-hash work): a distinct
+      // "locked" answer would tell anyone that an AcademyBee account exists for this address
+      // (review L1, ADR-006). The person still sees "try again in …" from the per-identifier
+      // limit, which applies to every address alike.
+      await verifyAgainstDummy(input.password);
+      await this.audit.record({
+        action: 'auth.login_failed',
+        actor: { type: 'USER', id: user.id },
+        metadata: { reason: 'locked' },
+      });
+      throw new DomainError('INVALID_CREDENTIALS', 'account locked');
     }
     if (!(await verifyPassword(credential.passwordHash, input.password))) {
       await this.sessions.passwordFailed(user.id, credential.failedCount + 1);

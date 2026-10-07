@@ -126,8 +126,19 @@ describe('sessions', () => {
         await redis.quit();
       }
       const res = await login(a);
-      expect(res.status).toBe(429);
-      expect(Number(res.headers['retry-after'])).toBeGreaterThan(0);
+      // Locked: refused, but answered like a wrong password for an unknown address, so the lock
+      // doesn't reveal that the account exists (review L1).
+      const unknown = await login(a, `nobody-${Date.now()}@example.test`, 'Wrong-Password-x');
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe('INVALID_CREDENTIALS');
+      expect(res.headers['retry-after']).toBeUndefined();
+      expect(res.body.error.message).toBe(unknown.body.error.message);
+      const { rows } = await su.query(
+        `SELECT metadata FROM audit_log WHERE action = 'auth.login_failed' AND actor_id = $1
+          ORDER BY created_at DESC LIMIT 1`,
+        [a.user.id],
+      );
+      expect(rows[0].metadata).toEqual({ reason: 'locked' });
     });
 
     it('refuses an anonymous cross-origin sign-in post', async () => {
@@ -299,6 +310,68 @@ describe('sessions', () => {
         .set('x-csrf-token', second.csrf)
         .send({ everywhere: true });
       expect((await me(a, first)).status).toBe(401);
+    });
+
+    /** The browser after the 15-minute access token expired: refresh + CSRF cookies only. */
+    const withoutAccess = (s: Session): Session => ({
+      ...s,
+      cookie: s.cookie
+        .split('; ')
+        .filter((c) => !c.startsWith('ab_at='))
+        .join('; '),
+    });
+    const logout = (s: Session, body: object = {}) =>
+      http()
+        .post('/api/v1/auth/logout')
+        .set('Host', host(a))
+        .set('Cookie', s.cookie)
+        .set('x-csrf-token', s.csrf)
+        .send(body);
+
+    it('signing out with an expired access token still ends the session (review M1)', async () => {
+      const s = await signIn();
+      const res = await logout(withoutAccess(s));
+      expect(res.status).toBe(204);
+      // The refresh token no longer works, and neither does the old access token.
+      expect((await refresh(a, s)).status).toBe(401);
+      expect((await me(a, s)).status).toBe(401);
+    });
+
+    it('…and "everywhere" too; other people stay signed in', async () => {
+      const here = await signIn();
+      const other = await signIn();
+      const atB = await signIn(b);
+      expect((await logout(withoutAccess(here), { everywhere: true })).status).toBe(204);
+      expect((await me(a, other)).status).toBe(401);
+      expect((await me(b, atB)).status).toBe(200);
+    });
+
+    it("another academy's refresh cookie signs nothing out here", async () => {
+      const atB = await signIn(b);
+      const res = await http()
+        .post('/api/v1/auth/logout')
+        .set('Host', host(a))
+        .set('Cookie', withoutAccess(atB).cookie)
+        .set('x-csrf-token', atB.csrf)
+        .send({});
+      expect(res.status).toBe(204);
+      expect((await me(b, atB)).status).toBe(200);
+    });
+  });
+
+  describe('concurrent refresh (review M4)', () => {
+    it('two refreshes with the same token at once: one wins, the family never forks', async () => {
+      const s = await signIn();
+      const [x, y] = await Promise.all([refresh(a, s), refresh(a, s)]);
+      const statuses = [x.status, y.status].sort();
+      expect(statuses).toEqual([204, 409]);
+      const { rows } = await su.query(
+        `SELECT count(*)::int AS n FROM auth_session
+          WHERE family_id = (SELECT family_id FROM auth_session WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1)
+            AND revoked_at IS NULL`,
+        [a.user.id],
+      );
+      expect(rows[0].n).toBe(1);
     });
   });
 });

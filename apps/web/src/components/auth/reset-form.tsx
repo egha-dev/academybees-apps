@@ -12,6 +12,7 @@ import { useHydrated } from '@/lib/use-hydrated';
 import { useOnline } from '@/lib/use-online';
 
 import { formValues } from './form-values';
+import { useFragmentToken } from './fragment-token';
 import { type ErrorLabels, errorMessage, type FieldLabels, passwordProblem } from './labels';
 
 export type ResetFormLabels = {
@@ -28,15 +29,14 @@ export type ResetFormLabels = {
 
 /** Choose a new password from a reset link (single use; signs out everywhere, C-67). */
 export function ResetForm({
-  token,
   labels,
   canRequestNew = true,
 }: {
-  token: string;
   labels: ResetFormLabels;
   /** Academy hosts offer "get a new link"; the console has no self-service reset (C-73). */
   canRequestNew?: boolean;
 }) {
+  const { token } = useFragmentToken();
   const online = useOnline();
   const hydrated = useHydrated();
   const [errors, setErrors] = useState<{ password?: string; confirm?: string }>({});

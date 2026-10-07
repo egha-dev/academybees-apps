@@ -129,8 +129,13 @@ export class AuthController {
   @Post('logout')
   @Public()
   @HttpCode(204)
-  async logout(@Body() body: LogoutDto, @Res({ passthrough: true }) res: Response): Promise<void> {
-    await this.sessions.logout(this.cls.get('session')?.id, body.everywhere ?? false, res);
+  async logout(
+    @Body() body: LogoutDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    const name = cookieSpecs(this.config.COOKIE_MODE).refresh.name;
+    await this.sessions.logout(readCookies(req)[name], body.everywhere ?? false, res);
   }
 
   /** Always 202, whether or not the email has an account here (C-67). */

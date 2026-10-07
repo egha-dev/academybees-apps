@@ -112,6 +112,24 @@ test('offline: sign-in explains why it is unavailable', async ({ page, context }
   await expect(page.getByRole('button', { name: 'Sign in' })).toBeEnabled();
 });
 
+test('offline: sign-out is disabled and says why, instead of pretending', async ({
+  page,
+  context,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-chromium', 'The sidebar sign-out, once on desktop');
+  await page.goto(hostUrl(testInfo, 'demo-a', '/login'));
+  await signIn(page, 'admin@demo-a.test');
+  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/today'), { timeout: 15_000 });
+  const signOutButton = page.getByRole('navigation').getByRole('button', { name: 'Sign out' });
+  await context.setOffline(true);
+  await expect(signOutButton).toBeDisabled();
+  await expect(page.getByText('Signing out needs a connection').first()).toBeVisible();
+  await context.setOffline(false);
+  await expect(signOutButton).toBeEnabled();
+  await signOutButton.click();
+  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/login'));
+});
+
 /** The owner invites someone through the API, as the Team page will (S7). */
 async function inviteAs(context: BrowserContext, testInfo: TestInfo, email: string) {
   const login = await context.request.post(hostUrl(testInfo, 'demo-a', '/api/v1/auth/login'), {
@@ -136,7 +154,8 @@ test('invite → accept → signed in; then forgot → reset → sign in with th
   await inviteAs(context, testInfo, email);
 
   const invite = await waitForEmail(email, /invited to join Demo A Academy/);
-  expect(invite.link).toMatch(/^http:\/\/demo-a\.localhost:3000\/invite\/[\w-]{20,}$/);
+  // The token is in the fragment: no server or proxy ever logs it (C-83).
+  expect(invite.link).toMatch(/^http:\/\/demo-a\.localhost:\d+\/invite#token=[\w-]{20,}$/);
   await page.goto(invite.link);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Join Demo A Academy');
   await expect(page.getByText('as Teacher')).toBeVisible();
@@ -193,9 +212,9 @@ test('forgot password answers the same for an unknown email', async ({ page }, t
 });
 
 test('a broken invite or reset link explains what to do next', async ({ page }, testInfo) => {
-  await page.goto(hostUrl(testInfo, 'demo-a', '/invite/not-a-real-invitation-token-123'));
+  await page.goto(hostUrl(testInfo, 'demo-a', '/invite#token=not-a-real-invitation-token-123'));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText("This invitation can't be used");
-  await page.goto(hostUrl(testInfo, 'demo-a', '/reset-password/x'));
+  await page.goto(hostUrl(testInfo, 'demo-a', '/reset-password#token=x'));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     "This link doesn't work any more",
   );
@@ -253,8 +272,8 @@ for (const theme of ['light', 'dark'] as const) {
     for (const path of [
       '/login',
       '/forgot-password',
-      '/reset-password/x',
-      '/invite/not-a-real-invitation-token-123',
+      '/reset-password#token=x',
+      '/invite#token=not-a-real-invitation-token-123',
     ]) {
       await page.goto(hostUrl(testInfo, 'demo-a', path));
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

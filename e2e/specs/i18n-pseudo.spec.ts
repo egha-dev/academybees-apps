@@ -14,7 +14,7 @@ const HOST_PAGES = ['demo-a', 'nope', 'paused', 'closed-demo', 'setup-demo', 'ap
 /** Phase 2 sign-in screens on an academy host (`demo-a` above shows the login page). */
 const AUTH_PATHS = [
   '/forgot-password',
-  '/reset-password/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  '/reset-password#token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
 ];
 /** Seeded academy and user names are data, not catalogue text (C-54). */
 const DATA_VALUES = [

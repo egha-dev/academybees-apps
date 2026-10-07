@@ -319,7 +319,9 @@ PasswordResetToken   userId · tokenHash · expiresAt · usedAt
 | Refresh | 256-bit opaque, SHA-256 hashed in DB | 30 days sliding (7 days for console) | `__Secure-ab_rt` cookie, host-only (no `Domain`), httpOnly, Secure, SameSite=Lax, Path=/api/v1/auth (`__Host-` requires Path=/, so `__Secure-` is used here) |
 | CSRF | random, double-submit | session | readable cookie + `X-CSRF-Token` header on all mutations |
 
-- Refresh rotation with **reuse detection**: presenting a rotated token revokes the whole `familyId`.
+- Refresh rotation with **reuse detection**: presenting a rotated token revokes the whole `familyId`. Rotation is a conditional update, so two simultaneous refreshes can't both win (C-83).
+- **Sign-out** revokes the session found from the access token, or from the refresh cookie when the access token has expired; offline it is disabled, never faked (C-83).
+- **Link secrets** (invitation, reset, console set-password) live only in the URL fragment and request bodies, never in a path or query, so no server, proxy or CDN log holds them (C-83).
 - Capabilities are **not** embedded in the JWT; they are loaded per request (cached in Redis keyed by membership + `permissionsVersion`) so role changes take effect immediately.
 - Passwords: argon2id (memory ≥ 19 MiB, t=2, p=1 minimum), breached-password check optional, min length 8 with strength meter.
 - Rate limits (Redis): login 5/min/IP+identifier with exponential backoff; reset/invite 3/hour/identifier.

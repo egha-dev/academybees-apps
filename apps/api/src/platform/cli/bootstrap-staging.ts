@@ -244,7 +244,7 @@ async function ensureUser(
       host: { kind: 'academy', slug: first.slug },
       ...(branding ? { academy: branding } : {}),
       vars: {},
-      link: { path: '/reset-password/{token}', sealedToken: encryptSecret(token, opts.keys) },
+      link: { path: '/reset-password#token={token}', sealedToken: encryptSecret(token, opts.keys) },
     });
     await tx.outboxEvent.create({
       data: { id: newId(), tenantId: academy.tenantId, type: EMAIL_OUTBOX_TYPE, payload: email },

@@ -7,8 +7,8 @@ import { hostUrl, requireSeededAcademies } from '../support/hosts.js';
 const PAGES = [
   ['demo-a', '/login'],
   ['demo-a', '/forgot-password'],
-  ['demo-a', '/reset-password/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
-  ['demo-a', '/invite/not-a-real-invitation-token-123'],
+  ['demo-a', '/reset-password#token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+  ['demo-a', '/invite#token=not-a-real-invitation-token-123'],
   ['demo-a', '/access-denied'],
   ['nope', '/'],
   ['paused', '/'],

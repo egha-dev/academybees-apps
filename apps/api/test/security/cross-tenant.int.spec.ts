@@ -83,6 +83,17 @@ describe('cross-tenant suite', () => {
         throw new Error(`unknown fixture ${name}`);
     }
   };
+  /** Body values `@fixture:<name>` are filled with academy A's records too. */
+  const bodyFor = (route: (typeof CROSS_TENANT_ROUTES)[number]) =>
+    route.body &&
+    Object.fromEntries(
+      Object.entries(route.body).map(([k, v]) => [
+        k,
+        typeof v === 'string' && v.startsWith('@fixture:')
+          ? fixtureValue(v.slice('@fixture:'.length))
+          : v,
+      ]),
+    );
   const pathFor = (route: (typeof CROSS_TENANT_ROUTES)[number]) =>
     route.path.replace(/:(\w+)/g, (_, name: string) =>
       route.params?.[name] ? fixtureValue(route.params[name]) : a.user.membershipId,
@@ -120,7 +131,7 @@ describe('cross-tenant suite', () => {
     const body =
       route.path === '/api/v1/auth/login'
         ? { identifier: a.user.email, password: FIXTURE_PASSWORD }
-        : route.body;
+        : bodyFor(route);
     if (route.method !== 'GET') req = req.send({ ...body, ...extra.body });
     return req;
   };
@@ -148,7 +159,7 @@ describe('cross-tenant suite', () => {
     let req = request(app.getHttpServer())[verb(route.method)](pathFor(route)).set('Host', host);
     if (session) req = req.set('Cookie', session.cookie).set('x-csrf-token', session.csrf);
     if (route.idempotent) req = req.set('Idempotency-Key', crypto.randomUUID());
-    return route.method === 'GET' ? req : req.send(route.body ?? {});
+    return route.method === 'GET' ? req : req.send(bodyFor(route) ?? {});
   };
 
   describe.each(

@@ -28,7 +28,7 @@ import { DomainError } from '../../core/errors/domain-error.js';
 import { RATE_RULES, RateLimiter } from '../../core/rate-limit/rate-limiter.service.js';
 
 const INVITE_TTL_MS = 7 * 24 * 3600 * 1000;
-const INVITE_LINK = '/invite/{token}';
+const INVITE_LINK = '/invite#token={token}';
 
 type InvitationRow = {
   id: string;
@@ -198,7 +198,7 @@ export class InvitationsService {
 
   async accept(
     token: string,
-    input: AcceptInvitation,
+    input: Omit<AcceptInvitation, 'token'>,
     res: Response,
   ): Promise<AcceptInvitationResponse> {
     const tenantId = this.cls.get('tenantId')!;

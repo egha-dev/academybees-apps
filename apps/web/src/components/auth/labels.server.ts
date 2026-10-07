@@ -154,6 +154,8 @@ export async function signOutLabels(unsynced = 0) {
   const [t, offline] = await Promise.all([getTranslations('auth'), getTranslations('offline')]);
   return {
     signOut: t('home.signOut'),
+    offline: t('home.signOutOffline'),
+    failed: t('home.signOutFailed'),
     guard: {
       title: offline('logoutGuard.title'),
       body: offline('logoutGuard.body', { count: unsynced }),
