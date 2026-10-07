@@ -72,6 +72,11 @@ model Tenant {
   invitations   Invitation[]
   subscription  Subscription?
   overrides     SubscriptionOverride[]
+  parents       Parent[]
+  customFields  CustomFieldDefinition[]
+  sequences     TenantSequence[]
+  courses       Course[]
+  onboarding    TenantOnboarding?
 
   @@map("tenant")
 }
@@ -147,6 +152,11 @@ model Branch {
   status    BranchStatus @default(ACTIVE)
   createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  students Student[]
+  teachers Teacher[]
+  batches  Batch[]
+  sessions ClassSession[]
 
   @@unique([tenantId, id])
   @@unique([tenantId], map: "branch_one_default", where: raw("is_default"))

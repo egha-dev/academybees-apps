@@ -122,6 +122,15 @@ Each slice follows the same steps: branch `p3/<slice>` from the latest `main` â†
 - Factories: `createStudentFixture`, `createCourseFixture`, `createBatchFixture`.
 - **Tests:** the isolation suite covers the new tables; constraint tests (one open enrolment, unique admission number).
 
+*As built (S2):*
+- `Student.userId` was added for the student's own Family Hub sign-in (G-31, used from Phase 11).
+- Relationship, primary contact and pickup permission sit on `ParentStudent`, because they can differ per child (G-05 lists them under Parent).
+- `ConsentRecord` holds append-only GRANT/WITHDRAW events; the latest row is the current state (ADR-034).
+- Schedule rules store local start/end as minutes after midnight.
+- The trigram name index moves to Phase 4 together with search, since it needs the `pg_trgm` extension.
+- Shape checks and no-delete grants are in `prisma/sql/030-people-scheduling-rules.sql`.
+- The tenant fixture fills every new table, so the isolation suite covers them automatically.
+
 ### S3 `p3/provisioning-api` â€” provisioning and console API
 
 **3.7 ProvisioningService** (`apps/api/src/platform/provisioning/`):

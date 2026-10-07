@@ -27,7 +27,7 @@ describe('seed runner', () => {
     await seed('ci');
     const { stderr } = await seed('ci');
     expect(stderr).toMatch(
-      /Seeded: \d+ feature flag definition\(s\), 5 demo academies, 9 demo users\./,
+      /Seeded: \d+ feature flag definition\(s\), 5 demo academies, 9 demo users, 3 demo students\./,
     );
   });
 });

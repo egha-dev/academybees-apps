@@ -16,3 +16,4 @@ export * from './team.js';
 export * from './security.js';
 export * from './plans.js';
 export * from './legal.js';
+export * from './people.js';

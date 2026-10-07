@@ -75,7 +75,8 @@ model Membership {
   createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  roles MembershipRole[]
+  roles    MembershipRole[]
+  teachers Teacher[]
 
   @@unique([tenantId, userId])
   @@unique([tenantId, id])
@@ -216,6 +217,9 @@ model Invitation {
   revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(3)
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
+  teachers Teacher[]
+
+  @@unique([tenantId, id])
   @@index([tenantId, createdAt])
   @@map("invitation")
 }
