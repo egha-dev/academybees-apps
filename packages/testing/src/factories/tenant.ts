@@ -52,6 +52,20 @@ export type TenantFixture = TenantSeed & {
   invitationToken: string;
   /** System role ids by key (owner = `user.roleId`). */
   roleIds: Record<RoleKey, string>;
+  /** One row in every people and scheduling table (C-09), linked to each other. */
+  people: PeopleFixture;
+};
+
+export type PeopleFixture = {
+  teacherId: string;
+  studentId: string;
+  parentId: string;
+  courseId: string;
+  levelId: string;
+  batchId: string;
+  ruleId: string;
+  sessionId: string;
+  admissionNo: string;
 };
 
 /**
@@ -75,6 +89,7 @@ export async function createTenantFixture(
   const invitationId = newId();
   const invitationToken = generateToken();
   const roleIds = {} as Record<RoleKey, string>;
+  let people!: PeopleFixture;
   const client = new pg.Client({ connectionString });
   await client.connect();
   try {
@@ -156,6 +171,7 @@ export async function createTenantFixture(
        VALUES ($1, $2, $3, '{teacher}', $4, now() + interval '7 days')`,
       [invitationId, t.id, `invitee-${t.slug}@example.test`, hashToken(invitationToken)],
     );
+    people = await insertPeopleAndScheduling(client, t, branchId, user.membershipId);
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');
@@ -163,5 +179,116 @@ export async function createTenantFixture(
   } finally {
     await client.end();
   }
-  return { ...t, branchId, user, invitationId, invitationToken, roleIds };
+  return { ...t, branchId, user, invitationId, invitationToken, roleIds, people };
+}
+
+/**
+ * The owner teaches one batch of one course with one student (and their parent, consent, health
+ * note, custom field), one weekly rule and its next session; onboarding is finished unless the
+ * academy is still setting up. Same transaction and tenant context as the tenant itself.
+ */
+async function insertPeopleAndScheduling(
+  client: pg.Client,
+  t: TenantSeed,
+  branchId: string,
+  membershipId: string,
+): Promise<PeopleFixture> {
+  const f: PeopleFixture = {
+    teacherId: newId(),
+    studentId: newId(),
+    parentId: newId(),
+    courseId: newId(),
+    levelId: newId(),
+    batchId: newId(),
+    ruleId: newId(),
+    sessionId: newId(),
+    admissionNo: 'ADM-0001',
+  };
+  const q = (sql: string, params: unknown[]) => client.query(sql, params);
+  await q(
+    `INSERT INTO teacher (id, tenant_id, branch_id, membership_id, full_name, updated_at)
+     VALUES ($1, $2, $3, $4, $5, now())`,
+    [f.teacherId, t.id, branchId, membershipId, `Owner of ${t.name}`],
+  );
+  await q(
+    `INSERT INTO course (id, tenant_id, name, updated_at) VALUES ($1, $2, 'Course 1', now())`,
+    [f.courseId, t.id],
+  );
+  await q(
+    `INSERT INTO course_level (id, tenant_id, course_id, name, updated_at)
+     VALUES ($1, $2, $3, 'Level 1', now())`,
+    [f.levelId, t.id, f.courseId],
+  );
+  await q(
+    `INSERT INTO batch (id, tenant_id, branch_id, course_id, level_id, name, capacity, updated_at)
+     VALUES ($1, $2, $3, $4, $5, 'Batch 1', 20, now())`,
+    [f.batchId, t.id, branchId, f.courseId, f.levelId],
+  );
+  await q(
+    `INSERT INTO batch_teacher (tenant_id, batch_id, teacher_id, is_primary) VALUES ($1, $2, $3, true)`,
+    [t.id, f.batchId, f.teacherId],
+  );
+  await q(
+    `INSERT INTO student (id, tenant_id, branch_id, admission_no, full_name, admission_date, updated_at)
+     VALUES ($1, $2, $3, $4, 'Student One', CURRENT_DATE, now())`,
+    [f.studentId, t.id, branchId, f.admissionNo],
+  );
+  await q(
+    `INSERT INTO student_health_note (tenant_id, student_id, notes, updated_at)
+     VALUES ($1, $2, 'Fixture note', now())`,
+    [t.id, f.studentId],
+  );
+  await q(
+    `INSERT INTO parent (id, tenant_id, full_name, phone, whatsapp_capable, updated_at)
+     VALUES ($1, $2, 'Parent One', '+919800000001', true, now())`,
+    [f.parentId, t.id],
+  );
+  await q(
+    `INSERT INTO parent_student (id, tenant_id, parent_id, student_id, relationship, is_primary_contact)
+     VALUES ($1, $2, $3, $4, 'MOTHER', true)`,
+    [newId(), t.id, f.parentId, f.studentId],
+  );
+  await q(
+    `INSERT INTO consent_record (id, tenant_id, parent_id, student_id, action, purposes, notice_version, channel)
+     VALUES ($1, $2, $3, $4, 'GRANT', '{service}', 'fixture', 'ACADEMY_STAFF')`,
+    [newId(), t.id, f.parentId, f.studentId],
+  );
+  await q(
+    `INSERT INTO custom_field_definition (id, tenant_id, entity, key, label, type, updated_at)
+     VALUES ($1, $2, 'STUDENT', 'school_bus', '{"en-IN":"School bus"}', 'TEXT', now())`,
+    [newId(), t.id],
+  );
+  await q(
+    `INSERT INTO tenant_sequence (tenant_id, key, next_value, updated_at)
+     VALUES ($1, 'admission', 2, now())`,
+    [t.id],
+  );
+  await q(
+    `INSERT INTO batch_enrolment (id, tenant_id, batch_id, student_id, started_on, updated_at)
+     VALUES ($1, $2, $3, $4, CURRENT_DATE, now())`,
+    [newId(), t.id, f.batchId, f.studentId],
+  );
+  // Mondays 17:00–18:00 local; the session below is the next Monday, stored in UTC (IST −5:30).
+  await q(
+    `INSERT INTO schedule_rule (id, tenant_id, batch_id, teacher_id, weekday, start_minute, end_minute,
+       effective_from, updated_at)
+     VALUES ($1, $2, $3, $4, 1, 1020, 1080, CURRENT_DATE, now())`,
+    [f.ruleId, t.id, f.batchId, f.teacherId],
+  );
+  await q(
+    `INSERT INTO class_session (id, tenant_id, branch_id, batch_id, schedule_rule_id, teacher_id,
+       session_date, starts_at, ends_at, origin, updated_at)
+     SELECT $1, $2, $3, $4, $5, $6, d,
+            (d + time '17:00') AT TIME ZONE 'Asia/Kolkata', (d + time '18:00') AT TIME ZONE 'Asia/Kolkata',
+            'GENERATED', now()
+       FROM (SELECT CURRENT_DATE + ((8 - extract(isodow FROM CURRENT_DATE)::int) % 7) AS d) next_monday`,
+    [f.sessionId, t.id, branchId, f.batchId, f.ruleId, f.teacherId],
+  );
+  const done = t.status !== 'SETUP' && t.status !== 'PENDING_APPROVAL';
+  await q(
+    `INSERT INTO tenant_onboarding (tenant_id, current_step, completed_at, updated_at)
+     VALUES ($1, $2, $3, now())`,
+    [t.id, done ? 'ready' : 'profile', done ? new Date() : null],
+  );
+  return f;
 }

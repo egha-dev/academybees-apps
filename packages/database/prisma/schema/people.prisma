@@ -1,0 +1,253 @@
+// People (Phase 3 schema per C-09; workspaces in Phase 4): students with the G-05 profile, their
+// restricted health notes (C-90), parents and the parent–student link, teachers, consent records
+// (G-06, ADR-034), custom field definitions and per-academy number sequences (C-91).
+// All tenant-owned (standard tenant RLS); references inside an academy use composite
+// (tenant_id, id) keys so a row can never point into another academy.
+
+enum StudentStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  LEFT
+
+  @@map("student_status")
+}
+
+enum Gender {
+  FEMALE
+  MALE
+  OTHER
+  PREFER_NOT_TO_SAY
+
+  @@map("gender")
+}
+
+enum PersonStatus {
+  ACTIVE
+  ARCHIVED
+
+  @@map("person_status")
+}
+
+/// A learner (G-05). Names are any script, NFC-normalised (ADR-040).
+model Student {
+  id               String        @id @db.Uuid
+  tenantId         String        @map("tenant_id") @db.Uuid
+  branchId         String        @map("branch_id") @db.Uuid
+  branch           Branch        @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  /// Automatic with the academy's prefix (TenantSequence `admission`, C-91).
+  admissionNo      String        @map("admission_no") @db.VarChar(30)
+  fullName         String        @map("full_name") @db.VarChar(120)
+  preferredName    String?       @map("preferred_name") @db.VarChar(60)
+  dateOfBirth      DateTime?     @map("date_of_birth") @db.Date
+  gender           Gender?
+  schoolName       String?       @map("school_name") @db.VarChar(120)
+  grade            String?       @db.VarChar(40)
+  /// Calendar date in the academy's timezone (ADR-011).
+  admissionDate    DateTime      @map("admission_date") @db.Date
+  /// `{ line1, line2, city, state, postalCode, country }` (contracts StudentAddress).
+  address          Json?
+  /// `{ name, relationship, phone }` (contracts EmergencyContact).
+  emergencyContact Json?         @map("emergency_contact")
+  /// Consent-gated private media (C-70); set from Phase 4.
+  photoMediaId     String?       @map("photo_media_id") @db.Uuid
+  /// The student's own sign-in on the Family Hub, once invited (G-31, Phase 11).
+  userId           String?       @map("user_id") @db.Uuid
+  tags             String[]      @default([]) @db.VarChar(40)
+  /// Values for this academy's CustomFieldDefinitions, keyed by field key.
+  customFields     Json          @default("{}") @map("custom_fields")
+  status           StudentStatus @default(ACTIVE)
+  archivedAt       DateTime?     @map("archived_at") @db.Timestamptz(3)
+  createdById      String?       @map("created_by_id") @db.Uuid
+  version          Int           @default(1)
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  healthNote StudentHealthNote?
+  parents    ParentStudent[]
+  consents   ConsentRecord[]
+  enrolments BatchEnrolment[]
+
+  @@unique([tenantId, admissionNo])
+  @@unique([tenantId, id])
+  @@index([tenantId, branchId, status])
+  @@index([tenantId, userId])
+  @@map("student")
+}
+
+/// Medical / allergy notes (G-05): owner, admin and assigned teachers only, every read audited.
+/// Kept out of `student` so no generic student read can return them (C-90).
+model StudentHealthNote {
+  tenantId    String   @map("tenant_id") @db.Uuid
+  studentId   String   @map("student_id") @db.Uuid
+  student     Student  @relation(fields: [tenantId, studentId], references: [tenantId, id], onDelete: Restrict)
+  notes       String   @db.VarChar(2000)
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  version     Int      @default(1)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([tenantId, studentId])
+  @@map("student_health_note")
+}
+
+/// A parent or guardian (G-05). Linked to a global User once they join the Family Hub (G-31).
+model Parent {
+  id              String       @id @db.Uuid
+  tenantId        String       @map("tenant_id") @db.Uuid
+  tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  fullName        String       @map("full_name") @db.VarChar(120)
+  /// E.164.
+  phone           String?      @db.VarChar(16)
+  whatsappCapable Boolean      @default(false) @map("whatsapp_capable")
+  /// Lower-cased.
+  email           String?      @db.VarChar(320)
+  /// BCP-47; null = academy default (en-IN until Phase L, ADR-040).
+  preferredLocale String?      @map("preferred_locale") @db.VarChar(20)
+  occupation      String?      @db.VarChar(80)
+  userId          String?      @map("user_id") @db.Uuid
+  status          PersonStatus @default(ACTIVE)
+  createdById     String?      @map("created_by_id") @db.Uuid
+  version         Int          @default(1)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  children ParentStudent[]
+  consents ConsentRecord[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, phone])
+  @@index([tenantId, email])
+  @@index([tenantId, userId])
+  @@map("parent")
+}
+
+/// Parent ↔ student, with what is true per child: relationship, primary contact, pickup.
+model ParentStudent {
+  id               String   @id @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  parentId         String   @map("parent_id") @db.Uuid
+  parent           Parent   @relation(fields: [tenantId, parentId], references: [tenantId, id], onDelete: Restrict)
+  studentId        String   @map("student_id") @db.Uuid
+  student          Student  @relation(fields: [tenantId, studentId], references: [tenantId, id], onDelete: Restrict)
+  /// MOTHER | FATHER | GUARDIAN | GRANDPARENT | OTHER (contracts ParentRelationship).
+  relationship     String   @db.VarChar(20)
+  isPrimaryContact Boolean  @default(false) @map("is_primary_contact")
+  /// Kids academies: may collect the child (G-05).
+  pickupAuthorised Boolean  @default(false) @map("pickup_authorised")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([tenantId, parentId, studentId])
+  @@index([tenantId, studentId])
+  @@map("parent_student")
+}
+
+/// Someone who teaches. A teacher may be a signed-in member, invited, or just a name (onboarding).
+model Teacher {
+  id           String       @id @db.Uuid
+  tenantId     String       @map("tenant_id") @db.Uuid
+  branchId     String       @map("branch_id") @db.Uuid
+  branch       Branch       @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  membershipId String?      @map("membership_id") @db.Uuid
+  membership   Membership?  @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Restrict)
+  invitationId String?      @map("invitation_id") @db.Uuid
+  invitation   Invitation?  @relation(fields: [tenantId, invitationId], references: [tenantId, id], onDelete: Restrict)
+  fullName     String       @map("full_name") @db.VarChar(120)
+  email        String?      @db.VarChar(320)
+  phone        String?      @db.VarChar(16)
+  status       PersonStatus @default(ACTIVE)
+  version      Int          @default(1)
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  batches  BatchTeacher[]
+  rules    ScheduleRule[]
+  sessions ClassSession[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, membershipId])
+  @@index([tenantId, status])
+  @@map("teacher")
+}
+
+enum ConsentAction {
+  GRANT
+  WITHDRAW
+
+  @@map("consent_action")
+}
+
+enum ConsentChannel {
+  FAMILY_HUB
+  ACADEMY_STAFF
+  PAPER
+
+  @@map("consent_channel")
+}
+
+/// A parent's consent for a child's data (G-06, ADR-034). Append-only events: a withdrawal is a
+/// new row; the current state is the latest row for (parent, student).
+model ConsentRecord {
+  id            String         @id @db.Uuid
+  tenantId      String         @map("tenant_id") @db.Uuid
+  parentId      String         @map("parent_id") @db.Uuid
+  parent        Parent         @relation(fields: [tenantId, parentId], references: [tenantId, id], onDelete: Restrict)
+  studentId     String         @map("student_id") @db.Uuid
+  student       Student        @relation(fields: [tenantId, studentId], references: [tenantId, id], onDelete: Restrict)
+  action        ConsentAction
+  /// e.g. `service`, `photos`, `marketing` (contracts ConsentPurpose); marketing is separate (G-06).
+  purposes      String[]       @db.VarChar(40)
+  /// The academy privacy notice version shown.
+  noticeVersion String         @map("notice_version") @db.VarChar(20)
+  channel       ConsentChannel
+  recordedById  String?        @map("recorded_by_id") @db.Uuid
+  recordedAt    DateTime       @default(now()) @map("recorded_at") @db.Timestamptz(3)
+
+  @@index([tenantId, parentId, studentId, recordedAt])
+  @@map("consent_record")
+}
+
+enum CustomFieldType {
+  TEXT
+  NUMBER
+  DATE
+  SELECT
+
+  @@map("custom_field_type")
+}
+
+/// An academy-defined field (G-05: up to 10 per academy, typed). Values live on the entity.
+model CustomFieldDefinition {
+  id         String          @id @db.Uuid
+  tenantId   String          @map("tenant_id") @db.Uuid
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  /// STUDENT for now.
+  entity     String          @db.VarChar(20)
+  key        String          @db.VarChar(40)
+  /// Locale variants `{ "en-IN": "Belt colour" }` (ADR-040).
+  label      Json
+  type       CustomFieldType
+  /// SELECT options: `[{ value, label: { "en-IN": … } }]`.
+  options    Json?
+  required   Boolean         @default(false)
+  sortOrder  Int             @default(0) @map("sort_order")
+  archivedAt DateTime?       @map("archived_at") @db.Timestamptz(3)
+  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([tenantId, entity, key])
+  @@map("custom_field_definition")
+}
+
+/// Per-academy gap-free counters (C-91): `admission`, later `invoice`, `receipt` (Phase 7).
+/// Incremented under `SELECT … FOR UPDATE` in the creating transaction.
+model TenantSequence {
+  tenantId  String   @map("tenant_id") @db.Uuid
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  key       String   @db.VarChar(40)
+  nextValue Int      @default(1) @map("next_value")
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([tenantId, key])
+  @@map("tenant_sequence")
+}

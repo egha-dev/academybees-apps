@@ -1,0 +1,194 @@
+// Scheduling (Phase 3 schema per C-09; timetable workspace in Phase 5): courses and levels,
+// batches with teachers and enrolments, weekly schedule rules and materialised class sessions
+// (ADR-024), and the academy's onboarding progress. Tenant-owned; composite (tenant_id, id)
+// references keep every link inside one academy.
+
+enum ScheduleStatus {
+  ACTIVE
+  ARCHIVED
+
+  @@map("schedule_status")
+}
+
+model Course {
+  id          String         @id @db.Uuid
+  tenantId    String         @map("tenant_id") @db.Uuid
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name        String         @db.VarChar(120)
+  description String?        @db.VarChar(1000)
+  status      ScheduleStatus @default(ACTIVE)
+  version     Int            @default(1)
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  levels  CourseLevel[]
+  batches Batch[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, status])
+  @@map("course")
+}
+
+/// A stage of a course (e.g. Grade 1, White belt); optional.
+model CourseLevel {
+  id        String   @id @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  courseId  String   @map("course_id") @db.Uuid
+  course    Course   @relation(fields: [tenantId, courseId], references: [tenantId, id], onDelete: Restrict)
+  name      String   @db.VarChar(80)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  batches Batch[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, courseId])
+  @@map("course_level")
+}
+
+/// A group that meets together (label configurable: Batch/Class/Group, ADR-029).
+model Batch {
+  id        String         @id @db.Uuid
+  tenantId  String         @map("tenant_id") @db.Uuid
+  branchId  String         @map("branch_id") @db.Uuid
+  branch    Branch         @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  courseId  String         @map("course_id") @db.Uuid
+  course    Course         @relation(fields: [tenantId, courseId], references: [tenantId, id], onDelete: Restrict)
+  levelId   String?        @map("level_id") @db.Uuid
+  level     CourseLevel?   @relation(fields: [tenantId, levelId], references: [tenantId, id], onDelete: Restrict)
+  name      String         @db.VarChar(120)
+  /// Null = no limit.
+  capacity  Int?
+  startsOn  DateTime?      @map("starts_on") @db.Date
+  endsOn    DateTime?      @map("ends_on") @db.Date
+  status    ScheduleStatus @default(ACTIVE)
+  version   Int            @default(1)
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  teachers   BatchTeacher[]
+  enrolments BatchEnrolment[]
+  rules      ScheduleRule[]
+  sessions   ClassSession[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, branchId, status])
+  @@map("batch")
+}
+
+model BatchTeacher {
+  tenantId  String   @map("tenant_id") @db.Uuid
+  batchId   String   @map("batch_id") @db.Uuid
+  batch     Batch    @relation(fields: [tenantId, batchId], references: [tenantId, id], onDelete: Restrict)
+  teacherId String   @map("teacher_id") @db.Uuid
+  teacher   Teacher  @relation(fields: [tenantId, teacherId], references: [tenantId, id], onDelete: Restrict)
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@id([batchId, teacherId])
+  @@index([tenantId, teacherId])
+  @@map("batch_teacher")
+}
+
+/// A student in a batch over time (ADR-025: never deleted; `endedOn` closes it).
+model BatchEnrolment {
+  id        String    @id @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  batchId   String    @map("batch_id") @db.Uuid
+  batch     Batch     @relation(fields: [tenantId, batchId], references: [tenantId, id], onDelete: Restrict)
+  studentId String    @map("student_id") @db.Uuid
+  student   Student   @relation(fields: [tenantId, studentId], references: [tenantId, id], onDelete: Restrict)
+  startedOn DateTime  @map("started_on") @db.Date
+  endedOn   DateTime? @map("ended_on") @db.Date
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  /// One open enrolment per student and batch (ARCHITECTURE §8.4).
+  @@unique([tenantId, batchId, studentId], map: "batch_enrolment_one_open", where: raw("ended_on IS NULL"))
+  @@index([tenantId, studentId])
+  @@map("batch_enrolment")
+}
+
+/// A weekly slot (ADR-024): ISO weekday (1 = Monday … 7 = Sunday) and local start/end as minutes
+/// after midnight in the academy's timezone, effective between two dates.
+model ScheduleRule {
+  id            String    @id @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  batchId       String    @map("batch_id") @db.Uuid
+  batch         Batch     @relation(fields: [tenantId, batchId], references: [tenantId, id], onDelete: Restrict)
+  teacherId     String?   @map("teacher_id") @db.Uuid
+  teacher       Teacher?  @relation(fields: [tenantId, teacherId], references: [tenantId, id], onDelete: Restrict)
+  weekday       Int
+  startMinute   Int       @map("start_minute")
+  endMinute     Int       @map("end_minute")
+  effectiveFrom DateTime  @map("effective_from") @db.Date
+  effectiveTo   DateTime? @map("effective_to") @db.Date
+  version       Int       @default(1)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  sessions ClassSession[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, batchId])
+  @@map("schedule_rule")
+}
+
+enum SessionOrigin {
+  GENERATED
+  MANUAL
+
+  @@map("session_origin")
+}
+
+enum SessionStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+
+  @@map("session_status")
+}
+
+/// One meeting of a batch (ADR-024). `sessionDate` is the academy-local date; start/end instants
+/// are UTC. Generated sessions are unique per rule and date, so generation can be re-run.
+model ClassSession {
+  id             String        @id @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  branchId       String        @map("branch_id") @db.Uuid
+  branch         Branch        @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  batchId        String        @map("batch_id") @db.Uuid
+  batch          Batch         @relation(fields: [tenantId, batchId], references: [tenantId, id], onDelete: Restrict)
+  scheduleRuleId String?       @map("schedule_rule_id") @db.Uuid
+  scheduleRule   ScheduleRule? @relation(fields: [tenantId, scheduleRuleId], references: [tenantId, id], onDelete: Restrict)
+  teacherId      String?       @map("teacher_id") @db.Uuid
+  teacher        Teacher?      @relation(fields: [tenantId, teacherId], references: [tenantId, id], onDelete: Restrict)
+  sessionDate    DateTime      @map("session_date") @db.Date
+  startsAt       DateTime      @map("starts_at") @db.Timestamptz(3)
+  endsAt         DateTime      @map("ends_at") @db.Timestamptz(3)
+  origin         SessionOrigin
+  status         SessionStatus @default(SCHEDULED)
+  version        Int           @default(1)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([tenantId, scheduleRuleId, sessionDate])
+  @@index([tenantId, sessionDate])
+  @@index([tenantId, batchId, sessionDate])
+  @@map("class_session")
+}
+
+/// The academy's guided setup (UX v1.1 §5, C-08, C-92): the current step and, per step, its
+/// status and the records it created (`{ course: { status, completedAt, refIds } }`).
+model TenantOnboarding {
+  tenantId    String    @id @map("tenant_id") @db.Uuid
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  currentStep String    @map("current_step") @db.VarChar(20)
+  steps       Json      @default("{}")
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(3)
+  version     Int       @default(1)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("tenant_onboarding")
+}
