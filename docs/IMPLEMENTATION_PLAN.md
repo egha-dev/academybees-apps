@@ -396,6 +396,35 @@ Phase 2 is **not** started.
 
 **Exit gate.** Above green; **M0 Foundation Release** declared.
 
+**Gate evidence (P2-3, 2026-10-07 on `main` = `c31426a`; CI on `c31426a` green; staging serving `c31426a`)**
+
+| Gate item | Evidence |
+| --- | --- |
+| Unit: password policy, capability resolution, scope policies, tokens | `packages/auth/src/password.spec.ts`, `jwt.spec.ts`, `misc.spec.ts` (TOTP, recovery codes, sealing), `packages/contracts/src/roles.spec.ts`, `permissions.spec.ts`, `apps/api/src/modules/team/team.policy.spec.ts`; token **rotation** is covered at integration level (`sessions.int.spec.ts › refresh rotation`) |
+| Security: `demo-a` token on `demo-b` → 401 `TENANT_MISMATCH` + audit | `sessions.int.spec.ts › a session from academy A on academy B → 401 TENANT_MISMATCH, recorded on the platform audit` |
+| Console/hub/tenant tokens mutually rejected | `sessions.int.spec.ts › a tenant session is rejected on the Family Hub and console hosts` / `a hub or console token is rejected on an academy host`; `hub-console.int.spec.ts › a forged token of another audience is refused` |
+| Refresh reuse revokes the family | `sessions.int.spec.ts › reusing a rotated token later revokes the whole family` |
+| Disabled membership → 401 on the next request | `sessions.int.spec.ts › a disabled membership is refused on the next request`; `team.int.spec.ts` |
+| Privilege escalation → 403; IDOR → 404 | `rbac.int.spec.ts › a teacher cannot call owner-only endpoints`, `SELF scope …`, `BRANCH scope …`; cross-tenant suite (`cross-tenant.int.spec.ts`, every tenant route registered, incl. the 15 S9 routes) |
+| Rate limit 429 + `Retry-After`; lock-out | `sessions.int.spec.ts › rate-limits sign-in attempts with Retry-After`, `locks the account after repeated failures`; staging: 6th attempt → `429`, `Retry-After: 58` |
+| CSRF missing header → 403; cross-origin anonymous post refused | `sessions.int.spec.ts › a mutation with session cookies but no CSRF header → 403`, `refuses an anonymous cross-origin sign-in post`; staging: `Origin: https://evil.example` → `403` |
+| 2FA, devices, alerts (G-11) | `account-security.int.spec.ts` (15 tests); E2E `security.spec.ts` (desktop, Android, iPhone; axe light/dark) |
+| Idempotency/logging follow-ups (Phase 0 M1–M3, L1, L2, L4) | `idempotency.int.spec.ts › stored responses, audit and stale claims` (7 tests); `map-error.spec.ts`; `privacy.spec.ts › log safety` (C-82) |
+| E2E: invite → accept → login → role home | `auth.spec.ts › invite → accept → signed in; then forgot → reset → sign in with the new password` |
+| E2E: forgot → Mailpit → reset → login | same spec (worker + Mailpit) |
+| E2E: staff member in two academies signs in separately on each host | `auth.spec.ts › a teacher of two academies signs in to each one separately` |
+| E2E: parent on an academy URL → `app.` with a HUB session | `hub-console.spec.ts › a parent signing in on the academy URL continues on the Family Hub` |
+| E2E: console admin (mandatory TOTP, C-66) | `hub-console.spec.ts › a new console admin sets a password, enrols TOTP and signs in again with a recovery code` |
+| "Try again in …" after too many attempts (PO checklist) | Fixed in the gate (#53): `labels.spec.ts`, E2E `auth.spec.ts › too many wrong passwords say when to try again` |
+| UI states, a11y, i18n | axe light/dark: `auth.spec.ts` (login, forgot, reset, invite), `team.spec.ts`, `security.spec.ts`, `hub-console.spec.ts`; pseudo-locale + 40 % text: `i18n-pseudo.spec.ts` (sign-in screens, Security, Team) |
+| OpenAPI | `/api/docs` (non-production) lists all 28 Phase 2 routes (auth, MFA, sessions, password, invitations, team, settings) |
+| Migrations, RLS, rollback | 3 Phase 2 migrations, all expand-only (`identity_and_sessions`, `tenant_security_settings`, `idempotency_lease`); identity tables user-bound RLS (C-59); `db:drift` clean; `rls-coverage.int.spec.ts` |
+| Analytics (no PII) | `team.invitation_sent`, `team.invitation_accepted`, `auth.password_reset`, `auth.mfa_enabled`, `auth.mfa_disabled`, `auth.password_changed`, `academy.mfa_rule_changed` (strict schemas + PII guard) |
+| Release flags | `p2-role-homes` (PO, remove Phase 5/6, expires 2027-03-31), `p2-console-home` (PO, remove Phase 3, 2027-01-31), `p1-hub-placeholder` (PO, remove 7P, 2027-06-30); `flags:check` OK |
+| Common gate commands | lint, typecheck, unit, integration (API 434, database 150, worker), build, `db:drift`, `i18n:check`, `flags:check`, `perf:budget` (all routes ≤ 200 KB; `/settings/security` 198.9), E2E **294 passed** locally (2 workers) + CI green; Lighthouse in CI (`e2e` job) green — the local run can't start Chrome under WSL |
+| Staging + TLS | `https://{staging, demo-a, demo-b, app, console}.staging.academybees.com` valid TLS; health `ok` (DB, Redis); release `c31426a`; deploys on every merge (C-77) |
+| Real phone | PO tested S9 on staging (2026-10-07: "looks good"); PO acceptance checklist pending |
+
 ---
 
 ### Phase 3 — Academy Provisioning + Onboarding
