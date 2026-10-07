@@ -1,5 +1,6 @@
 import { type BrowserContext, expect, type Page, test, type TestInfo } from '@playwright/test';
 
+import { expectNoA11yViolations } from '../support/a11y.js';
 import { ownClientIp } from '../support/client-ip.js';
 import { hostUrl, requireSeededAcademies } from '../support/hosts.js';
 import { waitForEmail } from '../support/mail.js';
@@ -198,3 +199,51 @@ test('a broken invite or reset link explains what to do next', async ({ page }, 
   );
   await expect(page.getByRole('link', { name: 'Get a new link' })).toBeVisible();
 });
+
+test('a teacher of two academies signs in to each one separately', async ({ page }, testInfo) => {
+  // Seeded: teacher@demo-a.test teaches at demo-a and demo-b (one identity, two memberships).
+  await page.goto(hostUrl(testInfo, 'demo-a', '/login'));
+  await signIn(page, 'teacher@demo-a.test');
+  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/teach'), { timeout: 15_000 });
+
+  // demo-a's session is host-only: demo-b asks to sign in, and shows its own academy.
+  await page.goto(hostUrl(testInfo, 'demo-b', '/teach'));
+  await expect(page).toHaveURL(/\/login\?next=%2Fteach$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'Sign in to Demo B Dance Studio',
+  );
+  await signIn(page, 'teacher@demo-a.test');
+  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-b', '/teach'), { timeout: 15_000 });
+
+  // Both sessions now live side by side; each host shows its own academy.
+  await page.goto(hostUrl(testInfo, 'demo-a', '/teach'));
+  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/teach'));
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Demo A Academy');
+
+  // Signing out of demo-a leaves demo-b signed in.
+  await signOut(page, testInfo, 'demo-a');
+  await page.goto(hostUrl(testInfo, 'demo-b', '/teach'));
+  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-b', '/teach'));
+});
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`academy sign-in screens have no WCAG 2.1 AA violations (${theme})`, async ({
+    browser,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-chromium', 'Checked once on desktop');
+    const context = await browser.newContext({ colorScheme: theme });
+    await ownClientIp(context);
+    const page = await context.newPage();
+    for (const path of [
+      '/login',
+      '/forgot-password',
+      '/reset-password/x',
+      '/invite/not-a-real-invitation-token-123',
+    ]) {
+      await page.goto(hostUrl(testInfo, 'demo-a', path));
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await expectNoA11yViolations(page);
+    }
+    await context.close();
+  });
+}

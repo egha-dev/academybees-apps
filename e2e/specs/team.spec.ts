@@ -30,6 +30,28 @@ async function openTeam(page: Page, testInfo: TestInfo) {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Team');
 }
 
+/**
+ * A member's row, following "Show more members" until it appears: the list pages at 50, oldest
+ * first, so a member invited by this test may be on a later page when the academy already has
+ * many (a long-lived local database).
+ */
+async function memberRow(page: Page, email: string) {
+  const row = () => page.getByRole('listitem').filter({ hasText: email });
+  for (let i = 0; i < 20; i++) {
+    // The list is server-rendered: wait until this page's members are there before counting.
+    await expect(page.getByRole('heading', { name: 'Members' })).toBeVisible();
+    if (await row().count()) break;
+    const more = page.getByRole('link', { name: 'Show more members' });
+    if (!(await more.count())) break;
+    // Wait for the next page itself, not just any load event of the current one.
+    const before = page.url();
+    await more.click();
+    await page.waitForURL((url) => url.href !== before);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Team');
+  }
+  return row();
+}
+
 /** The open sheet (a side drawer on desktop, a bottom sheet on phones). */
 const sheet = (page: Page) =>
   page.getByRole('presentation').filter({ has: page.getByRole('heading') });
@@ -80,14 +102,14 @@ test('change a member’s roles, then disable their access', async ({ page, cont
 
   await signInAt(page, testInfo, 'demo-a', 'owner@demo-a.test');
   await page.goto(hostUrl(testInfo, 'demo-a', '/settings/team'));
-  let row = page.getByRole('listitem').filter({ hasText: email });
+  let row = await memberRow(page, email);
   await row.getByRole('button', { name: 'Manage' }).click();
   let form = sheet(page);
   await form.getByRole('checkbox', { name: 'Teacher' }).uncheck();
   await form.getByRole('checkbox', { name: 'Receptionist' }).check();
   await form.getByRole('button', { name: 'Save roles' }).click();
   await expect(page.getByText('Roles updated')).toBeVisible();
-  row = page.getByRole('listitem').filter({ hasText: email });
+  row = await memberRow(page, email);
   await expect(row.getByText('Receptionist')).toBeVisible();
 
   await row.getByRole('button', { name: 'Manage' }).click();

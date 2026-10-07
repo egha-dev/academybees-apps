@@ -16,30 +16,48 @@ const AUTH_PATHS = [
   '/forgot-password',
   '/reset-password/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
 ];
-/** Seeded academy names are data, not catalogue text (C-54). */
-const DATA_VALUES = ['Demo A Academy', 'Paused Karate Club', 'Setup Music School'];
+/** Seeded academy and user names are data, not catalogue text (C-54). */
+const DATA_VALUES = [
+  'Demo A Academy',
+  'Paused Karate Club',
+  'Setup Music School',
+  'Asha Owner',
+  'owner@demo-a.test',
+];
+/** Intl output (dates, times) is formatted data, not catalogue text (G-32). */
+const DATA_PATTERNS = [
+  /\b\d{1,2} [A-Z][a-z]{2,8} \d{4}\b/g, // 6 Oct 2026
+  /\b\d{1,2}:\d{2}\s?[ap]m\b/gi, // 5:30 pm
+];
+/** Signed-in Phase 2 pages, opened as the seeded owner (signed in through the API). */
+const SIGNED_IN_PATHS = ['/settings/security', '/settings/team'];
+const DEV_PASSWORD = 'AcademyBees#2026';
 const VIEWPORTS = [
   { name: 'phone', width: 390, height: 844 },
   { name: 'desktop', width: 1280, height: 900 },
 ];
 
 async function hardCodedText(page: Page): Promise<string[]> {
-  return page.evaluate((dataValues) => {
-    const found: string[] = [];
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-      const parent = node.parentElement;
-      if (
-        !parent ||
-        parent.closest('script, style, noscript, [data-i18n-exempt], [aria-hidden="true"]')
-      )
-        continue;
-      let text = node.textContent?.trim() ?? '';
-      for (const value of dataValues) text = text.split(value).join('');
-      if (/[A-Za-z]{2,}/.test(text)) found.push(text);
-    }
-    return found;
-  }, DATA_VALUES);
+  return page.evaluate(
+    ({ dataValues, patterns }) => {
+      const found: string[] = [];
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const parent = node.parentElement;
+        if (
+          !parent ||
+          parent.closest('script, style, noscript, [data-i18n-exempt], [aria-hidden="true"]')
+        )
+          continue;
+        let text = node.textContent?.trim() ?? '';
+        for (const value of dataValues) text = text.split(value).join('');
+        for (const pattern of patterns) text = text.replace(new RegExp(pattern, 'gi'), '');
+        if (/[A-Za-z]{2,}/.test(text)) found.push(text);
+      }
+      return found;
+    },
+    { dataValues: DATA_VALUES, patterns: DATA_PATTERNS.map((p) => p.source) },
+  );
 }
 
 async function horizontalOverflow(page: Page): Promise<number> {
@@ -93,6 +111,28 @@ for (const viewport of VIEWPORTS) {
     }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto(hostUrl(testInfo, 'demo-a', path));
+      await page.waitForLoadState('networkidle');
+      if (testInfo.project.name === 'pseudo-accented') {
+        expect(await hardCodedText(page)).toEqual([]);
+      }
+      expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    });
+  }
+}
+
+for (const viewport of VIEWPORTS) {
+  for (const path of SIGNED_IN_PATHS) {
+    test(`signed-in ${path} (${viewport.name}) has no hard-coded text or overflow`, async ({
+      page,
+      context,
+    }, testInfo) => {
+      const login = await context.request.post(hostUrl(testInfo, 'demo-a', '/api/v1/auth/login'), {
+        data: { identifier: 'owner@demo-a.test', password: DEV_PASSWORD },
+      });
+      expect(login.status()).toBe(200);
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto(hostUrl(testInfo, 'demo-a', path));
+      await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', path));
       await page.waitForLoadState('networkidle');
       if (testInfo.project.name === 'pseudo-accented') {
         expect(await hardCodedText(page)).toEqual([]);

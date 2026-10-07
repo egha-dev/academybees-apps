@@ -149,14 +149,23 @@ export default async function TeamPage({
     <Row key={m.id}>
       <Stack spacing={0.5} sx={{ minInlineSize: 0, flex: '1 1 16rem' }}>
         <Stack direction="row" spacing={2} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Names and addresses are people's data, not catalogue text (G-32 pseudo check). */}
           <Text as="span">
-            <strong>{m.name}</strong>
+            <strong data-i18n-exempt>{m.name}</strong>
           </Text>
           {m.isYou && <StatusBadge tone="info" label={t('members.you')} />}
         </Stack>
-        <Text variant="bodySmall" tone="secondary">
-          {m.email ?? m.phone ?? t('members.noEmail')}
-        </Text>
+        {m.email || m.phone ? (
+          <Text variant="bodySmall" tone="secondary">
+            <Box component="span" data-i18n-exempt>
+              {m.email ?? m.phone}
+            </Box>
+          </Text>
+        ) : (
+          <Text variant="bodySmall" tone="secondary">
+            {t('members.noEmail')}
+          </Text>
+        )}
         <Text variant="bodySmall" tone="secondary">
           {list(m.roles.map((r) => roleLabel(r.key, r.name)))}
         </Text>
@@ -252,7 +261,7 @@ export default async function TeamPage({
               <Row key={inv.id}>
                 <Stack spacing={0.5} sx={{ minInlineSize: 0, flex: '1 1 16rem' }}>
                   <Text as="span">
-                    <strong>{inv.email}</strong>
+                    <strong data-i18n-exempt>{inv.email}</strong>
                   </Text>
                   <Text variant="bodySmall" tone="secondary">
                     {list(inv.roles.map((r) => roleLabel(r)))}

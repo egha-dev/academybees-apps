@@ -443,7 +443,7 @@ CREATE POLICY tenant_isolation ON student
 | Module | Entities | Phase |
 | --- | --- | --- |
 | core/audit | `AuditLog` (append-only; actor, actorType, impersonatorId, tenantId, action, entityType, entityId, before, after, ip, requestId, at) | 0 |
-| core/idempotency | `IdempotencyRecord` (tenantId, key, scope, requestHash, status, responseSnapshot, expiresAt) | 0 |
+| core/idempotency | `IdempotencyRecord` (tenantId, key, scope, requestHash, status, responseSnapshot, attempt, lockedUntil, committedAt, expiresAt) | 0 (lease: Phase 2, C-82) |
 | core/outbox | `OutboxEvent` (id, tenantId, type, payload, occurredAt, dispatchedAt, attempts) | 0 |
 | core/flags | `FeatureFlag` (key, default, per-environment values, owner, expiresAt), `FeatureFlagOverride` (flagKey, tenantId?, value) — release flags, not entitlements (ADR-041); FK to `Tenant` + RLS on overrides added in Phase 1 (C-35) | 0 / 1 |
 | tenant | `Tenant`, `TenantDomain`, `TenantBranding`, `TenantSettings`, `Branch` | 1 |
@@ -503,7 +503,7 @@ Attendance growth (~2M rows/month at 100K students, PRD v2.1 §18.6) is handled 
 | Errors | Envelope below; stable `code` from `ErrorCode` enum; no stack/DB text to clients |
 | Pagination | Cursor (keyset) `?limit=&cursor=` → `{ items, nextCursor }`; opaque base64 cursor of sort keys. Offset only for small admin lists |
 | Filtering/sorting | Whitelisted per endpoint in the schema |
-| Idempotency | `Idempotency-Key` header required on financial writes, provisioning, bulk operations; stored in `IdempotencyRecord` for 24h+; same key + different body ⇒ `409 IDEMPOTENCY_KEY_REUSED` |
+| Idempotency | `Idempotency-Key` header required on financial writes, provisioning, bulk operations; stored in `IdempotencyRecord` for 24h+; same key + different body ⇒ `409 IDEMPOTENCY_KEY_REUSED`. A claim is leased for 60 s; every transaction the request commits marks it committed *in that transaction*; after the lease a retry may take over only a claim that never committed, and an attempt whose claim was taken over cannot commit (fencing). A failure after a commit keeps the key, so a partial outcome is never run twice. Side effects must be database writes (outbox) for this to hold (C-82). The stored body is the schema-filtered response; a replay writes no audit row |
 | Concurrency | `If-Match: <version>` / body `version` for editable aggregates ⇒ `409 VERSION_CONFLICT` |
 | Time | ISO-8601 UTC instants; `YYYY-MM-DD` dates are tenant-local |
 | Docs | OpenAPI 3.1 generated from Zod (non-prod `/api/docs`) |
