@@ -221,6 +221,17 @@ describe('@Idempotent()', () => {
       expect((await record(key)).attempt).toBe(2);
     });
 
+    it('M2: a handler that only read before failing releases its key; the client can retry', async () => {
+      const key = newId();
+      const ref = `read-${key}`;
+      const first = await ledger(key, { ref, readThenFail: true });
+      expect(first.body.error.code).toBe('INVALID_STATE_TRANSITION');
+      expect(await record(key)).toBeUndefined(); // released
+      const retry = await ledger(key, { ref, readThenFail: true });
+      expect(retry.body.error.code).toBe('INVALID_STATE_TRANSITION'); // ran again, not "in progress"
+      expect(executions.count).toBe(2);
+    });
+
     it('M1: a failure after a commit keeps the key (the outcome is never run twice)', async () => {
       const key = newId();
       const ref = `partial-${key}`;

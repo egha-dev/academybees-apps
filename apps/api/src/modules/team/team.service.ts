@@ -151,6 +151,12 @@ export class TeamService {
           data: roles.map((r) => ({ tenantId, membershipId: row.id, roleId: r.id })),
         });
       }
+      // A disabled member's pending invitations stop working with them (review L4).
+      if (status === 'DISABLED' && row.status !== 'DISABLED')
+        await tx.invitation.updateMany({
+          where: { invitedById: row.userId, acceptedAt: null, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
       await this.audit.record(
         {
           action: 'team.member_updated',

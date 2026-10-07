@@ -67,9 +67,16 @@ export class SecurityService {
     return this.mfa.setupStart(userId);
   }
 
+  /**
+   * Confirm the first code: 2FA is on. Every other device (in every academy and the hub) is signed
+   * out, so a session someone opened with the password alone doesn't outlive the new factor; they
+   * sign in again with a code (review L8). This device stays signed in.
+   */
   async mfaSetupConfirm(code: string): Promise<{ recoveryCodes: string[] }> {
     const { userId, sessionId } = this.me();
-    return { recoveryCodes: await this.mfa.setupConfirm(userId, sessionId, code) };
+    const recoveryCodes = await this.mfa.setupConfirm(userId, sessionId, code);
+    await this.sessions.revokeUserSessions(userId, 'mfa_enabled', undefined, { sessionId });
+    return { recoveryCodes };
   }
 
   async regenerateRecoveryCodes(password: string): Promise<{ recoveryCodes: string[] }> {

@@ -329,10 +329,21 @@ export class InvitationsService {
           revokedAt: null,
           expiresAt: { gt: new Date() },
         },
-        select: INVITATION_SELECT,
+        select: { ...INVITATION_SELECT, invitedById: true },
       }),
     );
     if (!row) throw new DomainError('NOT_FOUND', 'invitation not valid');
+    // The invitation is only as good as its sender: someone since disabled, or who can no longer
+    // grant these roles, can't let anyone in (review L4). Answered like any invalid link.
+    if (row.invitedById) {
+      const inviter = await this.memberships.load(this.cls.get('tenantId'), row.invitedById);
+      if (
+        inviter?.status !== 'ACTIVE' ||
+        !inviter.capabilities['team.invite'] ||
+        !row.roleKeys.every((role) => canGrantRole(inviter, role))
+      )
+        throw new DomainError('NOT_FOUND', 'inviter no longer allowed');
+    }
     return row;
   }
 
