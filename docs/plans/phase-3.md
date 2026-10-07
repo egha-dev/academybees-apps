@@ -84,6 +84,13 @@ Each slice follows the same steps: branch `p3/<slice>` from the latest `main` â†
 - Draft documents are seeded.
 - **Tests:** acceptance is recorded; a version bump asks again; user A can't read user B's acceptances.
 
+*As built (S1):*
+- Plans and legal documents are synced from the catalogues in `@academybee/contracts` after every migrate/deploy (`syncReferenceData`, in `applySqlFolder`), not seeded: every environment has the same rows.
+- Entitlement errors use the standard `{ path, issue }` details: `{ path: 'students', issue: 'limit_reached' }`, `{ path: 'crm', issue: 'not_in_plan' }`.
+- Limits counted so far: `staff` and `branches` (students arrive with the people module in S5). Staff invitations aren't limited yet; that comes with teacher management in Phase 4.
+- `GET /academy/plan` is deferred until a screen needs it; the console detail (S3/S4) shows the plan.
+- `LegalAcceptance` is user-owned (like `auth_session`): its own RLS policy also requires the recorded academy to be the current one. A draft DPA page was added to the marketing site (`/dpa/`), next to Terms and Privacy.
+
 ### S2 `p3/people-scheduling-schema` â€” full schema (C-09)
 
 **3.4 People schema** (`people.prisma`, G-05):
