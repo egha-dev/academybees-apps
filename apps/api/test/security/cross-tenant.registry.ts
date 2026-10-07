@@ -1,4 +1,4 @@
-import { type CrossTenantRoute } from '@academybee/testing';
+import { type CrossTenantRoute, FIXTURE_PASSWORD } from '@academybee/testing';
 
 /**
  * Every API route that resolves an academy (host policy `tenant` or `any`). Add new
@@ -20,6 +20,86 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     path: '/api/v1/auth/password/reset',
     body: { token: 'x'.repeat(43), password: 'Another#Pass2026' },
     spoof: { skip: 'team.int.spec.ts › password reset' },
+  },
+  // Sign-in second factor (C-66, C-80): public, the single-use MFA token is the credential and is
+  // bound to the academy it was issued in.
+  {
+    method: 'POST',
+    path: '/api/v1/auth/mfa/enrol/start',
+    body: { token: 'x'.repeat(43) },
+    spoof: { skip: 'account-security.int.spec.ts › mfa token' },
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/auth/mfa/enrol/confirm',
+    body: { token: 'x'.repeat(43), code: '123456' },
+    spoof: { skip: 'account-security.int.spec.ts › mfa token' },
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/auth/mfa/verify',
+    body: { token: 'x'.repeat(43), code: '123456' },
+    spoof: { skip: 'account-security.int.spec.ts › mfa token' },
+  },
+  // Account security (G-11, C-80): the caller's own account; sessions of this academy only.
+  { method: 'GET', path: '/api/v1/auth/security', session: true },
+  {
+    method: 'POST',
+    path: '/api/v1/auth/mfa/setup/start',
+    session: true,
+    body: { password: FIXTURE_PASSWORD },
+    spoof: 'status',
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/auth/mfa/setup/confirm',
+    session: true,
+    body: { code: '123456' },
+    spoof: { skip: 'account-security.int.spec.ts › set up 2FA' },
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/auth/mfa/recovery-codes',
+    session: true,
+    body: { password: 'x' },
+    spoof: { skip: 'account-security.int.spec.ts › recovery codes' },
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/auth/mfa/disable',
+    session: true,
+    body: { password: 'x' },
+    spoof: { skip: 'account-security.int.spec.ts › turn 2FA off' },
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/auth/password/change',
+    session: true,
+    body: { currentPassword: 'x', newPassword: 'Another#Pass2026' },
+    spoof: { skip: 'account-security.int.spec.ts › change password' },
+  },
+  { method: 'GET', path: '/api/v1/auth/sessions', session: true, spoof: 'status' },
+  { method: 'POST', path: '/api/v1/auth/sessions/revoke-others', session: true, spoof: 'status' },
+  {
+    method: 'POST',
+    path: '/api/v1/auth/sessions/:id/revoke',
+    session: true,
+    spoof: { skip: 'account-security.int.spec.ts › sessions' },
+  },
+  // Academy settings: the 2FA rule (G-11).
+  {
+    method: 'GET',
+    path: '/api/v1/settings/security',
+    session: true,
+    capability: 'academy.settings.read',
+  },
+  {
+    method: 'PATCH',
+    path: '/api/v1/settings/security',
+    session: true,
+    capability: 'academy.settings.manage',
+    // A no-op change (same rule, version 1) is repeatable.
+    body: { version: 1, requireMfaForRoles: [] },
   },
   // Team (C-67).
   {

@@ -10,6 +10,7 @@ import {
   MfaEnrolStartRequestSchema,
   MfaEnrolStartResponseSchema,
   MfaVerifyRequestSchema,
+  MfaVerifyResponseSchema,
   LogoutRequestSchema,
   type MeResponse,
   MeResponseSchema,
@@ -28,7 +29,7 @@ import { type RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { DomainError } from '../errors/domain-error.js';
 import { SignedIn } from '../rbac/can.decorator.js';
-import { AnyHost, ConsoleHost, HubHost, TenantHost } from '../tenant/host-policy.js';
+import { AnyHost, HubHost, TenantHost } from '../tenant/host-policy.js';
 import { TenantContext } from '../tenant/tenant-context.service.js';
 import { createZodDto, ZodResponse } from '../validation/zod-dto.js';
 import { readCookies } from './http.js';
@@ -85,36 +86,36 @@ export class AuthController {
     return this.hub.exchangeHandoff(body.code, this.cls.get('ip') ?? 'unknown', res);
   }
 
-  /** Console, first sign-in: a new TOTP secret to add to an authenticator app (C-66). */
+  /**
+   * Mandatory first-time 2FA during sign-in (console, C-66; an academy that requires it, C-80):
+   * a new TOTP secret to add to an authenticator app. The MFA token works only on its own host.
+   */
   @Post('mfa/enrol/start')
   @Public()
-  @ConsoleHost()
   @HttpCode(200)
   @ZodResponse(MfaEnrolStartResponseSchema)
   mfaEnrolStart(@Body() body: MfaEnrolStartDto) {
     return this.mfa.enrolStart(body.token);
   }
 
-  /** Console, first sign-in: confirm a code; returns the recovery codes once and signs in. */
+  /** Mandatory first-time 2FA: confirm a code; returns the recovery codes once and signs in. */
   @Post('mfa/enrol/confirm')
   @Public()
-  @ConsoleHost()
   @HttpCode(200)
   @ZodResponse(MfaEnrolConfirmResponseSchema)
   mfaEnrolConfirm(@Body() body: MfaEnrolConfirmDto, @Res({ passthrough: true }) res: Response) {
-    return this.mfa.enrolConfirm(body.token, body.code, res);
+    return this.logins.confirmMfaEnrolment(body.token, body.code, res);
   }
 
-  /** Console sign-in second step: a TOTP code or a recovery code (C-66). */
+  /** Sign-in second step on any host: a TOTP code or a recovery code (C-66, C-80). */
   @Post('mfa/verify')
   @Public()
-  @ConsoleHost()
   @HttpCode(200)
-  @ZodResponse(LoginResponseSchema)
+  @ZodResponse(MfaVerifyResponseSchema)
   mfaVerify(@Body() body: MfaVerifyDto, @Res({ passthrough: true }) res: Response) {
     const input =
       body.code !== undefined ? { code: body.code } : { recoveryCode: body.recoveryCode ?? '' };
-    return this.mfa.verify(body.token, input, res);
+    return this.logins.verifyMfa(body.token, input, res);
   }
 
   @Post('refresh')

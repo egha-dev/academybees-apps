@@ -125,6 +125,8 @@ model TenantSettings {
   publicProfile Json     @default("{}") @map("public_profile")
   /// `{ defaultLocale, enabledLocales, documentLocale }` — `en-IN` only until Phase L (ADR-040).
   i18n          Json     @default("{\"defaultLocale\":\"en-IN\",\"enabledLocales\":[\"en-IN\"]}")
+  /// `{ requireMfaForRoles }` — staff roles that must use 2FA in this academy (G-11, C-80).
+  security      Json     @default("{}")
   version       Int      @default(1)
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 

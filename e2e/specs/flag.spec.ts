@@ -48,6 +48,11 @@ async function signInToDemoB(page: Page, url: string) {
 
 test('the signed-in landing is visible while p2-role-homes is on', async ({ page }, testInfo) => {
   await signInToDemoB(page, hostUrl(testInfo, 'demo-b', '/login'));
+  // An Owner without 2FA is asked first (C-80); the landing is one step away.
+  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-b', '/settings/security?prompt=mfa'), {
+    timeout: 15_000,
+  });
+  await page.getByRole('link', { name: 'Not now' }).click();
   await expect(page).toHaveURL(hostUrl(testInfo, 'demo-b', '/today'));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'Signed in to Demo B Dance Studio',
@@ -59,6 +64,12 @@ test('turning the flag off for one academy hides the unfinished page', async ({
 }, testInfo) => {
   await setOverride(false);
   await signInToDemoB(page, hostUrl(testInfo, 'demo-b', '/login'));
-  await expect(page.getByText('Page not found')).toBeVisible();
-  await expect(page.getByText('Signed in to Demo B Dance Studio')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/settings\/security/, { timeout: 15_000 });
+  // Without the role homes, staff land on their (real) Security page, with no "Not now" link to
+  // a home that isn't there (C-68, C-80).
+  await page.goto(hostUrl(testInfo, 'demo-b', '/today'));
+  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-b', '/settings/security'));
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Security');
+  await expect(page.getByRole('link', { name: 'Not now' })).toHaveCount(0);
+  await expect(page.getByRole('navigation').getByRole('link', { name: 'Today' })).toHaveCount(0);
 });

@@ -21,6 +21,7 @@ import { RedisModule } from './core/redis/redis.module.js';
 import { TenantModule } from './core/tenant/tenant.module.js';
 import { ZodResponseInterceptor } from './core/validation/zod-response.interceptor.js';
 import { ZodValidationPipe } from './core/validation/zod-validation.pipe.js';
+import { SettingsModule } from './modules/settings/settings.module.js';
 import { TeamModule } from './modules/team/team.module.js';
 
 /** Root module. Domain modules (src/modules/*) are added by their phases. */
@@ -48,6 +49,7 @@ export class AppModule {
         HealthModule,
         // Domain modules.
         TeamModule,
+        SettingsModule,
         ...(config.APP_ENV === 'production' ? [] : [DocsModule]),
         ...extra,
       ],

@@ -241,6 +241,8 @@ Unauthenticated `/` on an academy host goes to `/login`, and **`p1-tenant-home` 
 
 **2.22 Devices & sessions** (`/settings/security`): sessions list (device label, location-free, last used), sign out one / all others. "New device" email on the first sign-in from an unknown device (`KnownDevice` keyed by a long-lived device-id cookie). "Password changed" email.
 
+*As built (C-80):* 2FA is asked for on every host for users who have it, invite accept included. The MFA token is bound to its host and academy. The academy rule lives in `GET/PATCH /settings/security`, and sessions without 2FA end at refresh once the rule covers them. The strong prompt is a page section (Owner/Accountant land on `/settings/security?prompt=mfa`), not a modal. Signed-in password change was added for the "password changed" alert. There is also a "two-step sign-in turned off" email. With `p2-role-homes` off, `/today` and `/teach` land on `/settings/security`.
+
 ### S10 `p2/hardening-e2e` — assigned follow-ups, journeys, docs
 
 **2.23 Idempotency + logging follow-ups** (Phase 0 review), before any finance/provisioning endpoint uses `@Idempotent()`:

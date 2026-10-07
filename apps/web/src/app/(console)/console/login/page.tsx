@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
-import { ConsoleSignIn } from '@/components/console/console-sign-in';
+import { TwoStepSignIn } from '@/components/auth/two-step-sign-in';
 import { consoleSignInLabels } from '@/components/console/labels.server';
 import { PlatformFrame } from '@/components/platform/platform-frame';
 import { getSession } from '@/lib/session.server';
@@ -22,7 +22,7 @@ export default async function ConsoleLoginPage() {
   if (session.state === 'signed-in') redirect('/');
   return (
     <PlatformFrame title={t('title')} body={t('body')}>
-      <ConsoleSignIn labels={labels} />
+      <TwoStepSignIn labels={labels} showForgot={false} />
     </PlatformFrame>
   );
 }

@@ -3,8 +3,8 @@ import { notFound, redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { AuthFrame } from '@/components/auth/auth-frame';
-import { loginLabels } from '@/components/auth/labels.server';
-import { LoginForm } from '@/components/auth/login-form';
+import { loginLabels, mfaLabels } from '@/components/auth/labels.server';
+import { TwoStepSignIn } from '@/components/auth/two-step-sign-in';
 import { academyColor, academyName, hostContext, hubOrigin } from '@/lib/host-context.server';
 import { safeNext } from '@/lib/safe-next';
 import { getSession, homeFor } from '@/lib/session.server';
@@ -39,7 +39,11 @@ export default async function LoginPage({
       title={t('title', { academy })}
       body={t('body')}
     >
-      <LoginForm labels={await loginLabels()} next={next} hubOrigin={hubOrigin(apexUrl)} />
+      <TwoStepSignIn
+        labels={{ login: await loginLabels(), mfa: await mfaLabels(academy) }}
+        next={next}
+        hubOrigin={hubOrigin(apexUrl)}
+      />
     </AuthFrame>
   );
 }

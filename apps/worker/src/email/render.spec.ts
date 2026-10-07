@@ -30,4 +30,24 @@ describe('renderEmail', () => {
     const email = renderEmail({ ...base, template: 'password_changed' }, undefined);
     expect(email.html).not.toContain('<a href');
   });
+
+  it('renders new_device with the translated browser and system, never the raw codes', () => {
+    const email = renderEmail(
+      { ...base, template: 'new_device', vars: { browser: 'chrome', os: 'android' } },
+      undefined,
+    );
+    expect(email.text).toContain('Chrome on Android');
+    expect(email.html).not.toContain('<a href');
+    const unknown = renderEmail(
+      { ...base, template: 'new_device', vars: { browser: 'other', os: 'other' } },
+      undefined,
+    );
+    expect(unknown.text).toContain('a browser on an unknown device');
+  });
+
+  it('renders mfa_disabled as an alert without a call to action', () => {
+    const email = renderEmail({ ...base, template: 'mfa_disabled' }, undefined);
+    expect(email.subject).toContain('Two-step sign-in');
+    expect(email.html).not.toContain('<a href');
+  });
 });

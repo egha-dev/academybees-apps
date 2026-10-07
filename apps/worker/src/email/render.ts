@@ -12,6 +12,8 @@ const KEYS = {
   password_changed: { ns: 'passwordChanged', lines: ['body', 'notYou'], cta: false },
   platform_admin_invite: { ns: 'platformAdminInvite', lines: ['body', 'expiry'], cta: true },
   account_setup: { ns: 'accountSetup', lines: ['body', 'expiry'], cta: true },
+  new_device: { ns: 'newDevice', lines: ['body', 'notYou'], cta: false },
+  mfa_disabled: { ns: 'mfaDisabled', lines: ['body', 'notYou'], cta: false },
 } as const;
 
 const escapeHtml = (value: string) =>

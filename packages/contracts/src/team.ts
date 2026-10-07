@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { ExperienceSchema, LoginResponseSchema } from './auth.js';
+import { ExperienceSchema, LoginMfaSchema, LoginResponseSchema } from './auth.js';
 import { cursorPageSchema } from './pagination.js';
 import { StaffRoleKeySchema } from './roles.js';
 
@@ -84,7 +84,9 @@ export const AcceptInvitationSchema = z.object({
   password: NewPassword,
 });
 export type AcceptInvitation = z.infer<typeof AcceptInvitationSchema>;
-export const AcceptInvitationResponseSchema = LoginResponseSchema;
+/** Signed in, or the 2FA step first (the user has 2FA, or the role requires it here, C-80). */
+export const AcceptInvitationResponseSchema = z.union([LoginResponseSchema, LoginMfaSchema]);
+export type AcceptInvitationResponse = z.infer<typeof AcceptInvitationResponseSchema>;
 
 export const ForgotPasswordSchema = z.object({ email: Email });
 export const ResetPasswordSchema = z.object({

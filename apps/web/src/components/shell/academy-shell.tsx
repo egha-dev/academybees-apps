@@ -1,12 +1,12 @@
 'use client';
 
-import { HomeIcon, MoreIcon, PeopleIcon, TodayIcon } from '@academybee/ui/icons';
+import { HomeIcon, LockIcon, MoreIcon, PeopleIcon, TodayIcon } from '@academybee/ui/icons';
 import { AppShell, type NavGroup, type NavItem } from '@academybee/ui/components/shell';
 import { usePathname } from 'next/navigation';
 import { type ReactNode } from 'react';
 
 /** Navigation entries are plain data from the server; icons are picked here (client side). */
-export type ShellIcon = 'today' | 'home' | 'team' | 'more';
+export type ShellIcon = 'today' | 'home' | 'team' | 'security' | 'more';
 export type ShellNavItem = { key: string; label: string; href: string; icon: ShellIcon };
 export type ShellNavGroup = { key: string; label: string; items: ShellNavItem[] };
 
@@ -14,6 +14,7 @@ const ICONS: Record<ShellIcon, ReactNode> = {
   today: <TodayIcon />,
   home: <HomeIcon />,
   team: <PeopleIcon />,
+  security: <LockIcon />,
   more: <MoreIcon />,
 };
 

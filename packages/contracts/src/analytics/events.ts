@@ -34,6 +34,35 @@ export const ANALYTICS_EVENTS = {
     description: 'A user chose a new password from a reset link.',
     properties: z.strictObject({}),
   }),
+  'auth.mfa_enabled': defineAnalyticsEvent({
+    name: 'auth.mfa_enabled',
+    version: 1,
+    description: 'An academy user turned on two-step sign-in.',
+    properties: z.strictObject({
+      /** Set up from the sign-in step because the academy requires it. */
+      required: z.boolean(),
+    }),
+  }),
+  'auth.mfa_disabled': defineAnalyticsEvent({
+    name: 'auth.mfa_disabled',
+    version: 1,
+    description: 'An academy user turned off two-step sign-in.',
+    properties: z.strictObject({}),
+  }),
+  'auth.password_changed': defineAnalyticsEvent({
+    name: 'auth.password_changed',
+    version: 1,
+    description: 'A signed-in user changed their password.',
+    properties: z.strictObject({}),
+  }),
+  'academy.mfa_rule_changed': defineAnalyticsEvent({
+    name: 'academy.mfa_rule_changed',
+    version: 1,
+    description: 'An academy changed which staff roles must use two-step sign-in.',
+    properties: z.strictObject({
+      roles: z.array(z.enum(['owner', 'admin', 'teacher', 'accountant', 'receptionist'])),
+    }),
+  }),
 } as const;
 
 export type AnalyticsEventName = keyof typeof ANALYTICS_EVENTS;

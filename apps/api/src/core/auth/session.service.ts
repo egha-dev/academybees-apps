@@ -18,6 +18,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { type Response } from 'express';
 import { type Redis } from 'ioredis';
 import { ClsService } from 'nestjs-cls';
+import { z } from 'zod';
 
 import { AuditService } from '../audit/audit.service.js';
 import { API_CONFIG } from '../config/config.module.js';
@@ -34,8 +35,10 @@ import {
   REFRESH_TTL_MS,
   setSessionCookies,
 } from './http.js';
+import { DeviceService } from './device.service.js';
 import { AUTH_KEYS } from './keys.js';
 import { MembershipService } from './membership.service.js';
+import { MfaPolicyService } from './mfa-policy.service.js';
 
 const DAY = 24 * 3600 * 1000;
 /** Lock after this many consecutive failures; the lock doubles per further failure (≤ 60 min). */
@@ -47,6 +50,8 @@ const SESSION_KEY = (sid: string) => `auth:sess:${sid}`;
 
 /** Where each experience starts (ARCHITECTURE §10.2; homes behind `p2-role-homes` until 5/6). */
 export const HOME: Record<ExperienceName, string> = { manage: '/today', teach: '/teach', hub: '/' };
+/** Owner/Accountant without 2FA land here after sign-in (the strong prompt, G-11, C-80). */
+export const MFA_PROMPT_PATH = '/settings/security?prompt=mfa';
 
 @Injectable()
 export class SessionService {
@@ -58,6 +63,8 @@ export class SessionService {
     private readonly cls: ClsService<RequestContext>,
     private readonly context: TenantContext,
     private readonly memberships: MembershipService,
+    private readonly devices: DeviceService,
+    private readonly mfaPolicy: MfaPolicyService,
     private readonly audit: AuditService,
   ) {}
 
@@ -66,15 +73,16 @@ export class SessionService {
     res: Response,
     user: { id: string; name: string },
     via: 'password' | 'handoff',
+    mfaVerifiedAt?: Date,
   ): Promise<LoginResponse> {
-    await this.startSession(res, { userId: user.id, audience: 'HUB' });
+    await this.startSession(res, { userId: user.id, audience: 'HUB', mfaVerifiedAt });
     await this.audit.record({
       action: 'auth.login',
       tenantId: null,
       actor: { type: 'USER', id: user.id },
       entityType: 'User',
       entityId: user.id,
-      metadata: { audience: 'HUB', via },
+      metadata: { audience: 'HUB', via, mfa: Boolean(mfaVerifiedAt) },
     });
     return { user: { name: user.name }, experience: 'hub', redirectTo: HOME.hub };
   }
@@ -106,26 +114,130 @@ export class SessionService {
 
   /**
    * Start a TENANT session for a verified user who is an ACTIVE member of this academy (sign-in,
-   * invitation accept) and say where to go.
+   * invitation accept) and say where to go: the role's home, or the 2FA prompt (G-11).
    */
   async signInToAcademy(
     res: Response,
     user: { id: string; name: string },
     tenantId: string,
     roles: readonly RoleKey[],
+    options: { mfaVerifiedAt?: Date | undefined; promptMfa?: boolean } = {},
   ): Promise<LoginResponse> {
     const experience = primaryExperience(roles);
-    await this.startSession(res, { userId: user.id, audience: 'TENANT', tenantId });
+    await this.startSession(res, {
+      userId: user.id,
+      audience: 'TENANT',
+      tenantId,
+      mfaVerifiedAt: options.mfaVerifiedAt,
+    });
     await this.audit.record({
       action: 'auth.login',
       actor: { type: 'USER', id: user.id },
       entityType: 'User',
       entityId: user.id,
+      metadata: { mfa: Boolean(options.mfaVerifiedAt) },
     });
     return {
       user: { name: user.name },
       ...(experience ? { experience } : {}),
-      redirectTo: experience ? HOME[experience] : '/',
+      redirectTo: options.promptMfa ? MFA_PROMPT_PATH : experience ? HOME[experience] : '/',
+    };
+  }
+
+  /**
+   * The user's live sessions on this host: in this academy (TENANT) or of this audience. One row
+   * per signed-in device (a refresh family); `signedInAt` is when that device signed in.
+   */
+  async listSessions(): Promise<
+    { id: string; device: string; signedInAt: Date; lastUsedAt: Date; current: boolean }[]
+  > {
+    const { userId, current, where } = this.ownSessionScope();
+    const live = await this.context.runAsUser(userId, () =>
+      this.db.authSession.findMany({
+        where: { ...where, revokedAt: null, expiresAt: { gt: new Date() } },
+        select: { id: true, familyId: true, deviceLabel: true, lastUsedAt: true, createdAt: true },
+        orderBy: { lastUsedAt: 'desc' },
+        take: 100,
+      }),
+    );
+    const firsts = live.length
+      ? await this.context.runAsUser(userId, () =>
+          this.db.authSession.groupBy({
+            by: ['familyId'],
+            where: { familyId: { in: live.map((s) => s.familyId) } },
+            _min: { createdAt: true },
+          }),
+        )
+      : [];
+    const started = new Map(firsts.map((f) => [f.familyId, f._min.createdAt]));
+    return live.map((s) => ({
+      id: s.id,
+      device: s.deviceLabel ?? 'other/other',
+      signedInAt: started.get(s.familyId) ?? s.createdAt,
+      lastUsedAt: s.lastUsedAt,
+      current: s.id === current,
+    }));
+  }
+
+  /** Sign out one of the user's devices on this host (unknown or someone else's → 404). */
+  async revokeSession(sessionId: string): Promise<void> {
+    const { userId, where } = this.ownSessionScope();
+    if (!z.uuid().safeParse(sessionId).success) throw new DomainError('NOT_FOUND');
+    const target = await this.context.runAsUser(userId, () =>
+      this.db.authSession.findFirst({
+        where: { ...where, id: sessionId, revokedAt: null },
+        select: { familyId: true },
+      }),
+    );
+    if (!target) throw new DomainError('NOT_FOUND');
+    await this.revokeFamily(userId, target.familyId, 'signed_out_remotely');
+    await this.audit.record({
+      action: 'auth.session_revoked',
+      actor: { type: 'USER', id: userId },
+      entityType: 'AuthSession',
+      entityId: target.familyId,
+    });
+  }
+
+  /** Sign out every other device on this host; this one stays signed in (G-11). */
+  async revokeOtherSessions(): Promise<number> {
+    const { userId, current, where } = this.ownSessionScope();
+    const others = await this.context.runAsUser(userId, () =>
+      this.db.authSession.findMany({
+        where: { ...where, revokedAt: null, NOT: { id: current } },
+        select: { id: true },
+      }),
+    );
+    if (others.length) {
+      await this.context.runAsUser(userId, () =>
+        this.db.authSession.updateMany({
+          where: { id: { in: others.map((s) => s.id) }, revokedAt: null },
+          data: { revokedAt: new Date(), revokeReason: 'logout_others' },
+        }),
+      );
+      await this.redis.del(...others.map((s) => SESSION_KEY(s.id))).catch(() => undefined);
+    }
+    await this.audit.record({
+      action: 'auth.logout_others',
+      actor: { type: 'USER', id: userId },
+      metadata: { revoked: others.length },
+    });
+    return others.length;
+  }
+
+  /** The signed-in user's sessions that this host may show: same audience, same academy. */
+  private ownSessionScope() {
+    const userId = this.cls.get('userId');
+    const session = this.cls.get('session');
+    if (!userId || !session) throw new DomainError('UNAUTHENTICATED');
+    const tenantId = this.cls.get('tenantId');
+    return {
+      userId,
+      current: session.id,
+      where: {
+        audience: session.audience,
+        ...(session.audience === 'TENANT' ? { tenantId: tenantId ?? '' } : {}),
+      },
     };
   }
 
@@ -138,8 +250,13 @@ export class SessionService {
     userId: string,
     reason: string,
     only?: { tenantId: string },
+    except?: { sessionId: string },
   ): Promise<number> {
-    const where = { revokedAt: null, ...(only ? { tenantId: only.tenantId } : {}) };
+    const where = {
+      revokedAt: null,
+      ...(only ? { tenantId: only.tenantId } : {}),
+      ...(except ? { NOT: { id: except.sessionId } } : {}),
+    };
     const sessions = await this.context.runAsUser(userId, () =>
       this.db.authSession.findMany({ where, select: { id: true } }),
     );
@@ -202,6 +319,12 @@ export class SessionService {
         await this.revokeFamily(session.userId, session.familyId, 'membership_inactive');
         clearSessionCookies(res, this.config.COOKIE_MODE);
         throw new DomainError('UNAUTHENTICATED', 'membership inactive');
+      }
+      // The academy now requires 2FA for this member's roles: sign in again with it (C-80).
+      if (!session.mfaVerifiedAt && (await this.mfaPolicy.isRequiredFor(membership.roles))) {
+        await this.revokeFamily(session.userId, session.familyId, 'mfa_required');
+        clearSessionCookies(res, this.config.COOKIE_MODE);
+        throw new DomainError('UNAUTHENTICATED', 'mfa required');
       }
     }
     if (session.audience === 'CONSOLE') {
@@ -342,6 +465,8 @@ export class SessionService {
       refresh,
       csrf: generateCsrfToken(),
     });
+    // A new sign-in (not a refresh): remember the device, alert on a new one (G-11).
+    if (!input.familyId) await this.devices.signedIn(res, input.userId);
   }
 
   private async recordFailure(userId: string, failedCount: number): Promise<void> {

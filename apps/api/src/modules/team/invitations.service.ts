@@ -3,7 +3,7 @@ import {
   type AcceptInvitation,
   canGrantRole,
   type CreateInvitation,
-  type LoginResponse,
+  type AcceptInvitationResponse,
   newId,
   RoleKeySchema,
   type StaffRoleKey,
@@ -17,6 +17,8 @@ import { ClsService } from 'nestjs-cls';
 import { AnalyticsService } from '../../core/analytics/analytics.service.js';
 import { AuditService } from '../../core/audit/audit.service.js';
 import { MembershipService } from '../../core/auth/membership.service.js';
+import { mfaRecommendedFor, MfaPolicyService } from '../../core/auth/mfa-policy.service.js';
+import { MfaService } from '../../core/auth/mfa.service.js';
 import { assertPasswordPolicy, identityParts } from '../../core/auth/password.service.js';
 import { SessionService } from '../../core/auth/session.service.js';
 import { type RequestContext } from '../../core/context/request-context.js';
@@ -58,6 +60,8 @@ export class InvitationsService {
     private readonly cls: ClsService<RequestContext>,
     private readonly memberships: MembershipService,
     private readonly sessions: SessionService,
+    private readonly mfa: MfaService,
+    private readonly mfaPolicy: MfaPolicyService,
     private readonly emails: EmailService,
     private readonly audit: AuditService,
     private readonly analytics: AnalyticsService,
@@ -192,7 +196,11 @@ export class InvitationsService {
     };
   }
 
-  async accept(token: string, input: AcceptInvitation, res: Response): Promise<LoginResponse> {
+  async accept(
+    token: string,
+    input: AcceptInvitation,
+    res: Response,
+  ): Promise<AcceptInvitationResponse> {
     const tenantId = this.cls.get('tenantId')!;
     const invitation = await this.findByToken(token);
     const email = invitation.email;
@@ -300,7 +308,13 @@ export class InvitationsService {
       const parsed = RoleKeySchema.safeParse(k);
       return parsed.success ? [parsed.data] : [];
     });
-    return this.sessions.signInToAcademy(res, user, tenantId, roles);
+    // 2FA applies here too: a user who has it, or whose new role requires it, gets the code step
+    // before any session (C-80).
+    if ((await this.mfa.isEnabled(user.id)) || (await this.mfaPolicy.isRequiredFor(roles)))
+      return { mfa: await this.mfa.begin(user.id, 'TENANT', tenantId) };
+    return this.sessions.signInToAcademy(res, user, tenantId, roles, {
+      promptMfa: mfaRecommendedFor(roles),
+    });
   }
 
   private async findByToken(token: string): Promise<InvitationRow> {

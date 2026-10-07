@@ -1,5 +1,12 @@
 import { verifyAgainstDummy, verifyPassword } from '@academybee/auth';
-import { type LoginOutcome, type LoginRequest, primaryExperience } from '@academybee/contracts';
+import {
+  type LoginOutcome,
+  type LoginRequest,
+  type MfaEnrolConfirmResponse,
+  type MfaVerifyResponse,
+  primaryExperience,
+  type RoleKey,
+} from '@academybee/contracts';
 import { bindUser, type TenantBoundClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
 import { type Response } from 'express';
@@ -14,7 +21,8 @@ import { TenantContext } from '../tenant/tenant-context.service.js';
 import { HubService } from './hub.service.js';
 import { normalizeIdentifier } from './identifier.js';
 import { MembershipService } from './membership.service.js';
-import { MfaService } from './mfa.service.js';
+import { mfaRecommendedFor, MfaPolicyService } from './mfa-policy.service.js';
+import { type MfaCode, MfaService, type PendingMfa } from './mfa.service.js';
 import { SessionService } from './session.service.js';
 
 /**
@@ -31,6 +39,7 @@ export class LoginService {
     private readonly sessions: SessionService,
     private readonly hub: HubService,
     private readonly mfa: MfaService,
+    private readonly mfaPolicy: MfaPolicyService,
     private readonly audit: AuditService,
     private readonly rate: RateLimiter,
   ) {}
@@ -42,6 +51,8 @@ export class LoginService {
    *   off to the Family Hub with a one-time code (C-61);
    * - Family Hub: a user with an ACTIVE parent/student membership anywhere gets a HUB session;
    * - console: ACTIVE platform staff get an MFA step (enrol or verify) — never a session yet (C-66).
+   * On academy and hub hosts a user with 2FA gets the `verify` step, and a member whose roles this
+   * academy requires 2FA for gets `enrol` until they have it (C-80).
    * Everyone else gets the same answer as a wrong password, so nothing about other hosts, academies
    * or staff accounts is revealed (ADR-006).
    */
@@ -58,23 +69,92 @@ export class LoginService {
       if (!membership || membership.status !== 'ACTIVE')
         return this.refuse(user.id, 'not_a_member');
       await this.passwordSucceeded(user.id, input.identifier);
-      if (primaryExperience(membership.roles) === 'hub') {
-        // Parents and students use the Family Hub (G-31): continue there (C-61).
-        return { handoff: { code: await this.hub.issueHandoff(user.id, tenantId) } };
-      }
-      return this.sessions.signInToAcademy(res, user, tenantId, membership.roles);
+      if (
+        (await this.mfa.isEnabled(user.id)) ||
+        (await this.mfaPolicy.isRequiredFor(membership.roles))
+      )
+        return { mfa: await this.mfa.begin(user.id, 'TENANT', tenantId) };
+      return this.enterAcademy(res, user, tenantId, membership.roles);
     }
 
     if (resolved.kind === 'hub') {
       if (!(await this.hub.academies(user.id)).length) return this.refuse(user.id, 'not_family');
       await this.passwordSucceeded(user.id, input.identifier);
+      if (await this.mfa.isEnabled(user.id)) return { mfa: await this.mfa.begin(user.id, 'HUB') };
       return this.sessions.signInToHub(res, user, 'password');
     }
 
     const staff = await this.sessions.platformStaff(user.id);
     if (staff?.status !== 'ACTIVE') return this.refuse(user.id, 'not_platform_staff');
     await this.passwordSucceeded(user.id, input.identifier);
-    return { mfa: await this.mfa.begin(user.id) };
+    return { mfa: await this.mfa.begin(user.id, 'CONSOLE') };
+  }
+
+  /** Sign-in second step (`POST /auth/mfa/verify`): a code, then the session. */
+  async verifyMfa(token: string, code: MfaCode, res: Response): Promise<MfaVerifyResponse> {
+    return this.completeMfa(await this.mfa.verify(token, code), res);
+  }
+
+  /** Mandatory enrolment (`POST /auth/mfa/enrol/confirm`): recovery codes and the session. */
+  async confirmMfaEnrolment(
+    token: string,
+    code: string,
+    res: Response,
+  ): Promise<MfaEnrolConfirmResponse> {
+    const { pending, recoveryCodes } = await this.mfa.enrolConfirm(token, code);
+    const outcome = await this.completeMfa(pending, res);
+    // Enrolment is only ever mandatory for staff, who never hand off to the Family Hub.
+    if ('handoff' in outcome) throw new DomainError('CONFLICT', 'enrolment without a session');
+    return { ...outcome, recoveryCodes };
+  }
+
+  /**
+   * The second factor is verified: re-check who the user is on this host (they may have been
+   * disabled in the last five minutes) and sign in.
+   */
+  private async completeMfa(pending: PendingMfa, res: Response): Promise<MfaVerifyResponse> {
+    const user = await this.activeUser(pending.userId);
+    const mfaVerifiedAt = new Date();
+    if (pending.audience === 'CONSOLE') {
+      const staff = await this.sessions.platformStaff(user.id);
+      if (staff?.status !== 'ACTIVE') return this.refuse(user.id, 'not_platform_staff');
+      return this.sessions.signInToConsole(res, user);
+    }
+    if (pending.audience === 'HUB') {
+      if (!(await this.hub.academies(user.id)).length) return this.refuse(user.id, 'not_family');
+      return this.sessions.signInToHub(res, user, 'password', mfaVerifiedAt);
+    }
+    const tenantId = pending.tenantId ?? '';
+    const membership = await this.memberships.load(tenantId, user.id);
+    if (membership?.status !== 'ACTIVE') return this.refuse(user.id, 'not_a_member');
+    return this.enterAcademy(res, user, tenantId, membership.roles, mfaVerifiedAt);
+  }
+
+  /** Staff get a TENANT session; parents and students continue on the Family Hub (C-61). */
+  private async enterAcademy(
+    res: Response,
+    user: { id: string; name: string },
+    tenantId: string,
+    roles: readonly RoleKey[],
+    mfaVerifiedAt?: Date,
+  ): Promise<MfaVerifyResponse> {
+    if (primaryExperience(roles) === 'hub')
+      return { handoff: { code: await this.hub.issueHandoff(user.id, tenantId) } };
+    return this.sessions.signInToAcademy(res, user, tenantId, roles, {
+      mfaVerifiedAt,
+      promptMfa: !mfaVerifiedAt && mfaRecommendedFor(roles),
+    });
+  }
+
+  private async activeUser(userId: string): Promise<{ id: string; name: string }> {
+    const user = await this.context.runAsUser(userId, () =>
+      this.db.user.findFirst({
+        where: { id: userId },
+        select: { id: true, name: true, status: true },
+      }),
+    );
+    if (user?.status !== 'ACTIVE') return this.refuse(userId, 'user_inactive');
+    return { id: user.id, name: user.name };
   }
 
   /** Identifier + password with rate limits and the account lock; returns the ACTIVE user. */

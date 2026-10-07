@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { PageHeader } from '@/components/shell/page-header';
@@ -14,6 +14,7 @@ export default async function TodayPage() {
     roleHomesEnabled(),
     getTranslations('auth.home'),
   ]);
-  if (!roleHomes) notFound();
+  // Until the real homes ship, staff land on their Security page (C-68, C-80).
+  if (!roleHomes) redirect('/settings/security');
   return <PageHeader title={t('title', { academy })} body={t('body', { name: me.user.name })} />;
 }

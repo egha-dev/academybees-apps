@@ -12,6 +12,7 @@ import { useHydrated } from '@/lib/use-hydrated';
 import { useOnline } from '@/lib/use-online';
 
 import { formValues } from './form-values';
+import { continueToHub } from './hub-handoff';
 import { type ErrorLabels, errorMessage, type FieldLabels } from './labels';
 
 export type LoginFormLabels = {
@@ -45,7 +46,7 @@ export function LoginForm({
   onSignedIn?: () => void;
   /** Academy sign-in: where parents and students continue (Family Hub, C-61). */
   hubOrigin?: string | undefined;
-  /** Console sign-in: the second step (C-66). */
+  /** The second step (2FA, C-66, C-80). Without it a 2FA answer shows the generic error. */
   onMfa?: (mfa: { step: 'enrol' | 'verify'; token: string }) => void;
   showForgot?: boolean;
 }) {
@@ -73,14 +74,9 @@ export function LoginForm({
     });
     const data = res.ok ? res.data : undefined;
     if (data && 'handoff' in data) {
-      // Parents and students continue on the Family Hub. The one-time code travels in the
-      // fragment, which browsers never send to a server or put in a Referer (C-61, C-73).
+      // Parents and students continue on the Family Hub (C-61).
       if (hubOrigin) {
-        // Another origin (app.), so a full load is the only way there.
-        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-        window.location.assign(
-          `${hubOrigin}/auth/handoff#code=${encodeURIComponent(data.handoff.code)}`,
-        );
+        continueToHub(hubOrigin, data.handoff.code);
         return;
       }
       setBusy(false);

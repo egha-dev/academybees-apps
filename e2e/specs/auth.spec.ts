@@ -28,7 +28,7 @@ const formAlert = (page: Page) => page.getByRole('main').getByRole('alert');
 const unique = (testInfo: TestInfo, label: string) =>
   `e2e-${label}-${testInfo.project.name}-${Date.now()}@example.test`;
 
-test('the academy URL opens its own sign-in; the owner lands on Today and signs out', async ({
+test('the academy URL opens its own sign-in; the owner is asked for 2FA, then Today, then signs out', async ({
   page,
 }, testInfo) => {
   await page.goto(hostUrl(testInfo, 'demo-a'));
@@ -37,6 +37,12 @@ test('the academy URL opens its own sign-in; the owner lands on Today and signs 
   await expect(page.getByRole('banner').getByText('Demo A Academy')).toBeVisible();
 
   await signIn(page, 'owner@demo-a.test');
+  // An Owner without two-step sign-in gets the strong prompt first (G-11, C-80).
+  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/settings/security?prompt=mfa'));
+  await expect(
+    page.getByRole('heading', { name: "Protect Demo A Academy's money and records" }),
+  ).toBeVisible();
+  await page.getByRole('link', { name: 'Not now' }).click();
   await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/today'));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Signed in to Demo A Academy');
 

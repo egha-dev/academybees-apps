@@ -83,7 +83,8 @@ describe('sessions', () => {
       expect(res.body).toEqual({
         user: { name: `Owner of Session Academy A` },
         experience: 'manage',
-        redirectTo: '/today',
+        // An Owner without 2FA lands on the strong prompt (G-11, C-80).
+        redirectTo: '/settings/security?prompt=mfa',
       });
       const s = toSession(res);
       const byName = (n: string) => s.setCookies.find((c) => c.startsWith(`${n}=`)) ?? '';

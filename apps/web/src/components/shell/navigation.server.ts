@@ -23,8 +23,9 @@ export function experienceFor(path: string, me: MeResponse): Experience {
 
 /**
  * Navigation for one experience (UX §8, §25): **only built modules**, and only those the user's
- * capabilities open (ADR-008). Phase 2: Today and Team (Manage), Home (Teacher); "More" holds the
- * rest on phones. Grows phase by phase — never "coming soon" entries.
+ * capabilities open (ADR-008). Phase 2: Today and Team (Manage), Home (Teacher), and Security
+ * (everyone's own account, G-11); "More" holds the rest on phones. Grows phase by phase — never
+ * "coming soon" entries.
  */
 export async function navigationFor(
   me: MeResponse,
@@ -36,13 +37,20 @@ export async function navigationFor(
     (me.academy?.capabilities as Record<string, string | undefined> | undefined)?.[capability] !==
     undefined;
   const more: ShellNavItem = { key: 'more', label: t('more'), href: '/more', icon: 'more' };
+  const account = {
+    key: 'account',
+    label: t('groups.account'),
+    items: [
+      { key: 'security', label: t('security'), href: '/settings/security', icon: 'security' },
+    ] satisfies ShellNavItem[],
+  };
 
   if (experience === 'teach') {
     const home: ShellNavItem[] = roleHomes
       ? [{ key: 'teach', label: t('home'), href: '/teach', icon: 'home' }]
       : [];
     return {
-      groups: [{ key: 'home', label: t('groups.home'), items: home }],
+      groups: [{ key: 'home', label: t('groups.home'), items: home }, account],
       bottom: [...home, more],
     };
   }
@@ -56,6 +64,7 @@ export async function navigationFor(
     groups: [
       { key: 'home', label: t('groups.home'), items: today },
       { key: 'academy', label: t('groups.academy'), items: academy },
+      account,
     ],
     bottom: [...today, more],
   };
