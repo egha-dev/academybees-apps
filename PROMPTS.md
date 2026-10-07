@@ -214,7 +214,7 @@ claude
 ```
 Then type `/clear`, and press **Shift+Tab** until **plan mode** is on. (No branch needed: Claude creates short slice branches itself.)
 
-### P2-1 · Kickoff  *(plan mode)*  ☐
+### P2-1 · Kickoff  *(plan mode)*  ☑ 2026-10-02 — slice plan `docs/plans/phase-2.md`
 ```text
 We are starting Phase 2 — Authentication + RBAC.
 
@@ -243,7 +243,7 @@ Inspect the current code, then produce a plan for THIS PHASE ONLY — no code ye
 
 Read the plan. If you want changes, say so in plain words. When happy, switch plan mode **off** (Shift+Tab) and run P2-2.
 
-### P2-2 · Build  ☐
+### P2-2 · Build  ☑ 2026-10-07 — S1–S10, S7b (#33–#52)
 ```text
 Plan approved. First tag the current main as phase-2-start and push the tag. Then, in the first slice, update docs/IMPLEMENTATION_PLAN.md: mark Phase 2 — Authentication + RBAC 🟨 and add the task list (grouped into slices) under the phase.
 Work slice by slice (CLAUDE.md §16, ADR-041): create branch p2/<slice-name> from the latest main; implement task by task — after each task run lint, typecheck and the relevant tests, fix failures, and commit with a Conventional Commit message; then push, open a PR (Conventional Commit title, DoD checklist from the template), enable auto-merge (squash), wait until it merges, pull main, and start the next slice. If CI fails, fix it on the same branch. Hide unfinished user-visible work behind a release flag so main stays deployable.
@@ -254,7 +254,7 @@ Only stop to ask me about decisions of the kind listed in CLAUDE.md §2. Otherwi
 
 If Claude stops before finishing, use **H1 Continue**. If the session gets long, use **H2 Handover** → `/clear` → **H3 Resume**.
 
-### P2-3 · Gate  ☐
+### P2-3 · Gate  ☑ 2026-10-07 — staging live; gap fixed in #53
 ```text
 Pull the latest main. Run the Phase 2 — Authentication + RBAC exit gate and the Common Phase Gate (docs/IMPLEMENTATION_PLAN.md §2) for everything merged since the tag phase-2-start.
 Execute: pnpm lint, pnpm typecheck, pnpm test, pnpm test:integration, pnpm build, pnpm e2e.
@@ -263,18 +263,18 @@ Fix anything that fails in a new slice (branch + PR + auto-merge) and re-run. Co
 Finally give me the exact staging and local URLs, demo logins and steps for my acceptance checklist in docs/EXECUTION_GUIDE.md Part F for this phase.
 ```
 
-### P2-4 · Independent review  ☐
+### P2-4 · Independent review  ☑ 2026-10-07 — no critical/high; M1–M4, L1 (#54), M2, L4, L8 (#55); others assigned in the Phase 2 exit notes
 ```text
 Use a subagent that has NOT seen this conversation to review the full diff `git diff phase-2-start..main` (everything this phase merged).
 It must check: tenant isolation (every query scoped, RLS on new tables, cross-tenant tests added), authorization (capability + scope on every endpoint, no IDOR), financial rules (CLAUDE.md §12, incl. nothing reported becomes CONFIRMED without verification), offline rules (§11), secrets and personal data in logs/analytics, error leakage, missing loading/empty/error/permission states, hard-coded UI strings, and missing tests.
 Report findings ranked by severity with file and line. Then fix every critical and high finding in new slices (branch + PR + auto-merge) and re-run the gate.
 ```
 
-### ✋ You · Acceptance  ☐
+### ✋ You · Acceptance  ☑ 2026-10-07 (local + staging)
 
 Open `docs/EXECUTION_GUIDE.md` → Part F → Phase 2 — Authentication + RBAC and click through every item yourself on **staging** (on a real phone where it says so). For each problem, use **H4 Fix a problem**. Move on only when every box is ticked.
 
-### P2-5 · Close  ☐
+### P2-5 · Close  ☑ 2026-10-07 — tag `phase-2`
 ```text
 I have accepted Phase 2 — Authentication + RBAC. In a final slice (branch + PR + auto-merge): update docs/IMPLEMENTATION_PLAN.md — mark it ✅ and fill in its Exit notes (what was delivered, pinned versions if changed, deviations, known limitations, release flags still off with owner and removal date, PO acceptance date today); update ARCHITECTURE.md / DECISIONS.md if anything changed. After it merges, tag main as phase-2 and push the tag (milestone only — it does not deploy).
 If production exists (from Phase 7P on): prepare a production release — merge the release-please PR so it creates the next v* tag with plain-language release notes — and tell me when the production deployment is waiting for my approval in GitHub → Actions.
