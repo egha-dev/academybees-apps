@@ -21,6 +21,8 @@ export const RATE_RULES = {
   tokenAttempts: { name: 'token', limit: 20, windowSeconds: 60 },
   /** Second-factor attempts per user, across MFA tokens (C-66). */
   mfa: { name: 'mfa', limit: 10, windowSeconds: 300 },
+  /** Live subdomain checks per console user while typing (C-88). */
+  slugCheck: { name: 'slug-check', limit: 120, windowSeconds: 60 },
 } as const satisfies Record<string, RateRule>;
 
 /**

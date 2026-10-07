@@ -26,6 +26,23 @@ describe('renderEmail', () => {
     expect(email.subject.length).toBeGreaterThan(0);
   });
 
+  it('renders the owner invite (console) with the academy, the owner and the next step', () => {
+    const email = renderEmail(
+      {
+        ...base,
+        template: 'owner_invite',
+        host: { kind: 'academy', slug: 'gurushethra' },
+        academy: { displayName: 'Gurushethra', primaryColor: null },
+        vars: { owner: 'Lakshmi' },
+      },
+      'http://gurushethra.localhost:3000/invite#token=abc',
+    );
+    expect(email.subject).toBe('Gurushethra is ready on AcademyBee');
+    expect(email.text).toContain('Welcome to AcademyBee, Lakshmi');
+    expect(email.text).toContain('guided setup');
+    expect(email.html).toContain('http://gurushethra.localhost:3000/invite#token=abc');
+  });
+
   it('renders password_changed without a call to action', () => {
     const email = renderEmail({ ...base, template: 'password_changed' }, undefined);
     expect(email.html).not.toContain('<a href');

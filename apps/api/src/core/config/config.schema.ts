@@ -32,6 +32,11 @@ export const ApiConfigSchema = z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
       .default('info'),
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+    /**
+     * `ab_platform` (BYPASSRLS) for the provisioning console under src/platform/** only (ADR-005,
+     * C-02). Required in production; without it elsewhere, console academy routes answer 503.
+     */
+    PLATFORM_DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
     REDIS_URL: z.url({ protocol: /^rediss?$/ }),
     TRUSTED_PROXY_IPS: csv,
     TRUSTED_PROXY_SECRET: z.string().min(16, 'must be at least 16 characters'),
@@ -120,6 +125,13 @@ export const ApiConfigSchema = z
         code: 'custom',
         path: ['PAYMENT_PROVIDERS'],
         message: 'SimulatorProvider is not allowed when APP_ENV=production',
+      });
+    }
+    if (cfg.APP_ENV === 'production' && !cfg.PLATFORM_DATABASE_URL) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['PLATFORM_DATABASE_URL'],
+        message: 'is required in production (provisioning console)',
       });
     }
     if (cfg.APP_ENV === 'production' && cfg.TRUSTED_PROXY_SECRET.startsWith('local-')) {

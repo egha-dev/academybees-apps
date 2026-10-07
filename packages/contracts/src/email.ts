@@ -9,6 +9,7 @@ export const EMAIL_OUTBOX_TYPE = 'email.requested';
 
 export const EmailTemplateSchema = z.enum([
   'invite',
+  'owner_invite',
   'password_reset',
   'password_changed',
   'platform_admin_invite',

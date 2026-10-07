@@ -10,7 +10,15 @@
 import { parseArgs } from 'node:util';
 
 import { encryptSecret, generateToken, hashToken, loadMasterKeys } from '@academybee/auth';
-import { EMAIL_OUTBOX_TYPE, EmailRequestSchema, newId, type RoleKey } from '@academybee/contracts';
+import {
+  EMAIL_OUTBOX_TYPE,
+  EmailRequestSchema,
+  newId,
+  type RoleKey,
+  startTrialSubscription,
+  TERMINOLOGY_TEMPLATES,
+  toAcademyType,
+} from '@academybee/contracts';
 import { ensureSystemRoles, type PrismaClient } from '@academybee/database';
 import { createPlatformClient } from '@academybee/database/platform';
 import { z } from 'zod';
@@ -169,9 +177,18 @@ async function ensureAcademy(
       await tx.tenantBranding.create({
         data: { tenantId, displayName: a.name, primaryColor: a.primaryColor },
       });
-      await tx.tenantSettings.create({ data: { tenantId } });
+      await tx.tenantSettings.create({
+        data: { tenantId, terminology: TERMINOLOGY_TEMPLATES[toAcademyType(a.academyType)] },
+      });
       await tx.branch.create({
         data: { id: newId(), tenantId, name: 'Main branch', isDefault: true },
+      });
+      // As provisioning does (C-89, C-92): a Trial, and onboarding already finished (ACTIVE).
+      await tx.subscription.create({
+        data: { tenantId, ...startTrialSubscription('trial', new Date()) },
+      });
+      await tx.tenantOnboarding.create({
+        data: { tenantId, currentStep: 'ready', completedAt: new Date() },
       });
       await audit(tx, 'platform.staging_academy_created', 'Tenant', tenantId, { slug: a.slug });
     }

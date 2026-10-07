@@ -85,6 +85,7 @@ APP_ENV=${{shared.APP_ENV}}
 PORT=4000
 LOG_LEVEL=info
 DATABASE_URL=postgresql://ab_app:${{shared.DB_APP_PASSWORD}}@${{postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{postgres.PGDATABASE}}
+PLATFORM_DATABASE_URL=postgresql://ab_platform:${{shared.DB_PLATFORM_PASSWORD}}@${{postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{postgres.PGDATABASE}}
 REDIS_URL=${{redis.REDIS_URL}}?family=0
 TRUSTED_PROXY_SECRET=${{shared.TRUSTED_PROXY_SECRET}}
 SECRETS_MASTER_KEY=${{shared.SECRETS_MASTER_KEY}}

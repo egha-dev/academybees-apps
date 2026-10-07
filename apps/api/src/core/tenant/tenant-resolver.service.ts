@@ -69,10 +69,12 @@ export class TenantResolver {
       const primary = await this.context.run(row.tenantId, () =>
         this.db.tenantDomain.findFirst({
           where: { role: 'PRIMARY' },
-          select: { hostname: true, kind: true },
+          select: { hostname: true, kind: true, verification: true },
         }),
       );
-      if (!primary) return { kind: 'unknown' };
+      // Never send visitors to a custom domain nobody has proven they own (C-96, review P1-4 L1).
+      if (!primary || (primary.kind === 'CUSTOM' && primary.verification !== 'VERIFIED'))
+        return { kind: 'unknown' };
       const host =
         primary.kind === 'SUBDOMAIN' ? tenantHost(primary.hostname, this.root) : primary.hostname;
       return { kind: 'redirect', tenantId: row.tenantId, host };

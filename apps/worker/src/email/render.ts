@@ -8,6 +8,7 @@ type Request = z.infer<typeof EmailRequestSchema>;
 
 const KEYS = {
   invite: { ns: 'invite', lines: ['body', 'expiry'], cta: true },
+  owner_invite: { ns: 'ownerInvite', lines: ['body', 'next', 'expiry'], cta: true },
   password_reset: { ns: 'passwordReset', lines: ['body', 'expiry'], cta: true },
   password_changed: { ns: 'passwordChanged', lines: ['body', 'notYou'], cta: false },
   platform_admin_invite: { ns: 'platformAdminInvite', lines: ['body', 'expiry'], cta: true },

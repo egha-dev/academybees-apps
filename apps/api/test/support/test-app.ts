@@ -20,6 +20,7 @@ export function testConfig(overrides: Record<string, string> = {}): ApiConfig {
     NODE_ENV: 'test',
     LOG_LEVEL: process.env.TEST_LOG_LEVEL ?? 'silent',
     DATABASE_URL: urls.app,
+    PLATFORM_DATABASE_URL: urls.platform,
     REDIS_URL: inject('redisUrl'),
     TRUSTED_PROXY_SECRET: 'test-proxy-secret-0123',
     ANALYTICS_HASH_SALT: 'test-salt',

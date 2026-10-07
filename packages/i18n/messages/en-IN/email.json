@@ -10,6 +10,14 @@
     "cta": "Accept invitation",
     "expiry": "This invitation expires in 7 days."
   },
+  "ownerInvite": {
+    "subject": "{academy} is ready on AcademyBee",
+    "heading": "Welcome to AcademyBee, {owner}",
+    "body": "Your academy {academy} has been set up on AcademyBee, with you as its owner.",
+    "next": "Accept the invitation to choose your password. A short guided setup then gets your courses, teachers and students ready.",
+    "cta": "Set up my academy",
+    "expiry": "This invitation expires in 7 days."
+  },
   "passwordReset": {
     "subject": "Reset your AcademyBee password",
     "heading": "Reset your password",

@@ -8,6 +8,8 @@ import {
   RoleKeySchema,
   type StaffRoleKey,
   StaffRoleKeySchema,
+  INVITATION_LINK_PATH,
+  INVITATION_TTL_MS,
 } from '@academybee/contracts';
 import { bindUser, type TenantBoundClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
@@ -27,8 +29,8 @@ import { EmailService } from '../../core/email/email.service.js';
 import { DomainError } from '../../core/errors/domain-error.js';
 import { RATE_RULES, RateLimiter } from '../../core/rate-limit/rate-limiter.service.js';
 
-const INVITE_TTL_MS = 7 * 24 * 3600 * 1000;
-const INVITE_LINK = '/invite#token={token}';
+const INVITE_TTL_MS = INVITATION_TTL_MS;
+const INVITE_LINK = INVITATION_LINK_PATH;
 
 type InvitationRow = {
   id: string;

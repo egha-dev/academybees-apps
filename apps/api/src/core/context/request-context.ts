@@ -47,7 +47,11 @@ export interface RequestContext extends ClsStore {
   idempotencyClaim?: IdempotencyClaimRef | undefined;
   /** The user's membership in the request's academy (TENANT sessions). */
   membership?: MembershipInfo;
+  /** The signed-in platform staff role (CONSOLE sessions); grants `platform.*` capabilities. */
+  platformRole?: PlatformRole;
 }
+
+export type PlatformRole = 'SUPER_ADMIN' | 'SUPPORT' | 'FINANCE_OPS';
 
 /** Roles and resolved capabilities of a membership (ADR-008); cached by `permissionsVersion`. */
 export type MembershipInfo = {
