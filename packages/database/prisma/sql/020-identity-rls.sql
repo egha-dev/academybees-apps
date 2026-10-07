@@ -101,3 +101,13 @@ ALTER TABLE invitation ADD CONSTRAINT invitation_target_shape CHECK (
   AND (email IS NULL OR email = lower(email))
   AND (phone IS NULL OR phone ~ '^\+[1-9][0-9]{6,14}$')
 );
+
+-- Legal acceptance (ADR-034): a user's own rows only; the academy recorded with it must be the
+-- current one (or none, on the hub/console). Append-only through grants (000-grants.sql).
+ALTER TABLE legal_acceptance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE legal_acceptance FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS user_isolation ON legal_acceptance;
+CREATE POLICY user_isolation ON legal_acceptance
+  USING (user_id = ab_current_user())
+  WITH CHECK (user_id = ab_current_user()
+              AND (tenant_id IS NULL OR tenant_id = ab_current_tenant()));

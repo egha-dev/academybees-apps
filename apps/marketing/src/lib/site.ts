@@ -25,7 +25,7 @@ export function earlyAccessHref(): string {
 /** Ordered `{ title, p1, p2, … }` sections of a legal draft. */
 export type LegalSection = { title: string; paragraphs: string[] };
 
-export function legalSections(page: 'privacy' | 'terms'): LegalSection[] {
+export function legalSections(page: 'privacy' | 'terms' | 'dpa'): LegalSection[] {
   const raw = (t.raw as (key: string) => unknown)(`${page}.sections`) as Record<
     string,
     Record<string, string>

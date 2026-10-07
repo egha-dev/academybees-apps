@@ -1,0 +1,85 @@
+// Plans, entitlements and the academy subscription (Phase 3, C-03, C-89, ADR-028, G-25, G-30).
+// `plan` and `plan_entitlement` are platform reference data synced from the catalogue in
+// @academybee/contracts on every migrate/deploy; tenant code may only read them. `subscription`
+// and `subscription_override` are tenant-owned (standard tenant RLS) and written only by
+// platform code (provisioning, console; billing from Phase 13).
+
+enum EntitlementKind {
+  LIMIT
+  FEATURE
+
+  @@map("entitlement_kind")
+}
+
+/// TRIAL only until SaaS billing (Phase 13) adds paid states.
+enum SubscriptionStatus {
+  TRIAL
+
+  @@map("subscription_status")
+}
+
+/// A sellable plan (G-25). Prices arrive with billing (Phase 13).
+model Plan {
+  key       String   @id @db.VarChar(40)
+  name      String   @db.VarChar(80)
+  sortOrder Int      @map("sort_order")
+  /// Days of trial when an academy starts on this plan; null = not a trial plan.
+  trialDays Int?     @map("trial_days")
+  active    Boolean  @default(true)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  entitlements  PlanEntitlement[]
+  subscriptions Subscription[]
+
+  @@map("plan")
+}
+
+/// One limit or feature of a plan. Payments are never an entitlement (G-30).
+model PlanEntitlement {
+  planKey String          @map("plan_key") @db.VarChar(40)
+  plan    Plan            @relation(fields: [planKey], references: [key], onDelete: Cascade)
+  key     String          @db.VarChar(40)
+  kind    EntitlementKind
+  /// LIMIT: the maximum; null = unlimited.
+  limit   Int?
+  /// FEATURE: on or off.
+  enabled Boolean?
+
+  @@id([planKey, key])
+  @@map("plan_entitlement")
+}
+
+/// The academy's plan. `entitlements` is the snapshot taken when the plan was applied, so a later
+/// catalogue change never silently changes what an academy has (ADR-028).
+model Subscription {
+  tenantId     String             @id @map("tenant_id") @db.Uuid
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  planKey      String             @map("plan_key") @db.VarChar(40)
+  plan         Plan               @relation(fields: [planKey], references: [key], onDelete: Restrict)
+  status       SubscriptionStatus @default(TRIAL)
+  trialEndsAt  DateTime?          @map("trial_ends_at") @db.Timestamptz(3)
+  /// `{ limits: { students: 100, … }, features: { crm: true, … } }` (contracts EntitlementSnapshot).
+  entitlements Json
+  version      Int                @default(1)
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("subscription")
+}
+
+/// Per-academy exception granted by platform staff (audited; console UI in Phase 14).
+model SubscriptionOverride {
+  id          String          @id @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  key         String          @db.VarChar(40)
+  kind        EntitlementKind
+  limit       Int?
+  enabled     Boolean?
+  reason      String          @db.VarChar(500)
+  createdById String?         @map("created_by_id") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([tenantId, key])
+  @@map("subscription_override")
+}

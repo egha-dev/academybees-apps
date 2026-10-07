@@ -14,3 +14,5 @@ export * from './auth.js';
 export * from './email.js';
 export * from './team.js';
 export * from './security.js';
+export * from './plans.js';
+export * from './legal.js';

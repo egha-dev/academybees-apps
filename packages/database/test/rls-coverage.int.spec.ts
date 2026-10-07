@@ -16,7 +16,7 @@ const PLATFORM_ROW_TABLES = [
 
 /**
  * Identity tables (C-59): protected by user-bound RLS instead of the tenant policy. `auth_session`
- * has a nullable tenant_id (TENANT sessions only) but is user-owned.
+ * and `legal_acceptance` have a nullable tenant_id but are user-owned.
  */
 const IDENTITY_POLICIES: Record<string, string[]> = {
   user: ['user_insert', 'user_select', 'user_update'],
@@ -28,6 +28,7 @@ const IDENTITY_POLICIES: Record<string, string[]> = {
   password_reset_token: ['token_lookup', 'user_isolation'],
   auth_session: ['token_lookup', 'user_isolation'],
   otp_challenge: ['identifier_lookup'],
+  legal_acceptance: ['user_isolation'],
 };
 
 const urls = inject('databaseUrls');
@@ -73,6 +74,8 @@ describe('RLS coverage (ADR-005)', () => {
         'tenant_branding',
         'tenant_domain',
         'tenant_settings',
+        'subscription',
+        'subscription_override',
         ...PLATFORM_ROW_TABLES,
       ]),
     );
@@ -92,7 +95,9 @@ describe('RLS coverage (ADR-005)', () => {
     const nullable = (await tenantTables())
       .filter((t) => t.is_nullable === 'YES')
       .map((t) => t.table_name);
-    expect(nullable.sort()).toEqual([...PLATFORM_ROW_TABLES, 'auth_session'].sort());
+    expect(nullable.sort()).toEqual(
+      [...PLATFORM_ROW_TABLES, 'auth_session', 'legal_acceptance'].sort(),
+    );
   });
 
   it('every identity table is FORCE-protected by its user-bound policies (C-59)', async () => {

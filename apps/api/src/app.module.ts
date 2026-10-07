@@ -11,6 +11,7 @@ import { ContextModule } from './core/context/context.module.js';
 import { DatabaseModule } from './core/database/database.module.js';
 import { DocsModule } from './core/docs/docs.module.js';
 import { EmailModule } from './core/email/email.module.js';
+import { EntitlementsModule } from './core/entitlements/entitlements.module.js';
 import { FlagsModule } from './core/flags/flags.module.js';
 import { HealthModule } from './core/health/health.module.js';
 import { IdempotencyModule } from './core/idempotency/idempotency.module.js';
@@ -23,6 +24,7 @@ import { RedisModule } from './core/redis/redis.module.js';
 import { TenantModule } from './core/tenant/tenant.module.js';
 import { ZodResponseInterceptor } from './core/validation/zod-response.interceptor.js';
 import { ZodValidationPipe } from './core/validation/zod-validation.pipe.js';
+import { LegalModule } from './modules/legal/legal.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
 import { TeamModule } from './modules/team/team.module.js';
 
@@ -43,6 +45,7 @@ export class AppModule {
         AuthModule,
         EmailModule,
         RbacModule,
+        EntitlementsModule,
         AuditModule,
         OutboxModule,
         AnalyticsModule,
@@ -52,6 +55,7 @@ export class AppModule {
         // Domain modules.
         TeamModule,
         SettingsModule,
+        LegalModule,
         ...(config.APP_ENV === 'production' ? [] : [DocsModule]),
         ...extra,
       ],

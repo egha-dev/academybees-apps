@@ -63,6 +63,14 @@ export const ANALYTICS_EVENTS = {
       roles: z.array(z.enum(['owner', 'admin', 'teacher', 'accountant', 'receptionist'])),
     }),
   }),
+  'legal.accepted': defineAnalyticsEvent({
+    name: 'legal.accepted',
+    version: 1,
+    description: 'A user accepted the current legal documents (owner before onboarding, G-06).',
+    properties: z.strictObject({
+      kinds: z.array(z.enum(['TERMS', 'PRIVACY', 'DPA', 'ACADEMY_PRIVACY_TEMPLATE'])),
+    }),
+  }),
 } as const;
 
 export type AnalyticsEventName = keyof typeof ANALYTICS_EVENTS;

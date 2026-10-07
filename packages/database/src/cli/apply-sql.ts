@@ -3,4 +3,4 @@ import { applySqlFolder } from '../migrate.js';
 import { requireEnv } from './env.js';
 
 const files = await applySqlFolder(requireEnv('MIGRATOR_DATABASE_URL'));
-console.warn(`Applied ${files.length} SQL file(s): ${files.join(', ')}`);
+console.warn(`Applied ${files.length} SQL file(s): ${files.join(', ')}; reference data synced`);

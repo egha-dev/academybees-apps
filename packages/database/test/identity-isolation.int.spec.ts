@@ -134,6 +134,38 @@ describe('identity isolation (C-59)', () => {
     ).rejects.toThrow(/row-level security/);
   });
 
+  it('legal acceptances: own rows only, for the current academy, append-only (ADR-034)', async () => {
+    const doc = '019a0000-0000-7000-8000-00000000a001';
+    const insert = (ctx: Ctx, userId: string, tenantId: string | null) =>
+      as(app, ctx, () =>
+        app.query(
+          `INSERT INTO legal_acceptance (id, user_id, tenant_id, document_id, locale)
+           VALUES ($1, $2, $3, $4, 'en-IN')`,
+          [newId(), userId, tenantId, doc],
+        ),
+      );
+    await insert({ user: a.user.id, tenant: a.id }, a.user.id, a.id);
+    await insert({ user: b.user.id, tenant: b.id }, b.user.id, b.id);
+    // Someone else's acceptance, or one recorded against another academy, is refused.
+    await expect(insert({ user: a.user.id, tenant: a.id }, b.user.id, a.id)).rejects.toThrow(
+      /row-level security/,
+    );
+    await expect(insert({ user: a.user.id, tenant: a.id }, a.user.id, b.id)).rejects.toThrow(
+      /row-level security/,
+    );
+    expect(
+      await ids(app, { user: a.user.id }, `SELECT user_id AS id FROM legal_acceptance`),
+    ).toEqual([a.user.id]);
+    expect(await ids(app, { tenant: a.id }, `SELECT user_id AS id FROM legal_acceptance`)).toEqual(
+      [],
+    );
+    await expect(
+      as(app, { user: a.user.id }, () =>
+        app.query(`UPDATE legal_acceptance SET locale = 'xx' WHERE user_id = $1`, [a.user.id]),
+      ),
+    ).rejects.toThrow(/permission denied/);
+  });
+
   it('platform staff rows are read-only for the app role', async () => {
     await expect(
       as(app, { user: a.user.id }, () =>

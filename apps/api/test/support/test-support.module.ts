@@ -11,6 +11,7 @@ import { type RequestContext } from '../../src/core/context/request-context.js';
 import { DomainError } from '../../src/core/errors/domain-error.js';
 import { Idempotent } from '../../src/core/idempotency/idempotent.js';
 import { Public } from '../../src/core/auth/public.decorator.js';
+import { Feature, Limit } from '../../src/core/entitlements/entitlement.decorators.js';
 import { Can } from '../../src/core/rbac/can.decorator.js';
 import { membershipPolicy } from '../../src/modules/team/team.policy.js';
 import { assertInScope, scopedWhere } from '../../src/core/rbac/scope.js';
@@ -218,6 +219,23 @@ class TestSecureController {
     });
     const member = assertInScope(this.cls, 'team.read', membershipPolicy, row);
     return { userId: member.userId };
+  }
+
+  /** Plan limit (ADR-028): adding `count` branches is refused past the plan's branch limit. */
+  @Post('branches')
+  @HttpCode(200)
+  @Can('academy.settings.manage')
+  @Limit('branches', (body) => (body as { count?: number } | undefined)?.count ?? 1)
+  addBranches(@Body() _body: unknown) {
+    return { ok: true };
+  }
+
+  /** Plan feature (ADR-028): only plans with advanced reports. */
+  @Get('advanced-reports')
+  @Can('academy.settings.read')
+  @Feature('reports_advanced')
+  advancedReports() {
+    return { ok: true };
   }
 }
 

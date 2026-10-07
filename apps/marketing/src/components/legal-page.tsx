@@ -5,7 +5,7 @@ import { SiteFooter, SiteHeader } from './site-chrome';
 import { LEGAL_DRAFT_DATE, legalSections, t } from '@/lib/site';
 
 /** A legal draft for the PO to review (C-74): marked as a draft, never indexed. */
-export function LegalPage({ page }: { page: 'privacy' | 'terms' }) {
+export function LegalPage({ page }: { page: 'privacy' | 'terms' | 'dpa' }) {
   return (
     <>
       <SiteHeader />

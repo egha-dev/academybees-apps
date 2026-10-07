@@ -34,7 +34,7 @@ describe('cross-tenant suite', () => {
   beforeAll(async () => {
     const urls = inject('databaseUrls');
     [a, b] = await Promise.all([
-      createTenantFixture(urls.migrator, { name: 'Cross Academy A' }),
+      createTenantFixture(urls.migrator, { name: 'Cross Academy A', plan: 'pro' }),
       createTenantFixture(urls.migrator, { name: 'Cross Academy B' }),
     ]);
     app = await createTestApp();

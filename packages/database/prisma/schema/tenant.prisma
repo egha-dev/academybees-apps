@@ -70,6 +70,8 @@ model Tenant {
   memberships   Membership[]
   roles         Role[]
   invitations   Invitation[]
+  subscription  Subscription?
+  overrides     SubscriptionOverride[]
 
   @@map("tenant")
 }
