@@ -17,12 +17,12 @@ describe('renderEmail', () => {
         template: 'invite',
         academy: { displayName: '<b>Bee</b> & Co', primaryColor: null },
       },
-      'http://demo-a.localhost:3000/invite/abc',
+      'http://demo-a.localhost:3000/invite#token=abc',
     );
-    expect(email.html).toContain('http://demo-a.localhost:3000/invite/abc');
+    expect(email.html).toContain('http://demo-a.localhost:3000/invite#token=abc');
     expect(email.html).toContain('&lt;b&gt;Bee&lt;/b&gt; &amp; Co');
     expect(email.html).not.toContain('<b>Bee</b>');
-    expect(email.text).toContain('http://demo-a.localhost:3000/invite/abc');
+    expect(email.text).toContain('http://demo-a.localhost:3000/invite#token=abc');
     expect(email.subject.length).toBeGreaterThan(0);
   });
 

@@ -336,12 +336,16 @@ export class SessionService {
       }
     }
 
-    await this.context.runAsUser(session.userId, () =>
-      this.db.authSession.update({
-        where: { id: session.id },
+    // Claim the rotation atomically: of two requests presenting the same token at once (two
+    // tabs, or a thief racing the owner), only one gets new tokens, so the family never forks
+    // and reuse detection still sees the other token later (review M4).
+    const rotated = await this.context.runAsUser(session.userId, () =>
+      this.db.authSession.updateMany({
+        where: { id: session.id, revokedAt: null },
         data: { revokedAt: new Date(), revokeReason: 'rotated' },
       }),
     );
+    if (rotated.count !== 1) throw new DomainError('CONFLICT', 'refresh race');
     await this.redis.del(SESSION_KEY(session.id)).catch(() => undefined);
     await this.startSession(res, {
       userId: session.userId,
@@ -353,38 +357,90 @@ export class SessionService {
     });
   }
 
-  /** Sign out this device, or every device of this audience (G-11). */
-  async logout(sessionId: string | undefined, everywhere: boolean, res: Response): Promise<void> {
-    const userId = this.cls.get('userId');
-    if (sessionId && userId) {
-      const audience = this.cls.get('session')?.audience ?? 'TENANT';
-      const tenantId = this.cls.get('tenantId');
-      const sessions = await this.context.runAsUser(userId, () =>
-        this.db.authSession.findMany({
-          where: everywhere
-            ? {
-                revokedAt: null,
-                audience,
-                ...(audience === 'TENANT' && tenantId ? { tenantId } : {}),
-              }
-            : { id: sessionId, revokedAt: null },
-          select: { id: true },
-        }),
-      );
-      await this.context.runAsUser(userId, () =>
-        this.db.authSession.updateMany({
-          where: { id: { in: sessions.map((s) => s.id) } },
-          data: { revokedAt: new Date(), revokeReason: everywhere ? 'logout_all' : 'logout' },
-        }),
-      );
-      if (sessions.length)
-        await this.redis.del(...sessions.map((s) => SESSION_KEY(s.id))).catch(() => undefined);
+  /**
+   * Sign out this device, or every device of this audience (and academy) (G-11). The session is
+   * the signed-in one, or — when the 15-minute access token has expired — the one the refresh
+   * cookie belongs to (it is sent to `/api/v1/auth/*`), so signing out always ends the session on
+   * the server, not just in the browser (review M1). Cookies are cleared either way.
+   */
+  async logout(
+    refreshToken: string | undefined,
+    everywhere: boolean,
+    res: Response,
+  ): Promise<void> {
+    const current = await this.currentSession(refreshToken);
+    if (current) {
+      const { userId, audience, tenantId, familyId } = current;
+      if (everywhere) {
+        const sessions = await this.context.runAsUser(userId, () =>
+          this.db.authSession.findMany({
+            where: {
+              revokedAt: null,
+              audience,
+              ...(audience === 'TENANT' && tenantId ? { tenantId } : {}),
+            },
+            select: { id: true },
+          }),
+        );
+        await this.context.runAsUser(userId, () =>
+          this.db.authSession.updateMany({
+            where: { id: { in: sessions.map((s) => s.id) }, revokedAt: null },
+            data: { revokedAt: new Date(), revokeReason: 'logout_all' },
+          }),
+        );
+        if (sessions.length)
+          await this.redis.del(...sessions.map((s) => SESSION_KEY(s.id))).catch(() => undefined);
+      } else {
+        await this.revokeFamily(userId, familyId, 'logout');
+      }
       await this.audit.record({
         action: everywhere ? 'auth.logout_all' : 'auth.logout',
-        actor: { type: 'USER', id: userId },
+        actor: { type: audience === 'CONSOLE' ? 'PLATFORM_STAFF' : 'USER', id: userId },
       });
     }
     clearSessionCookies(res, this.config.COOKIE_MODE);
+  }
+
+  /** The session signing out: from the access token, else from the refresh cookie (this host). */
+  private async currentSession(
+    refreshToken: string | undefined,
+  ): Promise<
+    { userId: string; audience: Audience; tenantId: string | null; familyId: string } | undefined
+  > {
+    const userId = this.cls.get('userId');
+    const session = this.cls.get('session');
+    if (userId && session) {
+      const row = await this.context.runAsUser(userId, () =>
+        this.db.authSession.findFirst({
+          where: { id: session.id },
+          select: { audience: true, tenantId: true, familyId: true },
+        }),
+      );
+      return row ? { userId, ...row } : undefined;
+    }
+    if (!refreshToken) return undefined;
+    const hash = hashToken(refreshToken);
+    const row = await this.db.$withLookup({ token: hash }, (tx) =>
+      tx.authSession.findFirst({
+        where: { refreshTokenHash: hash },
+        select: { userId: true, audience: true, tenantId: true, familyId: true, revokedAt: true },
+      }),
+    );
+    if (!row || row.revokedAt) return undefined;
+    // Only a session of this host (and academy) is signed out here.
+    const resolved = this.cls.get('resolvedHost');
+    if (row.audience !== hostAudience(resolved)) return undefined;
+    if (
+      row.audience === 'TENANT' &&
+      (resolved?.kind !== 'tenant' || row.tenantId !== resolved.tenant.id)
+    )
+      return undefined;
+    return {
+      userId: row.userId,
+      audience: row.audience,
+      tenantId: row.tenantId,
+      familyId: row.familyId,
+    };
   }
 
   /** Is the session still valid? Cached for a minute; revocation deletes the cache key. */

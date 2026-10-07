@@ -13,6 +13,7 @@ import { useHydrated } from '@/lib/use-hydrated';
 import { useOnline } from '@/lib/use-online';
 
 import { formValues } from './form-values';
+import { useFragmentToken } from './fragment-token';
 import { type ErrorLabels, errorMessage, type FieldLabels, passwordProblem } from './labels';
 import type { MfaLabels } from './mfa-steps';
 
@@ -41,14 +42,13 @@ export type InviteFormLabels = {
  * exists by then, so an expired 2FA step continues at sign-in.
  */
 export function InviteForm({
-  token,
   accountExists,
   labels,
 }: {
-  token: string;
   accountExists: boolean;
   labels: InviteFormLabels;
 }) {
+  const { token } = useFragmentToken();
   const online = useOnline();
   const hydrated = useHydrated();
   const [errors, setErrors] = useState<{ name?: string; password?: string }>({});
@@ -69,14 +69,11 @@ export function InviteForm({
     if (next.name || next.password) return;
     setBusy(true);
     setError(undefined);
-    const res = await api<AcceptInvitationResponse>(
-      `/invitations/${encodeURIComponent(token)}/accept`,
-      {
-        method: 'POST',
-        body: accountExists ? { password } : { name: name.trim(), password },
-        anonymous: true,
-      },
-    );
+    const res = await api<AcceptInvitationResponse>('/invitations/accept', {
+      method: 'POST',
+      body: accountExists ? { token, password } : { token, name: name.trim(), password },
+      anonymous: true,
+    });
     if (res.ok) {
       if ('mfa' in res.data) {
         setBusy(false);

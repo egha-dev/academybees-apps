@@ -182,7 +182,7 @@ describe('family hub and console sessions', () => {
     });
 
     it('create-admin issues a console set-password link, audited, with the email queued', async () => {
-      expect(link).toMatch(/^http:\/\/console\.localhost:3000\/set-password\/[\w-]{43}$/);
+      expect(link).toMatch(/^http:\/\/console\.localhost:3000\/set-password#token=[\w-]{43}$/);
       const { rows: audit } = await su.query(
         `SELECT a.tenant_id FROM audit_log a JOIN "user" u ON u.id::text = a.entity_id
           WHERE a.action = 'platform.staff_created' AND u.email = $1`,
@@ -197,7 +197,7 @@ describe('family hub and console sessions', () => {
         template: 'platform_admin_invite',
         host: { kind: 'console' },
       });
-      expect(JSON.stringify(mail[0].payload)).not.toContain(link.split('/').pop());
+      expect(JSON.stringify(mail[0].payload)).not.toContain(link.split('#token=').pop());
       await expect(
         createAdmin(
           { email: adminEmail },
@@ -212,7 +212,7 @@ describe('family hub and console sessions', () => {
 
     it('the link sets the password on the console host; staff cannot sign in before', async () => {
       expect((await consoleLogin()).status).toBe(401);
-      const token = link.split('/').pop()!;
+      const token = link.split('#token=').pop()!;
       const res = await http()
         .post('/api/v1/auth/password/reset')
         .set('Host', CONSOLE)

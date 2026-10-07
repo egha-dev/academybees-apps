@@ -77,8 +77,17 @@ export const InvitationPreviewSchema = z.object({
   accountExists: z.boolean(),
   expiresAt: z.iso.datetime(),
 });
+export type InvitationPreview = z.infer<typeof InvitationPreviewSchema>;
+
+/**
+ * The invitation link's secret. It travels in request bodies and the page URL's fragment, never
+ * in a URL path or query, so no server, proxy or CDN log records it (review M3, C-83).
+ */
+const InvitationToken = z.string().min(16).max(128);
+export const InvitationTokenSchema = z.object({ token: InvitationToken });
 
 export const AcceptInvitationSchema = z.object({
+  token: InvitationToken,
   /** Required for a new account; ignored for an existing one. */
   name: z.string().trim().min(1).max(120).optional(),
   password: NewPassword,

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { AuthFrame } from '@/components/auth/auth-frame';
+import { FragmentTokenGate } from '@/components/auth/fragment-token';
 import { resetLabels } from '@/components/auth/labels.server';
 import { ResetForm, ResetLinkInvalid } from '@/components/auth/reset-form';
 import { academyColor, academyName, hostContext } from '@/lib/host-context.server';
@@ -19,33 +20,32 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-/** Choose a new password from an emailed link (single use, 1 hour; C-67). */
-export default async function ResetPasswordPage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const [{ context }, { token }, t, labels] = await Promise.all([
+/**
+ * Choose a new password from an emailed link (single use, 1 hour; C-67). The token is in the
+ * fragment (`/reset-password#token=…`), read in the browser, never seen by a server (C-83).
+ */
+export default async function ResetPasswordPage() {
+  const [{ context }, t, labels] = await Promise.all([
     hostContext(),
-    params,
     getTranslations('auth.reset'),
     resetLabels(),
   ]);
   const academy = academyName(context);
   if (!academy) notFound();
-  const wellFormed = /^[A-Za-z0-9_-]{16,128}$/.test(token);
+  const frame = { academy, primaryColor: academyColor(context) };
   return (
-    <AuthFrame
-      academy={academy}
-      primaryColor={academyColor(context)}
-      title={wellFormed ? t('title') : t('invalidTitle')}
-      body={wellFormed ? t('body') : undefined}
-    >
-      {wellFormed ? (
-        <ResetForm token={token} labels={labels} />
-      ) : (
-        <ResetLinkInvalid labels={labels} />
-      )}
-    </AuthFrame>
+    <FragmentTokenGate
+      pending={<AuthFrame {...frame} title={t('title')} />}
+      valid={
+        <AuthFrame {...frame} title={t('title')} body={t('body')}>
+          <ResetForm labels={labels} />
+        </AuthFrame>
+      }
+      invalid={
+        <AuthFrame {...frame} title={t('invalidTitle')}>
+          <ResetLinkInvalid labels={labels} />
+        </AuthFrame>
+      }
+    />
   );
 }

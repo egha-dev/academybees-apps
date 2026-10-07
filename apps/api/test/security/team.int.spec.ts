@@ -37,6 +37,14 @@ describe('team, invitations and password recovery', () => {
   let su: pg.Client;
   const host = (t: TenantFixture) => `${t.slug}.localhost`;
   const http = () => request(app.getHttpServer());
+  /** The invitation token travels in the body, never the URL (review M3, C-83). */
+  const previewInvite = (h: string, token: string) =>
+    http().post('/api/v1/invitations/preview').set('Host', h).send({ token });
+  const acceptInvite = (h: string, token: string, body: Record<string, unknown>) =>
+    http()
+      .post('/api/v1/invitations/accept')
+      .set('Host', h)
+      .send({ token, ...body });
 
   const toSession = (res: request.Response): Session => {
     const pairs = ([] as string[])
@@ -130,7 +138,7 @@ describe('team, invitations and password recovery', () => {
       expect(res.body).toMatchObject({ email, roles: ['teacher'], status: 'PENDING' });
       const sent = await lastEmail(email, 'invite');
       expect(sent?.payload.host).toEqual({ kind: 'academy', slug: a.slug });
-      expect(sent?.payload.link?.path).toBe('/invite/{token}');
+      expect(sent?.payload.link?.path).toBe('/invite#token={token}');
       expect(JSON.stringify(sent?.payload)).not.toContain(sent!.token!);
       const listed = await (await as(a, a.user.email)).get('/api/v1/team/invitations');
       const ids = (listed.body.invitations as Array<{ id: string }>).map((i) => i.id);
@@ -197,12 +205,8 @@ describe('team, invitations and password recovery', () => {
         await as(a, a.user.email)
       ).post('/api/v1/team/invitations', { email, roles: ['teacher'] });
       const second = (await lastEmail(email, 'invite'))!.token!;
-      expect((await http().get(`/api/v1/invitations/${first}`).set('Host', host(a))).status).toBe(
-        404,
-      );
-      expect((await http().get(`/api/v1/invitations/${second}`).set('Host', host(a))).status).toBe(
-        200,
-      );
+      expect((await previewInvite(host(a), first)).status).toBe(404);
+      expect((await previewInvite(host(a), second)).status).toBe(200);
     });
 
     it('revoke: the link stops working; revoking twice is not found', async () => {
@@ -213,9 +217,7 @@ describe('team, invitations and password recovery', () => {
       const token = (await lastEmail(email, 'invite'))!.token!;
       const path = `/api/v1/team/invitations/${created.body.id}/revoke`;
       expect((await (await as(a, a.user.email)).post(path)).status).toBe(204);
-      expect((await http().get(`/api/v1/invitations/${token}`).set('Host', host(a))).status).toBe(
-        404,
-      );
+      expect((await previewInvite(host(a), token)).status).toBe(404);
       expect((await (await as(a, a.user.email)).post(path)).status).toBe(404);
     });
   });
@@ -223,11 +225,8 @@ describe('team, invitations and password recovery', () => {
   describe('accept', () => {
     it("academy A's invite link is not found on academy B's host", async () => {
       for (const res of [
-        await http().get(`/api/v1/invitations/${a.invitationToken}`).set('Host', host(b)),
-        await http()
-          .post(`/api/v1/invitations/${a.invitationToken}/accept`)
-          .set('Host', host(b))
-          .send({ name: 'X', password: NEW_PASSWORD }),
+        await previewInvite(host(b), a.invitationToken),
+        await acceptInvite(host(b), a.invitationToken, { name: 'X', password: NEW_PASSWORD }),
       ]) {
         expect(res.status).toBe(404);
         expect(JSON.stringify(res.body)).not.toContain(a.id);
@@ -235,25 +234,23 @@ describe('team, invitations and password recovery', () => {
     });
 
     it('a new person sets a name and password, joins ACTIVE with the roles and is signed in', async () => {
-      const preview = await http()
-        .get(`/api/v1/invitations/${a.invitationToken}`)
-        .set('Host', host(a));
+      const preview = await previewInvite(host(a), a.invitationToken);
       expect(preview.body).toMatchObject({
         academy: { name: 'Team Academy A' },
         roles: ['teacher'],
         accountExists: false,
       });
-      const weak = await http()
-        .post(`/api/v1/invitations/${a.invitationToken}/accept`)
-        .set('Host', host(a))
-        .send({ name: 'Nila', password: 'short' });
+      const weak = await acceptInvite(host(a), a.invitationToken, {
+        name: 'Nila',
+        password: 'short',
+      });
       expect(weak.status).toBe(400);
       expect(weak.body.error.details).toContainEqual({ path: 'password', issue: 'too_short' });
 
-      const res = await http()
-        .post(`/api/v1/invitations/${a.invitationToken}/accept`)
-        .set('Host', host(a))
-        .send({ name: 'Nila', password: NEW_PASSWORD });
+      const res = await acceptInvite(host(a), a.invitationToken, {
+        name: 'Nila',
+        password: NEW_PASSWORD,
+      });
       expect(res.status).toBe(200);
       expect(res.body).toEqual({
         user: { name: 'Nila' },
@@ -270,10 +267,10 @@ describe('team, invitations and password recovery', () => {
       ]);
       expect(rows[0].email_verified_at).not.toBeNull();
       // Single use.
-      const again = await http()
-        .post(`/api/v1/invitations/${a.invitationToken}/accept`)
-        .set('Host', host(a))
-        .send({ name: 'Nila', password: NEW_PASSWORD });
+      const again = await acceptInvite(host(a), a.invitationToken, {
+        name: 'Nila',
+        password: NEW_PASSWORD,
+      });
       expect(again.status).toBe(404);
     });
 
@@ -284,18 +281,12 @@ describe('team, invitations and password recovery', () => {
         roles: ['receptionist'],
       });
       const token = (await lastEmail(b.user.email, 'invite'))!.token!;
-      const preview = await http().get(`/api/v1/invitations/${token}`).set('Host', host(a));
+      const preview = await previewInvite(host(a), token);
       expect(preview.body.accountExists).toBe(true);
-      const wrong = await http()
-        .post(`/api/v1/invitations/${token}/accept`)
-        .set('Host', host(a))
-        .send({ password: 'Not-The-Password-1' });
+      const wrong = await acceptInvite(host(a), token, { password: 'Not-The-Password-1' });
       expect(wrong.status).toBe(401);
       expect(wrong.body.error.code).toBe('INVALID_CREDENTIALS');
-      const ok = await http()
-        .post(`/api/v1/invitations/${token}/accept`)
-        .set('Host', host(a))
-        .send({ password: FIXTURE_PASSWORD });
+      const ok = await acceptInvite(host(a), token, { password: FIXTURE_PASSWORD });
       expect(ok.status).toBe(200);
       expect(ok.body.redirectTo).toBe('/today');
       // Still a member of B too; each academy keeps its own session.

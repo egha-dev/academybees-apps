@@ -1,9 +1,12 @@
 'use client';
 
 import { Button } from '@academybee/ui/components/actions';
+import { Box } from '@academybee/ui/components/layout';
+import { Text } from '@academybee/ui/components/text';
 import { lazy, Suspense, useState } from 'react';
 
 import { api } from '@/lib/api';
+import { useOnline } from '@/lib/use-online';
 
 // Shown only with unsynced offline work; loaded on demand (route JS budget, C-68).
 const ConfirmDialog = lazy(() =>
@@ -12,6 +15,10 @@ const ConfirmDialog = lazy(() =>
 
 export type SignOutLabels = {
   signOut: string;
+  /** Why the button is disabled offline (sign-out must reach the server, review M1). */
+  offline: string;
+  /** The request didn't reach the server: nothing was signed out. */
+  failed: string;
   guard: { title: string; body: string; stay: string; signOut: string };
 };
 
@@ -29,13 +36,24 @@ export function SignOutButton({
   unsynced?: number;
   variant?: 'secondary' | 'ghost';
 }) {
+  const online = useOnline();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   async function signOut() {
     setBusy(true);
-    // Sign-out always ends here: the API clears the cookies even if the session already ended.
-    await api('/auth/logout', { method: 'POST', body: {}, anonymous: true });
+    setFailed(false);
+    // The API ends the session (found from the refresh cookie if the access token has expired)
+    // and clears the cookies, even if the session already ended.
+    const res = await api('/auth/logout', { method: 'POST', body: {}, anonymous: true });
+    if (!res.ok && (res.error.code === 'NETWORK' || res.error.code === 'OFFLINE')) {
+      // Nothing reached the server: the session is still live, so don't pretend otherwise.
+      setBusy(false);
+      setConfirming(false);
+      setFailed(true);
+      return;
+    }
     // A full page load, not a client navigation: nothing of the session stays in memory.
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign('/login');
@@ -46,10 +64,18 @@ export function SignOutButton({
       <Button
         variant={variant}
         loading={busy && !confirming}
+        disabled={!online}
         onClick={() => (unsynced > 0 ? setConfirming(true) : void signOut())}
       >
         {labels.signOut}
       </Button>
+      {(!online || failed) && (
+        <Box role="status">
+          <Text variant="bodySmall" tone="secondary">
+            {online ? labels.failed : labels.offline}
+          </Text>
+        </Box>
+      )}
       {confirming && (
         <Suspense fallback={null}>
           <ConfirmDialog

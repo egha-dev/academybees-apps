@@ -17,7 +17,7 @@ export function PlatformFrame({
 }: {
   title: string;
   body?: string | undefined;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <Container maxWidth="sm" sx={{ paddingBlock: { xs: 4, md: 10 }, minBlockSize: '100dvh' }}>

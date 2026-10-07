@@ -43,7 +43,10 @@ export const EmailRequestSchema = z.object({
   vars: z.record(z.string(), z.string().max(200)).default({}),
   link: z
     .object({
-      /** Path on the host, e.g. `/invite/{token}`. */
+      /**
+       * Path on the host with the token in the fragment, e.g. `/invite#token={token}`: browsers
+       * never send the fragment, so the secret stays out of every request log (C-83).
+       */
       path: z.string().startsWith('/').max(200),
       sealedToken: z.string().startsWith('ab1.'),
     })

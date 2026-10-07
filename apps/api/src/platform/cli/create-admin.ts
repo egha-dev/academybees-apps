@@ -79,7 +79,7 @@ export async function createAdmin(
           locale: 'en-IN',
           host: { kind: 'console' },
           vars: {},
-          link: { path: '/set-password/{token}', sealedToken: encryptSecret(token, keys) },
+          link: { path: '/set-password#token={token}', sealedToken: encryptSecret(token, keys) },
         });
         await tx.outboxEvent.create({
           data: { id: newId(), tenantId: null, type: EMAIL_OUTBOX_TYPE, payload: email_ },
@@ -102,7 +102,7 @@ export async function createAdmin(
       },
       { timeout: 60_000, maxWait: 15_000 },
     );
-    const link = `${protocol}://console.${root}${port ? `:${port}` : ''}/set-password/${token}`;
+    const link = `${protocol}://console.${root}${port ? `:${port}` : ''}/set-password#token=${token}`;
     return { ...result, link };
   } finally {
     await db.$disconnect();

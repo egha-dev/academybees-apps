@@ -95,7 +95,7 @@ export class PasswordService {
           locale: 'en-IN',
           ...(await this.emails.academySender(tx)),
           vars: {},
-          link: { path: '/reset-password/{token}', token },
+          link: { path: '/reset-password#token={token}', token },
         });
         await this.audit.record(
           {

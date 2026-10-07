@@ -7,7 +7,6 @@ import {
 } from '@academybee/contracts';
 import { formatDate, formatTime } from '@academybee/i18n';
 import { TextLink } from '@academybee/ui/components/actions';
-import { InlineAlert } from '@academybee/ui/components/alert';
 import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
@@ -18,10 +17,7 @@ import { authLabels, mfaLabels } from '@/components/auth/labels.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { type SecurityErrorLabels } from '@/components/security/errors';
-import { MfaManage } from '@/components/security/mfa-manage';
-import { MfaRuleLazy as MfaRule } from '@/components/security/mfa-rule-lazy';
-import { PasswordChange } from '@/components/security/password-change';
-import { SessionAction } from '@/components/security/session-actions';
+import { MfaRuleLazy as MfaRule, SecurityButton } from '@/components/security/security-actions';
 import { apiServerGet } from '@/lib/api.server';
 import { roleHomesEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
@@ -206,27 +202,53 @@ export default async function SecurityPage() {
     required: auth.fields.required,
     toggle: auth.fields.password,
   };
-  const mfaManage = (
-    <MfaManage
-      enabled={overview.mfa.enabled}
-      required={overview.mfa.required}
-      labels={{
-        setUp: t('mfa.setUp'),
-        newCodes: t('mfa.newCodes'),
-        turnOff: t('mfa.turnOff'),
-        turnOffBody: t('mfa.turnOffBody'),
-        continue: t('mfa.continue'),
-        enabled: t('mfa.enabled'),
-        disabled: t('mfa.disabled'),
-        newCodesBody: t('mfa.newCodesBody'),
-        newCodesDone: t('mfa.newCodesDone'),
-        close,
-        password: passwordStep,
-        steps,
-        errors,
-      }}
-    />
+  const mfaActionLabels = {
+    mfa: {
+      setUp: t('mfa.setUp'),
+      newCodes: t('mfa.newCodes'),
+      turnOff: t('mfa.turnOff'),
+      turnOffBody: t('mfa.turnOffBody'),
+      continue: t('mfa.continue'),
+      enabled: t('mfa.enabled'),
+      disabled: t('mfa.disabled'),
+      newCodesBody: t('mfa.newCodesBody'),
+      newCodesDone: t('mfa.newCodesDone'),
+      close,
+      password: passwordStep,
+      steps,
+      errors,
+    },
+  };
+  // On: new recovery codes and (unless the academy requires it) turn off. Off: set up.
+  const mfaButtons = (
+    <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 2 }}>
+      {overview.mfa.enabled ? (
+        <>
+          <SecurityButton
+            action={{ kind: 'mfa', flow: 'codes' }}
+            label={t('mfa.newCodes')}
+            labels={mfaActionLabels}
+          />
+          {!overview.mfa.required && (
+            <SecurityButton
+              action={{ kind: 'mfa', flow: 'off' }}
+              label={t('mfa.turnOff')}
+              labels={mfaActionLabels}
+              variant="ghost"
+            />
+          )}
+        </>
+      ) : (
+        <SecurityButton
+          action={{ kind: 'mfa', flow: 'setup' }}
+          label={t('mfa.setUp')}
+          labels={mfaActionLabels}
+          variant="primary"
+        />
+      )}
+    </Stack>
   );
+  const revokeLabels = (done: string) => ({ revoke: { done, errors } });
 
   // The strong prompt (G-11): after sign-in, or whenever an Owner/Accountant still has no 2FA.
   const prompted = overview.mfa.recommended;
@@ -255,7 +277,7 @@ export default async function SecurityPage() {
             </Text>
             <Text>{t('prompt.body')}</Text>
             <Stack direction="row" spacing={4} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-              {mfaManage}
+              {mfaButtons}
               {roleHomes && <TextLink href={homeFor(me)}>{t('prompt.later')}</TextLink>}
             </Stack>
           </Stack>
@@ -279,9 +301,21 @@ export default async function SecurityPage() {
                 <Text>{t('mfa.onSince', { date: date(overview.mfa.enabledAt) })}</Text>
               )}
               {overview.mfa.recoveryCodesLeft <= 3 ? (
-                <InlineAlert tone="warning">
+                <Box
+                  role="status"
+                  sx={{
+                    paddingInline: 3,
+                    paddingBlock: 2.5,
+                    borderRadius: 2,
+                    borderInlineStart: '4px solid',
+                    borderColor: 'ab.status.warning.fg',
+                    bgcolor: 'ab.status.warning.surface',
+                    color: 'ab.status.warning.fg',
+                    fontWeight: 600,
+                  }}
+                >
                   {t('mfa.codesLeft', { count: overview.mfa.recoveryCodesLeft })}
-                </InlineAlert>
+                </Box>
               ) : (
                 <Text tone="secondary">
                   {t('mfa.codesLeft', { count: overview.mfa.recoveryCodesLeft })}
@@ -294,7 +328,7 @@ export default async function SecurityPage() {
           ) : (
             <Text tone="secondary">{t('mfa.offBody')}</Text>
           )}
-          {!prompted && mfaManage}
+          {!prompted && mfaButtons}
         </Stack>
       </Section>
 
@@ -306,17 +340,21 @@ export default async function SecurityPage() {
             </Text>
           )}
           <Box>
-            <PasswordChange
+            <SecurityButton
+              action={{ kind: 'password' }}
+              label={t('password.change')}
               labels={{
-                open: t('password.change'),
-                current: t('password.current'),
-                new: t('password.new'),
-                submit: t('password.submit'),
-                changed: t('password.changed'),
-                sameAsCurrent: t('password.sameAsCurrent'),
-                close,
-                fields: auth.fields,
-                errors,
+                password: {
+                  open: t('password.change'),
+                  current: t('password.current'),
+                  new: t('password.new'),
+                  submit: t('password.submit'),
+                  changed: t('password.changed'),
+                  sameAsCurrent: t('password.sameAsCurrent'),
+                  close,
+                  fields: auth.fields,
+                  errors,
+                },
               }}
             />
           </Box>
@@ -348,11 +386,11 @@ export default async function SecurityPage() {
                   </Text>
                 </Stack>
                 {!s.current && (
-                  <SessionAction
-                    sessionId={s.id}
+                  <SecurityButton
+                    action={{ kind: 'revoke', sessionId: s.id }}
                     label={t('sessions.signOut')}
-                    done={t('sessions.signedOut')}
-                    errors={errors}
+                    labels={revokeLabels(t('sessions.signedOut'))}
+                    size="small"
                   />
                 )}
               </Row>
@@ -360,11 +398,12 @@ export default async function SecurityPage() {
           </Box>
           {others.length > 0 ? (
             <Box>
-              <SessionAction
+              <SecurityButton
+                action={{ kind: 'revoke' }}
                 label={t('sessions.signOutOthers')}
-                done={t('sessions.othersSignedOut')}
-                errors={errors}
+                labels={revokeLabels(t('sessions.othersSignedOut'))}
                 variant="ghost"
+                size="small"
               />
             </Box>
           ) : (
