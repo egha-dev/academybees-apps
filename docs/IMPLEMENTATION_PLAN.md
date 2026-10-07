@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-02 · Current phase: **Phase 2 — Authentication + RBAC (🟨 in progress, started 2026-10-02)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`)
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-07 · Current phase: **Phase 3 — Academy Provisioning + Onboarding (⬜ next)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -13,7 +13,7 @@
 | --- | --- | --- | --- | --- |
 | 0 | Foundation | ✅ 2026-10-01 | Outbox, audit, idempotency tables; English-only i18n foundation, multilingual-ready (G-08, G-32), analytics port, perf budgets (G-09, G-24) | ADR-001/002/012/013/014/015/016/022/030/031/032/035/040 |
 | 1 | Multi-Tenant + Wildcard Domain | ✅ 2026-10-02 | Default branch per tenant; `app.` Family Hub host reserved + classified (G-31) | ADR-003/004/005/039, C-07 |
-| 2 | Authentication + RBAC | 🟨 | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
+| 2 | Authentication + RBAC | ✅ | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
 | 3 | Academy Provisioning + Onboarding | ⬜ | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, ADR-028/034 |
 | 4 | Students + Parents + Teachers | ⬜ | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
 | 5 | Courses + Batches + Timetable | ⬜ | Owner Today v1; terminology; holidays (G-03); transfer (G-27) | ADR-024/029/037 |
@@ -323,7 +323,7 @@ Phase 2 is **not** started.
 
 **Goal.** Staff sign in on their academy's URL and parents/students on the Family Hub; everyone gets exactly their capabilities and cannot use a session anywhere else.
 **Refs.** PRD v2 §4, §16 (auth), v3 §5, §13; UX §29 (Login Tier 1), v1.1 §8; ARCHITECTURE §6, §7.
-**Status.** 🟨 in progress — started 2026-10-02, `phase-2-start` = `be3e1a2`. Approved slice plan: [`docs/plans/phase-2.md`](plans/phase-2.md) (decisions C-59…C-66; staging proposal [`docs/plans/staging-proposal.md`](plans/staging-proposal.md) approved 2026-10-03 → C-69).
+**Status.** ✅ 2026-10-07 — PO acceptance recorded below (started 2026-10-02, `phase-2-start` = `be3e1a2`; closed with tag `phase-2`). Approved slice plan: [`docs/plans/phase-2.md`](plans/phase-2.md) (decisions C-59…C-66; staging proposal [`docs/plans/staging-proposal.md`](plans/staging-proposal.md) approved 2026-10-03 → C-69).
 
 **Slices (each = one PR, ADR-041)**
 
@@ -340,42 +340,9 @@ Phase 2 is **not** started.
 | S8 | `p2/hub-console` | 2.19 HUB sessions + handoff, 2.20 console + mandatory TOTP (flag `p2-console-home`; C-73) | ✅ #41 |
 | S9 | `p2/account-security` | 2.21 TOTP 2FA on every host + academy rule, 2.22 devices & sessions, password change, alerts (C-80) | ✅ #50 |
 | S10 | `p2/hardening-e2e` | 2.23 idempotency lease + fencing, interceptor order, log safety (C-82), 2.24 E2E + docs | ✅ #52 |
-
-**Working notes (handover, 2026-10-05)**
-
-*Done:*
-- S1–S8 and S7b are merged; `main` = `82de9ef` plus this handover.
-- **Staging is live** at https://staging.academybees.com:
-  - Railway project `academybees-staging`, single environment `academybees-staging`, Singapore;
-  - every merge to `main` runs CI, then **Deploy staging**: roles + migrations → `railway up` (api, worker, web) → smoke.
-- **Staging data:** academies `demo-a`/`demo-b` and 14 users on `hello+<tag>@academybees.com`, created by the **Staging bootstrap** workflow.
-  - The PO received the emails, set passwords and signed in on staging (2026-10-05).
-  - Addresses and how-tos: `docs/runbooks/staging-variables.md` §I.
-- **Signing keys:** `AUTH_SIGNING_KEYS` rotated to key ID `s2` before any user existed; `s1` was dropped.
-
-*Next step:*
-- **S9 `p2/account-security`** (#50, C-80) is done: 2FA on every host, the academy rule, the Security page (`/settings/security`), password change, devices and sessions, and the alerts.
-- **S10** `p2/hardening-e2e` (C-82): idempotency lease + commit marker + fencing (M1), interceptor order (M2, M3), log safety (L1, L2, L4), the remaining E2E journeys and docs.
-- **Then P2-3 Gate**, which can now use real staging.
-- **Repository (C-81):** public until stable, so CI runs on GitHub-hosted runners. The self-hosted runner is parked on branch `ci/self-hosted-runner` (PR #51 closed).
-
-*Open items:*
-- **PO, checklist §H:** delete the Railway account token `github-actions-staging` and the variable `STAGING_RAILWAY_PROJECT_ID`, and remove the worker's unused `SMTP_URL` (optional). `RAILWAY_API_TOKEN` already appears deleted.
-- **Hub on staging:** the hub placeholder (`p1-hub-placeholder`) is off on staging, so parents and students are handed to `app.` and then redirected to the apex. Expected until 7P.
-- **Production (7P):** decide Railway Pro image deploys vs `railway up`, and SMTP vs the Resend API there (C-77, C-79).
-- **Before production:** the account-token risk is gone, since only the environment-scoped project token is used.
-
-*Decisions this stretch:*
-- **C-74:** the marketing site.
-- **C-75 → C-76 → C-77:** Railway deploys. The root cause of the upload 404s was two environments in one project; the deploy now uses `railway up` with an environment-scoped project token.
-- **C-78:** the staging bootstrap.
-- **C-79:** Resend over HTTPS, because Railway blocks SMTP below Pro.
-
-*Lessons:*
-- **`.railwayignore` matching:** a bare `docs` pattern matches at any depth. Anchor root-only paths (`/docs`).
-- **Railway variables:** edits are staged until applied.
-- **Remote database timeouts:** GitHub runners → Singapore database needs interactive transactions longer than Prisma's 5 s default.
-- **Secret-safe diagnostics:** startup errors describe connection URLs only in redacted form, and never print unknown user parts.
+| G1 | `p2/gate-fixes` | P2-3 gate: "try again in N minutes" after too many attempts; gate evidence | ✅ #53 |
+| R1 | `p2/review-fixes-1` | P2-4 M3 link tokens out of URLs, M1 real sign-out, M4 atomic refresh, L1 lock answer; Security page actions load on use (C-83) | ✅ #54 |
+| R2 | `p2/review-fixes-2` | P2-4 M2 read-only claims release, L4 inviter re-check, L8 2FA signs out others (C-84) | ✅ #55 |
 
 **Scope**
 - DB: `User`, `UserCredential`, `Membership`, `Role`, `RolePermission`, `MembershipRole`, `PlatformStaff`, `AuthSession`, `Invitation`, `PasswordResetToken`.
@@ -396,7 +363,7 @@ Phase 2 is **not** started.
 
 **Exit gate.** Above green; **M0 Foundation Release** declared.
 
-**Gate evidence (P2-3, 2026-10-07 on `main` = `c31426a`; CI on `c31426a` green; staging serving `c31426a`)**
+**Gate evidence (P2-3, 2026-10-07 on `main` = `c31426a`; re-run after the review fixes on `7a9360a`: CI green on every PR and on `main`, staging serving `7a9360a`)**
 
 | Gate item | Evidence |
 | --- | --- |
@@ -424,6 +391,64 @@ Phase 2 is **not** started.
 | Common gate commands | lint, typecheck, unit, integration (API 434, database 150, worker), build, `db:drift`, `i18n:check`, `flags:check`, `perf:budget` (all routes ≤ 200 KB; `/settings/security` 198.9), E2E **294 passed** locally (2 workers) + CI green; Lighthouse in CI (`e2e` job) green — the local run can't start Chrome under WSL |
 | Staging + TLS | `https://{staging, demo-a, demo-b, app, console}.staging.academybees.com` valid TLS; health `ok` (DB, Redis); release `c31426a`; deploys on every merge (C-77) |
 | Real phone | PO tested S9 on staging (2026-10-07: "looks good"); PO acceptance checklist pending |
+
+
+**Independent review (P2-4, 2026-10-07).** A fresh reviewer read `phase-2-start..main`: **no CRITICAL or HIGH**. It found tenant isolation, 2FA gating on every path to a session, RBAC/IDOR, the Family Hub fan-out, email tokens, logging and frontend conventions sound.
+- Fixed in Phase 2:
+  - #54 (C-83): M3 link tokens out of URLs (fragment + body); M1 sign-out ends the server session (refresh cookie; disabled offline); M4 atomic refresh rotation; L1 a locked account answers like a wrong password.
+  - #55 (C-84): M2 read-only transactions don't mark idempotency claims; L4 invitations re-check their sender and are revoked when the sender is disabled; L8 turning 2FA on signs out other devices.
+- **Assigned to Phase 15:** L2 a daily cap on re-authentication attempts; L3 recovery-code hashes with a server pepper; L5 lock the owner rows when disabling (two owners disabling each other); L6 forgot-password limit keyed per academy + IP with equalised work; L7 a revocation tombstone for the 60 s session cache.
+- **Assigned to Phase 3:** sign-in on a SUSPENDED/ARCHIVED academy should show its status page, not create a session (with console suspend/activate).
+- **Assigned to Phase 14:** user-level `DISABLED`, checked by the AuthGuard and hub refresh (no disable path exists yet).
+
+**Exit notes (2026-10-07 — Phase 2 ✅)**
+
+*PO acceptance.* **Accepted by the Product Owner on 2026-10-07** ("All looks fine"), after trying the flows locally and on staging (`https://*.staging.academybees.com`, real email, 2FA). **M0 Foundation Release** is declared: tenancy, auth, RBAC, PWA shell, CI/CD to staging.
+
+*Delivered.*
+- **Identity and sessions** (C-59, C-63, C-65): one global user, memberships per academy, roles copied from code templates, user-bound RLS on identity tables, phone-ready identifiers. Access/refresh tokens with rotation, reuse detection and atomic rotation; CSRF double-submit; rate limits and lock-out.
+- **Sign-in on every host** (C-61, C-73): academy (TENANT), Family Hub `app.` (HUB, handoff in the URL fragment), console (CONSOLE, mandatory TOTP, IP allow-list). Each host's sessions are refused everywhere else.
+- **Team** (C-67, C-72): members, roles and access with privilege-escalation rules, invitations (fragment links, sender re-checked), password recovery.
+- **Account security** (G-11, C-80): optional 2FA on every host, the academy 2FA rule, the strong prompt for Owner/Accountant, recovery codes, password change, devices & sessions, new-device / 2FA-off / password-changed emails.
+- **Web**: academy-branded sign-in screens, signed-in shell with capability-filtered navigation, Team, Security, re-login dialog, console and hub sign-in.
+- **Platform**: transactional email (Mailpit locally, Resend HTTPS on staging, C-79); `pnpm platform:create-admin`; **staging on Railway + Cloudflare** with deploy on every merge and a bootstrap workflow (C-69, C-75…C-78); the `academybees.com` marketing site (C-74).
+- **Phase 0/1 follow-ups**: idempotency lease + commit marker + fencing (C-82, C-84), interceptor order, log safety (C-82); lint bans on client construction and `set_config` (L6, L7); tenantId mismatch → 404.
+
+*Pinned toolchain.* Unchanged, plus (pnpm catalog) `jose` 6.2.12, `@node-rs/argon2` 2.2.1, `otpauth` 9.5.2, `qrcode` 1.5.4, `nodemailer` 10.0.13.
+
+*Deviations, each recorded before or while coding.* C-59…C-84. The main ones:
+- C-61/C-73: one login endpoint, handoff code in the URL fragment.
+- C-66: console TOTP mandatory now, not in Phase 14.
+- C-69/C-75…C-79: Railway staging, deployed with `railway up`; Resend over HTTPS.
+- C-80: 2FA asked on every host; the strong prompt is a page section.
+- C-81: **repository public until stable** (GitHub Actions billing); self-hosted runner parked.
+- C-82/C-84: idempotency lease, commit marker and fencing.
+- C-83: link secrets only in fragments and bodies.
+
+*Known limitations.*
+- **Route JS budget headroom is thin.** The signed-in shell is ≈ 198 KB gz of 200 on every academy page, and `/settings/security` ≈ 199.5 KB in CI (its actions load on first use). Phase 15's shell diet (or earlier, if a Tier-1 teacher/parent screen in Phases 5–7 needs room) must find space before those screens grow (G-24).
+- Parents and students have no Security page until Parent Core (7P); 2FA set up as staff protects their hub sign-in too.
+- The Family Hub placeholder is off on staging (`app.` → marketing) until 7P.
+- Phone OTP sign-in is designed, not built (Phase 10).
+- Emails sent before 2026-10-07 have path-style links that no longer open (staging only).
+- Lighthouse can't start Chrome under WSL; it runs in CI.
+- Local E2E reuses servers already on ports 3000/4000 (stop `pnpm dev` first, or use the parked isolated-ports setup on `ci/self-hosted-runner`).
+
+*Release flags (ADR-041).*
+- `p2-role-homes`: owner PO; on in local/ci/staging, off in production (staff land on `/settings/security`); **remove in Phase 5/6** when Owner Today and Teacher Today ship (expires 2027-03-31).
+- `p2-console-home`: owner PO; **remove in Phase 3** when the academies list ships (expires 2027-01-31).
+- `p1-hub-placeholder`: owner PO; off in staging/production; **remove in Phase 7P** (expires 2027-06-30).
+
+*Review follow-ups.* Listed above under **Independent review (P2-4)**, by phase: Phase 3 (sign-in on suspended/archived academies), Phase 14 (user-level disable), Phase 15 (L2, L3, L5, L6, L7, route-budget headroom).
+
+*Process notes.*
+- `.railwayignore`: a bare `docs` pattern matches at any depth; anchor root-only paths (`/docs`).
+- Railway variable edits are staged until applied.
+- GitHub runners → Singapore database need interactive transactions longer than Prisma's 5 s default.
+- Startup errors show connection URLs only in redacted form.
+- Prisma's adapter `rollback()` only returns the connection to the pool. Code that aborts a transaction itself must send `ROLLBACK` (C-82).
+- `import { type X }` keeps a side-effect import under `verbatimModuleSyntax`. Use `import type` for types of lazily loaded modules, and don't mark lazy modules `'use client'` (C-80).
+- Poll CI sparingly: tight `gh` loops exhausted the GitHub API rate limit once.
 
 ---
 
