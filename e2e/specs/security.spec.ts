@@ -76,6 +76,9 @@ test('an accountant is prompted, sets up two-step sign-in and needs a code next 
   await expect(page.getByText('10 recovery codes left.')).toBeVisible();
 
   // Signed out, the next sign-in asks for a code (the next time step: the last one is used).
+  // Leave the signed-in page first: its session guard would redirect to /login on its own and
+  // race the next navigation (seen on WebKit).
+  await page.goto('about:blank');
   await page.context().clearCookies();
   await signInTo(page, testInfo, email);
   await expect(page.getByRole('heading', { name: 'Enter your sign-in code' })).toBeVisible();
@@ -125,6 +128,9 @@ test('a teacher signs out their other devices and changes their password', async
     page.getByText('Password changed. Other devices now need the new password.'),
   ).toBeVisible();
 
+  // Leave the signed-in page first: its session guard would redirect to /login on its own and
+  // race the next navigation (seen on WebKit).
+  await page.goto('about:blank');
   await page.context().clearCookies();
   await signInTo(page, testInfo, email);
   await expect(page.getByRole('main').getByRole('alert')).toContainText("doesn't match");
