@@ -339,7 +339,7 @@ Phase 2 is **not** started.
 | S7b | `p2/staging` | staging on Railway + Cloudflare DNS (C-69, C-75, C-77): web image, roles, `railway up` deploys; staging bootstrap (C-78); email over Resend HTTPS (C-79) — staging live 2026-10-05, PO signed in on staging | ✅ #43–#48 |
 | S8 | `p2/hub-console` | 2.19 HUB sessions + handoff, 2.20 console + mandatory TOTP (flag `p2-console-home`; C-73) | ✅ #41 |
 | S9 | `p2/account-security` | 2.21 TOTP 2FA on every host + academy rule, 2.22 devices & sessions, password change, alerts (C-80) | ✅ #50 |
-| S10 | `p2/hardening-e2e` | 2.23 idempotency lease + fencing, interceptor order, log safety (C-82), 2.24 E2E + docs | 🟨 |
+| S10 | `p2/hardening-e2e` | 2.23 idempotency lease + fencing, interceptor order, log safety (C-82), 2.24 E2E + docs | ✅ #52 |
 
 **Working notes (handover, 2026-10-05)**
 
