@@ -24,6 +24,7 @@ import { RedisModule } from './core/redis/redis.module.js';
 import { TenantModule } from './core/tenant/tenant.module.js';
 import { ZodResponseInterceptor } from './core/validation/zod-response.interceptor.js';
 import { ZodValidationPipe } from './core/validation/zod-validation.pipe.js';
+import { LegalModule } from './modules/legal/legal.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
 import { TeamModule } from './modules/team/team.module.js';
 
@@ -54,6 +55,7 @@ export class AppModule {
         // Domain modules.
         TeamModule,
         SettingsModule,
+        LegalModule,
         ...(config.APP_ENV === 'production' ? [] : [DocsModule]),
         ...extra,
       ],

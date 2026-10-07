@@ -157,6 +157,15 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     body: { token: '@fixture:invitation-token', name: 'New Teacher', password: 'Another#Pass2026' },
     spoof: { skip: 'team.int.spec.ts › accept' },
   },
+  // Legal acceptance (G-06, ADR-034): the signed-in user's own acceptances.
+  { method: 'GET', path: '/api/v1/legal/current', session: true },
+  {
+    method: 'POST',
+    path: '/api/v1/legal/accept',
+    session: true,
+    body: { documentIds: ['019a0000-0000-7000-8000-00000000a001'] },
+    spoof: 'status',
+  },
   // Test-only signed-in routes guarded by @Can + a scope policy (shape of domain endpoints).
   {
     method: 'GET',

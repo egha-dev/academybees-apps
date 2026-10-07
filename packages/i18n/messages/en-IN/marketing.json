@@ -131,7 +131,8 @@
     "contact": "Contact",
     "privacy": "Privacy policy (draft)",
     "terms": "Terms of service (draft)",
-    "copyright": "© {year} AcademyBee"
+    "copyright": "© {year} AcademyBee",
+    "dpa": "Data processing agreement (draft)"
   },
   "legal": {
     "draftBanner": "DRAFT for review — not yet in effect. This text has not been reviewed by a lawyer and must not be relied on.",
@@ -244,6 +245,41 @@
       "contact": {
         "title": "Contact",
         "p1": "Questions about these terms: hello@academybees.com."
+      }
+    }
+  },
+  "dpa": {
+    "metaTitle": "Data processing agreement (draft)",
+    "title": "Data processing agreement",
+    "intro": "This draft describes how AcademyBee processes personal data on behalf of each academy, which remains the data fiduciary under India's Digital Personal Data Protection Act, 2023. Items in [square brackets] must be confirmed, and the whole text needs legal review before publishing.",
+    "sections": {
+      "roles": {
+        "title": "Roles",
+        "p1": "The academy decides why and how the personal data of its students, parents and staff is processed (data fiduciary). AcademyBee processes that data only on the academy's documented instructions, to provide the service (data processor)."
+      },
+      "scope": {
+        "title": "Data and purposes",
+        "p1": "Categories: names and contact details of students, parents and staff; attendance, schedules, fees and payments; messages sent through the service; and, where the academy enters them, medical or allergy notes. Purposes: running classes, collecting fees, communicating with parents and the academy's own reporting."
+      },
+      "security": {
+        "title": "Security",
+        "p1": "We keep each academy's data separate from every other academy's, encrypt it in transit, restrict staff access, and record sensitive actions in an audit log. [Confirm hosting regions and certifications.]"
+      },
+      "subprocessors": {
+        "title": "Sub-processors",
+        "p1": "We use hosting, database, email and image-storage providers to run the service. [List sub-processors and their locations.] We will tell academies before adding a new one."
+      },
+      "breach": {
+        "title": "Personal data breaches",
+        "p1": "If we become aware of a breach affecting an academy's data, we will tell the academy without undue delay and help it meet its obligations to notify the Data Protection Board and affected people. [Confirm notification time.]"
+      },
+      "end": {
+        "title": "Return and deletion",
+        "p1": "When an academy leaves, it can export its data. We delete it after the retention period, except records we must keep by law (such as financial records). [Confirm retention periods.]"
+      },
+      "contact": {
+        "title": "Contact",
+        "p1": "Questions about this agreement: hello@academybees.com."
       }
     }
   },

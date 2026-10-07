@@ -56,6 +56,7 @@ export function SiteFooter() {
         <nav aria-label={t('footer.contact')} className="footer-links">
           <Link href="/privacy/">{t('footer.privacy')}</Link>
           <Link href="/terms/">{t('footer.terms')}</Link>
+          <Link href="/dpa/">{t('footer.dpa')}</Link>
         </nav>
       </div>
       <p className="wrap copyright">{t('footer.copyright', { year: new Date().getFullYear() })}</p>
