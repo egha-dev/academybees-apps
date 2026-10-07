@@ -174,6 +174,14 @@ Each slice follows the same steps: branch `p3/<slice>` from the latest `main` �
   - change subdomain → the old host returns REDIRECT and the old slug stays reserved;
   - the status change is visible after cache invalidation.
 
+*As built (S3):*
+- **Platform database.** The API gets the `ab_platform` client (`PLATFORM_DATABASE_URL`), used only under `src/platform/**`. The variable is optional outside production: without it, console academy routes answer 503. Railway's `api` service needs the variable (runbook `staging-variables.md` C1).
+- **Platform capabilities.** `platform.*` capabilities come only from a CONSOLE session's platform role (`PLATFORM_ROLE_GRANTS`); academy capabilities come only from memberships.
+- **Owner invitation.** It has no academy sender (`invitedById` null), so the C-84 sender re-check, which covers member invites, doesn't apply. `Invitation.inviteeName` keeps the owner's name for the console and the accept form.
+- **Errors.** A taken subdomain answers `409 CONFLICT` with `{ path: 'slug', issue: 'taken' }`, followed by `{ path: 'suggestions', issue: <slug> }` entries. Reserved or impersonating subdomains answer 400 `reserved`.
+- **Audit.** Status changes, subdomain changes, resends and console *views* are recorded on the academy's own audit trail, with the platform-staff actor.
+- **Backfill.** The migration `tenant_lifecycle` gives academies created before Phase 3 (staging's demo academies) a Trial subscription and an onboarding state. The staging bootstrap creates both for new academies.
+
 ### S4 `p3/console-ui` — Provisioning Console (C-02, UX §21, v1.1 §2–3, §9)
 
 **3.10 Console shell and Academies list:**
