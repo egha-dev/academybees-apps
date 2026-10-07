@@ -1,7 +1,8 @@
 import { newId } from '@academybee/contracts';
 import { type INestApplication } from '@nestjs/common';
+import pg from 'pg';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, inject, it, vi } from 'vitest';
 
 import { IdempotencyStore } from '../../src/core/idempotency/idempotency.store.js';
 import { createTestApp } from '../support/test-app.js';
@@ -93,6 +94,145 @@ describe('@Idempotent()', () => {
     } finally {
       complete.mockRestore();
     }
+  });
+
+  describe('stored responses, audit and stale claims (review M1–M3)', () => {
+    let su: pg.Client;
+    const ledger = (key: string, body: Record<string, unknown>) =>
+      post(key, { amountMinor: 100, ...body }, '/api/v1/test/ledger');
+    const committed = async (ref: string) =>
+      (
+        await su.query(
+          `SELECT count(*)::int AS n FROM outbox_event WHERE type = 'test.ledger' AND payload->>'ref' = $1`,
+          [ref],
+        )
+      ).rows[0].n as number;
+    const record = async (key: string) =>
+      (
+        await su.query(
+          `SELECT status, attempt, committed_at, response_body FROM idempotency_record WHERE key = $1`,
+          [key],
+        )
+      ).rows[0] as {
+        status: string;
+        attempt: number;
+        committed_at: Date | null;
+        response_body: unknown;
+      };
+    /** Pretend the lease ran out (the clock would, after LEASE_MS). */
+    const expireLease = (key: string) =>
+      su.query(
+        `UPDATE idempotency_record SET locked_until = now() - interval '1 second' WHERE key = $1`,
+        [key],
+      );
+
+    beforeAll(async () => {
+      su = new pg.Client({ connectionString: inject('databaseUrls').superuser });
+      await su.connect();
+    });
+    afterAll(async () => {
+      await su.end();
+    });
+
+    it('M2: the stored and replayed body is the schema-filtered one the client got', async () => {
+      const key = newId();
+      const first = await ledger(key, { ref: `m2-${key}` });
+      expect(first.status).toBe(201);
+      expect(first.body).not.toHaveProperty('internalNote');
+      expect((await record(key)).response_body).toEqual(first.body);
+      const replay = await ledger(key, { ref: `m2-${key}` });
+      expect(replay.body).toEqual(first.body);
+    });
+
+    it('M3: a replay writes no second audit row', async () => {
+      const key = newId();
+      const first = await ledger(key, { ref: `m3-${key}` });
+      await ledger(key, { ref: `m3-${key}` });
+      await ledger(key, { ref: `m3-${key}` });
+      const { rows } = await su.query(
+        `SELECT count(*)::int AS n FROM audit_log WHERE action = 'test.ledger_recorded' AND entity_id = $1`,
+        [first.body.id],
+      );
+      expect(rows[0].n).toBe(1);
+    });
+
+    it('M1: every commit marks the claim, in the same transaction (single statement or transaction)', async () => {
+      for (const inTransaction of [false, true]) {
+        const key = newId();
+        await ledger(key, { ref: `mark-${key}`, inTransaction });
+        const r = await record(key);
+        expect(r.status).toBe('COMPLETED');
+        expect(r.committed_at).not.toBeNull();
+      }
+    });
+
+    it('M1: a crash after the commit is never run again, even after the lease', async () => {
+      const store = app.get(IdempotencyStore);
+      const complete = vi.spyOn(store, 'complete').mockRejectedValueOnce(new Error('crash'));
+      const key = newId();
+      const ref = `after-commit-${key}`;
+      try {
+        expect((await ledger(key, { ref })).status).toBe(500);
+      } finally {
+        complete.mockRestore();
+      }
+      await expireLease(key);
+      const retry = await ledger(key, { ref });
+      expect(retry.status).toBe(409);
+      expect(retry.body.error.code).toBe('IDEMPOTENCY_KEY_IN_PROGRESS');
+      expect(await committed(ref)).toBe(1);
+    });
+
+    it('M1: a crash before any commit is taken over once the lease runs out', async () => {
+      // The process "dies" after a handler that wrote nothing: the key is left IN_PROGRESS.
+      const store = app.get(IdempotencyStore);
+      const release = vi.spyOn(store, 'release').mockResolvedValueOnce(false);
+      const key = newId();
+      try {
+        const first = await post(key, { amountMinor: 3 }, '/api/v1/test/failing-payments');
+        expect(first.body.error.code).toBe('INVALID_STATE_TRANSITION');
+      } finally {
+        release.mockRestore();
+      }
+      expect((await record(key)).committed_at).toBeNull();
+      // Still leased: the retry waits.
+      const early = await post(key, { amountMinor: 3 }, '/api/v1/test/failing-payments');
+      expect(early.body.error.code).toBe('IDEMPOTENCY_KEY_IN_PROGRESS');
+      expect(executions.count).toBe(1);
+      await expireLease(key);
+      const retry = await post(key, { amountMinor: 3 }, '/api/v1/test/failing-payments');
+      expect(retry.body.error.code).toBe('INVALID_STATE_TRANSITION'); // it ran again
+      expect(executions.count).toBe(2);
+    });
+
+    it('M1: a slow attempt whose claim was taken over cannot commit (fencing)', async () => {
+      const key = newId();
+      const ref = `fence-${key}`;
+      // supertest sends only when awaited: start the slow attempt now.
+      const slow = ledger(key, { ref, delayMs: 1_500, inTransaction: true }).then((r) => r);
+      await new Promise((r) => setTimeout(r, 400));
+      await expireLease(key); // the lease "runs out" while the first attempt is still working
+      const retry = await ledger(key, { ref, delayMs: 1_500, inTransaction: true });
+      const first = await slow;
+      expect(retry.status).toBe(201);
+      expect(first.status).toBe(409);
+      expect(first.body.error.code).toBe('IDEMPOTENCY_KEY_IN_PROGRESS');
+      expect(await committed(ref)).toBe(1);
+      expect((await record(key)).attempt).toBe(2);
+    });
+
+    it('M1: a failure after a commit keeps the key (the outcome is never run twice)', async () => {
+      const key = newId();
+      const ref = `partial-${key}`;
+      const first = await ledger(key, { ref, failAfterCommit: true });
+      expect(first.status).toBe(409);
+      expect(first.body.error.code).toBe('INVALID_STATE_TRANSITION');
+      await expireLease(key);
+      const retry = await ledger(key, { ref, failAfterCommit: true });
+      expect(retry.status).toBe(409);
+      expect(retry.body.error.code).toBe('IDEMPOTENCY_KEY_IN_PROGRESS');
+      expect(await committed(ref)).toBe(1);
+    });
   });
 
   it('the same key is independent per route', async () => {

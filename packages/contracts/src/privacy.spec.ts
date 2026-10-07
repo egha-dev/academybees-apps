@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { looksLikeContactData, maskPii, maskString } from './privacy.js';
+import {
+  logSafeUrl,
+  looksLikeContactData,
+  maskPii,
+  maskString,
+  safeError,
+  safeLogObject,
+} from './privacy.js';
 
 describe('log PII masking', () => {
   it('masks emails', () => {
@@ -36,5 +43,53 @@ describe('looksLikeContactData', () => {
     expect(looksLikeContactData('98765 43210')).toBe(true);
     expect(looksLikeContactData('attendance.session_marked')).toBe(false);
     expect(looksLikeContactData('0199a0a0-1234-7000-8000-123456789012')).toBe(false);
+  });
+});
+
+describe('log safety (review L1, L2)', () => {
+  it('removes secrets by key at any depth', () => {
+    const out = safeLogObject({
+      msg: 'x',
+      body: { user: { password: 'hunter2', profile: { recoveryCodes: ['a', 'b'] } } },
+      headers: { Cookie: 'ab_at=x', 'Idempotency-Key': 'k' },
+      list: [{ token: 't' }],
+    });
+    expect(out).toEqual({
+      msg: 'x',
+      body: { user: { password: '[redacted]', profile: { recoveryCodes: '[redacted]' } } },
+      headers: { Cookie: '[redacted]', 'Idempotency-Key': '[redacted]' },
+      list: [{ token: '[redacted]' }],
+    });
+  });
+
+  it('reduces errors to a masked summary and drops Prisma meta and arguments', () => {
+    const plain = Object.assign(new Error('no user priya@example.com'), { code: 'E1', extra: 'x' });
+    const summary = safeError(plain);
+    expect(summary).toMatchObject({ type: 'Error', message: 'no user p***@e***.com', code: 'E1' });
+    expect(summary).not.toHaveProperty('extra');
+    expect(String(summary.stack)).not.toContain('priya@example.com');
+
+    class PrismaClientKnownRequestError extends Error {
+      code = 'P2002';
+      meta = { target: ['email'], value: 'priya@example.com' };
+    }
+    const prisma = new PrismaClientKnownRequestError(
+      'Invalid `prisma.user.create()` { email: "priya@example.com" }',
+    );
+    prisma.name = 'PrismaClientKnownRequestError';
+    const p = safeError(prisma);
+    expect(p).toEqual({
+      type: 'PrismaClientKnownRequestError',
+      message: 'PrismaClientKnownRequestError P2002',
+      code: 'P2002',
+    });
+    expect(safeLogObject({ err: prisma })).toEqual({ err: p });
+  });
+
+  it('logs URLs without their query string', () => {
+    expect(logSafeUrl('/api/v1/invitations/abc?token=secret&email=a@b.co')).toBe(
+      '/api/v1/invitations/abc',
+    );
+    expect(logSafeUrl(undefined)).toBeUndefined();
   });
 });

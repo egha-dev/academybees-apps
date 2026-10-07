@@ -1,12 +1,11 @@
 import { Global, Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
 
 import { AuditService } from './audit.service.js';
-import { AuditedInterceptor } from './audited.js';
 
 @Global()
 @Module({
-  providers: [AuditService, { provide: APP_INTERCEPTOR, useClass: AuditedInterceptor }],
+  // The interceptor is registered in AppModule, where the interceptor order is fixed (review M2/M3).
+  providers: [AuditService],
   exports: [AuditService],
 })
 export class AuditModule {}

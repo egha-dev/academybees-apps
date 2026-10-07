@@ -1,4 +1,4 @@
-import { maskPii, REDACT_PATHS } from '@academybee/contracts';
+import { REDACT_PATHS, safeError, safeLogObject } from '@academybee/contracts';
 import { type DynamicModule, Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 
@@ -25,7 +25,10 @@ export class WorkerModule {
           pinoHttp: {
             level: config.LOG_LEVEL,
             redact: { paths: REDACT_PATHS, censor: '[redacted]' },
-            formatters: { log: (obj: Record<string, unknown>) => maskPii(obj) },
+            formatters: { log: (obj: Record<string, unknown>) => safeLogObject(obj) },
+            serializers: {
+              err: (err: unknown) => (err instanceof Error ? safeError(err) : safeLogObject(err)),
+            },
             customProps: () => ({ appEnv: config.APP_ENV, service: 'worker' }),
             ...(config.APP_ENV === 'local'
               ? { transport: { target: 'pino-pretty', options: { singleLine: true } } }

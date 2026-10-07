@@ -1,5 +1,10 @@
 import { ERROR_HTTP_STATUS, type ErrorCode, type ErrorDetail } from '@academybee/contracts';
-import { Prisma, TenantMismatchError, uniqueIndexFields } from '@academybee/database';
+import {
+  IdempotencyClaimLostError,
+  Prisma,
+  TenantMismatchError,
+  uniqueIndexFields,
+} from '@academybee/database';
 import { HttpException } from '@nestjs/common';
 import { ZodError } from 'zod';
 
@@ -11,6 +16,8 @@ export type MappedError = {
   details?: ErrorDetail[];
   /** true when the error is unexpected and must be logged with its stack. */
   unexpected: boolean;
+  /** A client-error status with no code of its own (review L4): logged, mapped to 400. */
+  unmappedStatus?: number;
 };
 
 const HTTP_CODE: Record<number, ErrorCode> = {
@@ -59,6 +66,29 @@ function uniqueFields(error: Prisma.PrismaClientKnownRequestError): string[] {
   return [];
 }
 
+/**
+ * An HTTP status from Nest or Express. Known ones have codes; any other 4xx is the client's
+ * problem, so it answers 400 and is logged so we can map it (review L4: it used to become a
+ * silent 500); anything else is a server error.
+ */
+function fromStatus(status: number): MappedError {
+  const code = HTTP_CODE[status];
+  if (code) return withCode(code);
+  if (status >= 400 && status < 500)
+    return { ...withCode('VALIDATION_FAILED'), unmappedStatus: status };
+  return withCode('INTERNAL', undefined, true);
+}
+
+/** The driver error may arrive wrapped by Prisma; recognise it through its causes. */
+function isClaimLost(error: unknown): boolean {
+  for (let e: unknown = error, depth = 0; e && depth < 5; depth++) {
+    if (e instanceof IdempotencyClaimLostError) return true;
+    if (e instanceof Error && e.message.includes('idempotency claim lost')) return true;
+    e = (e as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
 /** Translate any thrown value into a safe envelope code + status. */
 export function mapError(error: unknown): MappedError {
   if (error instanceof DomainError) return withCode(error.code, error.details);
@@ -66,6 +96,9 @@ export function mapError(error: unknown): MappedError {
   // Another academy's id reached the tenant-bound client from request input: report it like any
   // record outside the caller's academy (Phase 1 review follow-up; ADR-008 no existence leak).
   if (error instanceof TenantMismatchError) return withCode('NOT_FOUND');
+  // A retry took this request's idempotency key over (its lease ran out); this attempt's
+  // transaction was rolled back, and the retry's outcome is the one that counts (review M1).
+  if (isClaimLost(error)) return withCode('IDEMPOTENCY_KEY_IN_PROGRESS');
 
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === 'P2002') {
@@ -82,16 +115,11 @@ export function mapError(error: unknown): MappedError {
     return withCode('INTERNAL', undefined, true);
   }
 
-  if (error instanceof HttpException) {
-    const status = error.getStatus();
-    const code = HTTP_CODE[status];
-    if (code) return withCode(code);
-    return withCode('INTERNAL', undefined, status >= 500);
-  }
+  if (error instanceof HttpException) return fromStatus(error.getStatus());
 
   // Express body-parser errors (malformed JSON, payload too large) carry a `status`.
   const status = (error as { status?: unknown } | null)?.status;
-  if (typeof status === 'number' && HTTP_CODE[status]) return withCode(HTTP_CODE[status]);
+  if (typeof status === 'number') return fromStatus(status);
 
   return withCode('INTERNAL', undefined, true);
 }

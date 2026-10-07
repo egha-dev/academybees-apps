@@ -26,6 +26,24 @@ class EchoDto extends createZodDto(EchoSchema) {}
 const PaymentSchema = z.object({ amountMinor: z.number().int().positive() });
 class PaymentDto extends createZodDto(PaymentSchema) {}
 
+const LedgerSchema = z.object({
+  ref: z.string().min(1).max(60),
+  amountMinor: z.number().int().positive(),
+  /** Wait this long before writing (lease and fencing tests). */
+  delayMs: z.number().int().min(0).max(10_000).optional(),
+  /** Write in an interactive transaction instead of a single statement. */
+  inTransaction: z.boolean().optional(),
+  /** Fail after the write committed (partial outcome). */
+  failAfterCommit: z.boolean().optional(),
+});
+class LedgerDto extends createZodDto(LedgerSchema) {}
+/** What a ledger response may contain; anything else the handler returns is dropped (M2). */
+export const LedgerResponseSchema = z.object({
+  id: z.uuid(),
+  ref: z.string(),
+  amountMinor: z.number(),
+});
+
 /** Executions of the idempotent test handler (the idempotency tests read it). */
 export const executions = { count: 0 };
 
@@ -83,6 +101,34 @@ class TestSupportController {
     executions.count++;
     await new Promise((r) => setTimeout(r, 150));
     return { id: newId(), amountMinor: body.amountMinor, execution: executions.count };
+  }
+
+  /**
+   * An idempotent handler with a real, committed side effect: an outbox row (the convention for
+   * every side effect). Lets the tests count how often the effect was committed (review M1–M3).
+   */
+  @Post('ledger')
+  @Idempotent()
+  @Audited('test.ledger_recorded', 'Ledger')
+  @ZodResponse(LedgerResponseSchema)
+  async ledger(@Body() body: LedgerDto) {
+    executions.count++;
+    if (body.delayMs) await new Promise((r) => setTimeout(r, body.delayMs));
+    const id = newId();
+    const data = {
+      id,
+      type: 'test.ledger',
+      payload: { ref: body.ref, amountMinor: body.amountMinor },
+    };
+    if (body.inTransaction) await this.db.$transaction((tx) => tx.outboxEvent.create({ data }));
+    else await this.db.outboxEvent.create({ data });
+    if (body.failAfterCommit) throw new DomainError('INVALID_STATE_TRANSITION');
+    return {
+      id,
+      ref: body.ref,
+      amountMinor: body.amountMinor,
+      internalNote: 'never stored or sent',
+    };
   }
 
   @Post('failing-payments')

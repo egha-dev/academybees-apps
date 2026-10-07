@@ -2,6 +2,7 @@ import {
   type CallHandler,
   type ExecutionContext,
   Injectable,
+  Logger,
   type NestInterceptor,
   SetMetadata,
 } from '@nestjs/common';
@@ -23,6 +24,11 @@ export const IDEMPOTENCY_HEADER = 'idempotency-key';
  * Require an `Idempotency-Key` header (financial writes, provisioning, bulk operations —
  * ARCHITECTURE §9.1). Same key + same request → the stored response is replayed; same key +
  * different request → 409 IDEMPOTENCY_KEY_REUSED; concurrent duplicates → only one executes.
+ *
+ * While the handler runs, the claim is in the request context: every transaction it commits marks
+ * the claim as committed in the same transaction (tenant-bound client). A crashed attempt's claim
+ * can be taken over after its lease (`LEASE_MS`) only if it never committed; a slow attempt whose
+ * claim was taken over can't commit (review M1). Side effects must be database writes (outbox).
  */
 export const Idempotent = () => SetMetadata(IDEMPOTENT, true);
 
@@ -33,6 +39,8 @@ export class IdempotencyInterceptor implements NestInterceptor {
     private readonly store: IdempotencyStore,
     private readonly cls: ClsService<RequestContext>,
   ) {}
+
+  private readonly logger = new Logger('Idempotency');
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     if (!this.reflector.get<boolean>(IDEMPOTENT, context.getHandler())) return next.handle();
@@ -64,22 +72,38 @@ export class IdempotencyInterceptor implements NestInterceptor {
             res.status(claim.status);
             res.setHeader('Idempotent-Replayed', 'true');
             return of(claim.body);
-          case 'claimed':
+          case 'claimed': {
+            if (claim.takenOver)
+              this.logger.warn({ route, attempt: claim.ref.attempt }, 'Stale claim taken over');
+            this.cls.set('idempotencyClaim', claim.ref);
+            const done = () => this.cls.set('idempotencyClaim', undefined);
             return next.handle().pipe(
-              // Release only when the handler failed. If storing the response fails after the
-              // handler committed, the key must stay IN_PROGRESS: releasing it would let a retry
-              // execute the side effect (e.g. a payment) a second time.
-              catchError((error: unknown) =>
-                from(this.store.release(claim.id)).pipe(mergeMap(() => throwError(() => error))),
-              ),
-              mergeMap((body: unknown) =>
-                from(
+              // Release only when the handler failed and nothing was committed. If storing the
+              // response fails after the handler committed, the key stays IN_PROGRESS: releasing
+              // it would let a retry execute the side effect (e.g. a payment) a second time.
+              catchError((error: unknown) => {
+                done();
+                return from(this.store.release(claim.ref)).pipe(
+                  mergeMap((released) => {
+                    if (!released)
+                      this.logger.warn(
+                        { route },
+                        'Failed after a commit: key kept (outcome unknown)',
+                      );
+                    return throwError(() => error);
+                  }),
+                );
+              }),
+              mergeMap((body: unknown) => {
+                done();
+                return from(
                   this.store
-                    .complete(claim.id, this.statusFor(context, req, res), body)
+                    .complete(claim.ref, this.statusFor(context, req, res), body)
                     .then(() => body),
-                ),
-              ),
+                );
+              }),
             );
+          }
         }
       }),
     );
