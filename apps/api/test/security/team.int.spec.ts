@@ -223,6 +223,37 @@ describe('team, invitations and password recovery', () => {
   });
 
   describe('accept', () => {
+    it("a disabled inviter's invitations stop working (review L4)", async () => {
+      const inviter = await addMemberFixture(urls.migrator, a.id, {
+        email: `inviter-${a.slug}@example.test`,
+        roleKey: 'admin-inviter',
+        grants: templateGrants('admin'),
+      });
+      const email = `invitee-of-inviter-${a.slug}@example.test`;
+      const sent = await (
+        await as(a, inviter.email)
+      ).post('/api/v1/team/invitations', { email, roles: ['teacher'] });
+      expect(sent.status).toBe(201);
+      const token = (await lastEmail(email, 'invite'))!.token!;
+      expect((await previewInvite(host(a), token)).status).toBe(200);
+
+      const disabled = await (
+        await as(a, a.user.email)
+      ).patch(`/api/v1/team/members/${inviter.membershipId}`, { version: 1, status: 'DISABLED' });
+      expect(disabled.status).toBe(200);
+      expect((await previewInvite(host(a), token)).status).toBe(404);
+      const accepted = await acceptInvite(host(a), token, {
+        name: 'Late Joiner',
+        password: NEW_PASSWORD,
+      });
+      expect(accepted.status).toBe(404);
+      const { rows } = await su.query(
+        `SELECT revoked_at FROM invitation WHERE email = $1 ORDER BY created_at DESC LIMIT 1`,
+        [email],
+      );
+      expect(rows[0].revoked_at).not.toBeNull();
+    });
+
     it("academy A's invite link is not found on academy B's host", async () => {
       for (const res of [
         await previewInvite(host(b), a.invitationToken),

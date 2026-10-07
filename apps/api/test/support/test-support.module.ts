@@ -35,6 +35,8 @@ const LedgerSchema = z.object({
   inTransaction: z.boolean().optional(),
   /** Fail after the write committed (partial outcome). */
   failAfterCommit: z.boolean().optional(),
+  /** Read from the database, then fail before writing anything (review M2). */
+  readThenFail: z.boolean().optional(),
 });
 class LedgerDto extends createZodDto(LedgerSchema) {}
 /** What a ledger response may contain; anything else the handler returns is dropped (M2). */
@@ -114,6 +116,11 @@ class TestSupportController {
   async ledger(@Body() body: LedgerDto) {
     executions.count++;
     if (body.delayMs) await new Promise((r) => setTimeout(r, body.delayMs));
+    if (body.readThenFail) {
+      await this.db.outboxEvent.findFirst({ where: { type: 'test.ledger' }, select: { id: true } });
+      await this.db.$transaction((tx) => tx.outboxEvent.count({ where: { type: 'test.ledger' } }));
+      throw new DomainError('INVALID_STATE_TRANSITION');
+    }
     const id = newId();
     const data = {
       id,

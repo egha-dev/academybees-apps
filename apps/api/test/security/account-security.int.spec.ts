@@ -179,6 +179,8 @@ describe('account security', () => {
       );
       expect(rows[0].failed_count).toBe(0);
 
+      // Another device signed in with the password alone (review L8).
+      const elsewhere = await signIn(a, accountant.email);
       const start = await post(a, s, '/auth/mfa/setup/start', { password: FIXTURE_PASSWORD });
       expect(start.status).toBe(200);
       expect(start.body.qrSvgDataUrl).toMatch(/^data:image\/svg\+xml/);
@@ -188,6 +190,9 @@ describe('account security', () => {
       const ok = await post(a, s, '/auth/mfa/setup/confirm', { code: totpCode(secret) });
       expect(ok.status).toBe(200);
       expect(ok.body.recoveryCodes).toHaveLength(10);
+      // Turning 2FA on signs out the other device; this one stays.
+      expect((await get(a, elsewhere, '/auth/me')).status).toBe(401);
+      expect((await get(a, s, '/auth/me')).status).toBe(200);
 
       const overview = await get(a, s, '/auth/security');
       expect(overview.body.mfa).toMatchObject({

@@ -242,8 +242,9 @@ const isCommit = (query: SqlQuery) => query.sql.trim().toUpperCase() === 'COMMIT
 
 /**
  * Runs inside every transaction of a request that holds an idempotency claim, right before its
- * COMMIT (review M1). It records that the request committed something — atomically with the side
- * effect — so a stale claim is taken over only when nothing was ever committed. It also fences:
+ * COMMIT (review M1). If the transaction wrote anything, it records that the request committed
+ * something — atomically with the side effect — so a stale claim is taken over only when nothing
+ * was ever committed. It also fences:
  * when a retry has taken the claim over, the UPDATE matches no row and this transaction is rolled
  * back, so two attempts can never both commit. The record's own tenant is set first because the
  * statement must see the row whatever context the transaction ran in (the GUC is transaction-local
@@ -253,6 +254,11 @@ async function markClaimCommitted(tx: Transaction, claim: IdempotencyClaimRef): 
   if (claim.tenantId !== undefined && !UUID.test(claim.tenantId))
     throw new Error('Claim tenant is not a UUID');
   if (!UUID.test(claim.id)) throw new Error('Claim id is not a UUID');
+  // Only a transaction that wrote something commits a side effect. PostgreSQL assigns a
+  // transaction id on the first write, so a read-only transaction (a lookup before a validation
+  // error) leaves the claim releasable: the client can retry with the same key (review M2).
+  const wrote = await tx.queryRaw(STATEMENT('SELECT txid_current_if_assigned() IS NOT NULL'));
+  if (wrote.rows[0]?.[0] !== true) return;
   await tx.executeRaw({
     sql: `SELECT set_config('app.tenant_id', $1, true)`,
     args: [claim.tenantId ?? ''],
