@@ -96,16 +96,16 @@ test('a new console admin sets a password, enrols TOTP and signs in again with a
     .allInnerTexts();
   expect(codes).toHaveLength(10);
   await page.getByRole('button', { name: "I've saved them — continue" }).click();
-  await expect(page).toHaveURL(consoleUrl('/'));
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Signed in to the console');
-  await expect(page.getByText('(Super Admin)')).toBeVisible();
+  // The console opens on the academies list (C-02).
+  await expect(page).toHaveURL(consoleUrl('/academies'));
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Academies');
 
   // The console session is not an academy session.
   await page.goto(hostUrl(testInfo, 'demo-a', '/today'));
   await expect(page).toHaveURL(/\/login/);
 
   await page.goto(consoleUrl('/'));
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.getByRole('button', { name: 'Sign out' }).first().click();
   await expect(page).toHaveURL(consoleUrl('/login'));
 
   // Every sign-in needs the second factor; a recovery code works (the TOTP step was just used).
@@ -114,8 +114,8 @@ test('a new console admin sets a password, enrols TOTP and signs in again with a
   await page.getByRole('button', { name: 'Use a recovery code instead' }).click();
   await page.getByLabel('Recovery code').fill(codes[0]!);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(consoleUrl('/'));
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Signed in to the console');
+  await expect(page).toHaveURL(consoleUrl('/academies'));
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Academies');
 });
 
 test('academy staff cannot sign in to the console', async ({ page }, testInfo) => {

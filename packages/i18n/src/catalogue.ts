@@ -1,5 +1,6 @@
 import auth from '../messages/en-IN/auth.json' with { type: 'json' };
 import common from '../messages/en-IN/common.json' with { type: 'json' };
+import consoleMessages from '../messages/en-IN/console.json' with { type: 'json' };
 import designSystem from '../messages/en-IN/design-system.json' with { type: 'json' };
 import email from '../messages/en-IN/email.json' with { type: 'json' };
 import errors from '../messages/en-IN/errors.json' with { type: 'json' };
@@ -24,6 +25,7 @@ export const EN_IN_MESSAGES = {
   marketing,
   offline,
   designSystem,
+  console: consoleMessages,
 };
 
 export type Messages = typeof EN_IN_MESSAGES;
@@ -41,4 +43,5 @@ export const NAMESPACE_FILES: Record<Namespace, string> = {
   tenant: 'tenant.json',
   offline: 'offline.json',
   designSystem: 'design-system.json',
+  console: 'console.json',
 };

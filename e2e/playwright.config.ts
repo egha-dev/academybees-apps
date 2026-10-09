@@ -35,6 +35,10 @@ const API_ENV = {
   LOG_LEVEL: 'warn',
   DATABASE_URL:
     process.env.E2E_DATABASE_URL ?? 'postgresql://ab_app:ab_app_local@localhost:5432/academybee',
+  // The provisioning console (C-02) uses the platform client under src/platform/**.
+  PLATFORM_DATABASE_URL:
+    process.env.E2E_PLATFORM_DATABASE_URL ??
+    'postgresql://ab_platform:ab_platform_local@localhost:5432/academybee',
   REDIS_URL: process.env.E2E_REDIS_URL ?? 'redis://localhost:6379',
   TRUSTED_PROXY_SECRET: 'local-proxy-secret',
   ANALYTICS_HASH_SALT: 'e2e-analytics-salt',
@@ -51,6 +55,9 @@ const WEB_ENV = {
   API_ORIGIN: 'http://localhost:4000',
   TRUSTED_PROXY_SECRET: 'local-proxy-secret',
   PLATFORM_ROOT_DOMAIN: 'localhost',
+  // Console changes (suspend, address change) must show at once; the API's own host cache is
+  // invalidated by every change (C-96).
+  TENANT_CONTEXT_CACHE: 'off',
   // Every E2E browser comes from 127.0.0.1; specs send their own address in this header so the
   // per-IP sign-in limits apply per test, as they would per person (support/client-ip.ts).
   TRUSTED_CLIENT_IP_HEADER: E2E_CLIENT_IP_HEADER,
@@ -63,9 +70,7 @@ const WORKER_ENV = {
   // `info` so the start-up line Playwright waits for is printed.
   LOG_LEVEL: 'info',
   DATABASE_URL: API_ENV.DATABASE_URL,
-  PLATFORM_DATABASE_URL:
-    process.env.E2E_PLATFORM_DATABASE_URL ??
-    'postgresql://ab_platform:ab_platform_local@localhost:5432/academybee',
+  PLATFORM_DATABASE_URL: API_ENV.PLATFORM_DATABASE_URL,
   REDIS_URL: API_ENV.REDIS_URL,
   OUTBOX_POLL_INTERVAL_MS: '250',
   ANALYTICS_HASH_SALT: 'e2e-analytics-salt',
