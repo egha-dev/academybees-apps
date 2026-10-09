@@ -221,6 +221,20 @@ describe('academy settings and branding', () => {
     expect(branding.body.uploadsAvailable).toBe(false);
   });
 
+  it('binary bodies are only read on the upload routes (review L3)', async () => {
+    const t = await createTenantFixture(urls.migrator);
+    const s = await signIn(t);
+    const res = await http()
+      .patch('/api/v1/academy/branding')
+      .set('Host', s.host)
+      .set('Cookie', s.cookie)
+      .set('x-csrf-token', s.csrf)
+      .set('Content-Type', 'image/png')
+      .send(png());
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_FAILED');
+  });
+
   it('the brand colour must carry readable text (C-49); saving is versioned', async () => {
     const t = await createTenantFixture(urls.migrator);
     const s = await signIn(t);

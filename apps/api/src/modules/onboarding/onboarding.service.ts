@@ -219,33 +219,41 @@ export class OnboardingService {
       }
     }
 
-    await this.db.$transaction(
-      async (tx) => {
-        const row = await tx.tenantOnboarding.findFirst({ select: { version: true, steps: true } });
-        if (!row || row.version !== req.version) throw new DomainError('VERSION_CONFLICT');
-        const steps = parseSteps(row.steps);
-        const previous = steps[step]?.refIds ?? {};
-        const refIds =
-          req.action === 'save'
-            ? await this.apply(tx, step, data, previous, { ...ctx, steps })
-            : previous;
-        steps[step] = {
-          status: req.action === 'save' ? 'done' : 'skipped',
-          completedAt: new Date().toISOString(),
-          ...(Object.keys(refIds).length ? { refIds } : {}),
-        };
-        const updated = await tx.tenantOnboarding.updateMany({
-          where: { version: req.version },
-          data: { steps, currentStep: nextOnboardingStep(step), version: { increment: 1 } },
-        });
-        if (updated.count !== 1) throw new DomainError('VERSION_CONFLICT');
-        await this.analytics.track(tx, 'onboarding.step_completed', {
-          step,
-          skipped: req.action === 'skip',
-        });
-      },
-      { timeout: 30_000 },
-    );
+    try {
+      await this.db.$transaction(
+        async (tx) => {
+          const row = await tx.tenantOnboarding.findFirst({
+            select: { version: true, steps: true },
+          });
+          if (!row || row.version !== req.version) throw new DomainError('VERSION_CONFLICT');
+          const steps = parseSteps(row.steps);
+          const previous = steps[step]?.refIds ?? {};
+          const refIds =
+            req.action === 'save'
+              ? await this.apply(tx, step, data, previous, { ...ctx, steps })
+              : previous;
+          steps[step] = {
+            status: req.action === 'save' ? 'done' : 'skipped',
+            completedAt: new Date().toISOString(),
+            ...(Object.keys(refIds).length ? { refIds } : {}),
+          };
+          const updated = await tx.tenantOnboarding.updateMany({
+            where: { version: req.version },
+            data: { steps, currentStep: nextOnboardingStep(step), version: { increment: 1 } },
+          });
+          if (updated.count !== 1) throw new DomainError('VERSION_CONFLICT');
+          await this.analytics.track(tx, 'onboarding.step_completed', {
+            step,
+            skipped: req.action === 'skip',
+          });
+        },
+        { timeout: 30_000 },
+      );
+    } catch (error) {
+      // The step didn't save: an invitation sent for it must not stay usable (review M2).
+      if (ctx.invitationId) await this.invitations.revoke(ctx.invitationId).catch(() => undefined);
+      throw error;
+    }
     return this.state();
   }
 
@@ -315,6 +323,13 @@ export class OnboardingService {
       where: { id: ctx.tenantId },
       data: { name: d.name, timezone: d.timezone, currency: d.currency },
     });
+    // Classes already generated follow a new timezone (review M1).
+    if (d.timezone !== ctx.timeZone)
+      await this.scheduling.regenerateForTimezone(tx, {
+        tenantId: ctx.tenantId,
+        timeZone: d.timezone,
+        today: localDate(new Date(), d.timezone),
+      });
     await tx.tenantBranding.updateMany({
       data: { displayName: d.name, version: { increment: 1 } },
     });

@@ -3,8 +3,8 @@ import { type TenantContextResponse, TenantContextResponseSchema } from '@academ
 /**
  * Academy context for a host, from the API's public `GET /api/v1/tenant/context` (ARCHITECTURE
  * §10.2). Used by `proxy.ts`, so no server-only imports. Cached per host in memory: active
- * academies 60 s, unknown hosts 30 s (same as the API), and every other answer (setting up,
- * suspended, archived, redirect) 10 s, so console changes show within about a minute (C-96). An unreachable API throws — the caller shows the
+ * academies 60 s, unknown hosts 30 s (same as the API), suspended/archived/redirect answers 10 s, so
+ * console changes show within about a minute (C-96); setting-up academies are never cached. An unreachable API throws — the caller shows the
  * "temporarily unavailable" page, never "unknown academy".
  */
 export type ContextLookup = { found: true; context: TenantContextResponse } | { found: false };
@@ -36,8 +36,16 @@ export async function lookupTenantContext(
   config: ContextFetchConfig,
 ): Promise<ContextLookup> {
   const ttl = config.cacheMs ?? { hit: HIT_MS, miss: MISS_MS, other: OTHER_MS };
+  // A setting-up academy is never cached: it changes state once (onboarding opens it) and the owner
+  // is redirected straight away, so a stale answer would bounce them between setup pages (review H1).
   const ttlFor = (value: ContextLookup) =>
-    !value.found ? ttl.miss : value.context.status === 'ACTIVE' ? ttl.hit : (ttl.other ?? ttl.hit);
+    !value.found
+      ? ttl.miss
+      : value.context.status === 'ACTIVE'
+        ? ttl.hit
+        : value.context.status === 'SETUP'
+          ? 0
+          : (ttl.other ?? ttl.hit);
   const cached = cache.get(host);
   if (cached && Date.now() - cached.at < ttlFor(cached.value)) {
     // LRU: re-insert so a busy academy stays cached while junk hosts age out (review M3).

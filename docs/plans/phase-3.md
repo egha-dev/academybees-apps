@@ -348,6 +348,8 @@ The journey runs on desktop and on the Android and iPhone projects for the owner
 - **Flag.** `p3-onboarding` is removed: setting-up academies always serve sign-in and the guided setup (C-85), and owners always re-accept changed legal documents.
 - **Docs.** ARCHITECTURE §5.3, §8.3, §9.3, §10.3 and §14 have as-built notes; README and CLAUDE.md §8 list the new local addresses and logins.
 
+*Review fixes (P3-4, C-98):* H1 (setup redirect loop), M1 (timezone moves classes), M2 (failed step revokes its invitation), M3 (test), L1, L3, L5, L7, L8 fixed in `p3/review-fixes`; L2, L4, L6, L9 and error boundaries assigned to later phases.
+
 ## Dependencies and gaps
 
 - **Uses Phases 0–2:**

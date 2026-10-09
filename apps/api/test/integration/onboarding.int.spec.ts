@@ -285,6 +285,73 @@ describe('onboarding', () => {
     expect(after.rows[0].revoked_at).not.toBeNull();
   });
 
+  it('an invited teacher who accepts becomes that teacher (review M3)', async () => {
+    const { t, s } = await setupAcademy();
+    const email = `kavya-${t.slug}@example.test`;
+    await save(s, 'teacher', { mode: 'invite', name: 'Kavya Teacher', email });
+    const token = 'teacher-invite-token-'.padEnd(43, 'y');
+    const { createHash } = await import('node:crypto');
+    await su.query(`UPDATE invitation SET token_hash=$1 WHERE tenant_id=$2 AND email=$3`, [
+      createHash('sha256').update(token).digest('hex'),
+      t.id,
+      email,
+    ]);
+    const accepted = await http()
+      .post('/api/v1/invitations/accept')
+      .set('Host', s.host)
+      .send({ token, name: 'Kavya Teacher', password: FIXTURE_PASSWORD });
+    expect(accepted.status).toBe(200);
+    const { rows } = await su.query(
+      `SELECT t.membership_id IS NOT NULL AS linked, u.email FROM teacher t
+         LEFT JOIN membership m ON m.id = t.membership_id LEFT JOIN "user" u ON u.id = m.user_id
+        WHERE t.tenant_id=$1 AND t.full_name='Kavya Teacher'`,
+      [t.id],
+    );
+    expect(rows).toEqual([{ linked: true, email }]);
+  });
+
+  it('a step that fails after inviting a teacher revokes the invitation (review M2)', async () => {
+    const { t, s } = await setupAcademy();
+    const email = `stale-${t.slug}@example.test`;
+    // The invitation is sent first (its own transaction); then the step's transaction fails.
+    await su.query(
+      `ALTER TABLE teacher ADD CONSTRAINT test_fail_teacher CHECK (full_name <> 'Stale Invite')`,
+    );
+    try {
+      const version = ((await state(s)).body as { version: number }).version;
+      const res = await put(s, 'teacher', {
+        action: 'save',
+        version,
+        data: { mode: 'invite', name: 'Stale Invite', email },
+      });
+      expect(res.status).toBe(500);
+    } finally {
+      await su.query(`ALTER TABLE teacher DROP CONSTRAINT test_fail_teacher`);
+    }
+    const inv = await su.query(
+      `SELECT revoked_at FROM invitation WHERE tenant_id=$1 AND email=$2`,
+      [t.id, email],
+    );
+    expect(inv.rows).toHaveLength(1);
+    expect(inv.rows[0].revoked_at).not.toBeNull();
+  });
+
+  it('changing the timezone moves the generated classes (review M1)', async () => {
+    const { t, s } = await setupAcademy();
+    await save(s, 'profile', { name: 'Zone Academy', timezone: 'Asia/Kolkata' });
+    await save(s, 'course', { name: 'C' });
+    await save(s, 'batch', { name: 'B' });
+    await save(s, 'timetable', { slots: [{ weekday: 1, start: '17:00', end: '18:00' }] });
+    await save(s, 'profile', { name: 'Zone Academy', timezone: 'Asia/Dubai' });
+    const { rows } = await su.query(
+      `SELECT DISTINCT to_char(starts_at AT TIME ZONE 'UTC', 'HH24:MI') AS utc FROM class_session s
+         JOIN batch b ON b.id = s.batch_id WHERE s.tenant_id=$1 AND b.name='B'`,
+      [t.id],
+    );
+    // 17:00 in Dubai (UTC+4) is 13:00 UTC; nothing is left at Kolkata's 11:30.
+    expect(rows).toEqual([{ utc: '13:00' }]);
+  });
+
   it("the plan's student limit applies (C-89)", async () => {
     const { t, s } = await setupAcademy();
     // The fixture has one student; allow two in total.

@@ -154,7 +154,8 @@ export class PeopleService {
         data: {
           fullName: s.parentName ?? s.fullName,
           phone: s.parentPhone ?? null,
-          whatsappCapable: Boolean(s.parentPhone),
+          // Not assumed: WhatsApp needs the parent's opt-in (G-07, review L7).
+          whatsappCapable: false,
           version: { increment: 1 },
         },
       });
@@ -195,7 +196,8 @@ export class PeopleService {
         // A phone without a name: the parent shows as the student's guardian until edited.
         fullName: s.parentName ?? s.fullName,
         phone: s.parentPhone ?? null,
-        whatsappCapable: Boolean(s.parentPhone),
+        // Not assumed: WhatsApp needs the parent's opt-in (G-07, review L7).
+        whatsappCapable: false,
         createdById,
       },
     });

@@ -279,7 +279,8 @@ export function BrandingEditor({
               component="input"
               id="brand-colour-picker"
               type="color"
-              value={valid && colour ? colour : '#1F6F5C'}
+              // The colour input needs a value; without a brand colour it starts on the ink tile colour.
+              value={valid && colour ? colour : palettes.light.inverse}
               disabled={!canManage}
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setColour(e.target.value.toUpperCase())

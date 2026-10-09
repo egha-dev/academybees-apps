@@ -242,6 +242,14 @@ describe('console academy management', () => {
     expect(audit.rows).toEqual([{ from: t.slug, to: next }]);
   });
 
+  it('an archived academy cannot take a new address (review L1)', async () => {
+    const t = await createTenantFixture(urls.migrator);
+    await post(`/tenants/${t.id}/archive`, { reason: 'Closed' });
+    const res = await post(`/tenants/${t.id}/domains`, { slug: `after-${newId().slice(-8)}` });
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('INVALID_STATE_TRANSITION');
+  });
+
   it('resending the owner invite replaces the pending one; refused once the owner joined', async () => {
     const created = await post('/tenants', {
       name: 'Resend Academy',

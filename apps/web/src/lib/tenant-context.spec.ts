@@ -99,6 +99,35 @@ describe('lookupTenantContext cache (review M3)', () => {
     }
   });
 
+  it('never caches a setting-up academy, so opening it shows at once (review H1)', async () => {
+    let status = 'SETUP';
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        Response.json({
+          status,
+          slug: 'gurushethra',
+          displayName: 'Gurushethra',
+          timezone: 'Asia/Kolkata',
+          locale: 'en-IN',
+          branding: {
+            primaryColor: null,
+            secondaryColor: null,
+            hasLogo: false,
+            logoUrl: null,
+            faviconUrl: null,
+          },
+        }),
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const config = { apiOrigin: 'http://api', proxySecret: 's' };
+    expect((await lookupTenantContext('gurushethra.localhost', config)).found).toBe(true);
+    status = 'ACTIVE';
+    const next = await lookupTenantContext('gurushethra.localhost', config);
+    expect(next.found && next.context.status).toBe('ACTIVE');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('reports an unreachable API instead of "unknown"', async () => {
     vi.stubGlobal(
       'fetch',

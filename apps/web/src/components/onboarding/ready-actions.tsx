@@ -30,7 +30,7 @@ export function ReadyActions({
       body: {},
     });
     // A full page load: the academy is ACTIVE now and its pages change (shell, navigation).
-    if (res.ok) return window.location.assign('/');
+    if (res.ok) return window.location.assign('/today');
     setBusy(false);
     key.current = crypto.randomUUID();
     setError(
