@@ -91,12 +91,21 @@ export function AcademyProfileForm({
     setErrors({});
     setBusy(true);
     setError(undefined);
-    const res = await api('/academy/settings', {
+    const res = await api<AcademySettings>('/academy/settings', {
       method: 'PATCH',
       body: { ...parsed.data, version: value.version },
     });
     setBusy(false);
     if (!res.ok) return setError(academyErrorMessage(res.error, labels.errors));
+    // Show what was saved (e.g. a typed mobile number in its stored +91 form).
+    setForm({
+      name: res.data.name,
+      phone: res.data.phone ?? '',
+      email: res.data.email ?? '',
+      address: res.data.address ?? '',
+      timezone: res.data.timezone,
+      currency: res.data.currency,
+    });
     toast(labels.saved);
     router.refresh();
   }

@@ -83,7 +83,13 @@ describe('tenant resolution', () => {
       displayName: 'Resolution Academy',
       timezone: 'Asia/Kolkata',
       locale: 'en-IN',
-      branding: { primaryColor: '#1F6F5C', secondaryColor: null, hasLogo: false },
+      branding: {
+        primaryColor: '#1F6F5C',
+        secondaryColor: null,
+        hasLogo: false,
+        logoUrl: null,
+        faviconUrl: null,
+      },
     });
     expect(JSON.stringify(res.body)).not.toContain(active.id);
   });

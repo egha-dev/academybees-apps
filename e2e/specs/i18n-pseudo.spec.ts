@@ -28,9 +28,16 @@ const DATA_VALUES = [
 const DATA_PATTERNS = [
   /\b\d{1,2} [A-Z][a-z]{2,8} \d{4}\b/g, // 6 Oct 2026
   /\b\d{1,2}:\d{2}\s?[ap]m\b/gi, // 5:30 pm
+  /\b(?:Africa|America|Asia|Atlantic|Australia|Europe|Indian|Pacific|Etc)\/[A-Za-z_ /-]+/g, // Asia/Kolkata (IANA ids)
+  /\b(?:INR|AED|SGD|GBP|USD|EUR|AUD|CAD)\b/g, // ISO currency codes
 ];
-/** Signed-in Phase 2 pages, opened as the seeded owner (signed in through the API). */
-const SIGNED_IN_PATHS = ['/settings/security', '/settings/team'];
+/** Signed-in pages (Phases 2–3), opened as the seeded owner (signed in through the API). */
+const SIGNED_IN_PATHS = [
+  '/settings/security',
+  '/settings/team',
+  '/settings/academy',
+  '/settings/branding',
+];
 const DEV_PASSWORD = 'AcademyBees#2026';
 const VIEWPORTS = [
   { name: 'phone', width: 390, height: 844 },
