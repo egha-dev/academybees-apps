@@ -1,7 +1,7 @@
 import { Box, Container, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import { getTranslations } from 'next-intl/server';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { AcademyIdentity } from '@/components/academy-identity';
 import { BeeMark } from '@/components/bee-mark';
@@ -15,12 +15,14 @@ import { ThemeToggle } from '@/components/theme-toggle';
 export async function AuthFrame({
   academy,
   primaryColor,
+  logoUrl,
   title,
   body,
   children,
 }: {
   academy: string;
   primaryColor: string | null;
+  logoUrl?: string | null | undefined;
   title: string;
   body?: string | undefined;
   children?: ReactNode;
@@ -37,7 +39,7 @@ export async function AuthFrame({
           direction="row"
           sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
         >
-          <AcademyIdentity name={academy} primaryColor={primaryColor} />
+          <AcademyIdentity name={academy} primaryColor={primaryColor} logoUrl={logoUrl} />
           <ThemeToggle compact />
         </Stack>
         <Stack component="main" spacing={5} sx={{ inlineSize: '100%', maxInlineSize: 440 }}>

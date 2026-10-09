@@ -7,8 +7,8 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from '@nestjs/common';
-import { type Queue } from 'bullmq';
-import { type Redis } from 'ioredis';
+import type { Queue } from 'bullmq';
+import type { Redis } from 'ioredis';
 
 import { WORKER_CONFIG, type WorkerConfig } from '../config/config.js';
 import { reportError } from '../observability/error-reporting.js';

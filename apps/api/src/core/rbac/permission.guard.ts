@@ -4,7 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { ClsService } from 'nestjs-cls';
 
 import { IS_PUBLIC } from '../auth/public.decorator.js';
-import { type RequestContext } from '../context/request-context.js';
+import type { RequestContext } from '../context/request-context.js';
 import { DomainError } from '../errors/domain-error.js';
 import { HOST_POLICY, type HostPolicy } from '../tenant/host-policy.js';
 import { REQUIRED_CAPABILITY, SIGNED_IN_ONLY } from './can.decorator.js';

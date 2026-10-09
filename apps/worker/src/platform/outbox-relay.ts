@@ -5,8 +5,8 @@ import {
   type JobEnvelope,
   JobActorSchema,
 } from '@academybee/contracts';
-import { type PrismaClient } from '@academybee/database';
-import { type Queue } from 'bullmq';
+import type { PrismaClient } from '@academybee/database';
+import type { Queue } from 'bullmq';
 
 type OutboxRow = {
   id: string;

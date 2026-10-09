@@ -12,7 +12,7 @@ import { ClsService } from 'nestjs-cls';
 
 import { AnalyticsService } from '../../core/analytics/analytics.service.js';
 import { AuditService } from '../../core/audit/audit.service.js';
-import { type RequestContext } from '../../core/context/request-context.js';
+import type { RequestContext } from '../../core/context/request-context.js';
 import { DomainError } from '../../core/errors/domain-error.js';
 import { TenantResolver } from '../../core/tenant/tenant-resolver.service.js';
 import { PlatformDb } from '../platform-db.js';

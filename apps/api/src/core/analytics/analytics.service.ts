@@ -7,11 +7,11 @@ import {
   assertNoPii,
   parseAnalyticsEvent,
 } from '@academybee/contracts';
-import { type TransactionClient } from '@academybee/database';
+import type { TransactionClient } from '@academybee/database';
 import { Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
-import { type RequestContext } from '../context/request-context.js';
+import type { RequestContext } from '../context/request-context.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 
 /**

@@ -2,7 +2,7 @@
 
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { CheckCircleIcon, ErrorIcon, InfoIcon, WarningIcon } from '../icons.js';
 import { radius, type StatusTone } from '../tokens.js';

@@ -1,11 +1,11 @@
 import { classifyHost, normalizeRootDomain, tenantHost } from '@academybee/tenant';
-import { type TenantBoundClient } from '@academybee/database';
+import type { TenantBoundClient } from '@academybee/database';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { type Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 
 import { API_CONFIG } from '../config/config.module.js';
 import { type ApiConfig, platformRootDomain } from '../config/config.schema.js';
-import { type ResolvedHost } from '../context/request-context.js';
+import type { ResolvedHost } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { REDIS } from '../redis/redis.module.js';
 import { TenantContext } from './tenant-context.service.js';

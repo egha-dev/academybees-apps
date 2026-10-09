@@ -9,10 +9,10 @@ import {
   type TenantStatus,
   type TenantTransition,
 } from '@academybee/contracts';
-import { type Prisma } from '@academybee/database';
+import type { Prisma } from '@academybee/database';
 import { normalizeRootDomain, tenantHost } from '@academybee/tenant';
 import { Inject, Injectable } from '@nestjs/common';
-import { type Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 import { z } from 'zod';
 
 import { AnalyticsService } from '../../core/analytics/analytics.service.js';

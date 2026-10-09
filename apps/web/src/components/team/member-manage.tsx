@@ -14,7 +14,7 @@ import { api } from '@/lib/api';
 import { useOnline } from '@/lib/use-online';
 
 import { REFRESH_AFTER, teamErrorMessage, type TeamErrorLabels } from './errors';
-import { type RoleOption } from './role-options';
+import type { RoleOption } from './role-options';
 
 export type MemberManageLabels = {
   open: string;

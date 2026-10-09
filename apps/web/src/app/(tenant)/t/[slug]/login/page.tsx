@@ -5,7 +5,13 @@ import { getTranslations } from 'next-intl/server';
 import { AuthFrame } from '@/components/auth/auth-frame';
 import { loginLabels, mfaLabels } from '@/components/auth/labels.server';
 import { TwoStepSignIn } from '@/components/auth/two-step-sign-in';
-import { academyColor, academyName, hostContext, hubOrigin } from '@/lib/host-context.server';
+import {
+  academyColor,
+  academyLogo,
+  academyName,
+  hostContext,
+  hubOrigin,
+} from '@/lib/host-context.server';
 import { safeNext } from '@/lib/safe-next';
 import { getSession, homeFor } from '@/lib/session.server';
 
@@ -36,6 +42,7 @@ export default async function LoginPage({
     <AuthFrame
       academy={academy}
       primaryColor={academyColor(context)}
+      logoUrl={academyLogo(context)}
       title={t('title', { academy })}
       body={t('body')}
     >

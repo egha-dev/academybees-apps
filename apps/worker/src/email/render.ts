@@ -1,8 +1,8 @@
-import { type EmailRequestSchema } from '@academybee/contracts';
+import type { EmailRequestSchema } from '@academybee/contracts';
 import { createServerTranslator } from '@academybee/i18n';
-import { type z } from 'zod';
+import type { z } from 'zod';
 
-import { type OutgoingEmail } from './email.port.js';
+import type { OutgoingEmail } from './email.port.js';
 
 type Request = z.infer<typeof EmailRequestSchema>;
 

@@ -13,17 +13,17 @@ import {
   type LoginResponse,
   type RoleKey,
 } from '@academybee/contracts';
-import { type TenantBoundClient } from '@academybee/database';
+import type { TenantBoundClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
-import { type Response } from 'express';
-import { type Redis } from 'ioredis';
+import type { Response } from 'express';
+import type { Redis } from 'ioredis';
 import { ClsService } from 'nestjs-cls';
 import { z } from 'zod';
 
 import { AuditService } from '../audit/audit.service.js';
 import { API_CONFIG } from '../config/config.module.js';
-import { type ApiConfig } from '../config/config.schema.js';
-import { type RequestContext } from '../context/request-context.js';
+import type { ApiConfig } from '../config/config.schema.js';
+import type { RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { DomainError } from '../errors/domain-error.js';
 import { REDIS } from '../redis/redis.module.js';

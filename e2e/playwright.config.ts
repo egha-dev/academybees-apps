@@ -48,6 +48,12 @@ const API_ENV = {
   COOKIE_MODE: 'insecure-dev',
   FLAGS_CACHE_MS: '0',
   PLATFORM_ROOT_DOMAIN: 'localhost',
+  // Logo uploads (C-97) go to the local SeaweedFS from infra/docker-compose.yml.
+  MEDIA_S3_ENDPOINT: process.env.E2E_MEDIA_S3_ENDPOINT ?? 'http://localhost:8333',
+  MEDIA_S3_ACCESS_KEY_ID: 'academybee',
+  MEDIA_S3_SECRET_ACCESS_KEY: 'academybee-local-secret',
+  MEDIA_PUBLIC_BUCKET: 'academybee-local',
+  MEDIA_PUBLIC_BASE_URL: `${process.env.E2E_MEDIA_S3_ENDPOINT ?? 'http://localhost:8333'}/academybee-local`,
 };
 
 const WEB_ENV = {

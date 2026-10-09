@@ -1,11 +1,6 @@
-import {
-  type Capability,
-  type RoleKey,
-  type Scope,
-  type TenantStatus,
-} from '@academybee/contracts';
-import { type IdempotencyClaimRef } from '@academybee/database';
-import { type ClsStore } from 'nestjs-cls';
+import type { Capability, RoleKey, Scope, TenantStatus } from '@academybee/contracts';
+import type { IdempotencyClaimRef } from '@academybee/database';
+import type { ClsStore } from 'nestjs-cls';
 
 /** Who performed a request or job (filled by auth in Phase 2). */
 export type Actor =

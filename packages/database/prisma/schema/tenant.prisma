@@ -82,6 +82,7 @@ model Tenant {
   sequences     TenantSequence[]
   courses       Course[]
   onboarding    TenantOnboarding?
+  media         MediaFile[]
 
   @@map("tenant")
 }
@@ -112,7 +113,7 @@ model TenantBranding {
   tenantId       String   @id @map("tenant_id") @db.Uuid
   tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   displayName    String   @map("display_name") @db.VarChar(120)
-  /// Object-storage keys (Phase 3 uploads); null → generated monogram.
+  /// Storage keys of the current READY MediaFile (C-97); null → generated monogram.
   logoKey        String?  @map("logo_key") @db.VarChar(300)
   faviconKey     String?  @map("favicon_key") @db.VarChar(300)
   /// `#RRGGBB`.

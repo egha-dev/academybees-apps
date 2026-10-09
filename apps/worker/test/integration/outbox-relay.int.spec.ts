@@ -2,8 +2,8 @@ import { newId, QUEUES } from '@academybee/contracts';
 import { createAppClient, type PrismaClient, withTransaction } from '@academybee/database';
 import { createPlatformClient } from '@academybee/database/platform';
 import { buildOutboxEvent } from '@academybee/testing';
-import { type Queue } from 'bullmq';
-import { type Redis } from 'ioredis';
+import type { Queue } from 'bullmq';
+import type { Redis } from 'ioredis';
 import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from 'vitest';
 
 import { OutboxRelay } from '../../src/platform/outbox-relay.js';

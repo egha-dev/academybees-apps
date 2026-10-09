@@ -1,5 +1,5 @@
 import { newId } from '@academybee/contracts';
-import { type INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import pg from 'pg';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, inject, it, vi } from 'vitest';

@@ -1,6 +1,6 @@
 import { hashToken } from '@academybee/auth';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { type Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 
 import { DomainError } from '../errors/domain-error.js';
 import { REDIS } from '../redis/redis.module.js';

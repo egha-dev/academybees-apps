@@ -13,7 +13,7 @@ import {
 } from '@academybee/contracts';
 import { bindUser, type TenantBoundClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
-import { type Response } from 'express';
+import type { Response } from 'express';
 import { ClsService } from 'nestjs-cls';
 
 import { AnalyticsService } from '../../core/analytics/analytics.service.js';
@@ -23,7 +23,7 @@ import { mfaRecommendedFor, MfaPolicyService } from '../../core/auth/mfa-policy.
 import { MfaService } from '../../core/auth/mfa.service.js';
 import { assertPasswordPolicy, identityParts } from '../../core/auth/password.service.js';
 import { SessionService } from '../../core/auth/session.service.js';
-import { type RequestContext } from '../../core/context/request-context.js';
+import type { RequestContext } from '../../core/context/request-context.js';
 import { TENANT_DB } from '../../core/database/database.module.js';
 import { EmailService } from '../../core/email/email.service.js';
 import { DomainError } from '../../core/errors/domain-error.js';

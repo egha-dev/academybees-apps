@@ -14,14 +14,14 @@ import {
   TERMINOLOGY_TEMPLATES,
   toAcademyType,
 } from '@academybee/contracts';
-import { type TenantBoundClient, type TransactionClient } from '@academybee/database';
+import type { TenantBoundClient, TransactionClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { z } from 'zod';
 
 import { AnalyticsService } from '../../core/analytics/analytics.service.js';
 import { AuditService } from '../../core/audit/audit.service.js';
-import { type RequestContext } from '../../core/context/request-context.js';
+import type { RequestContext } from '../../core/context/request-context.js';
 import { TENANT_DB } from '../../core/database/database.module.js';
 import { EntitlementService } from '../../core/entitlements/entitlement.service.js';
 import { DomainError } from '../../core/errors/domain-error.js';

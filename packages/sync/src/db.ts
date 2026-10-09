@@ -1,4 +1,4 @@
-import { type ErrorCode, type SyncLocalStatus, type SyncOp } from '@academybee/contracts';
+import type { ErrorCode, SyncLocalStatus, SyncOp } from '@academybee/contracts';
 import { Dexie, type EntityTable } from 'dexie';
 
 /** A sync op plus its local-only queue state (ARCHITECTURE §11.3). */

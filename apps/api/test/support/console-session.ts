@@ -7,7 +7,7 @@ import {
 } from '@academybee/auth';
 import { newId } from '@academybee/contracts';
 import { FIXTURE_PASSWORD } from '@academybee/testing';
-import { type INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import pg from 'pg';
 import request from 'supertest';
 import { expect } from 'vitest';

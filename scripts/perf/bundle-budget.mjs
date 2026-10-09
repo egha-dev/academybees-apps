@@ -29,6 +29,8 @@ const BUDGETS = [
   { route: '/more', page: `${ACADEMY}/(app)/more`, kb: 200 },
   // Every staff member's own Security page, teachers on phones included (G-11, G-24).
   { route: '/settings/security', page: `${ACADEMY}/(app)/settings/security`, kb: 200 },
+  { route: '/settings/academy', page: `${ACADEMY}/(app)/settings/academy`, kb: 200 },
+  { route: '/settings/branding', page: `${ACADEMY}/(app)/settings/branding`, kb: 200 },
 ];
 
 const distArg = process.argv.indexOf('--dist');

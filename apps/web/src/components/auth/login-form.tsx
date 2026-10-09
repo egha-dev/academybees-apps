@@ -1,6 +1,6 @@
 'use client';
 
-import { type LoginOutcome } from '@academybee/contracts';
+import type { LoginOutcome } from '@academybee/contracts';
 import { Button, TextLink } from '@academybee/ui/components/actions';
 import { InlineAlert } from '@academybee/ui/components/alert';
 import { PasswordInput, TextInput } from '@academybee/ui/components/fields';

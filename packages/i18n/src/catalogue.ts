@@ -1,3 +1,4 @@
+import academy from '../messages/en-IN/academy.json' with { type: 'json' };
 import auth from '../messages/en-IN/auth.json' with { type: 'json' };
 import common from '../messages/en-IN/common.json' with { type: 'json' };
 import consoleMessages from '../messages/en-IN/console.json' with { type: 'json' };
@@ -26,6 +27,7 @@ export const EN_IN_MESSAGES = {
   offline,
   designSystem,
   console: consoleMessages,
+  academy,
 };
 
 export type Messages = typeof EN_IN_MESSAGES;
@@ -44,4 +46,5 @@ export const NAMESPACE_FILES: Record<Namespace, string> = {
   offline: 'offline.json',
   designSystem: 'design-system.json',
   console: 'console.json',
+  academy: 'academy.json',
 };

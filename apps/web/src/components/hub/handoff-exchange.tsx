@@ -1,6 +1,6 @@
 'use client';
 
-import { type LoginResponse } from '@academybee/contracts';
+import type { LoginResponse } from '@academybee/contracts';
 import { Button } from '@academybee/ui/components/actions';
 import { InlineAlert } from '@academybee/ui/components/alert';
 import { Stack } from '@academybee/ui/components/layout';

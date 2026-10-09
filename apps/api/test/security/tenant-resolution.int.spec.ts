@@ -1,6 +1,6 @@
 import { newId } from '@academybee/contracts';
 import { createTenantFixture, type TenantFixture } from '@academybee/testing';
-import { type INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import pg from 'pg';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
@@ -83,7 +83,13 @@ describe('tenant resolution', () => {
       displayName: 'Resolution Academy',
       timezone: 'Asia/Kolkata',
       locale: 'en-IN',
-      branding: { primaryColor: '#1F6F5C', secondaryColor: null, hasLogo: false },
+      branding: {
+        primaryColor: '#1F6F5C',
+        secondaryColor: null,
+        hasLogo: false,
+        logoUrl: null,
+        faviconUrl: null,
+      },
     });
     expect(JSON.stringify(res.body)).not.toContain(active.id);
   });

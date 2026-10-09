@@ -1,4 +1,4 @@
-import { type FeatureKey, type LimitKey } from '@academybee/contracts';
+import type { FeatureKey, LimitKey } from '@academybee/contracts';
 import { SetMetadata } from '@nestjs/common';
 
 export const REQUIRED_FEATURE = 'academybee:feature';

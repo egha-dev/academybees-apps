@@ -1,6 +1,6 @@
 import { createTranslator } from 'use-intl/core';
 
-import { type Namespace } from './catalogue.js';
+import type { Namespace } from './catalogue.js';
 import { type AppLocale, DEFAULT_LOCALE, DEFAULT_TIME_ZONE, intlLocale } from './locale.js';
 import { getMessages } from './messages.js';
 

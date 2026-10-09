@@ -1,6 +1,6 @@
-import { type Theme } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
 
-import { type ThemePalette } from '../tokens.js';
+import type { ThemePalette } from '../tokens.js';
 
 /**
  * Semantic palette as CSS variables (`var(--ab-palette-ab-…)`), so values switch with the

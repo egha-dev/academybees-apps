@@ -1,4 +1,4 @@
-import { type SyncOp, type SyncPushResponse } from '@academybee/contracts';
+import type { SyncOp, SyncPushResponse } from '@academybee/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ConnectivityMonitor } from './connectivity.js';

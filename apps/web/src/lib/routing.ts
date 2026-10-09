@@ -1,6 +1,6 @@
-import { type HostClass } from '@academybee/tenant';
+import type { HostClass } from '@academybee/tenant';
 
-import { type ContextLookup } from './tenant-context';
+import type { ContextLookup } from './tenant-context';
 
 /**
  * Host → experience routing table (ARCHITECTURE §10.2, UX v1.1 §7). Pure, so every case is

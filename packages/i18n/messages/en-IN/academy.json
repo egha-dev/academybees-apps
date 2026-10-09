@@ -1,0 +1,99 @@
+{
+  "tabs": {
+    "label": "Settings sections",
+    "academy": "Academy",
+    "branding": "Branding & address"
+  },
+  "settings": {
+    "metaTitle": "Academy",
+    "title": "Academy",
+    "body": "Your academy's name and contact details, as staff and parents see them.",
+    "readOnly": "You can see these settings. Only the owner can change them.",
+    "fields": {
+      "name": "Academy name",
+      "phone": "Phone",
+      "phoneHint": "A 10-digit Indian mobile number, or a number with its country code.",
+      "email": "Email",
+      "address": "Address",
+      "timezone": "Timezone",
+      "timezoneHint": "Class times and “today” follow this timezone.",
+      "currency": "Currency"
+    },
+    "save": "Save changes",
+    "saved": "Academy details saved",
+    "permission": {
+      "title": "Academy settings aren't available",
+      "body": "Ask the owner of {academy} if you need to see them."
+    }
+  },
+  "branding": {
+    "metaTitle": "Branding & address",
+    "title": "Branding & address",
+    "body": "Your logo, colour and AcademyBee address.",
+    "readOnly": "You can see your academy's branding. Only the owner can change it.",
+    "unavailable": "Uploads aren't available right now. Your academy's initials are shown until they are.",
+    "logo": {
+      "title": "Logo",
+      "hint": "PNG, JPEG or WebP, up to 2 MB. A square or wide logo on a plain background works best.",
+      "none": "No logo yet: your academy's initials are shown instead.",
+      "upload": "Upload logo",
+      "replace": "Replace logo",
+      "remove": "Remove logo",
+      "uploaded": "Logo updated",
+      "removed": "Logo removed",
+      "preview": "Current logo"
+    },
+    "favicon": {
+      "title": "Browser icon",
+      "hint": "A small square image shown in browser tabs. PNG, JPEG or WebP, up to 512 KB.",
+      "none": "No browser icon yet: your academy's initials are used.",
+      "upload": "Upload icon",
+      "replace": "Replace icon",
+      "remove": "Remove icon",
+      "uploaded": "Browser icon updated",
+      "removed": "Browser icon removed",
+      "preview": "Current browser icon"
+    },
+    "colour": {
+      "title": "Brand colour",
+      "hint": "Used behind your academy's initials and on its app icon. Text on it must stay readable.",
+      "picker": "Choose a colour",
+      "hex": "Colour code",
+      "save": "Save colour",
+      "saved": "Colour saved",
+      "reset": "Use the default",
+      "readable": "Readable: text on this colour meets the contrast standard.",
+      "unreadable": "Text isn't readable on this colour. Choose a darker or lighter shade.",
+      "invalid": "Enter a colour code like #1F6F5C."
+    },
+    "preview": {
+      "title": "Preview",
+      "light": "Light theme",
+      "dark": "Dark theme",
+      "note": "Status colours and buttons keep AcademyBee's colours, so they stay clear in both themes."
+    },
+    "address": {
+      "title": "AcademyBee address",
+      "hint": "Staff and parents sign in here. To change it, contact AcademyBee support.",
+      "copy": "Copy address",
+      "copied": "Address copied"
+    },
+    "permission": {
+      "title": "Branding isn't available",
+      "body": "Ask the owner of {academy} if you need to see it."
+    }
+  },
+  "errors": {
+    "too_large": "That file is too large.",
+    "unsupported_type": "That isn't a PNG, JPEG or WebP image.",
+    "too_large_dimensions": "That image is too big. Use one at most 4096 pixels wide or tall.",
+    "uploads_unavailable": "Uploads aren't available right now. Try again later.",
+    "low_contrast": "Text isn't readable on this colour. Choose a darker or lighter shade.",
+    "versionConflict": "Someone else changed these settings just now. Reload the page to see their changes.",
+    "invalidPhone": "Enter a 10-digit Indian mobile number, or a number with its country code.",
+    "invalidEmail": "Enter a valid email address, like name@example.com.",
+    "required": "Required.",
+    "offline": "You're offline. Changes need a connection.",
+    "generic": "That didn't save. Try again; if it keeps failing, reload the page."
+  }
+}

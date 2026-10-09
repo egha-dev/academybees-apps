@@ -1,4 +1,4 @@
-import { type TenantStatus } from '@academybee/contracts';
+import type { TenantStatus } from '@academybee/contracts';
 import { SetMetadata } from '@nestjs/common';
 
 /**

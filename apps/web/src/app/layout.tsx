@@ -8,7 +8,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 
 import { Providers } from '@/components/providers';
-import { type ShellLabels } from '@/components/shell-labels';
+import type { ShellLabels } from '@/components/shell-labels';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('common');

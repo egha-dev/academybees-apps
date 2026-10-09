@@ -8,7 +8,7 @@ import {
 } from '@academybee/contracts';
 
 import { backoffDelay } from './backoff.js';
-import { type AcademyBeeDB, type SyncLogEntry, type SyncQueueItem } from './db.js';
+import type { AcademyBeeDB, SyncLogEntry, SyncQueueItem } from './db.js';
 
 export type EnqueueInput = {
   type: SyncOpType;

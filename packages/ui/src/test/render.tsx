@@ -1,6 +1,6 @@
 import { render, type RenderResult } from '@testing-library/react';
 import axe from 'axe-core';
-import { type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { expect } from 'vitest';
 
 import { UiProvider } from '../provider.js';

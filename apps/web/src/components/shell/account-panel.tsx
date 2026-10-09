@@ -5,7 +5,7 @@ import { getTranslations } from 'next-intl/server';
 import { signOutLabels } from '@/components/auth/labels.server';
 import { SignOutButton } from '@/components/auth/sign-out-button';
 
-import { type Experience } from './navigation.server';
+import type { Experience } from './navigation.server';
 
 /**
  * Who is signed in, a switch between Manage and Teacher for users with both, and sign-out

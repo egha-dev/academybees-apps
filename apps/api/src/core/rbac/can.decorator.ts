@@ -1,4 +1,4 @@
-import { type Capability } from '@academybee/contracts';
+import type { Capability } from '@academybee/contracts';
 import { SetMetadata } from '@nestjs/common';
 
 export const REQUIRED_CAPABILITY = 'academybee:capability';

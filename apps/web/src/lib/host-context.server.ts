@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { type TenantContextResponse } from '@academybee/contracts';
+import type { TenantContextResponse } from '@academybee/contracts';
 import { headers } from 'next/headers';
 
 import { APEX_HEADER, CONTEXT_HEADER, decodeContextHeader, PATH_HEADER } from './tenant-context';
@@ -20,6 +20,11 @@ export async function hostContext(): Promise<{
 /** The academy's display name when the context carries one. */
 export function academyName(context: TenantContextResponse | undefined): string | undefined {
   return context && 'displayName' in context ? context.displayName : undefined;
+}
+
+/** The academy's uploaded logo (C-97) when the context carries branding; null → monogram. */
+export function academyLogo(context: TenantContextResponse | undefined): string | null {
+  return context && 'branding' in context ? context.branding.logoUrl : null;
 }
 
 /** The academy's brand colour when the context carries branding (ACTIVE / SETUP). */

@@ -16,7 +16,7 @@ import { api } from '@/lib/api';
 import { useOnline } from '@/lib/use-online';
 
 import { teamErrorMessage, type TeamErrorLabels } from './errors';
-import { type RoleOption } from './role-options';
+import type { RoleOption } from './role-options';
 
 export type InviteLabels = {
   open: string;

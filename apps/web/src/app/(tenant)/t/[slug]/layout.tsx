@@ -11,10 +11,13 @@ import { academyName, hostContext } from '@/lib/host-context.server';
 export async function generateMetadata(): Promise<Metadata> {
   const { context } = await hostContext();
   const name = academyName(context);
+  // An uploaded favicon (C-97) shows in browser tabs; the installed-app icons stay generated from
+  // the initials, because they need fixed sizes we don't produce (no image resizing on R2).
+  const favicon = context && 'branding' in context ? context.branding.faviconUrl : null;
   return {
     ...(name ? { title: { default: name, template: `%s · ${name}` }, applicationName: name } : {}),
     manifest: '/manifest.webmanifest',
-    icons: { icon: '/academy-icon/icon-192.png', apple: '/academy-icon/apple-180.png' },
+    icons: { icon: favicon ?? '/academy-icon/icon-192.png', apple: '/academy-icon/apple-180.png' },
     ...(name ? { appleWebApp: { capable: true, title: name, statusBarStyle: 'default' } } : {}),
   };
 }

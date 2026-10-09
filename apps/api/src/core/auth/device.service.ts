@@ -1,13 +1,13 @@
 import { cookieSpecs, generateToken, hashToken } from '@academybee/auth';
 import { type EmailRequest, newId } from '@academybee/contracts';
-import { type TenantBoundClient, type TransactionClient } from '@academybee/database';
+import type { TenantBoundClient, TransactionClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
-import { type Response } from 'express';
+import type { Response } from 'express';
 import { ClsService } from 'nestjs-cls';
 
 import { API_CONFIG } from '../config/config.module.js';
-import { type ApiConfig } from '../config/config.schema.js';
-import { type RequestContext } from '../context/request-context.js';
+import type { ApiConfig } from '../config/config.schema.js';
+import type { RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { EmailService } from '../email/email.service.js';
 import { TenantContext } from '../tenant/tenant-context.service.js';

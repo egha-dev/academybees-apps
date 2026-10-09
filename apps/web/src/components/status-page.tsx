@@ -3,7 +3,7 @@ import { Box, Container, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import { CloudOffIcon, InfoIcon, LockIcon, WarningIcon } from '@academybee/ui/icons';
 import { getTranslations } from 'next-intl/server';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { AcademyIdentity } from './academy-identity';
 import { BeeMark } from './bee-mark';
@@ -27,6 +27,7 @@ const ICONS: Record<StatusTone, { icon: ReactNode; fg: string; bg: string }> = {
 export async function StatusPage({
   academyName,
   academyColor,
+  academyLogo,
   tone,
   title,
   body,
@@ -34,6 +35,7 @@ export async function StatusPage({
 }: {
   academyName?: string | undefined;
   academyColor?: string | null | undefined;
+  academyLogo?: string | null | undefined;
   tone: StatusTone;
   title: string;
   body: string;
@@ -47,7 +49,7 @@ export async function StatusPage({
       <Stack spacing={{ xs: 8, md: 10 }} sx={{ minBlockSize: '100%' }}>
         <header>
           {academyName ? (
-            <AcademyIdentity name={academyName} primaryColor={academyColor} />
+            <AcademyIdentity name={academyName} primaryColor={academyColor} logoUrl={academyLogo} />
           ) : (
             <Brand />
           )}

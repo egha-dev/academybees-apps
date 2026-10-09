@@ -1,6 +1,6 @@
 import { newId } from '@academybee/contracts';
 import { createTenantFixture, FIXTURE_PASSWORD, type TenantFixture } from '@academybee/testing';
-import { type INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import pg from 'pg';
 import request from 'supertest';

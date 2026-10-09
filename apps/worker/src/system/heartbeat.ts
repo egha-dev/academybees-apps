@@ -7,7 +7,7 @@ import {
   type OnApplicationShutdown,
 } from '@nestjs/common';
 import { type Job, type Queue, Worker } from 'bullmq';
-import { type Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 
 import { WORKER_CONFIG, type WorkerConfig } from '../config/config.js';
 import { reportError } from '../observability/error-reporting.js';

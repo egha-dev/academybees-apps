@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 
-import { type INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { testAuthEnv } from '@academybee/testing';
 import { inject } from 'vitest';

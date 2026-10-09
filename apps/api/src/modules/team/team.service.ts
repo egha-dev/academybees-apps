@@ -10,7 +10,7 @@ import {
   type TeamMember,
   type UpdateTeamMember,
 } from '@academybee/contracts';
-import { type TenantBoundClient } from '@academybee/database';
+import type { TenantBoundClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { z } from 'zod';
@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { AuditService } from '../../core/audit/audit.service.js';
 import { MembershipService } from '../../core/auth/membership.service.js';
 import { SessionService } from '../../core/auth/session.service.js';
-import { type MembershipInfo, type RequestContext } from '../../core/context/request-context.js';
+import type { MembershipInfo, RequestContext } from '../../core/context/request-context.js';
 import { TENANT_DB } from '../../core/database/database.module.js';
 import { DomainError } from '../../core/errors/domain-error.js';
 import { assertInScope, scopedWhere } from '../../core/rbac/scope.js';

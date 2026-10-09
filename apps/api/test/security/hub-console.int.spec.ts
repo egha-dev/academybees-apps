@@ -8,7 +8,7 @@ import {
   type TenantFixture,
 } from '@academybee/testing';
 import { ROLE_TEMPLATES } from '@academybee/contracts';
-import { type INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import pg from 'pg';
 import request from 'supertest';

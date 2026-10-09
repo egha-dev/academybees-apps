@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { StatusPage } from '@/components/status-page';
-import { academyColor, academyName, hostContext } from '@/lib/host-context.server';
+import { academyColor, academyLogo, academyName, hostContext } from '@/lib/host-context.server';
 import { getSession } from '@/lib/session.server';
 
 export const dynamic = 'force-dynamic';
@@ -36,6 +36,7 @@ export default async function SetupGate() {
     <StatusPage
       academyName={name}
       academyColor={academyColor(context)}
+      academyLogo={academyLogo(context)}
       tone="info"
       title={t('setup.title', { academy })}
       body={t('setup.body', { academy })}

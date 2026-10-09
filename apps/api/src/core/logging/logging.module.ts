@@ -4,8 +4,8 @@ import { ClsService } from 'nestjs-cls';
 import { LoggerModule } from 'nestjs-pino';
 
 import { API_CONFIG } from '../config/config.module.js';
-import { type ApiConfig } from '../config/config.schema.js';
-import { type RequestContext } from '../context/request-context.js';
+import type { ApiConfig } from '../config/config.schema.js';
+import type { RequestContext } from '../context/request-context.js';
 
 /**
  * Structured JSON logs (pino) with request IDs, redaction and PII masking (ADR-023). Secrets are

@@ -1,7 +1,7 @@
 // Client code reached only through lazy() from client components: no 'use client' boundary,
 // so the route manifest doesn't count it as eager JS (G-24).
 
-import { type MfaEnrolStartResponse, type RecoveryCodesResponse } from '@academybee/contracts';
+import type { MfaEnrolStartResponse, RecoveryCodesResponse } from '@academybee/contracts';
 import { InlineAlert } from '@academybee/ui/components/alert';
 import { Stack } from '@academybee/ui/components/layout';
 import { Sheet } from '@academybee/ui/components/overlays';

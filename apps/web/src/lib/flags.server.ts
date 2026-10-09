@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { type FeatureFlagKey } from '@academybee/contracts';
+import type { FeatureFlagKey } from '@academybee/contracts';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 

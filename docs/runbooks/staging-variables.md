@@ -92,6 +92,17 @@ CUSTOM_DOMAINS_ENABLED=false
 PAYMENT_PROVIDERS=manual
 ```
 
+**Media (Phase 3, C-97).** Logos and favicons go to the Cloudflare R2 bucket `academybees-media-staging`, which has the public domain `media.staging.academybees.com` and r2.dev turned off. That bucket holds **public branding only**; private media gets its own bucket without a public domain in Phase 4. Add these variables on `api` only. Seal the two keys (Railway → variable → ⋯ → Seal).
+
+```text
+MEDIA_S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+MEDIA_S3_REGION=auto
+MEDIA_S3_ACCESS_KEY_ID=<R2 token Access Key ID>
+MEDIA_S3_SECRET_ACCESS_KEY=<R2 token Secret Access Key>
+MEDIA_PUBLIC_BUCKET=academybees-media-staging
+MEDIA_PUBLIC_BASE_URL=https://media.staging.academybees.com
+```
+
 Then add the signing keys as a separate variable (not in the Raw Editor):
 
 1. **Variables** tab → **New Variable**.

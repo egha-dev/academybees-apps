@@ -1,9 +1,9 @@
 import 'server-only';
 
-import { type MeResponse } from '@academybee/contracts';
+import type { MeResponse } from '@academybee/contracts';
 import { getTranslations } from 'next-intl/server';
 
-import { type ShellNavGroup, type ShellNavItem } from './academy-shell';
+import type { ShellNavGroup, ShellNavItem } from './academy-shell';
 
 export type Experience = 'manage' | 'teach';
 
@@ -23,7 +23,8 @@ export function experienceFor(path: string, me: MeResponse): Experience {
 
 /**
  * Navigation for one experience (UX §8, §25): **only built modules**, and only those the user's
- * capabilities open (ADR-008). Phase 2: Today and Team (Manage), Home (Teacher), and Security
+ * capabilities open (ADR-008). Phase 2: Today and Team (Manage), Home (Teacher), and Security;
+ * Phase 3 adds the academy's settings (Academy, Branding & address)
  * (everyone's own account, G-11); "More" holds the rest on phones. Grows phase by phase — never
  * "coming soon" entries.
  */
@@ -57,9 +58,22 @@ export async function navigationFor(
   const today: ShellNavItem[] = roleHomes
     ? [{ key: 'today', label: t('today'), href: '/today', icon: 'today' }]
     : [];
-  const academy: ShellNavItem[] = can('team.read')
-    ? [{ key: 'team', label: t('team'), href: '/settings/team', icon: 'team' }]
-    : [];
+  const academy: ShellNavItem[] = [
+    ...(can('team.read')
+      ? [{ key: 'team', label: t('team'), href: '/settings/team', icon: 'team' } as const]
+      : []),
+    // One entry for the academy's settings; its pages switch with tabs (route budget, G-24).
+    ...(can('academy.settings.read')
+      ? [
+          {
+            key: 'academy',
+            label: t('academySettings'),
+            href: '/settings/academy',
+            icon: 'settings',
+          } as const,
+        ]
+      : []),
+  ];
   return {
     groups: [
       { key: 'home', label: t('groups.home'), items: today },

@@ -4,7 +4,7 @@ import {
   newId,
   SEQUENCE_KEYS,
 } from '@academybee/contracts';
-import { type TransactionClient } from '@academybee/database';
+import type { TransactionClient } from '@academybee/database';
 import { Injectable } from '@nestjs/common';
 
 import { DomainError } from '../../core/errors/domain-error.js';

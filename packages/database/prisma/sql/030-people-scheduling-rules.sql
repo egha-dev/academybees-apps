@@ -71,3 +71,13 @@ ALTER TABLE class_session DROP CONSTRAINT IF EXISTS class_session_origin;
 ALTER TABLE class_session ADD CONSTRAINT class_session_origin CHECK (
   origin = 'MANUAL' OR schedule_rule_id IS NOT NULL
 );
+
+-- Media metadata (C-97): history, never deleted by tenant code; the shape matches its purpose.
+REVOKE DELETE, TRUNCATE ON media_file FROM ab_app;
+ALTER TABLE media_file DROP CONSTRAINT IF EXISTS media_file_shape;
+ALTER TABLE media_file ADD CONSTRAINT media_file_shape CHECK (
+  size_bytes > 0
+  AND storage_key LIKE 't/' || tenant_id::text || '/%'
+  -- Branding is the only public purpose (C-97).
+  AND (visibility = 'PRIVATE' OR purpose LIKE 'branding.%')
+);

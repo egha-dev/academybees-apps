@@ -18,14 +18,14 @@ import {
   ResetPasswordSchema,
   ROLE_TEMPLATES,
 } from '@academybee/contracts';
-import { type TenantBoundClient } from '@academybee/database';
+import type { TenantBoundClient } from '@academybee/database';
 import { Body, Controller, Get, HttpCode, Inject, Post, Req, Res } from '@nestjs/common';
-import { type Request, type Response } from 'express';
+import type { Request, Response } from 'express';
 import { ClsService } from 'nestjs-cls';
 
 import { API_CONFIG } from '../config/config.module.js';
-import { type ApiConfig } from '../config/config.schema.js';
-import { type RequestContext } from '../context/request-context.js';
+import type { ApiConfig } from '../config/config.schema.js';
+import type { RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { DomainError } from '../errors/domain-error.js';
 import { SignedIn } from '../rbac/can.decorator.js';

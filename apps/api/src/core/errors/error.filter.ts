@@ -1,9 +1,9 @@
-import { type ErrorEnvelope } from '@academybee/contracts';
+import type { ErrorEnvelope } from '@academybee/contracts';
 import { type ArgumentsHost, Catch, type ExceptionFilter, Logger } from '@nestjs/common';
-import { type Response } from 'express';
+import type { Response } from 'express';
 import { ClsService } from 'nestjs-cls';
 
-import { type RequestContext } from '../context/request-context.js';
+import type { RequestContext } from '../context/request-context.js';
 import { reportError } from '../observability/error-reporting.js';
 import { DomainError } from './domain-error.js';
 import { mapError } from './map-error.js';

@@ -1,5 +1,5 @@
 import { type LimitKey, STAFF_ROLE_KEYS } from '@academybee/contracts';
-import { type TenantBoundClient } from '@academybee/database';
+import type { TenantBoundClient } from '@academybee/database';
 
 /** Something that can run tenant-scoped queries: the tenant-bound client or a transaction on it. */
 export type TenantDb = Pick<TenantBoundClient, 'membership' | 'branch' | 'student'>;

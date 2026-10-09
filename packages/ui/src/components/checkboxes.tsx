@@ -1,7 +1,7 @@
 'use client';
 
 import Box from '@mui/material/Box';
-import { type Theme } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
 import { type ChangeEvent, useId } from 'react';
 
 import { TOUCH_TARGET } from '../tokens.js';

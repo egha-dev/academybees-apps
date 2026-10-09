@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { PostHog } from 'posthog-node';
 
-import { type AnalyticsPort, type CapturedEvent } from './analytics.port.js';
+import type { AnalyticsPort, CapturedEvent } from './analytics.port.js';
 
 /** Default adapter: records nothing externally; logs at debug so events are visible in dev. */
 export class NoopAnalyticsAdapter implements AnalyticsPort {

@@ -4,6 +4,10 @@
       "name": "local-dev",
       "credentials": [{ "accessKey": "academybee", "secretKey": "academybee-local-secret" }],
       "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    },
+    {
+      "name": "anonymous",
+      "actions": ["Read:academybee-local"]
     }
   ]
 }

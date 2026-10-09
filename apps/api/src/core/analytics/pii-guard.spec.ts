@@ -1,9 +1,9 @@
-import { type TransactionClient } from '@academybee/database';
-import { type ClsService } from 'nestjs-cls';
+import type { TransactionClient } from '@academybee/database';
+import type { ClsService } from 'nestjs-cls';
 import { describe, expect, it, vi } from 'vitest';
 
-import { type RequestContext } from '../context/request-context.js';
-import { type OutboxService } from '../outbox/outbox.service.js';
+import type { RequestContext } from '../context/request-context.js';
+import type { OutboxService } from '../outbox/outbox.service.js';
 import { AnalyticsService } from './analytics.service.js';
 
 /** Phase 0 exit gate (G-09): an event with an email/phone property never reaches the outbox. */

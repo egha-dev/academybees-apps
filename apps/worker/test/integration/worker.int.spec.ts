@@ -1,14 +1,14 @@
 import { generateMasterKey } from '@academybee/auth';
 import 'reflect-metadata';
 
-import { type INestApplicationContext } from '@nestjs/common';
+import type { INestApplicationContext } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { createAppClient, type PrismaClient } from '@academybee/database';
 import { buildOutboxEvent } from '@academybee/testing';
 import { Redis } from 'ioredis';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 
-import { type NoopAnalyticsAdapter } from '../../src/analytics/adapters.js';
+import type { NoopAnalyticsAdapter } from '../../src/analytics/adapters.js';
 import { ANALYTICS_PORT } from '../../src/analytics/analytics.port.js';
 import { loadWorkerConfig } from '../../src/config/config.js';
 import { DomainEventsWorker } from '../../src/events/domain-events.worker.js';

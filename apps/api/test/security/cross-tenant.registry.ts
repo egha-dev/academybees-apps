@@ -193,6 +193,51 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     body: {},
     spoof: { skip: 'onboarding.int.spec.ts › another academy' },
   },
+  // Settings → Academy, Branding & Domain (UX v1.1 §6, C-97). Writes change versions or need
+  // storage, so their spoof cases live in the dedicated test.
+  {
+    method: 'GET',
+    path: '/api/v1/academy/settings',
+    session: true,
+    capability: 'academy.settings.read',
+  },
+  {
+    method: 'PATCH',
+    path: '/api/v1/academy/settings',
+    session: true,
+    capability: 'academy.settings.manage',
+    body: { version: 1, name: 'Cross Academy A' },
+    spoof: { skip: 'academy-branding.int.spec.ts › academies are isolated' },
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/academy/branding',
+    session: true,
+    capability: 'academy.settings.read',
+  },
+  {
+    method: 'PATCH',
+    path: '/api/v1/academy/branding',
+    session: true,
+    capability: 'academy.branding.manage',
+    body: { version: 1 },
+    spoof: { skip: 'academy-branding.int.spec.ts › academies are isolated' },
+  },
+  ...(['logo', 'favicon'] as const).flatMap((kind) => [
+    {
+      method: 'PUT' as const,
+      path: `/api/v1/academy/branding/${kind}`,
+      session: true,
+      capability: 'academy.branding.manage',
+      spoof: { skip: 'academy-branding.int.spec.ts › academies are isolated' },
+    },
+    {
+      method: 'DELETE' as const,
+      path: `/api/v1/academy/branding/${kind}`,
+      session: true,
+      capability: 'academy.branding.manage',
+    },
+  ]),
   // Test-only signed-in routes guarded by @Can + a scope policy (shape of domain endpoints).
   {
     method: 'GET',

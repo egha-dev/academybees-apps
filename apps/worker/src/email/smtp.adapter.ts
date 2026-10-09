@@ -1,6 +1,6 @@
 import { createTransport, type Transporter } from 'nodemailer';
 
-import { type EmailPort, type OutgoingEmail } from './email.port.js';
+import type { EmailPort, OutgoingEmail } from './email.port.js';
 
 /** SMTP delivery (Mailpit locally; the provider's SMTP endpoint on staging, A6). */
 export class SmtpEmailAdapter implements EmailPort {

@@ -1,13 +1,13 @@
 import { newId } from '@academybee/contracts';
 import { PersonNameSchema } from '@academybee/i18n';
-import { type TenantBoundClient } from '@academybee/database';
+import type { TenantBoundClient } from '@academybee/database';
 import { Body, Controller, Get, HttpCode, Inject, Module, Param, Post } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { z } from 'zod';
 
 import { Audited } from '../../src/core/audit/audited.js';
 import { TENANT_DB } from '../../src/core/database/database.module.js';
-import { type RequestContext } from '../../src/core/context/request-context.js';
+import type { RequestContext } from '../../src/core/context/request-context.js';
 import { DomainError } from '../../src/core/errors/domain-error.js';
 import { Idempotent } from '../../src/core/idempotency/idempotent.js';
 import { Public } from '../../src/core/auth/public.decorator.js';

@@ -1,4 +1,4 @@
-import { type Provider } from '@nestjs/common';
+import type { Provider } from '@nestjs/common';
 
 import { WORKER_CONFIG, type WorkerConfig } from '../config/config.js';
 import { NoopAnalyticsAdapter, PostHogAnalyticsAdapter } from './adapters.js';

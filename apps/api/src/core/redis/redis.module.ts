@@ -2,7 +2,7 @@ import { Global, Inject, Injectable, Module, type OnApplicationShutdown } from '
 import { Redis } from 'ioredis';
 
 import { API_CONFIG } from '../config/config.module.js';
-import { type ApiConfig } from '../config/config.schema.js';
+import type { ApiConfig } from '../config/config.schema.js';
 
 export const REDIS = Symbol('REDIS');
 

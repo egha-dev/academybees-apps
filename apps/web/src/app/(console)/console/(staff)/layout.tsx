@@ -2,7 +2,7 @@ import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { ExpiredRefresh } from '@/components/auth/expired-refresh';
 import { signOutLabels } from '@/components/auth/labels.server';

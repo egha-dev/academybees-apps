@@ -1,4 +1,4 @@
-import { type QueueName } from '@academybee/contracts';
+import type { QueueName } from '@academybee/contracts';
 import { type DefaultJobOptions, Queue, type WorkerOptions } from 'bullmq';
 import { Redis } from 'ioredis';
 

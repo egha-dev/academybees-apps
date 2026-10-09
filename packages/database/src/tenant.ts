@@ -15,7 +15,7 @@ import type {
   Transaction,
 } from '@prisma/driver-adapter-utils';
 
-import { type DatabaseClientOptions } from './clients.js';
+import type { DatabaseClientOptions } from './clients.js';
 import { Prisma, PrismaClient } from './generated/prisma/client.js';
 
 /** Returns the tenant of the current request/job, or undefined outside a tenant context. */

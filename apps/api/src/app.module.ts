@@ -6,12 +6,13 @@ import { AuditModule } from './core/audit/audit.module.js';
 import { AuditedInterceptor } from './core/audit/audited.js';
 import { AuthModule } from './core/auth/auth.module.js';
 import { ConfigModule } from './core/config/config.module.js';
-import { type ApiConfig } from './core/config/config.schema.js';
+import type { ApiConfig } from './core/config/config.schema.js';
 import { ContextModule } from './core/context/context.module.js';
 import { DatabaseModule } from './core/database/database.module.js';
 import { DocsModule } from './core/docs/docs.module.js';
 import { EmailModule } from './core/email/email.module.js';
 import { EntitlementsModule } from './core/entitlements/entitlements.module.js';
+import { MediaModule } from './core/media/media.module.js';
 import { FlagsModule } from './core/flags/flags.module.js';
 import { HealthModule } from './core/health/health.module.js';
 import { IdempotencyModule } from './core/idempotency/idempotency.module.js';
@@ -24,6 +25,7 @@ import { RedisModule } from './core/redis/redis.module.js';
 import { TenantModule } from './core/tenant/tenant.module.js';
 import { ZodResponseInterceptor } from './core/validation/zod-response.interceptor.js';
 import { ZodValidationPipe } from './core/validation/zod-validation.pipe.js';
+import { AcademyModule } from './modules/academy/academy.module.js';
 import { LegalModule } from './modules/legal/legal.module.js';
 import { OnboardingModule } from './modules/onboarding/onboarding.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
@@ -46,6 +48,7 @@ export class AppModule {
         RateLimitModule,
         AuthModule,
         EmailModule,
+        MediaModule,
         RbacModule,
         EntitlementsModule,
         AuditModule,
@@ -59,6 +62,7 @@ export class AppModule {
         SettingsModule,
         LegalModule,
         OnboardingModule,
+        AcademyModule,
         // Platform (console).
         PlatformModule,
         ...(config.APP_ENV === 'production' ? [] : [DocsModule]),

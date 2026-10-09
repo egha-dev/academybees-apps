@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import { type z } from 'zod';
+import type { z } from 'zod';
 
 /**
  * A class wrapper around a shared Zod schema so Nest's reflected parameter types carry it:

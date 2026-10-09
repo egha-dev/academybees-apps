@@ -1,12 +1,12 @@
 import { hashPassword, verifyPassword } from '@academybee/auth';
-import { type MfaEnrolStartResponse, type SecurityOverview } from '@academybee/contracts';
-import { type TenantBoundClient } from '@academybee/database';
+import type { MfaEnrolStartResponse, SecurityOverview } from '@academybee/contracts';
+import type { TenantBoundClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
 import { AnalyticsService } from '../analytics/analytics.service.js';
 import { AuditService } from '../audit/audit.service.js';
-import { type RequestContext } from '../context/request-context.js';
+import type { RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { EmailService } from '../email/email.service.js';
 import { DomainError } from '../errors/domain-error.js';

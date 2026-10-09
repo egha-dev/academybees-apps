@@ -1,11 +1,11 @@
 import { encryptSecret, type MasterKeyRing } from '@academybee/auth';
 import { EMAIL_OUTBOX_TYPE, type EmailRequest, EmailRequestSchema } from '@academybee/contracts';
-import { type TransactionClient } from '@academybee/database';
+import type { TransactionClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
 import { MASTER_KEYS } from '../auth/keys.js';
-import { type RequestContext } from '../context/request-context.js';
+import type { RequestContext } from '../context/request-context.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 
 export type EmailInput = Omit<EmailRequest, 'link'> & {

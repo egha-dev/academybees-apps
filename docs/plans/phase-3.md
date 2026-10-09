@@ -271,6 +271,16 @@ Each slice follows the same steps: branch `p3/<slice>` from the latest `main` �
 - PWA and favicon routes use the uploaded favicon or logo, falling back to the monogram.
 - E2E: upload a logo locally, and it appears on the login screen.
 
+*As built (S6):*
+- **Storage.** `MediaStorage` (core/media) speaks the S3 API through `aws4fetch` (SigV4, no vendor SDK) to SeaweedFS locally and R2 on staging. Only the public bucket is written; keys are checked against `t/<uuid>/<area>/<uuid>.<ext>`.
+- **Uploads.** They go through the API (`PUT /academy/branding/{logo,favicon}` with raw bytes), so there is no presigned PUT and no CORS (C-97). Size, real type from the magic bytes (`sniffImage`: PNG/JPEG/WebP, no SVG) and dimensions are checked before storing. Each upload gets a new key, and the old object is deleted after commit. Without storage the API answers 503 `uploads_unavailable`.
+- **Brand colour.** The rule `isReadableBrandColor` in contracts is the same as the UI's `brandIdentityColors` (ink or ivory text ≥ 4.5:1). It is checked on save and live in the editor.
+- **Navigation.** Settings is one entry ("Settings" → Academy), with server-rendered tabs to Branding & address. Two separate entries would have cost 0.5 KB of icons on every academy page.
+- **Shell diet (G-24).** `import { type X }` still loads its module under `verbatimModuleSyntax`. The session guard pulled the whole login form into every academy page. The new lint rule `@typescript-eslint/no-import-type-side-effects` and a repo-wide autofix freed **3.1 KB**: academy pages are now ≈196–197 KB of 200.
+- **Logos on screen.** The logo shows in the shell, the sign-in screens and the status pages, on a light tile in both themes. The uploaded favicon shows in browser tabs. Installed-app icons stay generated from the initials, because R2 doesn't resize images.
+- **Public-profile switch.** It is stored by the API (`PATCH /academy/branding`) but not shown, because it would be a "coming soon" control (CLAUDE §10). It appears with the public page in Phase 8.
+- **Local and CI.** SeaweedFS allows anonymous reads of the local bucket (like R2's public domain). The CI e2e job now starts the S3 store.
+
 ### S7 `p3/onboarding-ui` — onboarding screens (flag `p3-onboarding`)
 
 **3.19 Legal and Welcome:**

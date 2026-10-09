@@ -8,13 +8,13 @@ import {
 } from '@academybee/auth';
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { type Request } from 'express';
+import type { Request } from 'express';
 import { ClsService } from 'nestjs-cls';
 
 import { AuditService } from '../audit/audit.service.js';
 import { API_CONFIG } from '../config/config.module.js';
-import { type ApiConfig } from '../config/config.schema.js';
-import { type RequestContext } from '../context/request-context.js';
+import type { ApiConfig } from '../config/config.schema.js';
+import type { RequestContext } from '../context/request-context.js';
 import { DomainError } from '../errors/domain-error.js';
 import { HOST_POLICY, type HostPolicy } from '../tenant/host-policy.js';
 import { TenantContext } from '../tenant/tenant-context.service.js';

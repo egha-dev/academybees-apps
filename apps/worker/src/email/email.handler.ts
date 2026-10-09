@@ -1,7 +1,7 @@
 import { decryptSecret, loadMasterKeys, type MasterKeyRing } from '@academybee/auth';
 import { EMAIL_OUTBOX_TYPE, EmailRequestSchema } from '@academybee/contracts';
 import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common';
-import { type z } from 'zod';
+import type { z } from 'zod';
 
 import { WORKER_CONFIG, type WorkerConfig } from '../config/config.js';
 import { DomainEventsWorker } from '../events/domain-events.worker.js';

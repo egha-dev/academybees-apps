@@ -4,7 +4,7 @@ import { ErrorState } from '@academybee/ui/components/feedback';
 import { Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import { getTranslations } from 'next-intl/server';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { loadAcademy } from '@/components/console/academy.server';
 import { AcademyTabs } from '@/components/console/academy-tabs';

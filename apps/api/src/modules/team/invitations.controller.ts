@@ -5,7 +5,7 @@ import {
   InvitationTokenSchema,
 } from '@academybee/contracts';
 import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common';
-import { type Response } from 'express';
+import type { Response } from 'express';
 
 import { Public } from '../../core/auth/public.decorator.js';
 import { createZodDto, ZodResponse } from '../../core/validation/zod-dto.js';
