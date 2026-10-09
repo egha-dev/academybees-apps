@@ -238,6 +238,15 @@ Each slice follows the same steps: branch `p3/<slice>` from the latest `main` �
   - session generation is idempotent and timezone-correct;
   - the student cap is enforced.
 
+*As built (S5):*
+- **Modules.** `modules/people` and `modules/scheduling` hold the commands; `modules/onboarding` orchestrates them. Each module has an `index.ts` with its public interface (lint boundary). `InvitationsService` is reused for the invited teacher, and accepting that invitation links the Teacher profile.
+- **Teacher invite.** The invitation is created just before the step's transaction (it has its own); re-saving with the same email keeps it, and switching away revokes it.
+- **Students.** The `students` limit counter moved into core/entitlements (active and on-hold students). Quick-added parents are `GUARDIAN` links until edited in Phase 4. Students removed in onboarding are kept as `LEFT`.
+- **Timetable.** Rules store local minutes. Sessions are computed with `zonedInstant` in the academy's timezone, which is DST-safe and tested with Kolkata, New York and London. Slots that have already started today aren't created.
+- **Completing.** It calls the SQL function `ab_activate_current_tenant()` (`040-onboarding.sql`, SECURITY DEFINER, SETUP → ACTIVE for the current academy only), because tenant code still can't write `tenant.status`. If the console already activated the academy, it stays ACTIVE.
+- **Web.** `p3-onboarding` (off everywhere until S7/S8) makes SETUP hosts serve `/login`, `/invite`, `/forgot-password`, `/reset-password`, `/legal`, `/welcome` and `/onboarding/*`. Everything else goes to `/setup-gate`: the owner → `/welcome`, signed out → "I run this academy — sign in", other staff → "getting ready". The proxy asks for the flag only for SETUP academies.
+- **Not done.** The re-acceptance prompt for owners of ACTIVE academies when a legal version changes moves to S7 (web).
+
 ### S6 `p3/media-branding` — storage, Settings → Academy, Branding & Domain
 
 **3.16 Media storage** (C-93, ADR-021 subset):
