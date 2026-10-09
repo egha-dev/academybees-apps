@@ -30,6 +30,8 @@ test('the owner uploads a logo; it shows in the shell and on sign-in; then remov
 }, testInfo) => {
   await signInAt(page, testInfo, 'demo-a', 'owner@demo-a.test');
   await page.goto(hostUrl(testInfo, 'demo-a', '/settings/branding'));
+  // The editor loads lazily; interact once it is live.
+  await page.waitForLoadState('networkidle');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Branding & address');
   await expect(page.getByTestId('academy-address')).toHaveText(
     hostUrl(testInfo, 'demo-a').replace(/\/$/, ''),
@@ -70,6 +72,8 @@ test('the owner uploads a logo; it shows in the shell and on sign-in; then remov
 test('a brand colour that makes text unreadable cannot be saved', async ({ page }, testInfo) => {
   await signInAt(page, testInfo, 'demo-a', 'owner@demo-a.test');
   await page.goto(hostUrl(testInfo, 'demo-a', '/settings/branding'));
+  // The editor loads lazily; interact once it is live.
+  await page.waitForLoadState('networkidle');
   const hex = page.getByLabel('Colour code');
   await hex.fill('#7A7A7A');
   await expect(

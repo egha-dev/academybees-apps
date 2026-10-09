@@ -1,4 +1,8 @@
-import { formatAdmissionNo, DEFAULT_ADMISSION_PREFIX } from '@academybee/contracts';
+import {
+  DEFAULT_ADMISSION_PREFIX,
+  formatAdmissionNo,
+  LEGAL_DOCUMENTS,
+} from '@academybee/contracts';
 
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { DEV_TENANTS } from './tenants.js';
@@ -71,6 +75,29 @@ export async function seedDevPeople(db: PrismaClient): Promise<number> {
           completedAt: done ? new Date() : null,
         },
         update: {},
+      });
+    });
+  }
+
+  // Owners of open demo academies have accepted the current legal documents (ADR-034), so
+  // their pages don't stop at the legal step; the setting-up academy's owner hasn't (E2E walks it).
+  for (const email of ['owner@demo-a.test', 'owner@demo-b.test']) {
+    const user = userId(email);
+    const tenant = DEV_TENANTS.find(
+      (t) => t.slug === (email.includes('demo-a') ? 'demo-a' : 'demo-b'),
+    )!;
+    await db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT set_config('app.user_id', ${user}, true), set_config('app.tenant_id', ${tenant.id}, true)`;
+      await tx.legalAcceptance.createMany({
+        data: LEGAL_DOCUMENTS.map((d) => ({
+          // One stable id per document and owner (document id's first groups + its own last 4).
+          id: `${d.id.slice(0, 19)}${d.id.slice(-4)}-${user.slice(-12)}`,
+          userId: user,
+          tenantId: tenant.id,
+          documentId: d.id,
+          locale: 'en-IN',
+        })),
+        skipDuplicates: true,
       });
     });
   }

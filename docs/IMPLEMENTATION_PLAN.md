@@ -467,8 +467,8 @@ Phase 2 is **not** started.
 | S3 | `p3/provisioning-api` | 3.7 ProvisioningService, 3.8 console academy management API, 3.9 status enforcement (C-86, C-96) + tests | ✅ #59 |
 | S4 | `p3/console-ui` | 3.10 console shell + Academies list (removes `p2-console-home`), 3.11 Create Academy + Provisioning Success, 3.12 academy detail | ✅ #60 |
 | S5 | `p3/onboarding-api` | 3.13 onboarding state, 3.14 minimal create commands, 3.15 SETUP routing (flag `p3-onboarding`) | ✅ #61 |
-| S6 | `p3/media-branding` | 3.16 media storage (R2 / SeaweedFS, C-97), 3.17 Settings → Academy, Branding & Domain, 3.18 logo everywhere | 🟨 |
-| S7 | `p3/onboarding-ui` | 3.19 legal + Welcome, 3.20 Profile/Type/Course/Teacher, 3.21 Batch/Students/Timetable/Ready (flag `p3-onboarding`) | ⬜ |
+| S6 | `p3/media-branding` | 3.16 media storage (R2 / SeaweedFS, C-97), 3.17 Settings → Academy, Branding & Domain, 3.18 logo everywhere | ✅ #62 |
+| S7 | `p3/onboarding-ui` | 3.19 legal + Welcome, 3.20 Profile/Type/Course/Teacher, 3.21 Batch/Students/Timetable/Ready (flag `p3-onboarding`) | 🟨 |
 | S8 | `p3/journey-e2e` | 3.22 journey E2E, 3.23 flag removal + docs | ⬜ |
 
 **Scope**
