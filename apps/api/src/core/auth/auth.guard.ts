@@ -119,6 +119,7 @@ export class AuthGuard implements CanActivate {
       const staff = await this.sessions.platformStaff(claims.sub);
       if (staff?.status !== 'ACTIVE')
         return new DomainError('UNAUTHENTICATED', 'platform staff inactive');
+      this.cls.set('platformRole', staff.platformRole);
     }
     this.cls.set('userId', claims.sub);
     this.cls.set('session', { id: claims.sid, audience });

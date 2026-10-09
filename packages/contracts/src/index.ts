@@ -17,3 +17,5 @@ export * from './security.js';
 export * from './plans.js';
 export * from './legal.js';
 export * from './people.js';
+export * from './academy-types.js';
+export * from './console.js';

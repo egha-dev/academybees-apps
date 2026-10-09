@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { ACADEMY_TYPES } from '../academy-types.js';
+import { PLAN_KEYS } from '../plans.js';
 import { defineAnalyticsEvent } from './registry.js';
 
 /** Phase 0: one system event proves the pipeline end to end. Domain events arrive with their phases. */
@@ -70,6 +72,29 @@ export const ANALYTICS_EVENTS = {
     properties: z.strictObject({
       kinds: z.array(z.enum(['TERMS', 'PRIVACY', 'DPA', 'ACADEMY_PRIVACY_TEMPLATE'])),
     }),
+  }),
+  'academy.provisioned': defineAnalyticsEvent({
+    name: 'academy.provisioned',
+    version: 1,
+    description: 'Platform staff created an academy in the console (C-02).',
+    properties: z.strictObject({
+      academyType: z.enum(ACADEMY_TYPES),
+      planKey: z.enum(PLAN_KEYS),
+    }),
+  }),
+  'academy.status_changed': defineAnalyticsEvent({
+    name: 'academy.status_changed',
+    version: 1,
+    description: 'Platform staff suspended, reactivated, activated or archived an academy (C-87).',
+    properties: z.strictObject({
+      action: z.enum(['suspend', 'reactivate', 'activate', 'archive']),
+    }),
+  }),
+  'academy.subdomain_changed': defineAnalyticsEvent({
+    name: 'academy.subdomain_changed',
+    version: 1,
+    description: "Platform staff changed an academy's subdomain; the old one redirects.",
+    properties: z.strictObject({}),
   }),
 } as const;
 

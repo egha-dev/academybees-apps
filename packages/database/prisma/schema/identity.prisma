@@ -208,6 +208,8 @@ model Invitation {
   tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   email          String?   @db.VarChar(320)
   phone          String?   @db.VarChar(16)
+  /// The invitee's name as the sender typed it (owner invites from the console); prefills accept.
+  inviteeName    String?   @map("invitee_name") @db.VarChar(120)
   roleKeys       String[]  @map("role_keys") @db.VarChar(40)
   tokenHash      String    @unique @map("token_hash") @db.Char(64)
   invitedById    String?   @map("invited_by_id") @db.Uuid

@@ -31,6 +31,8 @@ export class AnalyticsService {
     tx: TransactionClient,
     name: N,
     properties: AnalyticsEventProperties<N>,
+    /** Platform actions about one academy (console) name it; default: the request's academy. */
+    options: { tenantId?: string | null } = {},
   ): Promise<void> {
     const parsed = parseAnalyticsEvent(name, properties) as Record<string, unknown>;
     assertNoPii(name, parsed);
@@ -39,7 +41,7 @@ export class AnalyticsService {
       name,
       version: ANALYTICS_EVENTS[name].version,
       properties: parsed,
-      tenantId: store?.tenantId ?? null,
+      tenantId: options.tenantId !== undefined ? options.tenantId : (store?.tenantId ?? null),
       userId: store?.actor?.type === 'USER' ? store.actor.id : null,
       occurredAt: new Date().toISOString(),
     };

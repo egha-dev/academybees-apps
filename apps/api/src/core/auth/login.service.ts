@@ -23,7 +23,7 @@ import { normalizeIdentifier } from './identifier.js';
 import { MembershipService } from './membership.service.js';
 import { mfaRecommendedFor, MfaPolicyService } from './mfa-policy.service.js';
 import { type MfaCode, MfaService, type PendingMfa } from './mfa.service.js';
-import { SessionService } from './session.service.js';
+import { isAcademyOpen, SessionService } from './session.service.js';
 
 /**
  * `POST /auth/login` on every host. Depends on the session, hub and MFA services; nothing
@@ -60,6 +60,9 @@ export class LoginService {
     const resolved = this.cls.get('resolvedHost');
     if (resolved?.kind !== 'tenant' && resolved?.kind !== 'hub' && resolved?.kind !== 'console')
       throw new DomainError('NOT_FOUND', 'no sign-in on this host');
+    // A suspended or archived academy shows its status page; no password is checked (C-86).
+    if (resolved.kind === 'tenant' && !isAcademyOpen(resolved.tenant.status))
+      throw new DomainError('TENANT_UNAVAILABLE', 'academy not open');
     const user = await this.verifyPassword(input);
 
     if (resolved.kind === 'tenant') {

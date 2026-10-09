@@ -27,6 +27,7 @@ import { ZodValidationPipe } from './core/validation/zod-validation.pipe.js';
 import { LegalModule } from './modules/legal/legal.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
 import { TeamModule } from './modules/team/team.module.js';
+import { PlatformModule } from './platform/platform.module.js';
 
 /** Root module. Domain modules (src/modules/*) are added by their phases. */
 @Module({})
@@ -56,6 +57,8 @@ export class AppModule {
         TeamModule,
         SettingsModule,
         LegalModule,
+        // Platform (console).
+        PlatformModule,
         ...(config.APP_ENV === 'production' ? [] : [DocsModule]),
         ...extra,
       ],

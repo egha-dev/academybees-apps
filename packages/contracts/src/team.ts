@@ -102,3 +102,7 @@ export const ResetPasswordSchema = z.object({
   token: z.string().min(16).max(128),
   password: NewPassword,
 });
+
+/** Invitations last 7 days (C-67); the link carries the token in its fragment (C-83). */
+export const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
+export const INVITATION_LINK_PATH = '/invite#token={token}';

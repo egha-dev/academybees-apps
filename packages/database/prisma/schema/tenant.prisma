@@ -47,20 +47,25 @@ enum BranchStatus {
 
 /// An academy. `id` is immutable; slug/domain changes never change it (PRD v3.1 §F).
 model Tenant {
-  id          String       @id @db.Uuid
+  id              String        @id @db.Uuid
   /// Current primary subdomain label (mirrors the PRIMARY SUBDOMAIN domain row).
-  slug        String       @unique @db.VarChar(42)
-  name        String       @db.VarChar(120)
+  slug            String        @unique @db.VarChar(42)
+  name            String        @db.VarChar(120)
   /// Drives defaults only (terminology, templates), never business branching (ADR-029).
-  academyType String       @map("academy_type") @db.VarChar(40)
-  status      TenantStatus @default(SETUP)
+  academyType     String        @map("academy_type") @db.VarChar(40)
+  status          TenantStatus  @default(SETUP)
+  /// Before the current suspension: reactivation restores it (C-87).
+  previousStatus  TenantStatus? @map("previous_status")
+  /// Why platform staff last changed the status (suspend, reactivate, activate, archive).
+  statusReason    String?       @map("status_reason") @db.VarChar(500)
+  statusChangedAt DateTime?     @map("status_changed_at") @db.Timestamptz(3)
   /// IANA timezone; drives "today", schedules and reports (ADR-011).
-  timezone    String       @default("Asia/Kolkata") @db.VarChar(64)
-  locale      String       @default("en-IN") @db.VarChar(20)
-  currency    String       @default("INR") @db.Char(3)
-  createdById String?      @map("created_by_id") @db.Uuid
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  timezone        String        @default("Asia/Kolkata") @db.VarChar(64)
+  locale          String        @default("en-IN") @db.VarChar(20)
+  currency        String        @default("INR") @db.Char(3)
+  createdById     String?       @map("created_by_id") @db.Uuid
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   domains       TenantDomain[]
   branding      TenantBranding?

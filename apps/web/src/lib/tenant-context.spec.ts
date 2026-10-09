@@ -52,6 +52,47 @@ describe('lookupTenantContext cache (review M3)', () => {
     expect(demoCalls).toHaveLength(1);
   });
 
+  it('re-checks a non-active academy after 10 s, an active one after 60 s (C-96)', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn((url: URL, init: RequestInit) => {
+        const host = new Headers(init.headers).get('x-forwarded-host');
+        return Promise.resolve(
+          Response.json(
+            host === 'paused.localhost'
+              ? { status: 'SUSPENDED', displayName: 'Paused' }
+              : {
+                  status: 'ACTIVE',
+                  slug: 'demo-a',
+                  displayName: 'Demo A',
+                  timezone: 'Asia/Kolkata',
+                  locale: 'en-IN',
+                  branding: { primaryColor: null, secondaryColor: null, hasLogo: false },
+                },
+          ),
+        );
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      const config = { apiOrigin: 'http://api', proxySecret: 's' };
+      const calls = (host: string) =>
+        fetchMock.mock.calls.filter(
+          ([, init]) => new Headers(init.headers).get('x-forwarded-host') === host,
+        ).length;
+      await lookupTenantContext('paused.localhost', config);
+      await lookupTenantContext('demo-a.localhost', config);
+      vi.advanceTimersByTime(11_000);
+      await lookupTenantContext('paused.localhost', config);
+      await lookupTenantContext('demo-a.localhost', config);
+      expect(calls('paused.localhost')).toBe(2);
+      expect(calls('demo-a.localhost')).toBe(1);
+      vi.advanceTimersByTime(50_000);
+      await lookupTenantContext('demo-a.localhost', config);
+      expect(calls('demo-a.localhost')).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('reports an unreachable API instead of "unknown"', async () => {
     vi.stubGlobal(
       'fetch',

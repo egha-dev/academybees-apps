@@ -48,6 +48,12 @@ const ROTATION_GRACE_MS = 20_000;
 /** Session-validity cache (revocation deletes the key). */
 const SESSION_KEY = (sid: string) => `auth:sess:${sid}`;
 
+/** Sessions exist only in academies that are setting up or active (C-86, ARCHITECTURE §5.3). */
+export const isAcademyOpen = (status: string) => status === 'SETUP' || status === 'ACTIVE';
+
+/** Drop the session-validity cache of revoked sessions (suspend/archive revoke in bulk). */
+export const sessionCacheKey = SESSION_KEY;
+
 /** Where each experience starts (ARCHITECTURE §10.2; homes behind `p2-role-homes` until 5/6). */
 export const HOME: Record<ExperienceName, string> = { manage: '/today', teach: '/teach', hub: '/' };
 /** Owner/Accountant without 2FA land here after sign-in (the strong prompt, G-11, C-80). */
@@ -123,6 +129,7 @@ export class SessionService {
     roles: readonly RoleKey[],
     options: { mfaVerifiedAt?: Date | undefined; promptMfa?: boolean } = {},
   ): Promise<LoginResponse> {
+    this.assertAcademyOpen(tenantId);
     const experience = primaryExperience(roles);
     await this.startSession(res, {
       userId: user.id,
@@ -314,6 +321,13 @@ export class SessionService {
       throw new DomainError('SESSION_EXPIRED', 'refresh expired');
     }
     if (session.audience === 'TENANT' && session.tenantId) {
+      // A suspended or archived academy ends its sessions (C-86); suspending also revokes them.
+      const status = this.cls.get('resolvedHost');
+      if (status?.kind === 'tenant' && !isAcademyOpen(status.tenant.status)) {
+        await this.revokeFamily(session.userId, session.familyId, 'tenant_unavailable');
+        clearSessionCookies(res, this.config.COOKIE_MODE);
+        throw new DomainError('TENANT_UNAVAILABLE', 'academy not open');
+      }
       const membership = await this.memberships.load(session.tenantId, session.userId);
       if (membership?.status !== 'ACTIVE') {
         await this.revokeFamily(session.userId, session.familyId, 'membership_inactive');
@@ -454,6 +468,17 @@ export class SessionService {
     );
     if (row) await this.redis.set(SESSION_KEY(sessionId), '1', 'EX', 60).catch(() => undefined);
     return row !== null;
+  }
+
+  /** No new academy session unless the academy is setting up or active (C-86). */
+  private assertAcademyOpen(tenantId: string): void {
+    const resolved = this.cls.get('resolvedHost');
+    if (
+      resolved?.kind === 'tenant' &&
+      resolved.tenant.id === tenantId &&
+      !isAcademyOpen(resolved.tenant.status)
+    )
+      throw new DomainError('TENANT_UNAVAILABLE', 'academy not open');
   }
 
   private assertSessionHost(audience: Audience, tenantId: string | null, userId: string): void {

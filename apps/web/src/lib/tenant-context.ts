@@ -2,8 +2,9 @@ import { type TenantContextResponse, TenantContextResponseSchema } from '@academ
 
 /**
  * Academy context for a host, from the API's public `GET /api/v1/tenant/context` (ARCHITECTURE
- * §10.2). Used by `proxy.ts`, so no server-only imports. Cached per host in memory: hits 60 s,
- * unknown hosts 30 s (same as the API). An unreachable API throws — the caller shows the
+ * §10.2). Used by `proxy.ts`, so no server-only imports. Cached per host in memory: active
+ * academies 60 s, unknown hosts 30 s (same as the API), and every other answer (setting up,
+ * suspended, archived, redirect) 10 s, so console changes show within about a minute (C-96). An unreachable API throws — the caller shows the
  * "temporarily unavailable" page, never "unknown academy".
  */
 export type ContextLookup = { found: true; context: TenantContextResponse } | { found: false };
@@ -17,6 +18,7 @@ export class TenantContextUnavailableError extends Error {
 
 const HIT_MS = 60_000;
 const MISS_MS = 30_000;
+const OTHER_MS = 10_000;
 const MAX_ENTRIES = 2_000;
 const cache = new Map<string, { at: number; value: ContextLookup }>();
 
@@ -24,7 +26,7 @@ export type ContextFetchConfig = {
   apiOrigin: string;
   proxySecret: string;
   /** Disable the in-memory cache (tests, E2E against freshly changed data). */
-  cacheMs?: { hit: number; miss: number };
+  cacheMs?: { hit: number; miss: number; other?: number };
   /** Cache size (LRU); tests use a small one. */
   maxEntries?: number;
 };
@@ -33,9 +35,11 @@ export async function lookupTenantContext(
   host: string,
   config: ContextFetchConfig,
 ): Promise<ContextLookup> {
-  const ttl = config.cacheMs ?? { hit: HIT_MS, miss: MISS_MS };
+  const ttl = config.cacheMs ?? { hit: HIT_MS, miss: MISS_MS, other: OTHER_MS };
+  const ttlFor = (value: ContextLookup) =>
+    !value.found ? ttl.miss : value.context.status === 'ACTIVE' ? ttl.hit : (ttl.other ?? ttl.hit);
   const cached = cache.get(host);
-  if (cached && Date.now() - cached.at < (cached.value.found ? ttl.hit : ttl.miss)) {
+  if (cached && Date.now() - cached.at < ttlFor(cached.value)) {
     // LRU: re-insert so a busy academy stays cached while junk hosts age out (review M3).
     cache.delete(host);
     cache.set(host, cached);
