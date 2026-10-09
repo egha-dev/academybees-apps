@@ -19,3 +19,5 @@ export * from './legal.js';
 export * from './people.js';
 export * from './academy-types.js';
 export * from './console.js';
+export * from './onboarding.js';
+export * from './schedule-time.js';

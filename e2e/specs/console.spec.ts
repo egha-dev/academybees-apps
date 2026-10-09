@@ -72,7 +72,8 @@ test('create an academy, open it, suspend and reactivate it, and change its addr
 
   // The list finds it.
   await page.goto(url('/academies'));
-  await page.getByLabel('Name or address').fill(slug);
+  // By role: only the box people can use (a hidden copy may linger while React re-renders).
+  await page.getByRole('searchbox', { name: 'Name or address' }).fill(slug);
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page.getByRole('link', { name: `Gurushethra ${tag}` })).toBeVisible();
   await expectNoA11yViolations(page);

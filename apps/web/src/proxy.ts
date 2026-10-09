@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { browserPort, classifyRequestHost, platformRootDomain } from './lib/host';
 import { apiForwardHeaders, stripInternalHeaders } from './lib/forward-headers';
+import { type FlagsResponse, isFlagOn } from './lib/flags';
 import { decideRoute } from './lib/routing';
 import {
   APEX_HEADER,
@@ -23,6 +24,22 @@ import {
  *   or 301 an old slug to the primary host. Internal `x-ab-*` request headers are always
  *   stripped first and only this file sets them.
  */
+async function setupFlag(host: string): Promise<boolean> {
+  try {
+    const res = await fetch(new URL('/api/v1/flags', process.env.API_ORIGIN ?? ''), {
+      headers: {
+        'x-forwarded-host': host,
+        'x-ab-proxy-secret': process.env.TRUSTED_PROXY_SECRET ?? '',
+      },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(3_000),
+    });
+    return res.ok && isFlagOn((await res.json()) as FlagsResponse, 'p3-onboarding');
+  } catch {
+    return false;
+  }
+}
+
 export async function proxy(request: NextRequest) {
   const host = request.headers.get('host') ?? '';
   const headers = stripInternalHeaders(request.headers);
@@ -57,7 +74,21 @@ export async function proxy(request: NextRequest) {
   const { pathname, search, protocol } = request.nextUrl;
   // The browser's port (Host header), never the server's internal one (staging/production).
   const port = browserPort(host);
-  const decision = decideRoute({ hostClass, pathname, search, port, protocol, lookup });
+  // Only academies that are setting up ask for the onboarding flag (C-85): rare, and never on
+  // the hot path of active academies. Errors → off (fail closed).
+  const setupOnboarding =
+    typeof lookup === 'object' && lookup.found && lookup.context.status === 'SETUP'
+      ? await setupFlag(host)
+      : false;
+  const decision = decideRoute({
+    hostClass,
+    pathname,
+    search,
+    port,
+    protocol,
+    lookup,
+    setupOnboarding,
+  });
   if (decision.type === 'redirect') return NextResponse.redirect(decision.location, 301);
 
   const root = normalizeRootDomain(platformRootDomain());

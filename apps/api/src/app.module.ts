@@ -25,6 +25,7 @@ import { TenantModule } from './core/tenant/tenant.module.js';
 import { ZodResponseInterceptor } from './core/validation/zod-response.interceptor.js';
 import { ZodValidationPipe } from './core/validation/zod-validation.pipe.js';
 import { LegalModule } from './modules/legal/legal.module.js';
+import { OnboardingModule } from './modules/onboarding/onboarding.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
 import { TeamModule } from './modules/team/team.module.js';
 import { PlatformModule } from './platform/platform.module.js';
@@ -57,6 +58,7 @@ export class AppModule {
         TeamModule,
         SettingsModule,
         LegalModule,
+        OnboardingModule,
         // Platform (console).
         PlatformModule,
         ...(config.APP_ENV === 'production' ? [] : [DocsModule]),

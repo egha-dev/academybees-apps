@@ -9,7 +9,9 @@ import {
   type TenantRef,
   tenantSpoofAttempts,
 } from '@academybee/testing';
+import { LEGAL_DOCUMENTS } from '@academybee/contracts';
 import { type INestApplication } from '@nestjs/common';
+import pg from 'pg';
 import request from 'supertest';
 import { Redis } from 'ioredis';
 import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from 'vitest';
@@ -38,6 +40,15 @@ describe('cross-tenant suite', () => {
       createTenantFixture(urls.migrator, { name: 'Cross Academy B' }),
     ]);
     app = await createTestApp();
+    // A's owner has accepted the current legal documents (onboarding needs them, ADR-034).
+    const su = new pg.Client({ connectionString: urls.superuser });
+    await su.connect();
+    for (const doc of LEGAL_DOCUMENTS)
+      await su.query(
+        `INSERT INTO legal_acceptance (id, user_id, tenant_id, document_id, locale) VALUES ($1, $2, $3, $4, 'en-IN')`,
+        [crypto.randomUUID(), a.user.id, a.id, doc.id],
+      );
+    await su.end();
     // A member of A with no capabilities beyond announcements (for the 403 checks).
     limited = await addMemberFixture(urls.migrator, a.id, {
       email: `limited-${a.slug}@example.test`,
@@ -79,6 +90,8 @@ describe('cross-tenant suite', () => {
         return spareInvitationId;
       case 'invitation-token':
         return a.invitationToken;
+      case 'step-course':
+        return 'course';
       default:
         throw new Error(`unknown fixture ${name}`);
     }

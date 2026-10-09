@@ -104,6 +104,35 @@ describe('decideRoute (ARCHITECTURE §10.2)', () => {
     expect(route('setup-demo.localhost:3000', '/', setup)).toMatchObject({
       path: '/status/setup',
     });
+    // Without p3-onboarding even sign-in stays closed (exactly as before C-85).
+    expect(route('setup-demo.localhost:3000', '/login', setup)).toMatchObject({
+      path: '/status/setup',
+    });
+
+    // With it: sign-in, legal and the guided setup open; everything else goes to the gate.
+    const withFlag = (path: string) =>
+      decideRoute({
+        hostClass: classifyHost('setup-demo.localhost:3000', ROOT),
+        pathname: path,
+        search: '',
+        port: '3000',
+        protocol: 'http:',
+        lookup: setup,
+        setupOnboarding: true,
+      });
+    for (const path of [
+      '/login',
+      '/invite',
+      '/reset-password',
+      '/legal',
+      '/welcome',
+      '/onboarding/course',
+    ])
+      expect(withFlag(path)).toEqual({ type: 'rewrite', path: `/t/setup-demo${path}` });
+    for (const path of ['/', '/today', '/settings/team', '/teach', '/onboardingx'])
+      expect(withFlag(path)).toEqual({ type: 'rewrite', path: '/t/setup-demo/setup-gate' });
+    // The gate itself can't be typed on any host.
+    expect(withFlag('/setup-gate')).toEqual({ type: 'rewrite', path: '/__not-found' });
   });
 
   it('IPs, punycode and nested hosts are unknown academies', () => {

@@ -166,6 +166,33 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     body: { documentIds: ['019a0000-0000-7000-8000-00000000a001'] },
     spoof: 'status',
   },
+  // Guided setup (C-85, C-87, C-92): the owner of A after accepting the legal documents. A is
+  // open (onboarding finished), so writes answer 409 there; their isolation is in the dedicated test.
+  {
+    method: 'GET',
+    path: '/api/v1/onboarding',
+    session: true,
+    capability: 'academy.onboarding.manage',
+  },
+  {
+    method: 'PUT',
+    path: '/api/v1/onboarding/steps/:step',
+    params: { step: 'step-course' },
+    session: true,
+    capability: 'academy.onboarding.manage',
+    idempotent: true,
+    body: { action: 'save', version: 1, data: { name: 'Course' } },
+    spoof: { skip: 'onboarding.int.spec.ts › another academy' },
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/onboarding/complete',
+    session: true,
+    capability: 'academy.onboarding.manage',
+    idempotent: true,
+    body: {},
+    spoof: { skip: 'onboarding.int.spec.ts › another academy' },
+  },
   // Test-only signed-in routes guarded by @Can + a scope policy (shape of domain endpoints).
   {
     method: 'GET',

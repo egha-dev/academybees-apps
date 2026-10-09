@@ -9,5 +9,6 @@ import { TeamService } from './team.service.js';
 @Module({
   controllers: [TeamController, InvitationsController],
   providers: [TeamService, InvitationsService],
+  exports: [InvitationsService],
 })
 export class TeamModule {}
