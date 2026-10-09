@@ -129,7 +129,7 @@ pnpm platform:create-admin --email you@example.com   # console admin + set-passw
 pnpm --filter @academybee/marketing dev  # academybees.com on :3100 (build → out/, preview serves out/)
 ```
 
-Phase 0: web `http://localhost:3000` (design system at `/dev/design-system`), API `http://localhost:4000/api/docs`. From Phase 1: academies `http://demo-a.localhost:3000`, `http://demo-b.localhost:3000` · Family Hub (parents/students): `http://app.localhost:3000` · Console: `http://console.localhost:3000`. (Keep these scripts accurate; update this section when they change. Verified 2026-10-02.)
+Phase 0: web `http://localhost:3000` (design system at `/dev/design-system`), API `http://localhost:4000/api/docs`. From Phase 1: academies `http://demo-a.localhost:3000`, `http://demo-b.localhost:3000` · Family Hub (parents/students): `http://app.localhost:3000` · Console: `http://console.localhost:3000` (Academies, Create academy) · an academy still setting up: `http://setup-demo.localhost:3000` (owner `owner@setup-demo.test`, guided setup). Logos: local SeaweedFS `http://localhost:8333` (C-97). (Keep these scripts accurate; update this section when they change. Verified 2026-10-09.)
 
 ## 9. Backend conventions
 

@@ -343,6 +343,11 @@ The journey runs on desktop and on the Android and iPhone projects for the owner
 | S7 | `p3/onboarding-ui` | 3.19–3.21 | `p3-onboarding` |
 | S8 | `p3/journey-e2e` | 3.22–3.23 | removes `p3-onboarding` |
 
+*As built (S8):*
+- **Journey.** `e2e/specs/journey.spec.ts` (desktop) runs the Phase 3 critical journey on a fresh academy: console create (with `admin`/`www` refused) → success screen URL → owner-invite email in Mailpit → accept → legal → Welcome → all steps (dance → "class") → Open my academy (ACTIVE) → console suspend (the academy shows its unavailable page) → reactivate → change address (old URL 301).
+- **Flag.** `p3-onboarding` is removed: setting-up academies always serve sign-in and the guided setup (C-85), and owners always re-accept changed legal documents.
+- **Docs.** ARCHITECTURE §5.3, §8.3, §9.3, §10.3 and §14 have as-built notes; README and CLAUDE.md §8 list the new local addresses and logins.
+
 ## Dependencies and gaps
 
 - **Uses Phases 0–2:**

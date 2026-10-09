@@ -7,7 +7,7 @@ import { hostUrl, requireSeededAcademies } from '../support/hosts.js';
 import { signIn } from '../support/session.js';
 
 /**
- * Guided setup on a phone (UX v1.1 §4–5, C-85; `p3-onboarding` on in ci): the owner of the
+ * Guided setup on a phone (UX v1.1 §4–5, C-85): the owner of the
  * setting-up demo academy signs in, accepts the legal documents, is welcomed, and goes through
  * every step to Ready — resuming on another device half-way. It stops short of opening the academy
  * so the seeded academy stays in setup (the provisioning journey opens a fresh one, S8).

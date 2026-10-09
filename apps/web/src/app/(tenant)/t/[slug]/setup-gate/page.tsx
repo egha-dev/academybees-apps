@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * An academy that is setting up (C-85), reached only through proxy.ts with `p3-onboarding` on:
+ * An academy that is setting up (C-85), reached only through proxy.ts:
  * its owner continues the guided setup (Welcome sends them to the legal step first if needed);
  * everyone else — signed out, or staff without `academy.onboarding.manage` — sees that the
  * academy is getting ready.
