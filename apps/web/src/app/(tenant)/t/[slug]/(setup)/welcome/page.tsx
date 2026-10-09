@@ -9,6 +9,7 @@ import { loadOnboarding, onboardingOwner } from '@/components/onboarding/owner.s
 import { stepName } from '@/components/onboarding/step-name';
 import { StepProgress } from '@/components/onboarding/step-progress';
 import { academyName, hostContext } from '@/lib/host-context.server';
+import { homeFor } from '@/lib/session.server';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,8 @@ export default async function WelcomePage() {
     getTranslations('onboarding'),
     hostContext(),
   ]);
-  if (state.completed) redirect('/');
+  // Finished: the academy's home, never `/` (which a stale gate could send back here, review H1).
+  if (state.completed) redirect(homeFor(owner.me));
   const academy = academyName(context) ?? '';
   const total = 7;
   const done = Object.values(state.steps).filter((s) => s.status !== 'pending').length;

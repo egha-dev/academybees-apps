@@ -3,6 +3,7 @@ import {
   type AcademySettings,
   IMAGE_TYPES,
   isReadableBrandColor,
+  localDate,
   MAX_IMAGE_SIDE,
   MEDIA_PURPOSES,
   newId,
@@ -24,6 +25,7 @@ import { TENANT_DB } from '../../core/database/database.module.js';
 import { DomainError } from '../../core/errors/domain-error.js';
 import { MediaStorage } from '../../core/media/media-storage.js';
 import { TenantResolver } from '../../core/tenant/tenant-resolver.service.js';
+import { SchedulingService } from '../scheduling/index.js';
 
 export type BrandImage = 'logo' | 'favicon';
 const PURPOSE = { logo: 'branding.logo', favicon: 'branding.favicon' } as const;
@@ -48,6 +50,7 @@ export class AcademyService {
     private readonly media: MediaStorage,
     private readonly audit: AuditService,
     private readonly resolver: TenantResolver,
+    private readonly scheduling: SchedulingService,
     @Inject(API_CONFIG) config: ApiConfig,
   ) {
     this.root = normalizeRootDomain(platformRootDomain(config));
@@ -96,6 +99,13 @@ export class AcademyService {
         where: { id: tenantId },
         data: { name: input.name, timezone: input.timezone, currency: input.currency },
       });
+      // Classes already generated follow a new timezone (review M1).
+      if (input.timezone !== before.timezone)
+        await this.scheduling.regenerateForTimezone(tx, {
+          tenantId,
+          timeZone: input.timezone,
+          today: localDate(new Date(), input.timezone),
+        });
       await tx.tenantBranding.updateMany({ data: { displayName: input.name } });
       await this.audit.record(
         {

@@ -22,6 +22,7 @@ import { stepName } from '@/components/onboarding/step-name';
 import { StepProgress } from '@/components/onboarding/step-progress';
 import { apiServerGet } from '@/lib/api.server';
 import { academyName, hostContext } from '@/lib/host-context.server';
+import { homeFor } from '@/lib/session.server';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,7 +58,8 @@ export default async function StepPage({ params }: { params: Promise<{ step: str
     getTranslations('onboarding'),
     hostContext(),
   ]);
-  if (state.completed) redirect('/');
+  // Finished: the academy's home, never `/` (which a stale gate could send back here, review H1).
+  if (state.completed) redirect(homeFor(owner.me));
   const academy = academyName(context) ?? '';
   const terms = state.terminology;
   const name = (s: OnboardingStep) => stepName(t as never, s, terms);

@@ -225,6 +225,64 @@ export class SchedulingService {
     return { ruleIds: rules.map((r) => r.id), sessionCount: sessions.length };
   }
 
+  /**
+   * The academy's timezone changed: its upcoming generated classes move with it (review M1).
+   * Untouched future sessions of current rules are recreated from the rules in the new timezone;
+   * past ones, manual ones and anything already acted on stay as they were.
+   */
+  async regenerateForTimezone(
+    tx: TransactionClient,
+    input: { tenantId: string; timeZone: string; today: string },
+  ): Promise<number> {
+    const rules = await tx.scheduleRule.findMany({
+      where: { effectiveTo: null },
+      select: {
+        id: true,
+        batchId: true,
+        teacherId: true,
+        weekday: true,
+        startMinute: true,
+        endMinute: true,
+        batch: { select: { branchId: true } },
+      },
+    });
+    if (!rules.length) return 0;
+    await tx.classSession.deleteMany({
+      where: {
+        scheduleRuleId: { in: rules.map((r) => r.id) },
+        status: 'SCHEDULED',
+        origin: 'GENERATED',
+        sessionDate: { gte: new Date(`${input.today}T00:00:00Z`) },
+      },
+    });
+    const now = Date.now();
+    const sessions = weeklyOccurrences(rules, input.today, ONBOARDING_SESSION_DAYS)
+      .map(({ date, slot }) => ({
+        date,
+        rule: slot,
+        startsAt: zonedInstant(date, slot.startMinute, input.timeZone),
+        endsAt: zonedInstant(date, slot.endMinute, input.timeZone),
+      }))
+      .filter((s) => s.startsAt.getTime() > now);
+    if (sessions.length)
+      await tx.classSession.createMany({
+        data: sessions.map((s) => ({
+          id: newId(),
+          tenantId: input.tenantId,
+          branchId: s.rule.batch.branchId,
+          batchId: s.rule.batchId,
+          scheduleRuleId: s.rule.id,
+          teacherId: s.rule.teacherId,
+          sessionDate: new Date(`${s.date}T00:00:00Z`),
+          startsAt: s.startsAt,
+          endsAt: s.endsAt,
+          origin: 'GENERATED' as const,
+        })),
+        skipDuplicates: true,
+      });
+    return sessions.length;
+  }
+
   /** The batch's weekly slots and its next classes, for the onboarding preview. */
   async timetable(
     tx: Pick<TransactionClient, 'scheduleRule' | 'classSession'>,

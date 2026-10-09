@@ -288,9 +288,12 @@ export class AcademiesService {
     let toSlug = '';
     try {
       await this.platform.transaction(async (tx) => {
-        const [row] = await tx.$queryRaw<{ slug: string }[]>`
-          SELECT slug FROM tenant WHERE id = ${id}::uuid FOR UPDATE`;
+        const [row] = await tx.$queryRaw<{ slug: string; status: string }[]>`
+          SELECT slug, status FROM tenant WHERE id = ${id}::uuid FOR UPDATE`;
         if (!row) throw new DomainError('NOT_FOUND', 'academy');
+        // An archived academy keeps its addresses reserved; it can't take a new one (review L1).
+        if (row.status === 'ARCHIVED')
+          throw new DomainError('INVALID_STATE_TRANSITION', 'academy archived');
         const availability = await this.slugs.check(input, tx);
         if (availability.slug === row.slug)
           throw new DomainError('VALIDATION_FAILED', 'same subdomain', [
