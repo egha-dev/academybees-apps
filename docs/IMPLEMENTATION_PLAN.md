@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-07 · Current phase: **Phase 3 — Academy Provisioning + Onboarding (🟨 in progress since 2026-10-07)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**)
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-09 · Current phase: **Phase 4 — Students + Parents + Teachers (not started)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -13,8 +13,8 @@
 | --- | --- | --- | --- | --- |
 | 0 | Foundation | ✅ 2026-10-01 | Outbox, audit, idempotency tables; English-only i18n foundation, multilingual-ready (G-08, G-32), analytics port, perf budgets (G-09, G-24) | ADR-001/002/012/013/014/015/016/022/030/031/032/035/040 |
 | 1 | Multi-Tenant + Wildcard Domain | ✅ 2026-10-02 | Default branch per tenant; `app.` Family Hub host reserved + classified (G-31) | ADR-003/004/005/039, C-07 |
-| 2 | Authentication + RBAC | ✅ | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
-| 3 | Academy Provisioning + Onboarding | 🟨 | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, ADR-028/034 |
+| 2 | Authentication + RBAC | ✅ 2026-10-07 | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
+| 3 | Academy Provisioning + Onboarding | ✅ 2026-10-09 | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, C-85…C-98, ADR-028/034 |
 | 4 | Students + Parents + Teachers | ⬜ | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
 | 5 | Courses + Batches + Timetable | ⬜ | Owner Today v1; terminology; holidays (G-03); transfer (G-27) | ADR-024/029/037 |
 | 6 | Attendance + Offline Sync | ⬜ | Teacher PWA core; outbox → in-app notifications; teacher nudge (G-16) | ADR-016/017, C-04, C-06 |
@@ -456,7 +456,7 @@ Phase 2 is **not** started.
 
 **Goal.** Super Admin creates an academy and hands over a URL; the owner opens it and is guided to a ready-to-run academy.
 **Refs.** PRD v3.1 §A–J, v3 §6, §19, §20; UX §22, v1.1 §2–6, §9–10; DECISIONS C-02, C-03, C-08, C-09.
-**Status.** 🟨 started 2026-10-07 (`phase-3-start` = `afd72c2`). Approved slice plan: [`docs/plans/phase-3.md`](plans/phase-3.md) (decisions C-85…C-97; logos on Cloudflare R2, C-97).
+**Status.** ✅ 2026-10-09 (tag `phase-3`; started 2026-10-07, `phase-3-start` = `afd72c2`). Approved slice plan: [`docs/plans/phase-3.md`](plans/phase-3.md) (decisions C-85…C-97; logos on Cloudflare R2, C-97).
 
 **Slices (each = one PR, ADR-041)**
 
@@ -469,7 +469,9 @@ Phase 2 is **not** started.
 | S5 | `p3/onboarding-api` | 3.13 onboarding state, 3.14 minimal create commands, 3.15 SETUP routing (flag `p3-onboarding`) | ✅ #61 |
 | S6 | `p3/media-branding` | 3.16 media storage (R2 / SeaweedFS, C-97), 3.17 Settings → Academy, Branding & Domain, 3.18 logo everywhere | ✅ #62 |
 | S7 | `p3/onboarding-ui` | 3.19 legal + Welcome, 3.20 Profile/Type/Course/Teacher, 3.21 Batch/Students/Timetable/Ready (flag `p3-onboarding`) | ✅ #63 |
-| S8 | `p3/journey-e2e` | 3.22 journey E2E, 3.23 flag removal + docs | 🟨 |
+| S8 | `p3/journey-e2e` | 3.22 journey E2E, 3.23 flag removal + docs | ✅ #64 |
+| Review | `p3/review-fixes` | P3-4 fixes: H1, M1–M3, L1, L3, L5 (console), L7, L8 (C-98) | ✅ #65 |
+| Close | `p3/close` | exit notes, tracker | this PR |
 
 **Scope**
 - ⤴ C-03 `Plan`, `PlanEntitlement`, `Subscription` (TRIAL only), `EntitlementService`, `@Feature/@Limit` guards, seeded plans per G-25 hypothesis (OD-12). Limits enforced (e.g. student cap) with friendly `ENTITLEMENT_LIMIT_REACHED` UI.
@@ -489,6 +491,75 @@ Phase 2 is **not** started.
 - E2E (critical journey): Super Admin creates "Gurushethra" → success shows `gurushethra.localhost` → owner accepts invite → welcome → completes all steps → Ready → tenant ACTIVE → suspend in console → academy shows Suspended page.
 
 **Exit gate.** Journey E2E green; PO walkthrough of console slice + onboarding on phone and desktop.
+
+**Gate evidence (P3-3, 2026-10-09; re-run on `main` `dc41f94` after the review fixes)**
+
+| Gate item | Evidence |
+| --- | --- |
+| Provisioning: idempotency, concurrent same slug, reserved/impersonating/invalid slugs, rollback, audit + outbox | `apps/api/test/platform/provisioning.int.spec.ts`; slug rules `packages/tenant/src/slug.spec.ts` |
+| Entitlement guards (student cap → `ENTITLEMENT_LIMIT_REACHED`; payments never gated, G-30) | `packages/contracts/src/plans.spec.ts`; `apps/api/test/integration/entitlements.int.spec.ts` |
+| Legal acceptance + re-acceptance on a new version (G-06, ADR-034) | `apps/api/test/integration/legal.int.spec.ts` |
+| Onboarding: resume, second device, stale version → 409, teacher → 403, idempotent and timezone-correct sessions, failed step revokes its invitation, timezone change moves classes | `apps/api/test/integration/onboarding.int.spec.ts`; `packages/contracts/src/schedule-time.spec.ts` (IST, DST zone, month ends) |
+| Tenant isolation | every new tenant route in `apps/api/test/security/cross-tenant.registry.ts`; `packages/database/test/rls-coverage.int.spec.ts`, `tenant-isolation.int.spec.ts` (all new tables) |
+| Console: suspend/archive refuse sign-in and revoke sessions (C-86); reactivate restores; change address → old host 301; archived can't move; status visible quickly (C-96) | `apps/api/test/platform/console-academies.int.spec.ts`; `apps/api/test/security/tenant-resolution.int.spec.ts`; `apps/web/src/lib/routing.spec.ts`, `tenant-context.spec.ts` |
+| Media: wrong type, oversize, spoofed bytes refused; other academy's file → 404; binary bodies only on upload routes | `apps/api/test/integration/academy-branding.int.spec.ts`; `packages/contracts/src/media.spec.ts` |
+| **Critical journey E2E** | `e2e/specs/journey.spec.ts` (desktop: console create → `admin`/`www` refused → success URL → owner invite email → accept → legal → Welcome → every step → ACTIVE → suspend → unavailable page → reactivate → change address → 301); `onboarding.spec.ts` (Android phone, resume on a second device); `console.spec.ts`; `academy-settings.spec.ts` (logo upload shows on sign-in) |
+| UI states, a11y, i18n | axe light + dark on console, setup and settings pages; pseudo-locale + 40 % text in `i18n-pseudo.spec.ts` |
+| Migrations, RLS, drift | 4 Phase 3 migrations, all expand-only (`plans_and_legal`, `people_and_scheduling`, `tenant_lifecycle`, `media_files`); `db:drift` clean |
+| Release flags | `p3-onboarding` added and removed in-phase; `p2-console-home` removed (S4); `flags:check` OK |
+| Common gate commands | lint, typecheck, unit, integration (API 619, database 312), build, `db:drift`, `i18n:check`, `flags:check`, `perf:budget` (all routes ≤ 200 KB; tightest `/onboarding/[step]` 199.0, `/legal` 198.9); E2E **316 passed** in CI on `main` (Lighthouse in the same job). Local full E2E runs on this WSL machine timed out intermittently (mostly iPhone WebKit, different tests each run); CI on a clean runner is the evidence |
+| Staging + TLS | `dc41f94` deployed; health `ok` (database, Redis); console, academies and `media.staging.academybees.com` (R2, C-97) over TLS |
+| PO walkthrough | PO acceptance on staging, 2026-10-09 |
+
+**Independent review (P3-4, 2026-10-09).** A fresh reviewer read `phase-3-start..main`: **no CRITICAL**, one HIGH.
+- Fixed in Phase 3 (#65, C-98): **H1** setup redirect loop after "Open my academy"; **M1** a timezone change moves generated classes; **M2** a failed step revokes the invitation it sent; **M3** test for the onboarding teacher link; **L1** archived academy can't change address; **L3** binary bodies only on the upload routes; **L5** loading state on the console academy detail; **L7** quick-added parents aren't marked WhatsApp-capable; **L8** colour token.
+- **Assigned to Phase 4:** L5 loading skeletons on the setup and Settings routes (the skeleton chunk takes them past 200 KB) and error boundaries inside the setup frame and shell, with the shell diet; L6 legal acceptance before settings edits while SETUP.
+- **Assigned to Phase 7:** L9 currency locks once invoices exist.
+- **Assigned to Phase 14:** L2 an academy reclaiming its own old subdomain.
+- **Assigned to Phase 15:** L4 `nosniff` / `Content-Disposition` on the media domain (plus the Cloudflare rule recommended in C-97).
+
+**Exit notes (2026-10-09 — Phase 3 ✅)**
+
+*PO acceptance.* **Accepted by the Product Owner on 2026-10-09** (asked to run P3-5 Close after the staging walkthrough).
+
+*Delivered.*
+- **Plans and trials** (C-03, C-89, G-25): Trial, Starter, Growth and Pro with limits and features, a TRIAL subscription per academy (no expiry while billing isn't enforced), `EntitlementService` with `@Feature`/`@Limit` guards. Payments are never gated (G-30).
+- **Legal** (G-06, ADR-034): locale-keyed documents, append-only acceptances (user-bound RLS), acceptance before setup and again on every new version.
+- **People and scheduling schema** (C-09, C-90…C-92, G-05): students (full profile, separate restricted health notes), parents, links, teachers, consent records, custom fields, row-locked sequences; courses, levels, batches, enrolments, weekly rules and class sessions; minimal create commands in real `people` and `scheduling` modules.
+- **Provisioning and the console** (C-02, C-85…C-88, C-96): one idempotent transaction creates the academy, address, defaults by academy type, branch, roles, owner invitation, trial and onboarding, then emails the owner. Console: Academies list, Create academy with live address checks and impersonation list, success screen, academy detail with suspend / reactivate / activate / archive, change address (old one redirects), resend invite. Suspended and archived academies refuse sign-in and lose their sessions.
+- **Guided setup** (UX v1.1 §4–5, C-85, C-87): legal → Welcome → Profile, Type, Course, Teacher, Batch, Students, Timetable → Ready, resumable on any device, outside the Manage shell and phone-first. Opening the academy makes it ACTIVE.
+- **Settings → Academy and Branding & Domain** (UX v1.1 §6, V1.2 §5, C-95): name, contact, timezone (moves future classes), currency, logo, favicon, colour with a contrast check in both themes, address shown with Copy.
+- **Media** (C-93, C-97): S3-compatible storage through the API with magic-byte checks; SeaweedFS locally, Cloudflare R2 on staging (`media.staging.academybees.com`, public logos only; private media will use short-lived signed URLs). The logo shows in the shell, sign-in, status pages, favicon and PWA icons.
+
+*Pinned toolchain.* Unchanged, plus (pnpm catalog) `aws4fetch` 1.0.20.
+
+*Deviations, each recorded before or while coding.* C-85…C-98. The main ones:
+- C-86: sign-in refused on SUSPENDED/ARCHIVED (owner access for billing/export returns in Phases 13/15).
+- C-94: no React Hook Form / TanStack Query yet (route budget); reconsidered with the Phase 4 shell diet.
+- C-95: no custom-domain "coming soon" section.
+- C-97: Cloudflare R2 instead of ImageKit (C-70, C-93); logos uploaded through the API instead of direct-to-storage.
+- C-98: setup and Settings loading skeletons deferred to Phase 4 (route budget).
+
+*Known limitations.*
+- **Route budget headroom is now ≈ 1 KB** on `/legal` and `/onboarding/[step]` and ≈ 3 KB on the shell pages. The Phase 4 shell diet must come first before Phase 4 screens grow (G-24).
+- Class sessions are generated synchronously for 14 days; the rolling job arrives in Phase 5.
+- "Take first attendance" on Ready is an honest disabled state until Phase 6.
+- Legal documents are drafts; the real Terms, Privacy and DPA are needed before 7P.
+- The public-profile toggle is stored only (public page in Phase 8).
+- Console users, plan overrides UI, impersonation and un-archive are Phase 14.
+
+*Release flags (ADR-041).*
+- `p3-onboarding`: added in S5, **removed in S8**.
+- `p2-console-home`: **removed in S4**.
+- Still defined: `p2-role-homes` (PO, remove Phase 5/6, expires 2027-03-31), `p1-hub-placeholder` (PO, remove 7P, expires 2027-06-30).
+
+*Review follow-ups.* Listed above under **Independent review (P3-4)**, by phase: Phase 4 (loading skeletons, error boundaries, L6), Phase 7 (L9), Phase 14 (L2), Phase 15 (L4).
+
+*Process notes.*
+- Never `gh pr merge --auto` on this repository: with no ruleset it merges before CI runs (C-43). Wait for every check on the PR's head, then merge.
+- `prisma migrate dev` refuses non-interactive shells; generate with `prisma migrate diff --from-config-datasource --to-schema` instead.
+- A new `loading.tsx` adds the skeleton's client chunk to its route; check `perf:budget` before adding one to a budgeted route.
+- CI's `install browsers` step sometimes times out on the Ubuntu mirror; re-run the failed job.
 
 ---
 
