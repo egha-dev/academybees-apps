@@ -256,7 +256,7 @@ Each slice follows the same steps: branch `p3/<slice>` from the latest `main` �
 - `POST /academy/branding/{logo,favicon}-upload` returns an upload token.
 - `POST /academy/branding/{logo,favicon}/confirm` checks header bytes and size, then sets `logoMediaId`.
 - Keys look like `/t/<tenantId>/branding/<uuid>.<ext>`. The public URL is built at read time and added to `GET /tenant/context` as `branding.logoUrl`.
-- Runbook rows for the R2 variables on Railway (C-97).
+- Runbook rows for the R2 variables on Railway (C-97). Uploads go through the API (no presigned PUT, no CORS), and the public bucket holds branding only; private media gets its own bucket in Phase 4 (C-97).
 - **Tests:** a wrong type, an oversized file or a spoofed mime is refused; another academy's media id → 404; with the adapter missing, the error says uploads are unavailable.
 
 **3.17 Settings pages** (UX v1.1 §6, V1.2 §5):
