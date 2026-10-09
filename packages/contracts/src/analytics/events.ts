@@ -96,6 +96,45 @@ export const ANALYTICS_EVENTS = {
     description: "Platform staff changed an academy's subdomain; the old one redirects.",
     properties: z.strictObject({}),
   }),
+  'onboarding.step_completed': defineAnalyticsEvent({
+    name: 'onboarding.step_completed',
+    version: 1,
+    description: 'An academy owner saved or skipped a guided-setup step (UX v1.1 §5).',
+    properties: z.strictObject({
+      step: z.enum(['profile', 'type', 'course', 'teacher', 'batch', 'students', 'timetable']),
+      skipped: z.boolean(),
+    }),
+  }),
+  'onboarding.completed': defineAnalyticsEvent({
+    name: 'onboarding.completed',
+    version: 1,
+    description: 'An academy finished the guided setup and opened (C-87).',
+    properties: z.strictObject({ skippedSteps: z.number().int().min(0).max(7) }),
+  }),
+  'student.created': defineAnalyticsEvent({
+    name: 'student.created',
+    version: 1,
+    description: 'Students were added to an academy.',
+    properties: z.strictObject({
+      source: z.enum(['onboarding']),
+      count: z.number().int().min(1),
+    }),
+  }),
+  'batch.created': defineAnalyticsEvent({
+    name: 'batch.created',
+    version: 1,
+    description: 'A batch (class, group) was created.',
+    properties: z.strictObject({ source: z.enum(['onboarding']) }),
+  }),
+  'session.generated': defineAnalyticsEvent({
+    name: 'session.generated',
+    version: 1,
+    description: 'Class sessions were generated from weekly slots (ADR-024).',
+    properties: z.strictObject({
+      source: z.enum(['onboarding']),
+      count: z.number().int().min(0),
+    }),
+  }),
 } as const;
 
 export type AnalyticsEventName = keyof typeof ANALYTICS_EVENTS;

@@ -70,7 +70,8 @@ export class InvitationsService {
     private readonly rate: RateLimiter,
   ) {}
 
-  async create(input: CreateInvitation) {
+  /** `inviteeName` (onboarding's teacher step) prefills the accept form and the console view. */
+  async create(input: CreateInvitation, options: { inviteeName?: string } = {}) {
     const { tenantId, userId } = this.caller();
     const roles = [...new Set(input.roles)];
     this.assertGrantable(roles);
@@ -100,6 +101,7 @@ export class InvitationsService {
           id: newId(),
           tenantId,
           email: input.email,
+          inviteeName: options.inviteeName ?? null,
           roleKeys: roles,
           tokenHash: hashToken(token),
           invitedById: userId,
@@ -289,6 +291,11 @@ export class InvitationsService {
       if (roles.length !== roleKeys.length) throw new DomainError('CONFLICT', 'role missing');
       await tx.membershipRole.createMany({
         data: roles.map((r) => ({ tenantId, membershipId, roleId: r.id })),
+      });
+      // A teacher added during onboarding (C-92) becomes this member's teacher profile.
+      await tx.teacher.updateMany({
+        where: { invitationId: invitation.id, membershipId: null },
+        data: { membershipId },
       });
       await this.audit.record(
         {
