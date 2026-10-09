@@ -62,8 +62,6 @@ export function decideRoute(input: {
   protocol: string;
   /** Academy lookup for tenant/custom hosts; `'unavailable'` when the API can't be reached. */
   lookup?: ContextLookup | 'unavailable' | undefined;
-  /** `p3-onboarding` for this academy (C-85); off → a setting-up academy shows its status page. */
-  setupOnboarding?: boolean;
 }): RouteDecision {
   const { hostClass, pathname } = input;
   if (starts(pathname, INTERNAL_PREFIXES) || starts(pathname, [SETUP_GATE]))
@@ -106,7 +104,6 @@ export function decideRoute(input: {
         case 'SUSPENDED':
           return statusRewrite('suspended');
         case 'SETUP':
-          if (!input.setupOnboarding) return statusRewrite('setup');
           return {
             type: 'rewrite',
             path: `/t/${ctx.slug}${starts(pathname, SETUP_OPEN_PREFIXES) ? pathname : SETUP_GATE}`,

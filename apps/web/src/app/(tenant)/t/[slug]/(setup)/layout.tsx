@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Route group: the academy owner's guided setup (UX v1.1 §4–5, C-85) — the legal step, Welcome,
- * the steps and Ready — outside the Manage shell. Owner only, behind `p3-onboarding`.
+ * the steps and Ready — outside the Manage shell. Owner only.
  */
 export default async function SetupLayout({ children }: { children: ReactNode }) {
   const owner = await onboardingOwner();

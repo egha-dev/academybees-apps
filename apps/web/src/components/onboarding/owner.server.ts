@@ -5,24 +5,19 @@ import {
   type OnboardingState,
   OnboardingStateSchema,
 } from '@academybee/contracts';
-import { headers } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
 import { apiServerGet } from '@/lib/api.server';
-import { flagEnabled } from '@/lib/flags.server';
 import { getSession } from '@/lib/session.server';
 
 export type OnboardingOwner = { state: 'expired' } | { state: 'signed-in'; me: MeResponse };
 
 /**
- * The guided setup is for the academy's owner only (`academy.onboarding.manage`, C-85), and only
- * while `p3-onboarding` is on. Signed out → sign in; anyone else → the academy's home (the setup
+ * The guided setup is for the academy's owner only (`academy.onboarding.manage`, C-85). Signed out → sign in; anyone else → the academy's home (the setup
  * gate or Today decides what they see).
  */
 export const onboardingOwner = cache(async (): Promise<OnboardingOwner> => {
-  const host = (await headers()).get('host') ?? '';
-  if (!(await flagEnabled('p3-onboarding', host))) notFound();
   const session = await getSession();
   if (session.state === 'signed-out') redirect('/login');
   if (session.state === 'expired') return { state: 'expired' };
