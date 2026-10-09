@@ -7,7 +7,7 @@ import {
   type LimitKey,
   readEntitlementSnapshot,
 } from '@academybee/contracts';
-import { type TenantBoundClient } from '@academybee/database';
+import type { TenantBoundClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
 
 import { TENANT_DB } from '../database/database.module.js';

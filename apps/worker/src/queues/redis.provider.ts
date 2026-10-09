@@ -1,5 +1,5 @@
 import { Inject, Injectable, type OnApplicationShutdown, type Provider } from '@nestjs/common';
-import { type Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 
 import { WORKER_CONFIG, type WorkerConfig } from '../config/config.js';
 import { createRedisConnection } from './queues.js';

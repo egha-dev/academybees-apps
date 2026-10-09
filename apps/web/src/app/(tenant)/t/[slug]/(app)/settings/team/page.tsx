@@ -13,14 +13,14 @@ import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { InvitationActions } from '@/components/team/invitation-actions';
 import { InviteButton } from '@/components/team/invite-button';
 import { MemberManage } from '@/components/team/member-manage';
-import { type RoleOption } from '@/components/team/role-options';
+import type { RoleOption } from '@/components/team/role-options';
 import { apiServerGet } from '@/lib/api.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { homeFor } from '@/lib/session.server';

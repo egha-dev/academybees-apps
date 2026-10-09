@@ -1,9 +1,9 @@
 import { type Capability, isCapability, mergeGrants, RoleKeySchema } from '@academybee/contracts';
-import { type TenantBoundClient } from '@academybee/database';
+import type { TenantBoundClient } from '@academybee/database';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { type Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 
-import { type MembershipInfo } from '../context/request-context.js';
+import type { MembershipInfo } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { REDIS } from '../redis/redis.module.js';
 import { TenantContext } from '../tenant/tenant-context.service.js';

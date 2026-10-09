@@ -1,7 +1,7 @@
-import { type SyncOp, type SyncPushResponse } from '@academybee/contracts';
+import type { SyncOp, SyncPushResponse } from '@academybee/contracts';
 
-import { type ConnectivityMonitor } from './connectivity.js';
-import { type SyncQueue } from './queue.js';
+import type { ConnectivityMonitor } from './connectivity.js';
+import type { SyncQueue } from './queue.js';
 
 /** Sends a batch to `POST /api/v1/sync/push` (the endpoint arrives in Phase 6). */
 export type SyncTransport = (ops: SyncOp[]) => Promise<SyncPushResponse>;

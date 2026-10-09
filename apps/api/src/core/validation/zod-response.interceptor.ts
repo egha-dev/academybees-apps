@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { map, type Observable } from 'rxjs';
-import { type z } from 'zod';
+import type { z } from 'zod';
 
 import { DomainError } from '../errors/domain-error.js';
 import { ZOD_RESPONSE } from './zod-dto.js';

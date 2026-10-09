@@ -1,10 +1,10 @@
 import { encryptSecret, generateMasterKey, loadMasterKeys } from '@academybee/auth';
 import { describe, expect, it } from 'vitest';
 
-import { type WorkerConfig } from '../config/config.js';
-import { type DomainEventsWorker } from '../events/domain-events.worker.js';
+import type { WorkerConfig } from '../config/config.js';
+import type { DomainEventsWorker } from '../events/domain-events.worker.js';
 import { EmailHandler } from './email.handler.js';
-import { type EmailPort, type OutgoingEmail } from './email.port.js';
+import type { EmailPort, OutgoingEmail } from './email.port.js';
 
 const masterKey = generateMasterKey();
 const config = {

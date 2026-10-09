@@ -1,7 +1,7 @@
 'use client';
 
 import Typography from '@mui/material/Typography';
-import { type ElementType, type ReactNode } from 'react';
+import type { ElementType, ReactNode } from 'react';
 
 const VARIANTS = {
   display: { variant: 'h1', component: 'h1' },

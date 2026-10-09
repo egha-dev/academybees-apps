@@ -1,6 +1,6 @@
 import { Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 /** Page title, one line of context and the page's primary action (UX §10: where am I, what can I do). */
 export function PageHeader({

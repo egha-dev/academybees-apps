@@ -12,7 +12,7 @@ import {
   type OnApplicationShutdown,
 } from '@nestjs/common';
 import { type Job, Worker } from 'bullmq';
-import { type Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 
 import { reportError } from '../observability/error-reporting.js';
 import { WORKER_DEFAULTS } from '../queues/queues.js';

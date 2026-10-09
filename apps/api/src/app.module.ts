@@ -6,7 +6,7 @@ import { AuditModule } from './core/audit/audit.module.js';
 import { AuditedInterceptor } from './core/audit/audited.js';
 import { AuthModule } from './core/auth/auth.module.js';
 import { ConfigModule } from './core/config/config.module.js';
-import { type ApiConfig } from './core/config/config.schema.js';
+import type { ApiConfig } from './core/config/config.schema.js';
 import { ContextModule } from './core/context/context.module.js';
 import { DatabaseModule } from './core/database/database.module.js';
 import { DocsModule } from './core/docs/docs.module.js';

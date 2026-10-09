@@ -5,7 +5,7 @@ import {
   UpdateBrandingSchema,
 } from '@academybee/contracts';
 import { Body, Controller, Delete, Get, HttpCode, Patch, Put, Req } from '@nestjs/common';
-import { type Request } from 'express';
+import type { Request } from 'express';
 import { z } from 'zod';
 
 import { Can } from '../../core/rbac/can.decorator.js';

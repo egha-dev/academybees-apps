@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { AwsClient } from 'aws4fetch';
 
 import { API_CONFIG } from '../config/config.module.js';
-import { type ApiConfig } from '../config/config.schema.js';
+import type { ApiConfig } from '../config/config.schema.js';
 import { DomainError } from '../errors/domain-error.js';
 
 /**

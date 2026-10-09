@@ -3,7 +3,7 @@
 import { AppShell } from '@academybee/ui/components/shell';
 import { SchoolIcon } from '@academybee/ui/icons';
 import { usePathname } from 'next/navigation';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 export type ConsoleNavItem = { key: string; label: string; href: string };
 

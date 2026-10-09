@@ -3,14 +3,14 @@ import {
   SecuritySettingsSchema,
   type UpdateSecuritySettings,
 } from '@academybee/contracts';
-import { type TenantBoundClient } from '@academybee/database';
+import type { TenantBoundClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
 import { AnalyticsService } from '../../core/analytics/analytics.service.js';
 import { AuditService } from '../../core/audit/audit.service.js';
 import { MfaService } from '../../core/auth/mfa.service.js';
-import { type RequestContext } from '../../core/context/request-context.js';
+import type { RequestContext } from '../../core/context/request-context.js';
 import { TENANT_DB } from '../../core/database/database.module.js';
 import { DomainError } from '../../core/errors/domain-error.js';
 

@@ -3,8 +3,8 @@ import { Global, Inject, Injectable, Module, type OnApplicationShutdown } from '
 import { ClsService } from 'nestjs-cls';
 
 import { API_CONFIG } from '../config/config.module.js';
-import { type ApiConfig } from '../config/config.schema.js';
-import { type RequestContext } from '../context/request-context.js';
+import type { ApiConfig } from '../config/config.schema.js';
+import type { RequestContext } from '../context/request-context.js';
 
 /**
  * The application database client (`ab_app`, ADR-005): tenant-bound. The tenant comes from the

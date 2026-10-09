@@ -1,7 +1,7 @@
-import { type PrismaClient } from '@academybee/database';
+import type { PrismaClient } from '@academybee/database';
 import { Controller, Get, HttpCode, Inject, Res, VERSION_NEUTRAL } from '@nestjs/common';
-import { type Response } from 'express';
-import { type Redis } from 'ioredis';
+import type { Response } from 'express';
+import type { Redis } from 'ioredis';
 
 import { TENANT_DB } from '../database/database.module.js';
 import { REDIS } from '../redis/redis.module.js';

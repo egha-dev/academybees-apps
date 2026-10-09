@@ -1,9 +1,9 @@
 import { newId } from '@academybee/contracts';
-import { type Prisma, type TransactionClient } from '@academybee/database';
+import type { Prisma, TransactionClient } from '@academybee/database';
 import { Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
-import { type RequestContext } from '../context/request-context.js';
+import type { RequestContext } from '../context/request-context.js';
 
 export type OutboxEventInput = {
   type: string;

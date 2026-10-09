@@ -1,6 +1,6 @@
 // The platform (cross-tenant) client. Lint confines imports of `@academybee/database/platform`
 // to apps/api/src/platform/** and apps/worker/src/platform/**, and every use is audited (ADR-005).
-import { type DatabaseClientOptions } from './clients.js';
+import type { DatabaseClientOptions } from './clients.js';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PrismaClient } from './generated/prisma/client.js';

@@ -7,7 +7,7 @@ import {
   VERSION_METADATA,
 } from '@nestjs/common/constants.js';
 import { RouteParamtypes } from '@nestjs/common/enums/route-paramtypes.enum.js';
-import { type DiscoveryService, type MetadataScanner } from '@nestjs/core';
+import type { DiscoveryService, MetadataScanner } from '@nestjs/core';
 import { z } from 'zod';
 
 import { isZodDto, ZOD_RESPONSE } from '../validation/zod-dto.js';

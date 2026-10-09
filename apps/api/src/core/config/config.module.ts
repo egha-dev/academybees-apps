@@ -1,6 +1,6 @@
 import { type DynamicModule, Global, Module } from '@nestjs/common';
 
-import { type ApiConfig } from './config.schema.js';
+import type { ApiConfig } from './config.schema.js';
 
 export const API_CONFIG = Symbol('API_CONFIG');
 

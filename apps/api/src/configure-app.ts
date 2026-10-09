@@ -1,9 +1,9 @@
 import { type INestApplication, VersioningType } from '@nestjs/common';
-import { type NestExpressApplication } from '@nestjs/platform-express';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { ClsMiddleware, ClsService } from 'nestjs-cls';
 import { Logger } from 'nestjs-pino';
 
-import { type ApiConfig } from './core/config/config.schema.js';
+import type { ApiConfig } from './core/config/config.schema.js';
 import { clsMiddlewareOptions } from './core/context/context.module.js';
 import { ErrorEnvelopeFilter } from './core/errors/error.filter.js';
 

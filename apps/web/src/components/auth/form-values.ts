@@ -1,4 +1,4 @@
-import { type FormEvent } from 'react';
+import type { FormEvent } from 'react';
 
 /** The submitted form's text values by field name (fields are uncontrolled, see TextInput). */
 export function formValues(e: FormEvent<HTMLFormElement>): (name: string) => string {

@@ -1,6 +1,6 @@
 import { newId } from '@academybee/contracts';
 import { createTenantFixture, type TenantFixture } from '@academybee/testing';
-import { type INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import pg from 'pg';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';

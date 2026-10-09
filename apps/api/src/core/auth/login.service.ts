@@ -9,11 +9,11 @@ import {
 } from '@academybee/contracts';
 import { bindUser, type TenantBoundClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
-import { type Response } from 'express';
+import type { Response } from 'express';
 import { ClsService } from 'nestjs-cls';
 
 import { AuditService } from '../audit/audit.service.js';
-import { type RequestContext } from '../context/request-context.js';
+import type { RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { DomainError } from '../errors/domain-error.js';
 import { RATE_RULES, RateLimiter } from '../rate-limit/rate-limiter.service.js';

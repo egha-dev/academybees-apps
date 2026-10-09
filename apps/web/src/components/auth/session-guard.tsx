@@ -5,8 +5,8 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 
 import { refreshSession, SESSION_LOST_EVENT } from '@/lib/api';
 
-import { type LoginFormLabels } from './login-form';
-import { type SignOutLabels } from './sign-out-button';
+import type { LoginFormLabels } from './login-form';
+import type { SignOutLabels } from './sign-out-button';
 
 const SessionLostDialog = lazy(() => import('./session-lost-dialog'));
 

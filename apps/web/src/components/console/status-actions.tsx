@@ -1,6 +1,6 @@
 'use client';
 
-import { type TenantStatus, type TenantTransition } from '@academybee/contracts';
+import type { TenantStatus, TenantTransition } from '@academybee/contracts';
 import { Button } from '@academybee/ui/components/actions';
 import { InlineAlert } from '@academybee/ui/components/alert';
 import { useToast } from '@academybee/ui/components/feedback';

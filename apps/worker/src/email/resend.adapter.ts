@@ -1,4 +1,4 @@
-import { type EmailPort, type OutgoingEmail } from './email.port.js';
+import type { EmailPort, OutgoingEmail } from './email.port.js';
 
 const RESEND_EMAILS_URL = 'https://api.resend.com/emails';
 

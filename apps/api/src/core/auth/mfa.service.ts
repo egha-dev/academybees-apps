@@ -14,15 +14,15 @@ import {
   verifyTotp,
 } from '@academybee/auth';
 import { type MfaEnrolStartResponse, newId } from '@academybee/contracts';
-import { type TenantBoundClient, type TransactionClient } from '@academybee/database';
+import type { TenantBoundClient, TransactionClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
-import { type Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 import { ClsService } from 'nestjs-cls';
 import { z } from 'zod';
 
 import { AnalyticsService } from '../analytics/analytics.service.js';
 import { AuditService } from '../audit/audit.service.js';
-import { type Actor, type RequestContext } from '../context/request-context.js';
+import type { Actor, RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { DomainError } from '../errors/domain-error.js';
 import { RATE_RULES, RateLimiter } from '../rate-limit/rate-limiter.service.js';

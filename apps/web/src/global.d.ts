@@ -1,4 +1,4 @@
-import { type Messages } from '@academybee/i18n';
+import type { Messages } from '@academybee/i18n';
 
 // Typed message keys: a missing key is a type error (next-intl AppConfig).
 declare module 'next-intl' {

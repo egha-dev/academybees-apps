@@ -10,7 +10,7 @@ import {
   tenantSpoofAttempts,
 } from '@academybee/testing';
 import { LEGAL_DOCUMENTS } from '@academybee/contracts';
-import { type INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import pg from 'pg';
 import request from 'supertest';
 import { Redis } from 'ioredis';

@@ -5,8 +5,8 @@ import { Reflector } from '@nestjs/core';
 import { ClsService } from 'nestjs-cls';
 
 import { API_CONFIG } from '../config/config.module.js';
-import { type ApiConfig } from '../config/config.schema.js';
-import { type RequestContext } from '../context/request-context.js';
+import type { ApiConfig } from '../config/config.schema.js';
+import type { RequestContext } from '../context/request-context.js';
 import { DomainError } from '../errors/domain-error.js';
 import { DEFAULT_TENANT_STATUSES, HOST_POLICY, type HostPolicy } from './host-policy.js';
 import { TenantResolver } from './tenant-resolver.service.js';

@@ -11,12 +11,12 @@ import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { authLabels, mfaLabels } from '@/components/auth/labels.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
-import { type SecurityErrorLabels } from '@/components/security/errors';
+import type { SecurityErrorLabels } from '@/components/security/errors';
 import { MfaRuleLazy as MfaRule, SecurityButton } from '@/components/security/security-actions';
 import { apiServerGet } from '@/lib/api.server';
 import { roleHomesEnabled } from '@/lib/flags.server';

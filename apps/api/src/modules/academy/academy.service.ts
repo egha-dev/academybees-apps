@@ -10,16 +10,16 @@ import {
   sniffImage,
   type UpdateBranding,
 } from '@academybee/contracts';
-import { type TenantBoundClient } from '@academybee/database';
+import type { TenantBoundClient } from '@academybee/database';
 import { normalizeRootDomain, tenantHost } from '@academybee/tenant';
 import { Inject, Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
-import { type z } from 'zod';
+import type { z } from 'zod';
 
 import { AuditService } from '../../core/audit/audit.service.js';
 import { API_CONFIG } from '../../core/config/config.module.js';
 import { type ApiConfig, platformRootDomain } from '../../core/config/config.schema.js';
-import { type RequestContext } from '../../core/context/request-context.js';
+import type { RequestContext } from '../../core/context/request-context.js';
 import { TENANT_DB } from '../../core/database/database.module.js';
 import { DomainError } from '../../core/errors/domain-error.js';
 import { MediaStorage } from '../../core/media/media-storage.js';

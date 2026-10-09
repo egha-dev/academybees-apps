@@ -5,7 +5,7 @@ import {
   weeklyOccurrences,
   zonedInstant,
 } from '@academybee/contracts';
-import { type TransactionClient } from '@academybee/database';
+import type { TransactionClient } from '@academybee/database';
 import { Injectable } from '@nestjs/common';
 
 /** Days of classes onboarding creates at once, until the Phase 5 rolling job exists (C-92). */

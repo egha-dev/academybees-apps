@@ -13,7 +13,7 @@ import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/com
 import { ClsService } from 'nestjs-cls';
 import { z } from 'zod';
 
-import { type RequestContext } from '../../core/context/request-context.js';
+import type { RequestContext } from '../../core/context/request-context.js';
 import { DomainError } from '../../core/errors/domain-error.js';
 import { Idempotent } from '../../core/idempotency/idempotent.js';
 import { RATE_RULES, RateLimiter } from '../../core/rate-limit/rate-limiter.service.js';

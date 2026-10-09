@@ -1,9 +1,9 @@
 import { newId } from '@academybee/contracts';
-import { type Prisma, type PrismaClient, type TransactionClient } from '@academybee/database';
+import type { Prisma, PrismaClient, TransactionClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
-import { type Actor, type RequestContext } from '../context/request-context.js';
+import type { Actor, RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 
 export type AuditEntry = {

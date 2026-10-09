@@ -1,6 +1,6 @@
 import { Box, Container, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { Brand } from '@/components/brand';
 import { ThemeToggle } from '@/components/theme-toggle';

@@ -198,6 +198,9 @@ export function createConfig(options = {}) {
           'error',
           { fixStyle: 'inline-type-imports' },
         ],
+        // `import { type X }` still loads the module (verbatimModuleSyntax): a type-only import
+        // must be `import type`, or a client bundle pulls in the whole module (G-24, Phase 3 S6).
+        '@typescript-eslint/no-import-type-side-effects': 'error',
         eqeqeq: ['error', 'always'],
         'no-console': ['error', { allow: ['warn', 'error'] }],
       },

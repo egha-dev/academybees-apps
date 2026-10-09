@@ -15,7 +15,7 @@ import {
 import { ErrorIcon, LockIcon } from '../icons.js';
 import { Button } from './actions.js';
 import { Text } from './text.js';
-import { type ToastMessage, type ToastTone } from './toast-view.js';
+import type { ToastMessage, ToastTone } from './toast-view.js';
 
 const ToastView = lazy(() => import('./toast-view.js'));
 

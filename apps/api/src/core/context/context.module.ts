@@ -1,9 +1,9 @@
 import { newId } from '@academybee/contracts';
 import { type DynamicModule, Global, Module } from '@nestjs/common';
-import { type Request, type Response } from 'express';
+import type { Request, Response } from 'express';
 import { type ClsMiddlewareOptions, ClsModule, ClsService } from 'nestjs-cls';
 
-import { type ApiConfig } from '../config/config.schema.js';
+import type { ApiConfig } from '../config/config.schema.js';
 import { clientIp, effectiveHost, PROXY_SECRET_HEADER } from '../proxy/effective-host.js';
 import { REQUEST_ID_HEADER, type RequestContext, resolveRequestId } from './request-context.js';
 

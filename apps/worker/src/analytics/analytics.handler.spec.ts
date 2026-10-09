@@ -1,8 +1,8 @@
 import { newId } from '@academybee/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { type WorkerConfig } from '../config/config.js';
-import { type DomainEventsWorker } from '../events/domain-events.worker.js';
+import type { WorkerConfig } from '../config/config.js';
+import type { DomainEventsWorker } from '../events/domain-events.worker.js';
 import { NoopAnalyticsAdapter } from './adapters.js';
 import { AnalyticsHandler } from './analytics.handler.js';
 import { hashId } from './hash.js';

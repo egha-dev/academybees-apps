@@ -1,6 +1,6 @@
 'use client';
 
-import { type MfaVerifyResponse } from '@academybee/contracts';
+import type { MfaVerifyResponse } from '@academybee/contracts';
 import { InlineAlert } from '@academybee/ui/components/alert';
 import { Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';

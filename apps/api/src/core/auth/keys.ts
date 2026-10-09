@@ -1,8 +1,8 @@
 import { type KeyRing, loadKeyRing, loadMasterKeys, type MasterKeyRing } from '@academybee/auth';
-import { type Provider } from '@nestjs/common';
+import type { Provider } from '@nestjs/common';
 
 import { API_CONFIG } from '../config/config.module.js';
-import { type ApiConfig } from '../config/config.schema.js';
+import type { ApiConfig } from '../config/config.schema.js';
 
 /** Access-token signing keys (C-64), loaded once at boot; a bad key set stops the API starting. */
 export const AUTH_KEYS = Symbol('AUTH_KEYS');

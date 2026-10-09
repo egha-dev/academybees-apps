@@ -8,11 +8,11 @@ import {
 } from '@nestjs/common';
 import { HTTP_CODE_METADATA } from '@nestjs/common/constants.js';
 import { Reflector } from '@nestjs/core';
-import { type Request, type Response } from 'express';
+import type { Request, Response } from 'express';
 import { ClsService } from 'nestjs-cls';
 import { catchError, from, mergeMap, type Observable, of, throwError } from 'rxjs';
 
-import { type RequestContext } from '../context/request-context.js';
+import type { RequestContext } from '../context/request-context.js';
 import { DomainError } from '../errors/domain-error.js';
 import { IdempotencyStore } from './idempotency.store.js';
 import { isValidIdempotencyKey, requestHash } from './request-hash.js';

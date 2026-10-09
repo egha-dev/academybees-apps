@@ -1,4 +1,4 @@
-import { type ErrorCode, type ErrorDetail } from '@academybee/contracts';
+import type { ErrorCode, ErrorDetail } from '@academybee/contracts';
 
 /**
  * Throw from services for expected failures. The filter turns it into the envelope with the

@@ -1,6 +1,6 @@
 import { generateToken, hashToken } from '@academybee/auth';
 import { INVITATION_LINK_PATH, INVITATION_TTL_MS, newId } from '@academybee/contracts';
-import { type TransactionClient } from '@academybee/database';
+import type { TransactionClient } from '@academybee/database';
 import { Injectable } from '@nestjs/common';
 
 import { EmailService } from '../../core/email/email.service.js';

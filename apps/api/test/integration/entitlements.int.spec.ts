@@ -1,5 +1,5 @@
 import { addMemberFixture, createTenantFixture, FIXTURE_PASSWORD } from '@academybee/testing';
-import { type INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import pg from 'pg';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';

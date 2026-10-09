@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { type Capability, type Scope } from './permissions.js';
+import type { Capability, Scope } from './permissions.js';
 
 /** Widest first: when several roles grant a capability, the widest scope wins (ADR-008). */
 const SCOPE_ORDER: readonly Scope[] = ['TENANT', 'BRANCH', 'ASSIGNED', 'LINKED', 'SELF'];

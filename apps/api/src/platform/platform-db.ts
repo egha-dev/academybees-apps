@@ -1,11 +1,11 @@
-import { type PrismaClient, type TransactionClient } from '@academybee/database';
+import type { PrismaClient, TransactionClient } from '@academybee/database';
 import { createPlatformClient } from '@academybee/database/platform';
 import { Inject, Injectable, type OnApplicationShutdown } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
 import { API_CONFIG } from '../core/config/config.module.js';
-import { type ApiConfig } from '../core/config/config.schema.js';
-import { type RequestContext } from '../core/context/request-context.js';
+import type { ApiConfig } from '../core/config/config.schema.js';
+import type { RequestContext } from '../core/context/request-context.js';
 import { DomainError } from '../core/errors/domain-error.js';
 
 /**

@@ -2,7 +2,7 @@ import { type PrismaClient, withTransaction } from '@academybee/database';
 import { Inject, Injectable, Logger, type OnApplicationBootstrap } from '@nestjs/common';
 
 import { API_CONFIG } from '../config/config.module.js';
-import { type ApiConfig } from '../config/config.schema.js';
+import type { ApiConfig } from '../config/config.schema.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { AnalyticsService } from './analytics.service.js';
 

@@ -1,5 +1,5 @@
-import { type SlugAvailability } from '@academybee/contracts';
-import { type TransactionClient } from '@academybee/database';
+import type { SlugAvailability } from '@academybee/contracts';
+import type { TransactionClient } from '@academybee/database';
 import { slugAlternatives, validateSlug } from '@academybee/tenant';
 import { Injectable } from '@nestjs/common';
 

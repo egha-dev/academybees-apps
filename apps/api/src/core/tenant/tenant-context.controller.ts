@@ -1,9 +1,9 @@
 import { type TenantContextResponse, TenantContextResponseSchema } from '@academybee/contracts';
-import { type TenantBoundClient } from '@academybee/database';
+import type { TenantBoundClient } from '@academybee/database';
 import { Controller, Get, Inject } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
-import { type RequestContext } from '../context/request-context.js';
+import type { RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { DomainError } from '../errors/domain-error.js';
 import { MediaStorage } from '../media/media-storage.js';

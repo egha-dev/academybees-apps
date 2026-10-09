@@ -3,7 +3,7 @@
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import Stack from '@mui/material/Stack';
-import { type ElementType, type ReactNode } from 'react';
+import type { ElementType, ReactNode } from 'react';
 
 import { radius, THEME_ATTRIBUTE, TOUCH_TARGET } from '../tokens.js';
 import { ab } from './ab.js';

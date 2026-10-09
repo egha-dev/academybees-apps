@@ -5,11 +5,11 @@ import {
   FIXTURE_PASSWORD,
   type TenantFixture,
 } from '@academybee/testing';
-import { type INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import pg from 'pg';
 import request from 'supertest';
-import { type OnboardingState } from '@academybee/contracts';
+import type { OnboardingState } from '@academybee/contracts';
 import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from 'vitest';
 
 import { createTestApp } from '../support/test-app.js';

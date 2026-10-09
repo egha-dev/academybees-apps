@@ -1,9 +1,9 @@
 import { generateToken, hashToken } from '@academybee/auth';
 import { type RoleKey, ROLE_TEMPLATES } from '@academybee/contracts';
-import { type TenantBoundClient } from '@academybee/database';
+import type { TenantBoundClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
-import { type Response } from 'express';
-import { type Redis } from 'ioredis';
+import type { Response } from 'express';
+import type { Redis } from 'ioredis';
 import { z } from 'zod';
 
 import { AuditService } from '../audit/audit.service.js';

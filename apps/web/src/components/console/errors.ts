@@ -1,4 +1,4 @@
-import { type ApiError } from '@/lib/api';
+import type { ApiError } from '@/lib/api';
 
 type ErrorKey =
   | 'errors.offline'

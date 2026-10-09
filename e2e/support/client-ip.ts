@@ -1,4 +1,4 @@
-import { type BrowserContext } from '@playwright/test';
+import type { BrowserContext } from '@playwright/test';
 
 /** Header the E2E web servers trust for the client IP (TRUSTED_CLIENT_IP_HEADER, review M1). */
 export const E2E_CLIENT_IP_HEADER = 'x-e2e-client-ip';

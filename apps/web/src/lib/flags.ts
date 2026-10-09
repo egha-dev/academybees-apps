@@ -1,4 +1,4 @@
-import { type FeatureFlagKey } from '@academybee/contracts';
+import type { FeatureFlagKey } from '@academybee/contracts';
 
 export type FlagsResponse = { flags: Partial<Record<string, boolean>> };
 

@@ -4,7 +4,7 @@ import MuiButton from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import MuiIconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
-import { type MouseEventHandler, type ReactNode } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 

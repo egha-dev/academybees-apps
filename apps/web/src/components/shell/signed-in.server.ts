@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { type MeResponse } from '@academybee/contracts';
+import type { MeResponse } from '@academybee/contracts';
 import { notFound, redirect } from 'next/navigation';
 
 import { academyName, hostContext } from '@/lib/host-context.server';

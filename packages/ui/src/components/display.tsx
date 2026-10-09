@@ -4,7 +4,7 @@ import MuiCard from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import MuiSkeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { CheckCircleIcon, CircleIcon, ErrorIcon, InfoIcon, WarningIcon } from '../icons.js';
 import { radius, type StatusTone } from '../tokens.js';

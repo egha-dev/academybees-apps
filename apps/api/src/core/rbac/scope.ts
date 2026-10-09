@@ -1,7 +1,7 @@
-import { type Capability, type Scope } from '@academybee/contracts';
+import type { Capability, Scope } from '@academybee/contracts';
 import { ClsService } from 'nestjs-cls';
 
-import { type RequestContext } from '../context/request-context.js';
+import type { RequestContext } from '../context/request-context.js';
 import { DomainError } from '../errors/domain-error.js';
 
 /** Who is asking, for scope policies (ARCHITECTURE §7.2). */

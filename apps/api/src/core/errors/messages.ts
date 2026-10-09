@@ -1,4 +1,4 @@
-import { type ErrorCode } from '@academybee/contracts';
+import type { ErrorCode } from '@academybee/contracts';
 import { createServerTranslator } from '@academybee/i18n';
 
 // User-facing error text comes from the `errors` catalogue namespace (G-32), keyed by code.

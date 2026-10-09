@@ -3,8 +3,8 @@
 import { liveQuery } from 'dexie';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 
-import { type Connectivity, type ConnectivityMonitor } from '../connectivity.js';
-import { type QueueCounts, type SyncQueue } from '../queue.js';
+import type { Connectivity, ConnectivityMonitor } from '../connectivity.js';
+import type { QueueCounts, SyncQueue } from '../queue.js';
 
 /** Live connection state (ARCHITECTURE §11.6). */
 export function useConnectivity(monitor: ConnectivityMonitor): Connectivity {
