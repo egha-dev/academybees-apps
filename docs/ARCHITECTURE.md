@@ -252,6 +252,12 @@ Hostname is **candidate identification only** — authorization comes from the a
 
 Raw errors (tenantId, DB, routing) are never shown (UX v1.1 §7).
 
+*As built (Phase 3):*
+- **SETUP (C-85):** the academy host serves `/login`, `/invite`, `/forgot-password`, `/reset-password`, `/legal`, `/welcome` and `/onboarding/*`; every other path reaches `/setup-gate`. The gate sends the owner (`academy.onboarding.manage`) to Welcome. Signed-out visitors get "getting ready" plus a sign-in link; other staff get "getting ready".
+- **SUSPENDED / ARCHIVED (C-86):** **no sign-in, refresh or new session** for anyone (`403 TENANT_UNAVAILABLE`). Suspending or archiving revokes the academy's sessions in the same transaction. Owner sign-in on SUSPENDED for billing and export returns in Phase 13/15.
+- **Activation (C-87):** onboarding's `POST /onboarding/complete` uses the SECURITY DEFINER function `ab_activate_current_tenant()` (SETUP → ACTIVE, current academy only). The console can also activate; suspend stores `previousStatus` and reactivate restores it.
+- **Cache (C-96):** console changes invalidate the API host cache; the web proxy caches non-ACTIVE answers for 10 s and ACTIVE ones for 60 s.
+
 ### 5.4 Custom domains (future-ready)
 
 Add `TenantDomain(kind=CUSTOM, verification=PENDING)` with a TXT token → worker verifies DNS → platform edge API (e.g. Vercel Domains API) attaches domain + certificate → `VERIFIED`. Nothing else in the tenant model changes.
@@ -451,6 +457,7 @@ CREATE POLICY tenant_isolation ON student
 | tenant | `Tenant`, `TenantDomain`, `TenantBranding`, `TenantSettings`, `Branch` | 1 |
 | auth/rbac | `User`, `UserCredential`, `Membership`, `Role`, `RolePermission`, `MembershipRole`, `PlatformStaff`, `AuthSession`, `Invitation`, `PasswordResetToken` | 2 |
 | provisioning | `TenantOnboarding`, `Plan`, `PlanEntitlement`, `Subscription` (TRIAL only until Ph 13), `ProvisioningRequest` | 3 |
+| *as built Ph 3* | `Plan`, `PlanEntitlement` (synced from the contracts catalogue, C-89), `Subscription`, `SubscriptionOverride`, `TenantOnboarding`, `LegalDocument`, `LegalAcceptance`, `MediaFile`, `TenantSequence`; people (`Student`, `StudentHealthNote`, `Parent`, `ParentStudent`, `Teacher`, `ConsentRecord`, `CustomFieldDefinition`) and scheduling (`Course`, `CourseLevel`, `Batch`, `BatchTeacher`, `BatchEnrolment`, `ScheduleRule`, `ClassSession`); idempotency replaced the planned `ProvisioningRequest` | 3 |
 | legal & consent | `LegalDocument` (variants per locale), `LegalAcceptance` (records the locale shown), `ConsentRecord` (ADR-034) | 3 / 4 |
 | i18n | `User.preferredLocale`, `Parent.preferredLocale`, `TenantSettings.i18n`; locale-keyed variants on `MessageTemplate`, `Announcement`, `HelpArticle`, public page; `TemplateRegistration` (channel, template, locale, provider id, status) (ADR-040) | 0 / 2 / 3 / 10 / L |
 | import | `ImportJob` (ADR-036) | 4 |
@@ -549,6 +556,8 @@ Decorators: `@Public()`, `@PlatformOnly()`, `@Can(cap)`, `@Idempotent()`, `@Audi
 | team | `GET /team/members`, `PATCH /team/members/:id`, `GET /team/roles`, `GET|POST /team/invitations`, `POST /team/invitations/:id/{resend,revoke}`, public `GET /invitations/:token` + `POST /invitations/:token/accept` (C-67) | 2/4 |
 | platform/tenants | `GET /platform/slug-availability?slug=`, `POST /platform/tenants`, `GET /platform/tenants`, `GET/PATCH /platform/tenants/:id`, `POST /platform/tenants/:id/(suspend|reactivate|archive)`, `POST /platform/tenants/:id/domains` | 3 (+14) |
 | onboarding | `GET /onboarding`, `PUT /onboarding/steps/:step`, `POST /onboarding/complete` | 3 |
+| legal | `GET /legal/current`, `POST /legal/accept` (G-06, ADR-034) | 3 |
+| academy | `GET/PATCH /academy/settings`, `GET/PATCH /academy/branding`, `PUT/DELETE /academy/branding/{logo,favicon}` (raw image bytes, C-97) | 3 |
 | academy | `GET/PATCH /academy/settings`, `PATCH /academy/branding`, `POST /academy/branding/logo-upload-url` | 3 |
 | students | `GET/POST /students`, `GET/PATCH /students/:id`, `POST /students/:id/(archive|restore)`, `GET /students/:id/activity`, `GET/PUT /settings/custom-fields` | 4 |
 | import | `POST /imports` (upload URL), `POST /imports/:id/validate`, `GET /imports/:id` (preview, errors), `POST /imports/:id/commit`, `GET /imports/templates/:kind` | 4 / 7 |
@@ -633,6 +642,11 @@ After login on an academy URL, `/` sends staff to the home of their primary expe
 † added in Phase 7 · ‡ deferred modules (hidden until built — no placeholder "coming soon" pages in production navigation).
 
 **Console (`console.academybees.com`)**: `/overview` `/academies` `/academies/new` `/academies/[id]/[tab]` `/users` `/subscriptions` `/plans` `/payments` `/growth/(acquisition|usage|retention)` `/support` `/announcements` `/audit` `/settings` `/security`.
+
+*As built (Phase 3):*
+- **Tenant host:** `/legal`, `/welcome` and `/onboarding/[step]` (the steps and `ready`) live in route group `(setup)`, outside the Manage shell. `/setup-gate` is internal. There is no `/onboarding/fees` until Phase 7, and the invite link is `/invite#token=…` (C-83).
+- **Settings:** one nav entry, Settings → `/settings/academy`, with server tabs to `/settings/branding`.
+- **Console:** `/academies`, `/academies/new`, `/academies/[id]/created`, and `/academies/[id]/(overview|domain)`, in the Deep Ink shell (`AppShell chrome="ink"`).
 
 ### 10.4 Shells and navigation (UX §7, §8, §25)
 
@@ -874,6 +888,12 @@ domain event → NotificationIntent (type, tenant, subjects, data, dedupeKey)
 - Uploads via presigned PUT (size/type limits, 10 MB default), then a `confirm` call that verifies object metadata and records `Attachment`.
 - Downloads via presigned GET (≤ 5 min) issued only after a permission + scope check. Public branding assets (logo, favicon) are served via a public CDN path that contains only branding.
 - Content-type allow-list; images re-encoded server-side (sharp) to strip EXIF; malware scanning hook reserved (Phase 15).
+
+*As built (Phase 3, C-93, C-97):*
+- **Store.** `MediaStorage` over the S3 API (`aws4fetch`, SigV4): SeaweedFS locally, **Cloudflare R2** on staging and production.
+- **Public bucket.** It holds **public branding only** and is served from `media.<root>`. Private media gets a separate bucket with no public domain in Phase 4, read through presigned GETs of 5 minutes or less.
+- **Uploads.** Branding uploads go **through the API** (raw bytes; size, magic-byte type PNG/JPEG/WebP, dimensions), so there is no presigned PUT and no CORS. No server re-encoding yet: branding images carry no personal data, and EXIF stripping arrives with photos in Phase 4.
+- **Keys and metadata.** Keys are `t/<tenantId>/branding/<uuid>.<ext>`, immutable. `MediaFile` holds the metadata, and a database check allows only `branding.*` to be public.
 
 ---
 

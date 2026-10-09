@@ -107,9 +107,10 @@ Then open:
 | `teacher@demo-a.test` | `demo-a.localhost:3000` and `demo-b.localhost:3000` | Teacher in both academies |
 | `parent@demo-a.test`, `student@demo-a.test` | `app.localhost:3000` (Family Hub) | Parent, Student of demo-a |
 | `owner@demo-b.test` | `demo-b.localhost:3000` | Owner |
-| `superadmin@academybees.test` | `console.localhost:3000` | Super Admin (TOTP enrolment on first sign-in, C-66) |
+| `owner@setup-demo.test` | `setup-demo.localhost:3000` | Owner of the academy still setting up: legal step, Welcome and the guided setup (Phase 3) |
+| `superadmin@academybees.test` | `console.localhost:3000` | Super Admin (TOTP enrolment on first sign-in, C-66): Academies list, Create academy, suspend / reactivate / archive, change address (Phase 3) |
 
-Sign-in screens arrive during Phase 2.
+Logos are stored in the local SeaweedFS (`pnpm infra:up`) and served from `http://localhost:8333/academybee-local/…` (C-97).
 | http://localhost:3000/api/v1/health/ready | API through the web origin (DB + Redis) |
 | http://localhost:4000/api/docs | OpenAPI (not in production) |
 | http://localhost:8025 | Mailpit (email from Phase 2) |
