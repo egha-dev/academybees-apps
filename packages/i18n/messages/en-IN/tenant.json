@@ -24,7 +24,8 @@
       "metaTitle": "Setting up",
       "title": "{academy} is getting ready",
       "body": "This academy is still setting up its workspace on AcademyBee. Please check back soon.",
-      "action": "Go to AcademyBee"
+      "action": "Go to AcademyBee",
+      "signIn": "I run this academy — sign in"
     },
     "accessDenied": {
       "metaTitle": "No access",

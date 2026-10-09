@@ -17,6 +17,23 @@ export type RouteDecision =
 const SHARED_PREFIXES = ['/offline', '/dev'];
 const MANIFEST = '/manifest.webmanifest';
 
+/**
+ * What an academy that is setting up serves (C-85): sign-in, the legal step and the guided setup.
+ * Every other path goes to the setup gate, which sends the owner on and shows everyone else the
+ * "getting ready" page.
+ */
+const SETUP_OPEN_PREFIXES = [
+  '/login',
+  '/forgot-password',
+  '/reset-password',
+  '/invite',
+  '/legal',
+  '/welcome',
+  '/onboarding',
+  '/academy-icon',
+];
+export const SETUP_GATE = '/setup-gate';
+
 /** Route-group folders only reachable through a rewrite, never by typing the URL. */
 const INTERNAL_PREFIXES = ['/t', '/console', '/hub', '/status'];
 
@@ -45,9 +62,12 @@ export function decideRoute(input: {
   protocol: string;
   /** Academy lookup for tenant/custom hosts; `'unavailable'` when the API can't be reached. */
   lookup?: ContextLookup | 'unavailable' | undefined;
+  /** `p3-onboarding` for this academy (C-85); off → a setting-up academy shows its status page. */
+  setupOnboarding?: boolean;
 }): RouteDecision {
   const { hostClass, pathname } = input;
-  if (starts(pathname, INTERNAL_PREFIXES)) return { type: 'rewrite', path: '/__not-found' };
+  if (starts(pathname, INTERNAL_PREFIXES) || starts(pathname, [SETUP_GATE]))
+    return { type: 'rewrite', path: '/__not-found' };
   if (starts(pathname, SHARED_PREFIXES)) return { type: 'next' };
   // Only ACTIVE academies serve their own manifest; every other host gets AcademyBee's.
   const activeAcademy =
@@ -86,8 +106,11 @@ export function decideRoute(input: {
         case 'SUSPENDED':
           return statusRewrite('suspended');
         case 'SETUP':
-          // Phase 3 sends the signed-in owner to onboarding; everyone else sees this page.
-          return statusRewrite('setup');
+          if (!input.setupOnboarding) return statusRewrite('setup');
+          return {
+            type: 'rewrite',
+            path: `/t/${ctx.slug}${starts(pathname, SETUP_OPEN_PREFIXES) ? pathname : SETUP_GATE}`,
+          };
         case 'ACTIVE':
           return { type: 'rewrite', path: `/t/${ctx.slug}${pathname === '/' ? '' : pathname}` };
       }
