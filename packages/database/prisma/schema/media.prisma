@@ -1,0 +1,40 @@
+// Media files (Phase 3, C-70, C-93, C-97): metadata only — the bytes live in object storage
+// (SeaweedFS locally, Cloudflare R2 on staging/production). Public and private files never share a
+// bucket (C-97); URLs are built at read time, never stored.
+
+enum MediaVisibility {
+  PUBLIC
+  PRIVATE
+
+  @@map("media_visibility")
+}
+
+enum MediaStatus {
+  READY
+  /// Replaced or removed; the object is deleted from storage (kept here as history).
+  REMOVED
+
+  @@map("media_status")
+}
+
+model MediaFile {
+  id          String          @id @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  /// `branding.logo`, `branding.favicon` (contracts MEDIA_PURPOSES); fixes the visibility.
+  purpose     String          @db.VarChar(40)
+  visibility  MediaVisibility
+  /// `t/<tenantId>/<area>/<uuid>.<ext>` in the bucket of its visibility.
+  storageKey  String          @unique @map("storage_key") @db.VarChar(300)
+  mimeType    String          @map("mime_type") @db.VarChar(80)
+  sizeBytes   Int             @map("size_bytes")
+  width       Int?
+  height      Int?
+  status      MediaStatus     @default(READY)
+  createdById String?         @map("created_by_id") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  removedAt   DateTime?       @map("removed_at") @db.Timestamptz(3)
+
+  @@index([tenantId, purpose, status])
+  @@map("media_file")
+}

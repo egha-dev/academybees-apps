@@ -6,6 +6,7 @@ import { ClsService } from 'nestjs-cls';
 import { type RequestContext } from '../context/request-context.js';
 import { TENANT_DB } from '../database/database.module.js';
 import { DomainError } from '../errors/domain-error.js';
+import { MediaStorage } from '../media/media-storage.js';
 import { ZodResponse } from '../validation/zod-dto.js';
 import { Public } from '../auth/public.decorator.js';
 import { AnyHost } from './host-policy.js';
@@ -23,6 +24,7 @@ export class TenantContextController {
   constructor(
     @Inject(TENANT_DB) private readonly db: TenantBoundClient,
     private readonly cls: ClsService<RequestContext>,
+    private readonly media: MediaStorage,
   ) {}
 
   @Get('context')
@@ -43,7 +45,13 @@ export class TenantContextController {
         timezone: true,
         locale: true,
         branding: {
-          select: { displayName: true, primaryColor: true, secondaryColor: true, logoKey: true },
+          select: {
+            displayName: true,
+            primaryColor: true,
+            secondaryColor: true,
+            logoKey: true,
+            faviconKey: true,
+          },
         },
         name: true,
       },
@@ -62,6 +70,8 @@ export class TenantContextController {
         primaryColor: hexOrNull(tenant.branding?.primaryColor),
         secondaryColor: hexOrNull(tenant.branding?.secondaryColor),
         hasLogo: Boolean(tenant.branding?.logoKey),
+        logoUrl: this.media.publicUrl(tenant.branding?.logoKey),
+        faviconUrl: this.media.publicUrl(tenant.branding?.faviconKey),
       },
     };
   }

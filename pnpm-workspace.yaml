@@ -108,6 +108,7 @@ catalog:
   qrcode: 1.5.4
   '@types/qrcode': 1.5.6
   nodemailer: 10.0.13
+  aws4fetch: 1.0.20
   '@vitest/coverage-v8': 5.0.3
   unplugin-swc: 2.0.0
   '@swc/core': 1.16.13

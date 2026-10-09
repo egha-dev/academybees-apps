@@ -21,6 +21,11 @@ export function configureApp(app: INestApplication, config: ApiConfig): void {
   const cls = new ClsMiddleware(clsMiddlewareOptions(config));
   express.use(cls.use.bind(cls));
   express.useBodyParser('json', { limit: '1mb' });
+  // Branding images arrive as raw bytes (C-97); the service checks each purpose's own limit.
+  express.useBodyParser('raw', {
+    type: ['image/png', 'image/jpeg', 'image/webp', 'application/octet-stream'],
+    limit: '3mb',
+  });
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI });
   // Registered here (not APP_FILTER) so it also handles unknown routes and body-parser errors.

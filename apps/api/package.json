@@ -24,6 +24,7 @@
     "@nestjs/core": "catalog:",
     "@nestjs/platform-express": "catalog:",
     "@sentry/node": "catalog:",
+    "aws4fetch": "catalog:",
     "express": "catalog:",
     "ioredis": "catalog:",
     "nestjs-cls": "catalog:",

@@ -28,6 +28,9 @@ export const TenantContextResponseSchema = z.discriminatedUnion('status', [
       primaryColor: HexColor.nullable(),
       secondaryColor: HexColor.nullable(),
       hasLogo: z.boolean(),
+      /** Public URLs of the uploaded logo and favicon (C-97); null → generated monogram. */
+      logoUrl: z.url().nullable().default(null),
+      faviconUrl: z.url().nullable().default(null),
     }),
   }),
   z.object({ status: z.literal('SUSPENDED'), displayName: z.string() }),

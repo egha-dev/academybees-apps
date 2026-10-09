@@ -106,8 +106,10 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: start Postgres, Redis and Mailpit
-        run: docker compose -f infra/docker-compose.yml up -d --wait postgres redis mailpit
+      - name: start Postgres, Redis, Mailpit and the S3 store (logo uploads, C-97)
+        run: |
+          docker compose -f infra/docker-compose.yml up -d --wait postgres redis mailpit s3
+          docker compose -f infra/docker-compose.yml run --rm s3-init
       - name: migrate
         run: pnpm db:deploy
       - name: seed demo academies (local/ci only, C-54)

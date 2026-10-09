@@ -38,6 +38,19 @@ export const ApiConfigSchema = z
      */
     PLATFORM_DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
     REDIS_URL: z.url({ protocol: /^rediss?$/ }),
+    /**
+     * Object storage (C-97): S3-compatible — SeaweedFS locally, Cloudflare R2 on staging and
+     * production. Uploads are unavailable (never faked) until all public-bucket values are set.
+     */
+    MEDIA_S3_ENDPOINT: z.url({ protocol: /^https?$/ }).optional(),
+    MEDIA_S3_REGION: z.string().min(1).default('auto'),
+    MEDIA_S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+    MEDIA_S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+    /** Public academy branding only; served from MEDIA_PUBLIC_BASE_URL (C-97). */
+    MEDIA_PUBLIC_BUCKET: z.string().min(3).max(63).optional(),
+    MEDIA_PUBLIC_BASE_URL: z.url({ protocol: /^https?$/ }).optional(),
+    /** Private media (Phase 4+): its own bucket with no public domain (C-97). */
+    MEDIA_PRIVATE_BUCKET: z.string().min(3).max(63).optional(),
     TRUSTED_PROXY_IPS: csv,
     TRUSTED_PROXY_SECRET: z.string().min(16, 'must be at least 16 characters'),
     /** Root domain academy subdomains live under (C-52); defaults to `localhost` in local/ci only. */
@@ -125,6 +138,25 @@ export const ApiConfigSchema = z
         code: 'custom',
         path: ['PAYMENT_PROVIDERS'],
         message: 'SimulatorProvider is not allowed when APP_ENV=production',
+      });
+    }
+    if (cfg.MEDIA_PRIVATE_BUCKET && cfg.MEDIA_PRIVATE_BUCKET === cfg.MEDIA_PUBLIC_BUCKET) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['MEDIA_PRIVATE_BUCKET'],
+        message:
+          'must differ from MEDIA_PUBLIC_BUCKET: private media never shares the public bucket (C-97)',
+      });
+    }
+    if (
+      cfg.APP_ENV === 'production' &&
+      cfg.MEDIA_S3_ENDPOINT &&
+      /localhost|127\.0\.0\.1/.test(cfg.MEDIA_S3_ENDPOINT)
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['MEDIA_S3_ENDPOINT'],
+        message: 'the local object store is not allowed in production (C-93)',
       });
     }
     if (cfg.APP_ENV === 'production' && !cfg.PLATFORM_DATABASE_URL) {

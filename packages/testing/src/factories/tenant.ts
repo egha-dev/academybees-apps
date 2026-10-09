@@ -284,6 +284,13 @@ async function insertPeopleAndScheduling(
        FROM (SELECT CURRENT_DATE + ((8 - extract(isodow FROM CURRENT_DATE)::int) % 7) AS d) next_monday`,
     [f.sessionId, t.id, branchId, f.batchId, f.ruleId, f.teacherId],
   );
+  // An earlier (replaced) logo: every tenant table has fixture rows (media_file, C-97).
+  const mediaId = newId();
+  await q(
+    `INSERT INTO media_file (id, tenant_id, purpose, visibility, storage_key, mime_type, size_bytes, status, removed_at)
+     VALUES ($1, $2, 'branding.logo', 'PUBLIC', $3, 'image/png', 1024, 'REMOVED', now())`,
+    [mediaId, t.id, `t/${t.id}/branding/${mediaId}.png`],
+  );
   const done = t.status !== 'SETUP' && t.status !== 'PENDING_APPROVAL';
   await q(
     `INSERT INTO tenant_onboarding (tenant_id, current_step, completed_at, updated_at)
