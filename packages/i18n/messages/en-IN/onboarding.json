@@ -1,0 +1,150 @@
+{
+  "frame": {
+    "progress": "Step {current} of {total}",
+    "progressLabel": "Setup progress",
+    "saved": "Your progress is saved as you go.",
+    "signOut": "Finish later"
+  },
+  "terms": {
+    "batch": "{term, select, class {class} group {group} other {batch}}",
+    "batches": "{term, select, class {classes} group {groups} other {batches}}",
+    "course": "{term, select, program {program} other {course}}",
+    "teacher": "{term, select, coach {coach} instructor {instructor} trainer {trainer} other {teacher}}"
+  },
+  "steps": {
+    "profile": "Academy profile",
+    "type": "Academy type",
+    "course": "First {term, select, program {program} other {course}}",
+    "teacher": "First {term, select, coach {coach} instructor {instructor} trainer {trainer} other {teacher}}",
+    "batch": "First {term, select, class {class} group {group} other {batch}}",
+    "students": "First students",
+    "timetable": "Timetable",
+    "ready": "Ready"
+  },
+  "legal": {
+    "metaTitle": "Before you start",
+    "title": "Before you start",
+    "body": "Please read and accept AcademyBee's terms for {academy}. You only do this once, and again if they change.",
+    "updatedTitle": "Our terms have changed",
+    "updatedBody": "Please read and accept the updated terms to keep using AcademyBee.",
+    "read": "Read the {title}",
+    "version": "Version {version}",
+    "accepted": "Accepted",
+    "agree": "I have read and accept these documents for {academy}.",
+    "continue": "Accept and continue",
+    "mustAgree": "Tick the box to accept the documents."
+  },
+  "welcome": {
+    "metaTitle": "Welcome",
+    "title": "Welcome to {academy}",
+    "body": "This is your academy's own workspace. A short guided setup gets your first {course}, {teacher}, {batch} and students ready.",
+    "time": "About 10 minutes. You can stop at any time and continue later, on any device.",
+    "progress": "{done} of {total} steps done",
+    "start": "Start setup",
+    "continue": "Continue setup",
+    "later": "Finish later"
+  },
+  "profile": {
+    "title": "Your academy",
+    "body": "How your academy appears to staff and parents. You can change this later in Settings.",
+    "logo": "Logo (optional)",
+    "logoHint": "PNG, JPEG or WebP, up to 2 MB.",
+    "logoUpload": "Upload logo",
+    "logoReplace": "Replace logo",
+    "logoUploaded": "Logo added",
+    "logoAlt": "Your logo"
+  },
+  "type": {
+    "title": "What do you teach?",
+    "body": "This sets the words your academy sees, like Class or Batch. You can change them later.",
+    "legend": "Academy type",
+    "preview": "You'll see: {batches}, {teacher}"
+  },
+  "course": {
+    "title": "Your first {term, select, program {program} other {course}}",
+    "body": "What you teach, for example “Bharatanatyam”, “Class 10 Maths” or “Guitar — beginners”. Add more later.",
+    "name": "Name",
+    "description": "Description (optional)"
+  },
+  "teacher": {
+    "title": "Who teaches it?",
+    "body": "The person who takes this {batch}. You can add more people later in Team.",
+    "legend": "Who teaches",
+    "self": "I teach it myself",
+    "invite": "Invite someone",
+    "name": "Their name",
+    "email": "Their email",
+    "inviteHint": "We'll email them an invitation to join {academy}.",
+    "pending": "Invitation sent to {email}. They can join any time in the next 7 days."
+  },
+  "batch": {
+    "title": "Your first {term, select, class {class} group {group} other {batch}}",
+    "body": "A group of students who meet together, for example “Evening juniors”.",
+    "name": "Name",
+    "capacity": "Maximum students (optional)",
+    "capacityHint": "Leave empty for no limit."
+  },
+  "students": {
+    "title": "Add your first students",
+    "body": "Just names for now, with a parent's mobile number if you have it. Add up to 20 here; you can import the rest later.",
+    "row": "Student {n}",
+    "name": "Student's name",
+    "parentName": "Parent's name (optional)",
+    "parentPhone": "Parent's mobile (optional)",
+    "add": "Add another student",
+    "remove": "Remove student {n}",
+    "max": "You can add up to 20 students here.",
+    "admission": "Admission number {number}",
+    "limit": "Your plan's student limit is reached. Remove some students or change your plan."
+  },
+  "timetable": {
+    "title": "When does it meet?",
+    "body": "Add the weekly times. We'll create the next two weeks of classes for you.",
+    "slot": "Time {n}",
+    "day": "Day",
+    "start": "Starts",
+    "end": "Ends",
+    "add": "Add another time",
+    "remove": "Remove time {n}",
+    "endAfterStart": "The end time must be after the start time.",
+    "upcoming": "Next classes",
+    "upcomingEmpty": "No classes yet."
+  },
+  "ready": {
+    "metaTitle": "Ready",
+    "title": "{academy} is ready",
+    "body": "Here's what you set up. You can change any of it later.",
+    "done": "Done",
+    "skipped": "Skipped",
+    "open": "Open my academy",
+    "notYet": "Finish the academy profile and type first."
+  },
+  "actions": {
+    "back": "Back",
+    "skip": "Skip for now",
+    "save": "Save and continue",
+    "saving": "Saving…"
+  },
+  "days": {
+    "d1": "Monday",
+    "d2": "Tuesday",
+    "d3": "Wednesday",
+    "d4": "Thursday",
+    "d5": "Friday",
+    "d6": "Saturday",
+    "d7": "Sunday"
+  },
+  "errors": {
+    "required": "Required.",
+    "invalid": "Check this value.",
+    "invalidPhone": "Enter a 10-digit Indian mobile number, or a number with its country code.",
+    "invalidEmail": "Enter a valid email address, like name@example.com.",
+    "fixFields": "Check the highlighted fields.",
+    "needsCourse": "Add the first course before this step, or skip it.",
+    "needsBatch": "Add the first batch before this step, or skip it.",
+    "versionConflict": "This setup was changed on another device. We've loaded the latest version.",
+    "alreadyMember": "That person is already part of {academy}.",
+    "offline": "You're offline. Setup needs a connection.",
+    "generic": "That didn't save. Try again; if it keeps failing, reload the page."
+  }
+}

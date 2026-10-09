@@ -73,6 +73,13 @@ export const DEV_USERS: readonly DevUser[] = [
     memberships: [{ slug: 'demo-b', roles: ['owner'] }],
   },
   {
+    // Owner of the academy that is still setting up (Phase 3 onboarding E2E).
+    id: '01a0fcde-80a1-7c4e-9b3a-5d2f8e6a1c01',
+    email: 'owner@setup-demo.test',
+    name: 'Setup Owner',
+    memberships: [{ slug: 'setup-demo', roles: ['owner'] }],
+  },
+  {
     id: '01a0fcde-7fed-718c-983a-438bd2191543',
     email: 'superadmin@academybees.test',
     name: 'Super Admin',

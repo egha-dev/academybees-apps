@@ -35,10 +35,10 @@ export const FEATURE_FLAGS = {
   },
   'p3-onboarding': {
     description:
-      'Guided setup for academies that are setting up (C-85): sign-in, legal, welcome and onboarding pages on SETUP hosts. On when the onboarding screens are complete (Phase 3 S7/S8) — remove then.',
+      'Guided setup for academies that are setting up (C-85): sign-in, legal, welcome and onboarding pages on SETUP hosts, and re-acceptance of changed legal documents. Remove in Phase 3 S8 once the journey is verified on staging.',
     owner: 'PO',
     expiresOn: '2027-01-31',
-    defaults: { local: false, ci: false, staging: false, production: false },
+    defaults: { local: true, ci: true, staging: true, production: false },
   },
 } as const satisfies Record<string, FeatureFlagDefinition>;
 

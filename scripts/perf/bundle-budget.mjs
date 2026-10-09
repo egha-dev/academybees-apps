@@ -31,6 +31,10 @@ const BUDGETS = [
   { route: '/settings/security', page: `${ACADEMY}/(app)/settings/security`, kb: 200 },
   { route: '/settings/academy', page: `${ACADEMY}/(app)/settings/academy`, kb: 200 },
   { route: '/settings/branding', page: `${ACADEMY}/(app)/settings/branding`, kb: 200 },
+  // The owner's guided setup (UX v1.1 §5), phone-first.
+  { route: '/legal', page: `${ACADEMY}/(setup)/legal`, kb: 200 },
+  { route: '/welcome', page: `${ACADEMY}/(setup)/welcome`, kb: 200 },
+  { route: '/onboarding/[step]', page: `${ACADEMY}/(setup)/onboarding/[step]`, kb: 200 },
 ];
 
 const distArg = process.argv.indexOf('--dist');

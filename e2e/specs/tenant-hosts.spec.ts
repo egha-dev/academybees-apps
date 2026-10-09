@@ -52,7 +52,12 @@ for (const [subdomain, status, heading] of STATUS_PAGES) {
     const res = await page.goto(hostUrl(testInfo, subdomain, '/students'));
     expect(res?.status()).toBe(status);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
-    await expect(page.getByRole('link', { name: 'Go to AcademyBee' })).toBeVisible();
+    // A setting-up academy offers its owner a way in (C-85); the others link to AcademyBee.
+    await expect(
+      page.getByRole('link', {
+        name: subdomain === 'setup-demo' ? 'I run this academy — sign in' : 'Go to AcademyBee',
+      }),
+    ).toBeVisible();
     // Never a raw error or internal identifier.
     await expect(page.locator('body')).not.toContainText(/tenant|uuid|prisma|exception/i);
     await page.screenshot({
