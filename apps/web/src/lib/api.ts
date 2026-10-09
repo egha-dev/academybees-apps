@@ -1,4 +1,4 @@
-import { type ErrorCode } from '@academybee/contracts';
+import type { ErrorCode } from '@academybee/contracts';
 
 /**
  * Browser calls to the API through the same origin (`/api/*` → proxy.ts → API). Plan 2.15:
@@ -64,6 +64,8 @@ function csrfHeader(): Record<string, string> {
 type Options = {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   body?: unknown;
+  /** A file sent as-is (logo uploads, C-97) with its own content type, instead of JSON. */
+  raw?: Blob;
   headers?: Record<string, string>;
   /** Public calls (sign-in, reset) never try to refresh or announce a lost session. */
   anonymous?: boolean;
@@ -78,11 +80,19 @@ export async function api<T>(path: string, options: Options = {}): Promise<ApiRe
       credentials: 'same-origin',
       headers: {
         accept: 'application/json',
-        ...(options.body !== undefined ? { 'content-type': 'application/json' } : {}),
+        ...(options.raw
+          ? { 'content-type': options.raw.type || 'application/octet-stream' }
+          : options.body !== undefined
+            ? { 'content-type': 'application/json' }
+            : {}),
         ...(options.method && options.method !== 'GET' ? csrfHeader() : {}),
         ...options.headers,
       },
-      ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+      ...(options.raw
+        ? { body: options.raw }
+        : options.body !== undefined
+          ? { body: JSON.stringify(options.body) }
+          : {}),
     });
   let res: Response;
   try {

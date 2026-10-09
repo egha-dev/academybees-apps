@@ -2,7 +2,7 @@ import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import { notFound, redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { AcademyIdentity } from '@/components/academy-identity';
 import { sessionGuardLabels } from '@/components/auth/labels.server';
@@ -12,7 +12,13 @@ import { AcademyShell } from '@/components/shell/academy-shell';
 import { experienceFor, navigationFor } from '@/components/shell/navigation.server';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { roleHomesEnabled } from '@/lib/flags.server';
-import { academyColor, academyName, hostContext, requestPath } from '@/lib/host-context.server';
+import {
+  academyColor,
+  academyLogo,
+  academyName,
+  hostContext,
+  requestPath,
+} from '@/lib/host-context.server';
 import { getSession } from '@/lib/session.server';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +38,7 @@ export default async function SignedInLayout({ children }: { children: ReactNode
   const academy = academyName(context);
   if (!academy) notFound();
   const primaryColor = academyColor(context);
+  const logoUrl = academyLogo(context);
 
   if (session.state === 'signed-out') redirect(`/login?next=${encodeURIComponent(path)}`);
   if (session.state === 'expired') {
@@ -39,7 +46,7 @@ export default async function SignedInLayout({ children }: { children: ReactNode
     // A moment while the token refreshes; kept to Stack/Text so every signed-in page stays light.
     return (
       <Stack spacing={4} sx={{ padding: 6, minBlockSize: '100dvh' }}>
-        <AcademyIdentity name={academy} primaryColor={primaryColor} />
+        <AcademyIdentity name={academy} primaryColor={primaryColor} logoUrl={logoUrl} />
         <Box role="status">
           <Text tone="secondary">{labels.restoring}</Text>
         </Box>
@@ -55,7 +62,7 @@ export default async function SignedInLayout({ children }: { children: ReactNode
   const nav = await navigationFor(me, experience, roleHomes);
   return (
     <AcademyShell
-      brand={<AcademyIdentity name={academy} primaryColor={primaryColor} />}
+      brand={<AcademyIdentity name={academy} primaryColor={primaryColor} logoUrl={logoUrl} />}
       navLabel={t('label')}
       groups={nav.groups}
       bottom={nav.bottom}

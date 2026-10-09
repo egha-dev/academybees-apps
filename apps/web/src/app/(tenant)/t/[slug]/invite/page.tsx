@@ -9,7 +9,7 @@ import { AuthFrame } from '@/components/auth/auth-frame';
 import { FragmentTokenGate } from '@/components/auth/fragment-token';
 import { InviteFlow } from '@/components/auth/invite-flow';
 import { inviteLabels } from '@/components/auth/labels.server';
-import { academyColor, academyName, hostContext } from '@/lib/host-context.server';
+import { academyColor, academyLogo, academyName, hostContext } from '@/lib/host-context.server';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +36,7 @@ export default async function InvitePage() {
   ]);
   const academy = academyName(context);
   if (!academy) notFound();
-  const frame = { academy, primaryColor: academyColor(context) };
+  const frame = { academy, primaryColor: academyColor(context), logoUrl: academyLogo(context) };
   return (
     <FragmentTokenGate
       pending={

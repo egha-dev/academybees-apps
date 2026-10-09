@@ -2,7 +2,7 @@ import { classifyHost } from '@academybee/tenant';
 import { describe, expect, it } from 'vitest';
 
 import { decideRoute } from './routing';
-import { type ContextLookup } from './tenant-context';
+import type { ContextLookup } from './tenant-context';
 
 const ROOT = 'localhost';
 const active: ContextLookup = {
@@ -13,7 +13,13 @@ const active: ContextLookup = {
     displayName: 'Demo A Academy',
     timezone: 'Asia/Kolkata',
     locale: 'en-IN',
-    branding: { primaryColor: '#1F6F5C', secondaryColor: null, hasLogo: false },
+    branding: {
+      primaryColor: '#1F6F5C',
+      secondaryColor: null,
+      hasLogo: false,
+      logoUrl: null,
+      faviconUrl: null,
+    },
   },
 };
 
@@ -98,7 +104,13 @@ describe('decideRoute (ARCHITECTURE §10.2)', () => {
         displayName: 'Setup Music School',
         timezone: 'Asia/Kolkata',
         locale: 'en-IN',
-        branding: { primaryColor: null, secondaryColor: null, hasLogo: false },
+        branding: {
+          primaryColor: null,
+          secondaryColor: null,
+          hasLogo: false,
+          logoUrl: null,
+          faviconUrl: null,
+        },
       },
     };
     expect(route('setup-demo.localhost:3000', '/', setup)).toMatchObject({

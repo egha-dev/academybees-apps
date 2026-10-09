@@ -5,7 +5,7 @@ import { getTranslations } from 'next-intl/server';
 import { AuthFrame } from '@/components/auth/auth-frame';
 import { ForgotForm } from '@/components/auth/forgot-form';
 import { forgotLabels } from '@/components/auth/labels.server';
-import { academyColor, academyName, hostContext } from '@/lib/host-context.server';
+import { academyColor, academyLogo, academyName, hostContext } from '@/lib/host-context.server';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +22,7 @@ export default async function ForgotPasswordPage() {
     <AuthFrame
       academy={academy}
       primaryColor={academyColor(context)}
+      logoUrl={academyLogo(context)}
       title={t('title')}
       body={t('body', { academy })}
     >

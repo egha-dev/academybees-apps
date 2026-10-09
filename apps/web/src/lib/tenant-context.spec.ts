@@ -67,7 +67,13 @@ describe('lookupTenantContext cache (review M3)', () => {
                   displayName: 'Demo A',
                   timezone: 'Asia/Kolkata',
                   locale: 'en-IN',
-                  branding: { primaryColor: null, secondaryColor: null, hasLogo: false },
+                  branding: {
+                    primaryColor: null,
+                    secondaryColor: null,
+                    hasLogo: false,
+                    logoUrl: null,
+                    faviconUrl: null,
+                  },
                 },
           ),
         );
