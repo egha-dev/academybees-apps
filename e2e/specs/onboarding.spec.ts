@@ -24,6 +24,7 @@ test.describe.configure({ mode: 'serial' });
 
 const SETUP_ID = '01a0f76f-f862-774a-8a43-f2f8959ae247';
 const OWNER = 'owner@setup-demo.test';
+const OWNER_ID = '01a0fcde-80a1-7c4e-9b3a-5d2f8e6a1c01';
 
 /** Start every run from a fresh setup: nothing accepted, nothing saved. */
 async function resetSetup() {
@@ -34,10 +35,9 @@ async function resetSetup() {
       `UPDATE tenant_onboarding SET steps = '{}', current_step = 'profile', completed_at = NULL, version = version + 1`,
     );
     await db.query(`UPDATE tenant SET status = 'SETUP' WHERE id = $1`, [SETUP_ID]);
-    await db.query(
-      `DELETE FROM legal_acceptance WHERE user_id = (SELECT user_id FROM membership WHERE tenant_id = $1 LIMIT 1)`,
-      [SETUP_ID],
-    );
+    // Acceptances are user-owned (C-59 RLS): delete them as their user.
+    await db.query(`SELECT set_config('app.user_id', $1, true)`, [OWNER_ID]);
+    await db.query(`DELETE FROM legal_acceptance WHERE user_id = $1`, [OWNER_ID]);
     await db.query('COMMIT');
   });
 }
@@ -58,8 +58,9 @@ test('the owner accepts the terms, is welcomed and sets up the academy step by s
   await page.getByRole('link', { name: 'I run this academy — sign in' }).click();
   await signIn(page, OWNER);
 
-  // Legal first (ADR-034).
-  await expect(page).toHaveURL(url('/legal'));
+  // Legal first (ADR-034) — after sign-in, the gate and Welcome send the owner here.
+  await expect(page).toHaveURL(url('/legal'), { timeout: 15_000 });
+  await expect(page.getByRole('button', { name: 'Finish later' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Before you start');
   await expectNoA11yViolations(page);
   await page.getByRole('button', { name: 'Accept and continue' }).click();
@@ -86,7 +87,7 @@ test('the owner accepts the terms, is welcomed and sets up the academy step by s
 
   // The academy's own words from here on (music → "class").
   await expect(page).toHaveURL(url('/onboarding/course'));
-  await page.getByLabel('Name', { exact: true }).fill('Carnatic vocal');
+  await page.getByRole('textbox', { name: /^Name/ }).fill('Carnatic vocal');
   await page.getByRole('button', { name: 'Save and continue' }).click();
 
   await expect(page).toHaveURL(url('/onboarding/teacher'));
@@ -103,13 +104,15 @@ test('the owner accepts the terms, is welcomed and sets up the academy step by s
   const second = await other.newPage();
   await second.goto(url('/login'));
   await signIn(second, OWNER);
+  await second.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 15_000 });
+  await second.waitForLoadState('networkidle');
   await second.goto(url('/welcome'));
   await expect(second.getByText('4 of 7 steps done')).toBeVisible();
   await second.getByRole('link', { name: 'Continue setup' }).click();
   await expect(second).toHaveURL(url('/onboarding/batch'));
   await other.close();
 
-  await page.getByLabel('Name', { exact: true }).fill('Evening juniors');
+  await page.getByRole('textbox', { name: /^Name/ }).fill('Evening juniors');
   await page.getByLabel('Maximum students (optional)').fill('12');
   await page.getByRole('button', { name: 'Save and continue' }).click();
 
@@ -150,6 +153,8 @@ test('the setup screens have no WCAG 2.1 AA violations in dark mode', async ({
   const page = await ctx.newPage();
   await page.goto(hostUrl(testInfo, 'setup-demo', '/login'));
   await signIn(page, OWNER);
+  await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 15_000 });
+  await page.waitForLoadState('networkidle');
   for (const path of [
     '/welcome',
     '/onboarding/type',

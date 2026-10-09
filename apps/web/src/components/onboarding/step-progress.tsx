@@ -25,6 +25,7 @@ export function StepProgress({
         aria-valuemin={0}
         aria-valuemax={total}
         aria-valuenow={current}
+        aria-label={name}
         aria-valuetext={label}
         sx={{ blockSize: 6, borderRadius: 3, bgcolor: 'ab.surfaceRaised', overflow: 'hidden' }}
       >

@@ -300,6 +300,18 @@ Each slice follows the same steps: branch `p3/<slice>` from the latest `main` �
 
 All pages have loading, error and offline states (online-only actions are disabled with a reason). Strings go in an `onboarding` namespace, the pages are added to the perf budget and pseudo-locale lists, and axe runs in both themes.
 
+*As built (S7):*
+- **Routes** (route group `(setup)` on the academy host, outside the Manage shell): `/legal`, `/welcome`, `/onboarding/[step]` (the seven steps and `ready`).
+  - Owner only, and only with `p3-onboarding` on; anyone else goes to the academy's home (the setup gate or Today).
+  - A sign-in on a setting-up academy lands on the gate, which sends the owner to Welcome, which goes to `/legal` first if needed.
+- **Flag.** `p3-onboarding` is now on in local, CI and staging; still off in production until S8 removes it.
+- **Strings.** They are formatted on the server with the academy's own words (ICU `select` on the terminology: class/batch/group, course/program, teacher/coach/…), so the client step forms need no ICU runtime.
+- **Bundle.** The forms are one lazily loaded module. Route sizes: Welcome 194.7 KB, Legal 198.9, steps 199.0 of 200.
+- **Re-acceptance.** Owners of open academies are sent to `/legal?next=…` when a document version changes (checked in the signed-in layout while `p3-onboarding` is on).
+- **Seeds.** Demo owners of open academies have accepted the current documents. `owner@setup-demo.test` hasn't, so E2E walks the legal step.
+- **Ready.** No "Take first attendance" button: a disabled one would be a "coming soon" control (CLAUDE §10). Phase 6 adds it to Ready and Today.
+- **E2E.** `onboarding.spec.ts` (Android phone): signed-out gate → sign in → legal (must tick) → Welcome → every step (with a validation error, a second device resuming half-way, going back showing saved values) → Ready; axe in light and dark. It doesn't open the academy (S8's journey does, on a fresh one).
+
 ### S8 `p3/journey-e2e` — journey, flag removal, docs
 
 **3.22 Journey E2E** (`e2e/specs/provisioning.spec.ts`, `onboarding.spec.ts`):
