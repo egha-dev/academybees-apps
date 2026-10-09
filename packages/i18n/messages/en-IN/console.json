@@ -1,0 +1,235 @@
+{
+  "shell": {
+    "product": "Console",
+    "navLabel": "Console navigation",
+    "nav": {
+      "academies": "Academies"
+    },
+    "roles": {
+      "SUPER_ADMIN": "Super Admin",
+      "SUPPORT": "Support",
+      "FINANCE_OPS": "Finance operations"
+    }
+  },
+  "status": {
+    "PENDING_APPROVAL": "Awaiting approval",
+    "SETUP": "Setting up",
+    "ACTIVE": "Active",
+    "SUSPENDED": "Suspended",
+    "ARCHIVED": "Archived"
+  },
+  "plans": {
+    "trial": "Trial",
+    "starter": "Starter",
+    "growth": "Growth",
+    "pro": "Pro",
+    "none": "No plan"
+  },
+  "types": {
+    "tuition": "Tuition",
+    "dance": "Dance",
+    "music": "Music",
+    "martial_arts": "Martial arts",
+    "sports": "Sports",
+    "fitness": "Fitness",
+    "language": "Language",
+    "art": "Art",
+    "other": "Other"
+  },
+  "academies": {
+    "metaTitle": "Academies",
+    "title": "Academies",
+    "body": "Every academy on AcademyBee. Create one, open its address, or change its status.",
+    "create": "Create academy",
+    "search": {
+      "label": "Name or address",
+      "placeholder": "Search academies",
+      "status": "Status",
+      "anyStatus": "Any status",
+      "submit": "Search",
+      "clear": "Clear"
+    },
+    "columns": {
+      "academy": "Academy",
+      "address": "Address",
+      "status": "Status",
+      "plan": "Plan",
+      "setup": "Setup",
+      "created": "Created"
+    },
+    "setupDone": "Finished",
+    "setupPending": "In progress",
+    "listLabel": "Academies",
+    "empty": {
+      "title": "No academies yet",
+      "body": "Create the first academy to give its owner their own AcademyBee address."
+    },
+    "noResults": {
+      "title": "No academies match",
+      "body": "Try another name or address, or clear the search."
+    },
+    "loadMore": "Show more academies"
+  },
+  "create": {
+    "metaTitle": "Create academy",
+    "title": "Create an academy",
+    "body": "The owner gets an email to choose a password. A short guided setup takes them from there.",
+    "back": "Academies",
+    "sections": {
+      "academy": "The academy",
+      "address": "Its AcademyBee address",
+      "owner": "The owner",
+      "plan": "Plan"
+    },
+    "fields": {
+      "name": "Academy name",
+      "type": "Academy type",
+      "typeHint": "Sets the words the academy sees, such as Class or Batch. They can change them later.",
+      "slug": "Address",
+      "slugHint": "Lower-case letters, numbers and hyphens, 3 to 42 characters.",
+      "ownerName": "Owner's name",
+      "ownerEmail": "Owner's email",
+      "ownerHint": "The invitation goes here. It expires in 7 days.",
+      "plan": "Plan",
+      "planHint": "Every new academy starts with a 30-day trial. Payments work on every plan.",
+      "branch": "First branch (optional)",
+      "branchHint": "Leave it empty to call it “Main branch”."
+    },
+    "slug": {
+      "checking": "Checking the address…",
+      "available": "{host} is free",
+      "taken": "{host} is already used",
+      "reserved": "This address is reserved. Choose another.",
+      "invalid": {
+        "empty": "Enter an address.",
+        "too_short": "Use at least 3 characters.",
+        "too_long": "Use at most 42 characters.",
+        "format": "Use lower-case letters, numbers and hyphens; start and end with a letter or number.",
+        "double_hyphen": "Don't use two hyphens in a row."
+      },
+      "suggestions": "Free alternatives",
+      "use": "Use {slug}",
+      "unavailable": "Can't check the address right now. It is checked again when you create the academy."
+    },
+    "submit": "Create academy",
+    "cancel": "Cancel",
+    "errors": {
+      "required": "Required.",
+      "emailInvalid": "Enter a valid email address, like name@example.com.",
+      "nameInvalid": "Use letters in the name.",
+      "slugTaken": "Someone just took this address. Choose one of the alternatives.",
+      "slugInvalid": "Choose a different address.",
+      "fixFields": "Check the highlighted fields."
+    }
+  },
+  "created": {
+    "metaTitle": "Academy created",
+    "title": "{academy} is ready",
+    "body": "Share the address with the owner. They will also get an email invitation to set up the academy.",
+    "url": "Academy address",
+    "copy": "Copy address",
+    "copied": "Address copied",
+    "copyFailed": "Couldn't copy. Select the address and copy it yourself.",
+    "open": "Open academy",
+    "view": "View academy",
+    "back": "Back to academies"
+  },
+  "detail": {
+    "back": "Academies",
+    "tabs": {
+      "label": "Academy sections",
+      "overview": "Overview",
+      "domain": "Address"
+    },
+    "status": "Status",
+    "statusReason": "Reason: {reason}",
+    "statusSince": "Since {date}",
+    "type": "Type",
+    "created": "Created {date}",
+    "owner": "Owner",
+    "ownerUnknown": "Not set",
+    "invite": {
+      "PENDING": "Invitation sent, not accepted yet",
+      "ACCEPTED": "Joined the academy",
+      "EXPIRED": "Invitation expired",
+      "REVOKED": "Invitation replaced",
+      "NONE": "No invitation"
+    },
+    "inviteSent": "Sent {date}",
+    "inviteExpires": "Expires {date}",
+    "plan": "Plan",
+    "trialEnds": "Trial until {date}",
+    "onboarding": "Guided setup",
+    "onboardingProgress": "{done} of {total} steps",
+    "onboardingDone": "Finished {date}",
+    "actions": {
+      "heading": "Actions",
+      "suspend": "Suspend",
+      "reactivate": "Reactivate",
+      "activate": "Activate now",
+      "archive": "Archive",
+      "resend": "Resend owner invitation",
+      "resent": "A new invitation is on its way to {email}."
+    },
+    "dialog": {
+      "reason": "Reason",
+      "reasonHint": "Kept in the academy's audit log.",
+      "cancel": "Cancel",
+      "suspend": {
+        "title": "Suspend {academy}?",
+        "body": "Everyone at the academy is signed out and sees a “suspended” page. Their data stays as it is.",
+        "confirm": "Suspend academy",
+        "done": "{academy} is suspended."
+      },
+      "reactivate": {
+        "title": "Reactivate {academy}?",
+        "body": "The academy opens again as it was before the suspension. People sign in again.",
+        "confirm": "Reactivate academy",
+        "done": "{academy} is open again."
+      },
+      "activate": {
+        "title": "Activate {academy} now?",
+        "body": "The academy opens for everyone, even if the owner hasn't finished the guided setup.",
+        "confirm": "Activate academy",
+        "done": "{academy} is active."
+      },
+      "archive": {
+        "title": "Archive {academy}?",
+        "body": "The academy closes for good: everyone is signed out and its address shows a “closed” page. This can't be undone in the console.",
+        "confirm": "Archive academy",
+        "done": "{academy} is archived."
+      }
+    }
+  },
+  "domain": {
+    "current": "AcademyBee address",
+    "currentHint": "Where the academy's owner, staff and parents sign in.",
+    "redirects": "Old addresses",
+    "redirectsHint": "These keep sending visitors to the current address. No other academy can use them.",
+    "noRedirects": "No old addresses.",
+    "change": "Change address",
+    "changeTitle": "Change {academy}'s address",
+    "changeBody": "The old address keeps working: it sends visitors to the new one. People already signed in sign in again on the new address.",
+    "newSlug": "New address",
+    "save": "Change address",
+    "changed": "The address is now {host}.",
+    "unchanged": "That is already the academy's address."
+  },
+  "errors": {
+    "generic": "That didn't work. Try again; if it keeps failing, reload the page.",
+    "offline": "You're offline. Console changes need a connection.",
+    "notFound": "This academy no longer exists or the link is wrong.",
+    "invalidState": "This academy's status changed in the meantime. Reload to see it.",
+    "forbidden": "Your console role can't do this.",
+    "conflict": "That can't be done for this academy right now.",
+    "unavailable": "The console can't reach academy data right now. Try again in a few minutes.",
+    "rateLimited": "Too many attempts. Wait a minute and try again.",
+    "loadTitle": "Couldn't load academies",
+    "loadBody": "Check your connection and try again."
+  },
+  "permission": {
+    "title": "Not available for your role",
+    "body": "Your console role doesn't include this. Ask a Super Admin if you need it.",
+    "action": "Back to academies"
+  }
+}

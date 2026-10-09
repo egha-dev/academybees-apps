@@ -33,7 +33,9 @@ export function Text({
     <Typography
       variant={v.variant}
       component={as ?? v.component}
-      color={tone === 'secondary' ? 'text.secondary' : 'text.primary'}
+      // Semantic roles resolve to CSS variables, so text follows the colour scheme of its
+      // subtree (e.g. the console's dark sidebar), not only the page's.
+      sx={{ color: tone === 'secondary' ? 'ab.textSecondary' : 'ab.textPrimary' }}
       {...(id ? { id } : {})}
     >
       {children}

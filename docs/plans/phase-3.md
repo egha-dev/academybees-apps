@@ -202,6 +202,14 @@ Each slice follows the same steps: branch `p3/<slice>` from the latest `main` �
 - `/academies/[id]/domain`: primary URL, redirecting addresses, change subdomain with live availability and a "the old address will redirect" warning.
 - Strings in a new `console` i18n namespace; axe in both themes; added to the pseudo-locale pages.
 
+*As built (S4):*
+- **Routes** (console host): `/academies`, `/academies/new`, `/academies/[id]/created`, `/academies/[id]/overview`, `/academies/[id]/domain`. Console `/` goes to `/academies` for staff and to `/login` otherwise. **`p2-console-home` is removed**, together with its placeholder strings.
+- **Strings.** The console's signed-in pages pass only the `console` namespace to the client through `NextIntlClientProvider`, so console forms use `useTranslations`. The console has no route budget (desktop staff, UX §21); academy and teacher pages keep server-passed labels (C-94).
+- **Deep Ink sidebar.** `AppShell chrome="ink"` puts the dark-scheme attribute on the sidebar. To make text follow it, `Text` now uses the `ab.*` roles (CSS variables) instead of MUI's resolved colours; the same values apply on every other page.
+- **Phones.** Console pages work on phones (read-mostly); Sign out moves to the top bar there, because phones have no sidebar.
+- **Live address field.** It checks availability 400 ms after the last keystroke, announces the result to screen readers, and offers the free alternatives. The server checks again on create.
+- **E2E.** `console.spec.ts` (desktop): create with reserved, taken and available addresses → activation screen → list search → suspend (the academy shows its unavailable page) → reactivate → change address (old address 301s); axe in light and dark. The E2E web server turns the proxy's context cache off, so console changes show at once.
+
 ### S5 `p3/onboarding-api` — onboarding and minimal create commands (flag `p3-onboarding`)
 
 **3.13 Onboarding state** (`modules/onboarding`, `academy.onboarding.manage`, `@TenantHost('SETUP','ACTIVE')`, behind `LegalGuard`):

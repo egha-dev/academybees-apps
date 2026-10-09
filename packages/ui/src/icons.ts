@@ -25,3 +25,10 @@ export { default as CircleIcon } from '@mui/icons-material/FiberManualRecordRoun
 export { default as LightModeIcon } from '@mui/icons-material/LightModeRounded';
 export { default as DarkModeIcon } from '@mui/icons-material/DarkModeRounded';
 export { default as SystemModeIcon } from '@mui/icons-material/SettingsBrightnessRounded';
+export { default as SchoolIcon } from '@mui/icons-material/SchoolRounded';
+export { default as CopyIcon } from '@mui/icons-material/ContentCopyRounded';
+export { default as OpenInNewIcon } from '@mui/icons-material/OpenInNewRounded';
+export { default as SearchIcon } from '@mui/icons-material/SearchRounded';
+export { default as LinkIcon } from '@mui/icons-material/LinkRounded';
+export { default as SettingsIcon } from '@mui/icons-material/SettingsRounded';
+export { default as PaletteIcon } from '@mui/icons-material/PaletteRounded';
