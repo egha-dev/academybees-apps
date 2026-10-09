@@ -1,6 +1,6 @@
 # P3-1 · Phase 3 — Academy Provisioning + Onboarding: plan
 
-> **Approved by the PO on 2026-10-07** (`phase-3-start` = `afd72c2`), with logo storage on **ImageKit** (C-93). Decisions C-85…C-96 recorded in DECISIONS.md.
+> **Approved by the PO on 2026-10-07** (`phase-3-start` = `afd72c2`), with logo storage on **ImageKit** (C-93) — changed to **Cloudflare R2** by the PO on 2026-10-09 (C-97). Decisions C-85…C-96 recorded in DECISIONS.md.
 
 ## Context
 
@@ -13,7 +13,7 @@
   - UX §21, §22; v1.1 §2–10; V1.2 §5
   - ARCHITECTURE §4.1, §5, §8.3–8.4, §9, §10, §13, §14
   - DECISIONS C-02/03/08/09/11/13/36/37/52/54/60/67/70/78/83, ADR-008/019/021/024/025/028/029/034/040/041
-- **PO decision (2026-10-07):** logos go to **ImageKit on staging** (C-70). The PO creates the account and provides the keys. Locally they go to SeaweedFS behind the same interface.
+- **PO decision (2026-10-07, changed 2026-10-09):** logos go to **Cloudflare R2 (free tier)** on staging, not ImageKit (C-97). The PO creates the account and provides the keys. Locally they go to SeaweedFS behind the same interface.
 
 ### What exists
 
@@ -28,7 +28,7 @@
 | Contracts | Capabilities exist (`academy.*`, `student.*`, `course.*`, `batch.*`, `timetable.*`, `platform.tenant.*`). `ENTITLEMENT_LIMIT_REACHED` and `FEATURE_NOT_IN_PLAN` exist. | Plan, legal, onboarding, people, scheduling and provisioning DTOs; academy-type templates |
 | Email | Outbox `email.requested`. `academySender` only works on an academy host. Invite accept is reusable. | `owner_invite` template, built with an explicit academy host from the console |
 | Web | Console has only a home placeholder (`p2-console-home`). Academy shell is ≈198 KB gz of 200. No TanStack Query or React Hook Form in use. No stepper, upload or colour components. | Console shell, onboarding layout outside the shell, settings pages, new lean UI components |
-| Storage | SeaweedFS in docker-compose only. No code. | `MediaStoragePort` with SeaweedFS (S3) and ImageKit adapters |
+| Storage | SeaweedFS in docker-compose only. No code. | `MediaStoragePort` with one S3 adapter: SeaweedFS locally, Cloudflare R2 on staging/production (C-97) |
 
 ## Decisions (C-85…C-96, recorded in DECISIONS.md)
 
@@ -242,12 +242,12 @@ Each slice follows the same steps: branch `p3/<slice>` from the latest `main` �
 
 **3.16 Media storage** (C-93, ADR-021 subset):
 - `packages/database` gets a `MediaFile` table.
-- `apps/api/src/core/media/` holds the `MediaStoragePort`, `S3MediaAdapter` (SeaweedFS) and `ImageKitMediaAdapter`.
+- `apps/api/src/core/media/` holds the `MediaStoragePort` and the `S3MediaAdapter` (SeaweedFS locally, R2 on staging/production, C-97).
 - Config: `MEDIA_PROVIDER`, `IMAGEKIT_PUBLIC_KEY`, `IMAGEKIT_PRIVATE_KEY`, `IMAGEKIT_URL_ENDPOINT`. Production refuses the S3 dev adapter.
 - `POST /academy/branding/{logo,favicon}-upload` returns an upload token.
 - `POST /academy/branding/{logo,favicon}/confirm` checks header bytes and size, then sets `logoMediaId`.
 - Keys look like `/t/<tenantId>/branding/<uuid>.<ext>`. The public URL is built at read time and added to `GET /tenant/context` as `branding.logoUrl`.
-- Runbook rows for the ImageKit variables on Railway.
+- Runbook rows for the R2 variables on Railway (C-97).
 - **Tests:** a wrong type, an oversized file or a spoofed mime is refused; another academy's media id → 404; with the adapter missing, the error says uploads are unavailable.
 
 **3.17 Settings pages** (UX v1.1 §6, V1.2 §5):
@@ -298,7 +298,7 @@ The journey runs on desktop and on the Android and iPhone projects for the owner
 **3.23 Flags and docs:**
 - Turn `p3-onboarding` on in every environment, and remove it once staging is verified (within this phase).
 - Update ARCHITECTURE §5.3 (as built, C-86), §8.3, §9.3, §10.3 and §14.
-- Update CLAUDE.md §3 and §8 (console URLs, demo logins), the README, and `docs/runbooks/staging-variables.md` (ImageKit).
+- Update CLAUDE.md §3 and §8 (console URLs, demo logins), the README, and `docs/runbooks/staging-variables.md` (R2).
 - Plan status.
 
 | Slice | Branch | Tasks | Release flags |
@@ -345,7 +345,7 @@ The journey runs on desktop and on the Android and iPhone projects for the owner
 | --- | --- |
 | **Route JS budget** (the shell is ≈198 of 200 KB) for the Settings pages | Native inputs, actions loaded on use, no new libraries (C-94). Onboarding sits outside the shell. If a page is still over, a small shell-diet task comes first; I come back to you before raising any budget. |
 | Large expand-only schema (≈20 tables) designed before its full UI | Follows ARCH §8.3/8.4 and G-05 exactly. Columns are nullable or defaulted, so Phases 4–5 only add to them. Constraint and RLS tests land with the schema. |
-| ImageKit keys not ready when S6 merges | Uploads on staging turn off with a clear message. Local, CI and E2E use SeaweedFS. I'll tell you the exact 3 variables to add in Railway. |
+| R2 bucket and token not ready when S6 merges | Uploads on staging turn off with a clear message. Local, CI and E2E use SeaweedFS. I'll tell you the exact 3 variables to add in Railway. |
 | Provisioning touches platform and tenant tables in one transaction | Platform client only under `src/platform`, every call audited, a rollback test, and the same transaction shape as the proven `bootstrap-staging`. |
 | Timezone and DST bugs in session generation | Dates in the academy's timezone, instants in UTC. Unit tests cover IST, a DST timezone and month boundaries. |
 | Real legal text isn't ready | Draft versions are seeded now. Publishing a new version prompts re-acceptance, so the real text drops in without code changes (needed before the pilot). |
@@ -363,6 +363,6 @@ The journey runs on desktop and on the Android and iPhone projects for the owner
 | Critical journey E2E (Gurushethra → … → Suspended page) on desktop and phones | `provisioning.spec.ts`, `onboarding.spec.ts`, screenshots in `e2e/artifacts/` |
 | UI states, a11y, i18n, budgets | axe light and dark on every new page, `i18n-pseudo.spec.ts`, `pnpm perf:budget` (new routes added), Lighthouse in CI |
 | Common gate | `pnpm lint && pnpm typecheck && pnpm test && pnpm test:integration && pnpm build && pnpm e2e && pnpm i18n:check && pnpm flags:check && pnpm db:drift` |
-| Staging | Gurushethra created on `console.staging…`, owner onboarding on your phone, logo stored in ImageKit, suspend and subdomain change verified |
+| Staging | Gurushethra created on `console.staging…`, owner onboarding on your phone, logo stored in R2, suspend and subdomain change verified |
 
-**Your inputs before S6:** an ImageKit account with the public key, private key and URL endpoint (I'll give the exact steps). **Before the pilot:** real Terms, Privacy and DPA text (drafts are fine for now).
+**Your inputs before S6:** a Cloudflare R2 bucket, an API token and a public domain for media (I'll give the exact steps, C-97). **Before the pilot:** real Terms, Privacy and DPA text (drafts are fine for now).

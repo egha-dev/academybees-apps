@@ -22,7 +22,7 @@ Decisions:
 | Redis | compose | Testcontainers / compose | Railway service `redis` (persistent volume) | Railway |
 | Region | — | — | **Singapore**, everything in one project | Singapore (an India region is re-checked before 7P) |
 | Email | Mailpit :8025 | Mailpit | Resend, `mail.staging.academybees.com` | Resend, `mail.academybees.com` |
-| Media | SeaweedFS (C-45) | SeaweedFS | ImageKit when uploads ship (C-70) | ImageKit |
+| Media | SeaweedFS (C-45) | SeaweedFS | Cloudflare R2 free tier when uploads ship (C-97) | Cloudflare R2 |
 | DNS | `*.localhost` | `*.localhost` | Cloudflare (DNS-only records) | Cloudflare |
 | Marketing site | in the web app | in the web app | — | Cloudflare Pages, if built (C-69) |
 | Railway plan | — | — | Hobby | **Pro** (before the first real academy, C-71) |
@@ -245,7 +245,8 @@ Sending from the `mail.` subdomain keeps the apex free for Email Routing, and `m
 | RLS overhead | +3 round trips per statement; in-region about 1–3 ms per query, flat with academy count (re-measure on staging, C-55) | same | same; indexes lead with `tenant_id` |
 | Redis / worker | well under 1 job/s | ≈ 1 job/s | a few jobs/s at peak (notifications from Phase 10); one worker handles hundreds/s |
 | Email per month (Resend) | ≈ 4k → **Pro $20** (the free 100/day cap is too low for real use) | ≈ 20k → Pro $20 | ≈ 80k → **Pro 100k $90** |
-| Media (ImageKit, from Phase 3) | ≈ 2 GB stored, 5 GB/month → **Lite ≈ $9** (Free stops at its caps: not for production) | ≈ 6 GB, 25 GB/month → Lite ≈ $10–25 | ≈ 15–25 GB, 100 GB/month → Lite ≈ $60 or **Pro $89** (225 GB included) |
+| Media (Cloudflare R2, from Phase 3, C-97) | free tier: 10 GB stored, ~1 M writes and ~10 M reads a month, no egress fees → **$0** at these volumes; beyond, $0.015/GB-month | same | same |
+| Media (ImageKit — superseded by C-97, kept for comparison) | ≈ 2 GB stored, 5 GB/month → **Lite ≈ $9** (Free stops at its caps: not for production) | ≈ 6 GB, 25 GB/month → Lite ≈ $10–25 | ≈ 15–25 GB, 100 GB/month → Lite ≈ $60 or **Pro $89** (225 GB included) |
 | Academy custom domains | 0–2 → Railway Pro native | ≈ 5–15 → Railway Pro native (20 per service, more on request) | ≈ 40–60 → **Cloudflare for SaaS + Worker** (100 included, then $0.10 each; Workers Paid $5) |
 | Railway usage | ≈ $25–35 | ≈ $80–110 | ≈ $220–300 (incl. Postgres HA) |
 | Other | Cloudflare $0; Sentry free | Sentry Team ≈ $26; Vercel Pro ≈ $20–50 if moved | Sentry ≈ $26–80; Vercel Pro ≈ $40–100 |
@@ -273,7 +274,7 @@ Sending from the `mail.` subdomain keeps the apex free for Email Routing, and `m
 | More `worker`s | Outbox lag > 30 s, or a BullMQ queue waiting > 1 minute |
 | Redis memory | Over 70 % used |
 | Resend Free → Pro → Pro 100k | The first real academy; then more than 50k emails/month |
-| ImageKit Free → Lite → Pro | Uploads go live (Free halts at its caps); Lite overage costs more than Pro ($89) |
+| R2 free → paid | Over 10 GB stored or the free operation counts (billed per use, no plan change) |
 | Railway native domains → **Cloudflare for SaaS** | About 20 academy custom domains, or self-serve domain setup |
 | Sentry free → Team | Error volume above the free quota, or a second developer |
 | India region | A data-residency requirement, or latency from India above budget (re-checked before 7P) |
