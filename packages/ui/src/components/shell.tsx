@@ -5,7 +5,7 @@ import ButtonBase from '@mui/material/ButtonBase';
 import Stack from '@mui/material/Stack';
 import { type ElementType, type ReactNode } from 'react';
 
-import { radius, TOUCH_TARGET } from '../tokens.js';
+import { radius, THEME_ATTRIBUTE, TOUCH_TARGET } from '../tokens.js';
 import { ab } from './ab.js';
 import { Text } from './text.js';
 
@@ -36,6 +36,11 @@ export type AppShellProps = {
   sidebarFooter?: ReactNode;
   /** `auto` = sidebar on ≥ md, bottom nav on phones. Forced variants are for the design system page. */
   variant?: 'auto' | 'sidebar' | 'bottom-nav';
+  /**
+   * `ink`: the console's Deep Ink sidebar (UX §21, ARCHITECTURE §10.4) — the dark palette in both
+   * themes, so platform operations never look like an academy workspace.
+   */
+  chrome?: 'default' | 'ink';
   /** Router link component (e.g. next/link); defaults to <a>. */
   linkComponent?: ElementType;
   children: ReactNode;
@@ -79,9 +84,13 @@ export function AppShell({
   banner,
   sidebarFooter,
   variant = 'auto',
+  chrome = 'default',
   linkComponent = 'a',
   children,
 }: AppShellProps) {
+  // The colour scheme is chosen by an attribute (CSS variables), so a subtree can use the dark
+  // roles whatever the page's theme: every role inside the sidebar switches, contrast included.
+  const ink = chrome === 'ink' ? { [THEME_ATTRIBUTE]: 'dark' } : {};
   // Sidebar on ≥ md, bottom bar on phones — chosen by CSS breakpoints, so the server render is
   // already right on every device (no media-query hook, no layout flash).
   const hasBottom = (bottomNav?.length ?? 0) > 0;
@@ -107,6 +116,7 @@ export function AppShell({
       <Box
         component="nav"
         aria-label={navLabel}
+        {...ink}
         sx={{
           display: sidebarDisplay,
           width: SIDEBAR_WIDTH,

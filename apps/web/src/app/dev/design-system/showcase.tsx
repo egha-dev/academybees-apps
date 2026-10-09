@@ -21,6 +21,7 @@ import {
   PermissionState,
   palettes,
   radius,
+  THEME_ATTRIBUTE,
   Select,
   Sheet,
   Skeleton,
@@ -141,6 +142,8 @@ export function DesignSystemShowcase() {
               <Stack
                 key={scheme}
                 spacing={3}
+                // The preview's own colour scheme, so the heading's roles match its background.
+                {...{ [THEME_ATTRIBUTE]: scheme }}
                 sx={{
                   flex: 1,
                   padding: 4,
