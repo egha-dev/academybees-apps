@@ -461,6 +461,27 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     capability,
     spoof: { skip: "student-photo.int.spec.ts › another academy can't see" },
   })),
+  // Family Hub, academy side (Phase 4 S6). Writes send email or decide once: covered by the
+  // dedicated test, including another academy's attempts.
+  { method: 'GET', path: '/api/v1/academy/privacy-notice' },
+  { method: 'GET', path: '/api/v1/join-requests', session: true, capability: 'parent.manage' },
+  ...(
+    [
+      ['POST', '/api/v1/parents/:id/invite', 'parent'],
+      ['POST', '/api/v1/parents/:id/invite/revoke', 'parent'],
+      ['POST', '/api/v1/join-requests/:id/approve', 'missing-import'],
+      ['POST', '/api/v1/join-requests/:id/reject', 'missing-import'],
+    ] as const
+  ).map(([method, path, id]) => ({
+    method,
+    path,
+    params: { id },
+    session: true,
+    capability: 'parent.manage',
+    idempotent: true,
+    body: { studentIds: ['019a0000-0000-7000-8000-0000000000ee'] },
+    spoof: { skip: 'family.int.spec.ts › join requests' },
+  })),
   // Test-only signed-in routes guarded by @Can + a scope policy (shape of domain endpoints).
   {
     method: 'GET',

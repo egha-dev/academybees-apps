@@ -77,6 +77,9 @@ export const ParentLinkSchema = z.object({
   relationship: ParentRelationshipSchema,
   isPrimaryContact: z.boolean(),
   pickupAuthorised: z.boolean(),
+  /** Family Hub access through this academy (C-102): member, invited, or none yet. */
+  access: z.enum(['MEMBER', 'INVITED', 'NONE']),
+  inviteExpiresAt: z.string().nullable(),
 });
 export type ParentLink = z.infer<typeof ParentLinkSchema>;
 

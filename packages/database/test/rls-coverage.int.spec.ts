@@ -16,7 +16,8 @@ const PLATFORM_ROW_TABLES = [
 
 /**
  * Identity tables (C-59): protected by user-bound RLS instead of the tenant policy. `auth_session`
- * and `legal_acceptance` have a nullable tenant_id but are user-owned.
+ * and `legal_acceptance` have a nullable tenant_id but are user-owned; `academy_link_attempt` names
+ * an academy but belongs to the parent (C-107).
  */
 const IDENTITY_POLICIES: Record<string, string[]> = {
   user: ['user_insert', 'user_select', 'user_update'],
@@ -29,6 +30,8 @@ const IDENTITY_POLICIES: Record<string, string[]> = {
   auth_session: ['token_lookup', 'user_isolation'],
   otp_challenge: ['identifier_lookup'],
   legal_acceptance: ['user_isolation'],
+  // Family Hub link attempts (C-107): the parent's own rows; an academy can never read them.
+  academy_link_attempt: ['user_isolation'],
 };
 
 const urls = inject('databaseUrls');

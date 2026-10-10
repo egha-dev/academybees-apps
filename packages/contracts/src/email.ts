@@ -16,6 +16,8 @@ export const EmailTemplateSchema = z.enum([
   'account_setup',
   'new_device',
   'mfa_disabled',
+  'parent_invite',
+  'link_code',
 ]);
 export type EmailTemplate = z.infer<typeof EmailTemplateSchema>;
 
@@ -52,5 +54,7 @@ export const EmailRequestSchema = z.object({
       sealedToken: z.string().startsWith('ab1.'),
     })
     .optional(),
+  /** A one-time verification code (G-31), sealed like link tokens; shown as `{code}`. */
+  code: z.object({ sealedToken: z.string().startsWith('ab1.') }).optional(),
 });
 export type EmailRequest = z.input<typeof EmailRequestSchema>;

@@ -85,6 +85,7 @@ model Tenant {
   media         MediaFile[]
   activity      ActivityEvent[]
   imports       ImportJob[]
+  joinRequests  JoinRequest[]
 
   @@map("tenant")
 }

@@ -353,7 +353,7 @@ export async function seedDevPeople(db: PrismaClient): Promise<number> {
           action: 'GRANT',
           purposes: ['service'],
           noticeVersion: 'demo',
-          channel: 'ACADEMY_STAFF',
+          channel: 'FAMILY_HUB',
         },
       ],
       skipDuplicates: true,

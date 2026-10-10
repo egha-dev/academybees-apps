@@ -8,7 +8,9 @@ import { MASTER_KEYS } from '../auth/keys.js';
 import type { RequestContext } from '../context/request-context.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 
-export type EmailInput = Omit<EmailRequest, 'link'> & {
+export type EmailInput = Omit<EmailRequest, 'link' | 'code'> & {
+  /** A one-time code for the body; sealed in the outbox like link tokens (C-62). */
+  code?: string;
   /** `path` contains `{token}`; the token is sealed before it leaves this process (C-62). */
   link?: { path: string; token: string };
 };
@@ -44,12 +46,13 @@ export class EmailService {
   }
 
   async request(tx: TransactionClient, input: EmailInput): Promise<void> {
-    const { link, ...rest } = input;
+    const { link, code, ...rest } = input;
     const payload = EmailRequestSchema.parse({
       ...rest,
       ...(link
         ? { link: { path: link.path, sealedToken: encryptSecret(link.token, this.keys) } }
         : {}),
+      ...(code ? { code: { sealedToken: encryptSecret(code, this.keys) } } : {}),
     });
     await this.outbox.write(tx, { type: EMAIL_OUTBOX_TYPE, payload });
   }

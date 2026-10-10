@@ -3,6 +3,15 @@ import { Module } from '@nestjs/common';
 import { MediaModule } from '../../core/media/media.module.js';
 import { SchedulingModule } from '../scheduling/index.js';
 import { TeamModule } from '../team/index.js';
+import {
+  HubLinkController,
+  JoinRequestsController,
+  ParentInvitesController,
+  PrivacyNoticeController,
+} from './family/family.controller.js';
+import { HubLinkService } from './family/hub-link.service.js';
+import { JoinRequestsService } from './family/join-requests.service.js';
+import { ParentAccessService } from './family/parent-access.service.js';
 import { ImportController } from './import/import.controller.js';
 import { ImportProcessor } from './import/import.processor.js';
 import { ImportQueue } from './import/import.queue.js';
@@ -36,9 +45,16 @@ import { TeachersService } from './teachers.service.js';
     CustomFieldsController,
     TeachersController,
     SearchController,
+    ParentInvitesController,
+    JoinRequestsController,
+    HubLinkController,
+    PrivacyNoticeController,
   ],
   providers: [
     StudentPhotoService,
+    ParentAccessService,
+    HubLinkService,
+    JoinRequestsService,
     ImportQueue,
     ImportService,
     ImportProcessor,

@@ -7,7 +7,7 @@ import { AccountPanel } from '@/components/shell/account-panel';
 import { experienceFor, navigationFor } from '@/components/shell/navigation.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { signedInMember } from '@/components/shell/signed-in.server';
-import { peopleEnabled, roleHomesEnabled } from '@/lib/flags.server';
+import { familyLinkEnabled, peopleEnabled, roleHomesEnabled } from '@/lib/flags.server';
 import { requestPath } from '@/lib/host-context.server';
 
 export const dynamic = 'force-dynamic';
@@ -22,15 +22,16 @@ export async function generateMetadata(): Promise<Metadata> {
  * (switch experience, sign out). Shows exactly what the sidebar shows on wide screens.
  */
 export default async function MorePage() {
-  const [{ me, academy }, path, roleHomes, people, t] = await Promise.all([
+  const [{ me, academy }, path, roleHomes, people, family, t] = await Promise.all([
     signedInMember(),
     requestPath(),
     roleHomesEnabled(),
     peopleEnabled(),
+    familyLinkEnabled(),
     getTranslations('shell.account'),
   ]);
   const experience = experienceFor(path, me);
-  const nav = await navigationFor(me, experience, roleHomes, people);
+  const nav = await navigationFor(me, experience, roleHomes, people, family);
   return (
     <Stack spacing={6}>
       <PageHeader title={t('moreTitle')} body={t('moreBody', { academy })} />

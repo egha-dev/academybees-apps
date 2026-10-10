@@ -43,12 +43,18 @@ export function ParentActions({
   studentName,
   link,
   canManage,
+  canInvite = false,
+  inviteUntil,
   labels,
 }: {
   studentId: string;
   studentName: string;
   link: ParentLink;
   canManage: boolean;
+  /** Family Hub invites (release flag `p4-family-link`). */
+  canInvite?: boolean;
+  /** The open invitation's expiry, formatted on the server (tenant timezone). */
+  inviteUntil?: string | undefined;
   labels: ParentActionsLabels;
 }) {
   const router = useRouter();
@@ -125,6 +131,27 @@ export function ParentActions({
     router.refresh();
   }
 
+  async function invite() {
+    setBusy(true);
+    const res = await api<{ email: string }>(`/parents/${link.parentId}/invite`, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': crypto.randomUUID() },
+    });
+    setBusy(false);
+    if (!res.ok) return toast(errorText(res.error), 'error');
+    toast(fill(p.invited, { email: res.data.email }));
+    router.refresh();
+  }
+
+  async function cancelInvite() {
+    setBusy(true);
+    const res = await api(`/parents/${link.parentId}/invite/revoke`, { method: 'POST' });
+    setBusy(false);
+    if (!res.ok) return toast(errorText(res.error), 'error');
+    toast(p.inviteCancelled);
+    router.refresh();
+  }
+
   async function unlink() {
     setBusy(true);
     const res = await api(`/students/${studentId}/parents/${link.linkId}`, { method: 'DELETE' });
@@ -187,6 +214,42 @@ export function ParentActions({
 
   return (
     <>
+      {canInvite && (
+        <Stack spacing={0.5}>
+          <Text variant="meta" tone="secondary">
+            {link.access === 'INVITED' && inviteUntil
+              ? fill(p.inviteUntil, { date: inviteUntil })
+              : p.access[link.access]}
+          </Text>
+          {canManage && link.access !== 'MEMBER' && (
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {link.email ? (
+                <PlainButton
+                  variant="secondary"
+                  busy={busy}
+                  disabled={!online}
+                  onClick={() => void invite()}
+                >
+                  {link.access === 'INVITED' ? p.resend : p.invite}
+                </PlainButton>
+              ) : (
+                <Text variant="meta" tone="secondary">
+                  {p.needsEmail}
+                </Text>
+              )}
+              {link.access === 'INVITED' && (
+                <PlainButton
+                  variant="ghost"
+                  disabled={!online || busy}
+                  onClick={() => void cancelInvite()}
+                >
+                  {p.cancelInvite}
+                </PlainButton>
+              )}
+            </Box>
+          )}
+        </Stack>
+      )}
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
         <PlainButton variant="ghost" onClick={() => void openView()}>
           {p.view}

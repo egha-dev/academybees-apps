@@ -42,7 +42,8 @@
     },
     "security": "Security",
     "academySettings": "Settings",
-    "teachers": "Teachers"
+    "teachers": "Teachers",
+    "joinRequests": "Join requests"
   },
   "account": {
     "signedInAs": "Signed in as {name}",

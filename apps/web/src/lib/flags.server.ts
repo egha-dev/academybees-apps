@@ -35,3 +35,8 @@ export const roleHomesEnabled = cache(async (): Promise<boolean> =>
 export const peopleEnabled = cache(async (): Promise<boolean> =>
   flagEnabled('p4-people', (await headers()).get('host') ?? ''),
 );
+
+/** Phase 4 S6: parent invites, Parent app, privacy notice, Join requests (ADR-041). */
+export const familyLinkEnabled = cache(async (): Promise<boolean> =>
+  flagEnabled('p4-family-link', (await headers()).get('host') ?? ''),
+);
