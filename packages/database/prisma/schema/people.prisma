@@ -72,6 +72,9 @@ model Student {
   @@unique([tenantId, id])
   @@index([tenantId, branchId, status])
   @@index([tenantId, userId])
+  @@index([tenantId, fullName, id])
+  /// Name search (ADR-026, C-105): `pg_trgm` GIN, used by ILIKE '%…%'.
+  @@index([fullName(ops: raw("gin_trgm_ops"))], type: Gin, map: "student_full_name_trgm")
   @@map("student")
 }
 
@@ -112,13 +115,15 @@ model Parent {
   createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  children ParentStudent[]
-  consents ConsentRecord[]
+  children    ParentStudent[]
+  consents    ConsentRecord[]
+  invitations Invitation[]
 
   @@unique([tenantId, id])
   @@index([tenantId, phone])
   @@index([tenantId, email])
   @@index([tenantId, userId])
+  @@index([fullName(ops: raw("gin_trgm_ops"))], type: Gin, map: "parent_full_name_trgm")
   @@map("parent")
 }
 
@@ -155,6 +160,8 @@ model Teacher {
   fullName     String       @map("full_name") @db.VarChar(120)
   email        String?      @db.VarChar(320)
   phone        String?      @db.VarChar(16)
+  /// What they teach ("Bharatanatyam", "Grade 10 maths"), shown on the profile.
+  subjects     String[]     @default([]) @db.VarChar(60)
   status       PersonStatus @default(ACTIVE)
   version      Int          @default(1)
   createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -167,6 +174,7 @@ model Teacher {
   @@unique([tenantId, id])
   @@unique([tenantId, membershipId])
   @@index([tenantId, status])
+  @@index([fullName(ops: raw("gin_trgm_ops"))], type: Gin, map: "teacher_full_name_trgm")
   @@map("teacher")
 }
 
@@ -250,4 +258,25 @@ model TenantSequence {
 
   @@id([tenantId, key])
   @@map("tenant_sequence")
+}
+
+/// The user-facing timeline of a student, parent or teacher (UX §9.3, ADR-027) — a projection
+/// written in the same transaction as the change, separate from the audit log. `data` holds only
+/// small non-sensitive details for the line ("status ON_HOLD"), never health or contact data.
+/// Append-only for the app role.
+model ActivityEvent {
+  id                String   @id @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  /// STUDENT | PARENT | TEACHER.
+  entityType        String   @map("entity_type") @db.VarChar(20)
+  entityId          String   @map("entity_id") @db.Uuid
+  /// contracts ActivityType, e.g. `student.status_changed`.
+  type              String   @db.VarChar(40)
+  actorMembershipId String?  @map("actor_membership_id") @db.Uuid
+  data              Json     @default("{}")
+  at                DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([tenantId, entityType, entityId, at(sort: Desc), id(sort: Desc)])
+  @@map("activity_event")
 }

@@ -284,6 +284,11 @@ async function insertPeopleAndScheduling(
        FROM (SELECT CURRENT_DATE + ((8 - extract(isodow FROM CURRENT_DATE)::int) % 7) AS d) next_monday`,
     [f.sessionId, t.id, branchId, f.batchId, f.ruleId, f.teacherId],
   );
+  await q(
+    `INSERT INTO activity_event (id, tenant_id, entity_type, entity_id, type, actor_membership_id, data)
+     VALUES ($1, $2, 'STUDENT', $3, 'student.created', $4, '{"source":"manual"}')`,
+    [newId(), t.id, f.studentId, membershipId],
+  );
   // An earlier (replaced) logo: every tenant table has fixture rows (media_file, C-97).
   const mediaId = newId();
   await q(

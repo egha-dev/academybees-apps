@@ -83,6 +83,7 @@ model Tenant {
   courses       Course[]
   onboarding    TenantOnboarding?
   media         MediaFile[]
+  activity      ActivityEvent[]
 
   @@map("tenant")
 }

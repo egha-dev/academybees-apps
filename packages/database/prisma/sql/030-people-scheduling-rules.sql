@@ -8,6 +8,9 @@ REVOKE DELETE, TRUNCATE ON student, parent, teacher, course, batch, batch_enrolm
   tenant_sequence FROM ab_app;
 REVOKE UPDATE, DELETE, TRUNCATE ON consent_record FROM ab_app;
 GRANT SELECT, INSERT ON consent_record TO ab_app;
+-- The activity timeline is append-only like the audit log (ADR-027, Phase 4).
+REVOKE UPDATE, DELETE, TRUNCATE ON activity_event FROM ab_app;
+GRANT SELECT, INSERT ON activity_event TO ab_app;
 REVOKE TRUNCATE ON student_health_note, parent_student, custom_field_definition, course_level,
   batch_teacher, schedule_rule, class_session, tenant_onboarding FROM ab_app;
 
