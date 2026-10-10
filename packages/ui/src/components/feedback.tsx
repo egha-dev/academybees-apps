@@ -13,7 +13,7 @@ import {
 } from 'react';
 
 import { ErrorIcon, LockIcon } from '../icons.js';
-import { Button } from './actions.js';
+import { PlainButton } from './plain-button.js';
 import { Text } from './text.js';
 import type { ToastMessage, ToastTone } from './toast-view.js';
 
@@ -29,13 +29,15 @@ function ActionButton({
   variant?: 'primary' | 'secondary';
 }) {
   return (
-    <Button
+    // Not `Button`: these states render on every route via the root providers, and MUI's button
+    // code would be in each route's first-load JS (C-99).
+    <PlainButton
       variant={variant}
       {...(action.onClick ? { onClick: action.onClick } : {})}
       {...(action.href ? { href: action.href } : {})}
     >
       {action.label}
-    </Button>
+    </PlainButton>
   );
 }
 

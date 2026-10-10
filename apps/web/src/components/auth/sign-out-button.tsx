@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@academybee/ui/components/actions';
+import { PlainButton } from '@academybee/ui/components/plain-button';
 import { Box } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import { lazy, Suspense, useState } from 'react';
@@ -61,14 +61,14 @@ export function SignOutButton({
 
   return (
     <>
-      <Button
+      <PlainButton
         variant={variant}
-        loading={busy && !confirming}
+        busy={busy && !confirming}
         disabled={!online}
         onClick={() => (unsynced > 0 ? setConfirming(true) : void signOut())}
       >
         {labels.signOut}
-      </Button>
+      </PlainButton>
       {(!online || failed) && (
         <Box role="status">
           <Text variant="bodySmall" tone="secondary">

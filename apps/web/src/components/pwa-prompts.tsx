@@ -4,9 +4,10 @@ import { Button } from '@academybee/ui/components/actions';
 import { Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import { radius } from '@academybee/ui/tokens';
-import { useSerwist } from '@serwist/turbopack/react';
+import type { Serwist } from '@serwist/window';
 import { useEffect, useRef, useState } from 'react';
 
+import { registerServiceWorker } from './service-worker';
 import { useShellLabels } from './shell-labels';
 
 type BeforeInstallPromptEvent = Event & {
@@ -76,11 +77,11 @@ function Prompt({
 /**
  * PWA prompts (ADR-015): offer install when the browser allows it (never nag after dismissal),
  * and offer "Update now" when a new service worker is waiting — the user decides when to reload,
- * so an in-progress form is never lost.
+ * so an in-progress form is never lost. Mounting it registers the service worker (C-99).
  */
 export function PwaPrompts() {
   const labels = useShellLabels();
-  const { serwist } = useSerwist();
+  const [serwist, setSerwist] = useState<Serwist | null>(null);
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [updateWaiting, setUpdateWaiting] = useState(false);
   const updateAccepted = useRef(false);
@@ -92,6 +93,16 @@ export function PwaPrompts() {
     };
     window.addEventListener('beforeinstallprompt', onPrompt);
     return () => window.removeEventListener('beforeinstallprompt', onPrompt);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void registerServiceWorker().then((sw) => {
+      if (!cancelled) setSerwist(sw);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {

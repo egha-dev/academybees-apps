@@ -1,9 +1,11 @@
 'use client';
 
-import { ErrorState } from '@academybee/ui/components/feedback';
-import { Container } from '@academybee/ui/components/layout';
+import { lazy, Suspense } from 'react';
 
-import { fill, useShellLabels } from '@/components/shell-labels';
+// The error UI loads only when an error happens (route JS budget, G-24, C-99).
+const RouteErrorView = lazy(() =>
+  import('@/components/error-views').then((m) => ({ default: m.RouteErrorView })),
+);
 
 /** Route error boundary: what happened + next step, with a reference for support. */
 export default function RouteError({
@@ -13,18 +15,9 @@ export default function RouteError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const labels = useShellLabels();
   return (
-    <Container maxWidth="sm">
-      <ErrorState
-        title={labels.errorTitle}
-        body={labels.errorBody}
-        retry={{ label: labels.retry, onClick: reset }}
-        secondary={{ label: labels.goHome, href: '/' }}
-        {...(error.digest
-          ? { reference: fill(labels.errorReference, { requestId: error.digest }) }
-          : {})}
-      />
-    </Container>
+    <Suspense fallback={null}>
+      <RouteErrorView digest={error.digest} reset={reset} />
+    </Suspense>
   );
 }

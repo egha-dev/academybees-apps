@@ -1,17 +1,13 @@
 'use client';
 
-import common from '@academybee/i18n/messages/en-IN/common.json';
-import shell from '@academybee/i18n/messages/en-IN/shell.json';
-import { ErrorState } from '@academybee/ui/components/feedback';
-import { Container } from '@academybee/ui/components/layout';
-import { UiProvider } from '@academybee/ui/provider';
+import { lazy, Suspense } from 'react';
 
-import { fill } from '@/components/shell-labels';
+// Loaded only when the root layout itself fails (route JS budget, G-24, C-99).
+const GlobalErrorView = lazy(() =>
+  import('@/components/error-views').then((m) => ({ default: m.GlobalErrorView })),
+);
 
-/**
- * Last-resort boundary: it replaces the root layout, so no providers or server translations are
- * available. It reads the en-IN catalogue JSON directly (static strings, no ICU runtime).
- */
+/** Last-resort boundary: it replaces the root layout, so it brings its own document. */
 export default function GlobalError({
   error,
   reset,
@@ -22,19 +18,9 @@ export default function GlobalError({
   return (
     <html lang="en-IN">
       <body>
-        <UiProvider>
-          <Container maxWidth="sm">
-            <ErrorState
-              title={shell.error.title}
-              body={shell.error.body}
-              retry={{ label: common.actions.retry, onClick: reset }}
-              secondary={{ label: common.actions.goHome, href: '/' }}
-              {...(error.digest
-                ? { reference: fill(shell.error.reference, { requestId: error.digest }) }
-                : {})}
-            />
-          </Container>
-        </UiProvider>
+        <Suspense fallback={null}>
+          <GlobalErrorView digest={error.digest} reset={reset} />
+        </Suspense>
       </body>
     </html>
   );

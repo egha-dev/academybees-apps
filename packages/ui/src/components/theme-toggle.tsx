@@ -1,12 +1,13 @@
 'use client';
 
-import ButtonBase from '@mui/material/ButtonBase';
+import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import { useColorScheme } from '@mui/material/styles';
 import { type ReactNode, useSyncExternalStore } from 'react';
 
 import { DarkModeIcon, LightModeIcon, SystemModeIcon } from '../icons.js';
 import { radius } from '../tokens.js';
+import { plainControl } from './plain-button.js';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -64,7 +65,9 @@ export function ThemeModeToggle({
       {OPTIONS.map(({ mode: option, icon }) => {
         const selected = current === option;
         return (
-          <ButtonBase
+          <Box
+            component="button"
+            type="button"
             key={option}
             role="radio"
             aria-checked={selected}
@@ -72,6 +75,7 @@ export function ThemeModeToggle({
             title={labels[option]}
             onClick={() => setMode(option)}
             sx={{
+              ...plainControl,
               gap: 1,
               minHeight: 40,
               minWidth: 40,
@@ -86,7 +90,7 @@ export function ThemeModeToggle({
           >
             {icon}
             {!compact && <span>{labels[option]}</span>}
-          </ButtonBase>
+          </Box>
         );
       })}
     </Stack>
