@@ -28,6 +28,8 @@ test('the owner uploads a logo; it shows in the shell and on sign-in; then remov
   page,
   browser,
 }, testInfo) => {
+  // Sign-in, axe, upload, a second browser context and removal: more than the default 30 s on a busy runner.
+  test.setTimeout(60_000);
   await signInAt(page, testInfo, 'demo-a', 'owner@demo-a.test');
   await page.goto(hostUrl(testInfo, 'demo-a', '/settings/branding'));
   // The editor loads lazily; interact once it is live.
