@@ -70,12 +70,13 @@ for (const [subdomain, status, heading] of STATUS_PAGES) {
 test('an old slug redirects permanently to the primary host, keeping the path', async ({
   page,
 }, testInfo) => {
-  const res = await page.goto(hostUrl(testInfo, 'old-demo-a', '/students?page=2'));
+  // A public page, so the only redirect is the old address (signed-in pages add a sign-in hop).
+  const res = await page.goto(hostUrl(testInfo, 'old-demo-a', '/login?ref=2'));
   expect(res?.request().redirectedFrom()?.url()).toBe(
-    hostUrl(testInfo, 'old-demo-a', '/students?page=2'),
+    hostUrl(testInfo, 'old-demo-a', '/login?ref=2'),
   );
   expect((await res?.request().redirectedFrom()?.response())?.status()).toBe(301);
-  expect(page.url()).toBe(hostUrl(testInfo, 'demo-a', '/students?page=2'));
+  expect(page.url()).toBe(hostUrl(testInfo, 'demo-a', '/login?ref=2'));
 });
 
 test('access denied page on an academy host', async ({ page }, testInfo) => {
