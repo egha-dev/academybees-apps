@@ -1,0 +1,285 @@
+# P4-1 · Phase 4 — Students + Parents + Teachers: plan
+
+> **Approved by the PO on 2026-10-10** (`phase-4-start` = `7b89578`). Decisions C-99…C-108 recorded in DECISIONS.md.
+
+## Context
+
+- **Predecessor:** Phase 3 ✅ 2026-10-09 (tag `phase-3`), so Phase 4 can start.
+- **Goal:** students, parents and teachers are managed through workspaces (list → Student 360), not CRUD tables:
+  - real spreadsheets import cleanly;
+  - medical notes are restricted;
+  - parents can be invited, with consent enforced;
+  - the academy side of the Family Hub (Join QR, Join requests, link API) is ready for 7P.
+- **Refs read:**
+  - CLAUDE.md; IMPLEMENTATION_PLAN §1, §2 and Phase 4
+  - PRD v3.2 G-02, G-05, G-06, G-26, G-27, G-31; PRD v3.1 §5, §9, §17
+  - UX §8–11.4, §24–25
+  - ARCHITECTURE §7, §8
+  - ADR-026, ADR-027, ADR-034, ADR-036, ADR-039; C-12, C-22, C-37, C-67, C-72, C-73, C-90, C-92, C-94, C-97, C-98
+  - EXECUTION_GUIDE Part F Phase 4
+- **Phase 3 exit notes say: shell diet first.** Shell pages are at 196–199 KB of the 200 KB route budget.
+
+### What exists (from Phases 2–3)
+
+| Area | Today | Phase 4 change |
+| --- | --- | --- |
+| People schema | `Student` (G-05 fields, `archivedAt`, `version`), `StudentHealthNote` (C-90, nothing reads it yet), `Parent`, `ParentStudent`, `Teacher`, `ConsentRecord` (append-only), `CustomFieldDefinition`, `TenantSequence`. **No trigram index, no `pg_trgm`.** | Add `ActivityEvent`, `ImportJob`, `JoinRequest`, `AcademyLinkAttempt`, `Teacher.subjects`, `Invitation.parentId`; `pg_trgm` + GIN indexes |
+| People API | `PeopleService` has only onboarding commands (teacher for member, invited teacher, quick students) | Full Students / Parents / Teachers / health / consent / custom-field endpoints over the same service, plus `people.policy.ts` |
+| Team & Roles | **Already built in Phase 2** (C-67): members, invite staff, change role, disable with session revocation, last-owner protection | Only linking a team member to a Teacher profile, and Teacher invite from Teachers |
+| Capabilities | `student.*`, `parent.*`, `teacher.*` granted per role. No health, import or consent capabilities. `ensureSystemRoles` only runs at provisioning. | New capabilities; system role grants synced for **existing** academies at deploy |
+| Family Hub | HUB sessions, handoff, `$listOwnMemberships`, hub placeholder (flag `p1-hub-placeholder`, off on staging). QR SVG helper in `@academybee/auth` (C-73). | Academy side + link/verify/join-request API; hub screens stay in 7P |
+| Media | Public bucket (logos) on R2; adapter designed for `putPrivate`/`signedGet` on `MEDIA_PRIVATE_BUCKET` (C-97) | Private uploads (student photos, import files) with presigned GETs ≤ 5 min |
+| Worker | Outbox relay, email, analytics; **no tenant data access** | No change (see C-100) |
+| Web | Manage nav: Today, Team, Settings, Security. Plain-anchor shell (C-72), `Sheet`/`FormDialog`/`ConfirmDialog`/toast in `@academybee/ui`. Baseline ≈ 128 KB framework + ≈ 50 KB MUI/theme + 7.5 KB Serwist registration. | Students, Student 360, Teachers, Join requests, new Settings tabs, command palette, Global Add |
+
+## Decisions (C-99…C-108, safe defaults recorded in S1)
+
+| ID | Question | Default |
+| --- | --- | --- |
+| **C-99** | No room in the route budget for Phase 4 screens | **Shell diet first** (S1). Target ≥ 10 KB free on shell pages (≤ 186 KB) and ≥ 6 KB on setup pages. Means: load Serwist registration after page load; replace MUI `Button`/`CssBaseline` in the shell and frames with `ButtonBase` and static CSS; load the palette, Global Add and drawers on first use. **No budget raise.** If the target can't be reached, I come back to you first. |
+| **C-100** | Where the import job runs. ADR-036 says "worker", but the worker has no tenant data access, and the student-creation rules (admission numbers, parent dedupe, plan limit) live in the API's `people` module. | Import runs as a **BullMQ job consumed inside the API process** (`modules/people/import`, concurrency 1 per instance). Tenant context, the job's state and the creator's capability are re-checked in the processor, and the job reuses `PeopleService`, so there is no duplicated domain code and no new infrastructure. Phase 15 can move it to a dedicated process by running the API image in a jobs-only mode. |
+| **C-101** | Import file formats and safety | CSV via `papaparse`; XLSX via `exceljs`, read as a stream. The npm `xlsx` (SheetJS 0.18) has open CVEs, and newer versions are only on SheetJS's own CDN. Limits: 5 MB, 2,000 rows, first sheet only, uncompressed size checked against zip bombs. Formulas are read as values. The error report escapes leading `= + - @` against CSV injection. Files go to the **private** bucket and are deleted after 7 days. |
+| **C-102** | "Parent invite with consent capture" when the parent's own screens arrive in 7P (your checklist says so) | In Phase 4 the invite is real: an `Invitation` for the `parent` role linked to the `Parent` record, and an email with a hub link (`app.…/invite#token=…`, fragment per C-83). Links are valid 30 days and can be re-sent from Student 360. **Accepting and consenting happen on the hub in 7P.** No account is created for someone who hasn't accepted (data minimisation; refines the plan's "account created now"). Activation is enforced in code now: **a parent membership can't become ACTIVE without a current consent from that parent** (G-06). |
+| **C-103** | Consent recorded by staff (paper admission forms, G-06 "optionally on admission forms") | Staff with `parent.manage` can record or withdraw consent on Student 360 (channel `PAPER`/`ACADEMY_STAFF`, purposes, notice version). It shows in the consent history. **It does not activate a parent account:** activation needs the parent's own consent on the hub (`FAMILY_HUB`), which is the safer reading of verifiable parental consent. |
+| **C-104** | Capabilities that are missing | Add `student.health.read` (owner TENANT, admin BRANCH, teacher ASSIGNED), `student.health.manage` (owner, admin) and `student.import` (owner, admin). Consent and Join requests use `parent.manage` (ADR-039). Custom fields use `academy.settings.manage`. A deploy step syncs system role grants into every existing academy (add-only, never removes custom edits). |
+| **C-105** | Search (ADR-026) | Enable `pg_trgm` (a trusted extension, created by the migrator). GIN trigram indexes on student, parent and teacher names; prefix match on admission number and phone digits. `GET /search?q=` needs ≥ 2 characters, returns up to 5 per type and is scope-aware through the same policies as the lists. Batches join the palette in Phase 5. |
+| **C-106** | Parents in the UI | UX §8 has no Parents entry. Parents live in Student 360 (a parent sheet showing all their children), the command palette and Global Add. **Dedupe:** creating a parent whose phone or email matches one in this academy offers "Use existing" (no automatic merge). Import dedupes the same way. A merge tool for two existing parents goes to the backlog (Phase 12 data tools). |
+| **C-107** | Family Hub linking before the hub exists | APIs only (hub UI in 7P), following ADR-039. **Codes go to email only until Phase 10** (phone OTP). A code is 6 digits, valid 10 minutes, with 5 attempts. `link/start` always answers 202 with the same body. Rate limits per user, IP and academy. `AcademyLinkAttempt` is **user-owned** (RLS `user_id = app.user_id`, never readable by academies); `JoinRequest` is tenant-owned. Verify or approve creates the parent membership as `INVITED`, and it becomes ACTIVE only with hub consent (C-102). A local/staging CLI `pnpm hub:join-request` creates a join request through the real API (for your checklist). |
+| **C-108** | Archive / restore / Undo (G-26) and status changes (G-27) | Archive sets `archivedAt`; archived students leave lists and search (an "Archived" filter shows them) and can be restored for **90 days**. After that they stay archived and read-only (erasure is Phase 15). **Undo** (an 8-second toast, a compensating command that checks `version`) covers archive, status change and parent unlink. Status changes need a reason and show the schedule consequence (active enrolments). The fee consequence is added in Phase 7. |
+
+Also recorded:
+- **C-94 stays:** no React Hook Form or TanStack Query in Phase 4 (budget).
+- **New dependencies:** `@tanstack/react-virtual` for the Students list only, `papaparse`, `exceljs` (API only).
+- **Student photo:** private bucket, presigned URL ≤ 5 min, every view audited (C-97).
+
+## Slices and tasks
+
+Each task: implement → `pnpm lint && pnpm typecheck` + relevant tests → Conventional Commit.
+Each slice: branch `p4/<slice>` from the latest `main` → PR with the DoD checklist → merge only after every check passes on the PR's head (C-43, never `--auto`).
+
+### S1 `p4/shell-diet` — plan, decisions, budget room
+
+- **4.1 Docs:**
+  - `docs/plans/phase-4.md`;
+  - IMPLEMENTATION_PLAN: Phase 4 🟨 plus the slice table;
+  - DECISIONS C-99…C-108.
+- **4.2 Shell diet (C-99):**
+  - Serwist registration and PWA prompts become lazy after `load`;
+  - shell, platform frame and setup frame use `ButtonBase` and static CSS instead of MUI `Button`/`CssBaseline`;
+  - measure each change with `perf:budget`, and record before/after in the plan.
+  - **Tests:** existing E2E (shell, PWA install prompt, offline page), axe light/dark, budget.
+- **4.3 Capabilities:**
+  - C-104 capabilities added to `packages/contracts/src/roles.ts`/`permissions.ts`;
+  - `syncSystemRoleGrants()` in `packages/database/src/reference.ts`, called from `applySqlFolder` at deploy;
+  - unit tests on the role matrix; an integration test that an existing academy gains the new grants and keeps custom ones.
+
+### S2 `p4/people-api` — Students, parents, health, consent, custom fields (API)
+
+- **4.4 Migration** `…_people_workspaces` (expand-only):
+  - `CREATE EXTENSION pg_trgm`;
+  - GIN trigram indexes;
+  - `ActivityEvent` (tenantId, entityType, entityId, type, actorMembershipId, data JSON without sensitive fields, at; index `(tenantId, entityType, entityId, at DESC)`);
+  - `Teacher.subjects`; `Invitation.parentId`;
+  - RLS via `010` automatically; `rls-coverage` extended.
+- **4.5 Policy and Students API:**
+  - `modules/people/people.policy.ts` (TENANT/BRANCH/ASSIGNED/LINKED/SELF → `where` + `can()`; ASSIGNED = active enrolment in a batch where the member's Teacher is a `BatchTeacher`).
+  - Endpoints:
+    - `GET /students` (keyset; filters status/batch/course/archived; search);
+    - `GET /students/:id`;
+    - `POST /students` (`@Idempotent`, `@Limit('students')`, admission number from `TenantSequence`);
+    - `PATCH /students/:id` (`version`, custom fields validated against definitions);
+    - `POST /students/:id/status` (reason; returns the consequences);
+    - `POST /students/:id/archive` and `/restore` (90 days).
+  - An `ActivityService` writes events in the same transaction.
+- **4.6 Parents API:**
+  - `POST /students/:id/parents` (new or existing parent; relationship, primary contact, pickup);
+  - `DELETE /students/:id/parents/:linkId` (unlink, history kept as an activity event);
+  - `GET /parents/:id` (with their children in scope);
+  - `PATCH /parents/:id`;
+  - `GET /parents/duplicates?phone|email` (suggestion, C-106).
+- **4.7 Health, consent, custom fields:**
+  - `GET /students/:id/health-note` (`student.health.read`, **every read audited**, never in other responses);
+  - `PUT /students/:id/health-note` (`version`);
+  - `GET /students/:id/consents`;
+  - `POST /students/:id/consents` (staff record/withdraw, C-103);
+  - `GET/POST/PATCH /settings/custom-fields` (≤ 10, typed, archive instead of delete);
+  - `GET /students/:id/activity` (keyset).
+- **Tests:**
+  - scope policies: receptionist create/update, accountant read-only, teacher only assigned students, parent/student denied on staff routes, out of scope → 404;
+  - IDOR on `/students/:id` across academies and scopes; the many-to-many links;
+  - the health note is hidden from receptionist and accountant, and reads are audited; it never appears in student responses;
+  - plan limit; archive keeps history; restore window; version conflicts;
+  - **every route in the cross-tenant registry.**
+
+### S3 `p4/students-ui` — Students, Student 360, Add Student (flag `p4-people`)
+
+- **4.8 Students list** (`/students`):
+  - server-rendered first page, client search (debounced, trigram) and filters, keyset "load more" with `@tanstack/react-virtual`;
+  - rows: name, admission number, status (text + icon), primary parent;
+  - states: empty → Add student / Import, skeleton, error, permission;
+  - added to `perf:budget`.
+- **4.9 Add Student drawer and Global Add:**
+  - the drawer has the minimum fields, an optional parent with the duplicate suggestion, and the custom fields;
+  - a "+ Add" shell button opens a lazy menu (Student, Parent, Teacher as their slices land).
+- **4.10 Student 360** (`/students/[id]`):
+  - header (name, status, primary actions per UX §10: Message/Collect appear in later phases, so only built actions show);
+  - **Overview**: profile, parents, custom fields, health note (only for holders, "Show" button → audited read), consent history plus "Record consent", enrolments read-only;
+  - **Activity** tab;
+  - edit sheet; status change with consequences; archive/restore with Undo toast;
+  - photo upload (private, C-97).
+- **4.11 Parent sheet and links:**
+  - add/link a parent to a student, edit relationship/primary/pickup, unlink with Undo;
+  - the parent sheet lists all their children.
+- **4.12 Settings → Custom fields** (new Settings tab): create, reorder, archive (≤ 10).
+- **Nav:** RUN group gets Students (bottom bar: Today • Students • More, UX §25) behind `p4-people`.
+- **Tests:**
+  - E2E: add a student with two parents → Student 360 shows both; add a second child to the same parent; receptionist sees no medical note; archive → restore; Undo;
+  - axe light/dark; pseudo-locale and 40 % text.
+
+### S4 `p4/teachers-search` — Teachers, command palette
+
+- **4.13 Teachers:**
+  - API: `GET /teachers`, `GET /teachers/:id`, `POST /teachers` (name only / invite as member with the teacher role via `InvitationsService`, reusing the Phase 3 link on accept / link an existing team member), `PATCH /teachers/:id` (subjects, contact, status, `version`), `GET /teachers/:id/activity`;
+  - UI: `/teachers` list and a profile workspace (Overview: contact, subjects, member/invite status, batches read-only; Activity), Add Teacher in Global Add.
+- **4.14 Search and palette:**
+  - `GET /search` (C-105);
+  - Cmd/Ctrl+K and a shell search button load the palette lazily: results per type, quick actions (Add student, Add teacher, Import), keyboard and screen-reader complete.
+  - **Tests:** scope-aware results (a teacher finds only assigned students); no cross-tenant results; local benchmark with **50K seeded students, p95 < 300 ms** (`pnpm db:seed:perf` + `scripts/perf/search-bench.mjs`); E2E finds a student by a partial name.
+
+### S5 `p4/import` — Import students & parents (G-02, ADR-036)
+
+> **Needs from you before this slice:** the anonymised pilot spreadsheet (A10) in `e2e/fixtures/`, and the private R2 bucket (below).
+
+- **4.15 Private media:**
+  - `S3MediaAdapter.putPrivate`/`signedGet` (≤ 5 min) on `MEDIA_PRIVATE_BUCKET`;
+  - config refuses to start if the private bucket equals the public one;
+  - SeaweedFS gets a second local bucket;
+  - runbook rows.
+- **4.16 Import pipeline:**
+  - `ImportJob` table (`UPLOADED → VALIDATING → PREVIEW_READY → COMMITTING → COMPLETED | FAILED`, counts, mapping, error report key);
+  - endpoints:
+    - `GET /students/import/template` (CSV with the academy's custom fields);
+    - `POST /students/import` (raw upload through the API, magic-byte check);
+    - `PUT /students/import/:id/mapping`;
+    - `GET /students/import/:id` (progress and preview);
+    - `POST /students/import/:id/commit` (`@Idempotent`);
+    - `GET /students/import/:id/errors.csv`;
+  - an in-API BullMQ consumer (C-100) validates rows with the same Zod schemas;
+  - dedupe: students by name + DOB, parents by phone/email; optional batch by name;
+  - plan limit checked **before** commit with a clear message;
+  - commit in chunks of 200 with row keys `importId:rowNo` (re-runs never duplicate).
+- **4.17 Import UI:**
+  - `/students/import` wizard: template → upload → map columns → preview (plain-language errors per row) → commit → result and error report, with progress polling;
+  - onboarding Students step offers "Import from spreadsheet" (a separate setup route `/onboarding/import`, so `/onboarding/[step]` stays in budget).
+- **Tests:**
+  - 500 rows with 20 bad → 480 created, 20 reported with reasons; re-upload of the corrected file → no duplicates;
+  - plan limit; malformed, oversized, zip-bomb and formula cells; cross-tenant job access → 404;
+  - your real file imports cleanly (E2E fixture).
+
+### S6 `p4/family-link` — Parent invites, privacy notice, Join QR, Join requests (G-06, G-31; flag `p4-family-link`)
+
+- **4.18 Parent invites (C-102):**
+  - `POST /parents/:id/invite`, plus resend and revoke;
+  - worker email template `parentInvite`;
+  - activation guard in `MembershipService` (parent ACTIVE only with a current hub consent) with tests;
+  - Student 360 shows invite status.
+- **4.19 Academy privacy notice:**
+  - generated from the `ACADEMY_PRIVACY_TEMPLATE` legal document (locale variants) plus academy name, contact and purposes;
+  - public `/privacy` on the academy host, linked from academy sign-in;
+  - Settings → Privacy notice (preview, version);
+  - `noticeVersion` is stored on consents.
+- **4.20 Settings → Parent app:**
+  - printable "Join us on AcademyBee" poster with a server-rendered QR of `https://app.<root>/join/<slug>` (C-73 helper, print CSS, A4);
+  - the address shown for typing.
+- **4.21 Link and Join requests:**
+  - `JoinRequest`, `AcademyLinkAttempt` migration;
+  - hub API (`/hub/academies/:slug/link/start`, `/link/verify` with consent payload, `/join-requests`; uniform responses, rate limits, per-tenant context per ADR-039);
+  - academy API: `GET /join-requests`, `POST /join-requests/:id/approve` (link to student(s), creating or attaching the `Parent`), `POST /join-requests/:id/reject`;
+  - **Join requests** queue page (`parent.manage`);
+  - CLI `pnpm hub:join-request` (local/staging).
+- **Tests:**
+  - code sent only to an email the academy holds; identical responses for match / no match / unknown academy; rate limits;
+  - approval links only the chosen students; every hub call runs under that academy's tenant context;
+  - activation impossible without consent; cross-tenant registry.
+
+### S7 `p4/journey-e2e` — journey, flags, docs
+
+- **4.22 E2E:**
+  - exit journey: add student with two parents → Student 360 shows both → parent invite email arrives in Mailpit;
+  - import journey with your file; palette;
+  - Join request → approve → linked;
+  - phone projects (Android, iPhone) for list and 360; axe; pseudo-locale.
+- **4.23 Flags and docs:**
+  - remove `p4-people` and `p4-family-link` once staging is verified;
+  - ARCHITECTURE as-built notes (§7.3 matrix, §8.3, ADR-036/039 notes); CLAUDE.md §3/§8; README demo data; plan status.
+
+| Slice | Branch | Tasks | Release flags |
+| --- | --- | --- | --- |
+| S1 | `p4/shell-diet` | 4.1–4.3 | — |
+| S2 | `p4/people-api` | 4.4–4.7 | — (API only) |
+| S3 | `p4/students-ui` | 4.8–4.12 | adds `p4-people` (on local/ci/staging, off production) |
+| S4 | `p4/teachers-search` | 4.13–4.14 | `p4-people` |
+| S5 | `p4/import` | 4.15–4.17 | `p4-people` |
+| S6 | `p4/family-link` | 4.18–4.21 | adds `p4-family-link` |
+| S7 | `p4/journey-e2e` | 4.22–4.23 | removes both |
+
+**Analytics (no personal data):** `student.created{source: manual|import|onboarding}`, `student.status_changed{to}`, `student.archived`, `student.restored`, `parent.linked`, `parent.invited`, `consent.recorded{channel, action}`, `import.previewed{rows, errors}`, `import.committed{created, skipped}`, `teacher.created{mode}`, `search.used{types}`, `join_request.received|approved|rejected`.
+
+**Seeds (local/ci, C-37):** demo-a gets about 30 students with parents, consents for active parents, one health note and custom fields. `db:seed:perf` creates 50K students for the benchmark.
+
+## Dependencies and gaps
+
+- **Uses:**
+  - tenant-bound client and RLS, `@Idempotent`, `AuditService`, outbox and email, `AnalyticsService`;
+  - `@Can` + `EntitlementService` `@Limit('students')`;
+  - `InvitationsService` (C-67) and the Phase 3 teacher link on accept;
+  - HUB sessions + `TenantContext.run` fan-out (ADR-039), QR helper (C-73), media adapter (C-97), `TenantSequence` (C-91), cross-tenant registry.
+- **Missing from earlier phases, added here:**
+  - `pg_trgm`;
+  - syncing role grants to existing academies;
+  - private-bucket methods;
+  - scope policies for people (Team has its own);
+  - ActivityEvent;
+  - any background job that writes tenant data.
+- **Later (noted, not built):**
+  - parent/hub screens, accept, consent and join UI (7P);
+  - phone OTP codes (10);
+  - batches in the palette, transfer, teacher's student list (5–6);
+  - fee consequences of status changes and opening balances (7);
+  - exports incl. custom fields (12);
+  - parent merge tool (12);
+  - erasure workflow (15).
+
+## Risks
+
+| Risk | Mitigation |
+| --- | --- |
+| Route budget | S1 diet before any new screen. Palette, Global Add and drawers load on first use; budget routes are added per slice. I come back to you before raising any budget. |
+| `pg_trgm` not allowed for the migrator on Railway | It is a trusted extension (any user with CREATE on the database). I'll check staging at the start of S2; if it's refused, I'll give you the one-line SQL to run as the database owner. |
+| Spreadsheet parsing (zip bombs, formulas, odd encodings) | Size and row limits, uncompressed-size check, values only, BOM/UTF-8 detection, CSV-injection escaping, fuzz tests. |
+| Scope policy mistakes (ASSIGNED, LINKED) | One policy per resource used for lists and single records; matrix tests per role plus the cross-tenant suite. |
+| Enumeration through the link API | Identical bodies and timings (dummy work), per-user/IP/academy limits, integration tests comparing responses. |
+| Consent wording is legal territory | Template text is a draft; real wording with the Terms/Privacy/DPA before 7P (G-06: "confirm with legal counsel"). |
+| A10 spreadsheet and private bucket not ready by S5 | S1–S4 don't need them. I'll ask when S4 merges. |
+
+**Your inputs:**
+1. **Before S5:**
+   - the anonymised pilot spreadsheet (A10) in `e2e/fixtures/`;
+   - a second R2 bucket, `academybees-private-staging` (APAC, **no custom domain, r2.dev off, no CORS**), added to your existing token's bucket list or given its own token. Then add `MEDIA_PRIVATE_BUCKET` on the Railway `api` service (I'll confirm exact names).
+2. **Before 7P:** real consent and privacy-notice wording.
+
+## How I'll prove the exit gate (P4-3)
+
+| Gate item | Evidence |
+| --- | --- |
+| Scope policies, IDOR, many-to-many, archive history | `students.int.spec.ts`, `parents.int.spec.ts`, `people.policy.spec.ts`, cross-tenant registry (every new route) |
+| Medical notes hidden + reads audited | `health-notes.int.spec.ts`; E2E receptionist |
+| Consent: no activation without hub consent; history | `consent.int.spec.ts`, `membership activation` tests |
+| Import 500/20 → 480/20, re-upload no duplicates, plan limit | `import.int.spec.ts`; E2E with your file |
+| Join/link: no enumeration, rate limits, only chosen students linked, tenant context per call | `family-link.int.spec.ts`, `hub-tenant-context.int.spec.ts` |
+| Search p95 < 300 ms on 50K | `scripts/perf/search-bench.mjs` output in the gate report |
+| RLS on new tables; drift | `rls-coverage.int.spec.ts`, `tenant-isolation.int.spec.ts`, `db:drift` |
+| Exit E2E: student with two parents → Student 360 → invite email | `people.spec.ts` (desktop + phones), Mailpit |
+| UI states, a11y, i18n, budgets | axe light/dark on every new page, `i18n-pseudo.spec.ts`, `perf:budget` (new routes added) |
+| Common gate | `pnpm lint && pnpm typecheck && pnpm test && pnpm test:integration && pnpm build && pnpm e2e && pnpm i18n:check && pnpm flags:check && pnpm db:drift && pnpm perf:budget` + CI green |
+| Staging | your checklist (Part F Phase 4) on staging, with a real phone for list and 360 |
