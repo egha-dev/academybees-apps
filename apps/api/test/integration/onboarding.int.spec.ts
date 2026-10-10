@@ -1,4 +1,4 @@
-import { LEGAL_DOCUMENTS, ROLE_TEMPLATES } from '@academybee/contracts';
+import { OWNER_LEGAL_DOCUMENTS, ROLE_TEMPLATES } from '@academybee/contracts';
 import {
   addMemberFixture,
   createTenantFixture,
@@ -66,7 +66,7 @@ describe('onboarding', () => {
       .set('Host', s.host)
       .set('Cookie', s.cookie)
       .set('x-csrf-token', s.csrf)
-      .send({ documentIds: LEGAL_DOCUMENTS.map((d) => d.id) });
+      .send({ documentIds: OWNER_LEGAL_DOCUMENTS.map((d) => d.id) });
   const state = (s: Session) =>
     http().get('/api/v1/onboarding').set('Host', s.host).set('Cookie', s.cookie);
   const put = (s: Session, step: string, body: Record<string, unknown>) =>

@@ -60,6 +60,10 @@ export type PeopleFixture = {
   teacherId: string;
   studentId: string;
   parentId: string;
+  /** The parent ↔ student link row. */
+  parentLinkId: string;
+  /** The `school_bus` custom field definition. */
+  customFieldId: string;
   courseId: string;
   levelId: string;
   batchId: string;
@@ -197,6 +201,8 @@ async function insertPeopleAndScheduling(
     teacherId: newId(),
     studentId: newId(),
     parentId: newId(),
+    parentLinkId: newId(),
+    customFieldId: newId(),
     courseId: newId(),
     levelId: newId(),
     batchId: newId(),
@@ -246,7 +252,7 @@ async function insertPeopleAndScheduling(
   await q(
     `INSERT INTO parent_student (id, tenant_id, parent_id, student_id, relationship, is_primary_contact)
      VALUES ($1, $2, $3, $4, 'MOTHER', true)`,
-    [newId(), t.id, f.parentId, f.studentId],
+    [f.parentLinkId, t.id, f.parentId, f.studentId],
   );
   await q(
     `INSERT INTO consent_record (id, tenant_id, parent_id, student_id, action, purposes, notice_version, channel)
@@ -256,7 +262,7 @@ async function insertPeopleAndScheduling(
   await q(
     `INSERT INTO custom_field_definition (id, tenant_id, entity, key, label, type, updated_at)
      VALUES ($1, $2, 'STUDENT', 'school_bus', '{"en-IN":"School bus"}', 'TEXT', now())`,
-    [newId(), t.id],
+    [f.customFieldId, t.id],
   );
   await q(
     `INSERT INTO tenant_sequence (tenant_id, key, next_value, updated_at)

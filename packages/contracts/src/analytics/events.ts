@@ -116,8 +116,41 @@ export const ANALYTICS_EVENTS = {
     version: 1,
     description: 'Students were added to an academy.',
     properties: z.strictObject({
-      source: z.enum(['onboarding']),
+      source: z.enum(['onboarding', 'manual', 'import']),
       count: z.number().int().min(1),
+    }),
+  }),
+  'student.status_changed': defineAnalyticsEvent({
+    name: 'student.status_changed',
+    version: 1,
+    description: 'A student was put on hold, completed, left or made active again (G-27).',
+    properties: z.strictObject({ to: z.enum(['ACTIVE', 'ON_HOLD', 'COMPLETED', 'LEFT']) }),
+  }),
+  'student.archived': defineAnalyticsEvent({
+    name: 'student.archived',
+    version: 1,
+    description: 'A student was archived (restorable for 90 days, C-108).',
+    properties: z.strictObject({}),
+  }),
+  'student.restored': defineAnalyticsEvent({
+    name: 'student.restored',
+    version: 1,
+    description: 'An archived student was restored (G-26).',
+    properties: z.strictObject({}),
+  }),
+  'parent.linked': defineAnalyticsEvent({
+    name: 'parent.linked',
+    version: 1,
+    description: 'A parent was linked to a student; `existing` when an existing parent was reused.',
+    properties: z.strictObject({ existing: z.boolean() }),
+  }),
+  'consent.recorded': defineAnalyticsEvent({
+    name: 'consent.recorded',
+    version: 1,
+    description: "A parent's consent was recorded or withdrawn (G-06).",
+    properties: z.strictObject({
+      channel: z.enum(['FAMILY_HUB', 'ACADEMY_STAFF', 'PAPER']),
+      action: z.enum(['GRANT', 'WITHDRAW']),
     }),
   }),
   'batch.created': defineAnalyticsEvent({

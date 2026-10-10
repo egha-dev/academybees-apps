@@ -84,7 +84,35 @@ export const LEGAL_DOCUMENTS: readonly LegalDocumentDefinition[] = [
       },
     },
   },
+  {
+    // The template each academy's privacy notice is generated from (G-06, ADR-034). Its version is
+    // the notice version stored on every consent record (Phase 4 S6 renders the notice page).
+    id: '019a0000-0000-7000-8000-00000000a004',
+    kind: 'ACADEMY_PRIVACY_TEMPLATE',
+    version: '2026-10-draft',
+    publishedAt: '2026-10-10T00:00:00.000Z',
+    variants: {
+      'en-IN': {
+        title: 'Privacy notice',
+        summary:
+          "How this academy uses your and your child's details, why, and how to see, correct or withdraw them.",
+        url: 'https://academybees.com/privacy/',
+      },
+    },
+  },
 ];
+
+/** The documents an academy owner accepts (Terms, Privacy, DPA) — never the notice template. */
+export const OWNER_LEGAL_DOCUMENTS: readonly LegalDocumentDefinition[] = LEGAL_DOCUMENTS.filter(
+  (d) => (OWNER_LEGAL_KINDS as readonly string[]).includes(d.kind),
+);
+
+/** The academy privacy notice version consents refer to (latest published template, G-06). */
+export function currentNoticeVersion(now: Date = new Date()): string {
+  const template = currentLegalDocuments(now).find((d) => d.kind === 'ACADEMY_PRIVACY_TEMPLATE');
+  if (!template) throw new Error('no academy privacy notice template published');
+  return template.version;
+}
 
 /** The current version of each kind at `now`: the latest one already published. */
 export function currentLegalDocuments(
