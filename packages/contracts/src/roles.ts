@@ -48,6 +48,9 @@ const OWNER: Capability[] = [
   'student.create',
   'student.update',
   'student.archive',
+  'student.health.read',
+  'student.health.manage',
+  'student.import',
   'parent.read',
   'parent.manage',
   'teacher.read',
@@ -111,6 +114,9 @@ export const ROLE_TEMPLATES: Readonly<Record<RoleKey, RoleTemplate>> = {
         'student.create',
         'student.update',
         'student.archive',
+        'student.health.read',
+        'student.health.manage',
+        'student.import',
         'parent.read',
         'parent.manage',
         'teacher.read',
@@ -163,6 +169,8 @@ export const ROLE_TEMPLATES: Readonly<Record<RoleKey, RoleTemplate>> = {
       ...grant('TENANT', ['announcement.read']),
       ...grant('ASSIGNED', [
         'student.read',
+        // G-05: assigned teachers see their students' medical notes (every read audited, C-104).
+        'student.health.read',
         'parent.read',
         'course.read',
         'batch.read',
