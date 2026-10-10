@@ -14,9 +14,11 @@ import { AuditService } from '../../core/audit/audit.service.js';
 import type { RequestContext } from '../../core/context/request-context.js';
 import { TENANT_DB } from '../../core/database/database.module.js';
 import { DomainError } from '../../core/errors/domain-error.js';
+import { MediaStorage } from '../../core/media/media-storage.js';
 import { scopedWhere } from '../../core/rbac/scope.js';
 import { ActivityService } from './activity.service.js';
 import { studentPolicy } from './people.policy.js';
+import { StudentPhotoService } from './student-photo.service.js';
 
 /**
  * The restricted parts of a student's record:
@@ -35,6 +37,8 @@ export class StudentRecordsService {
     private readonly activity: ActivityService,
     private readonly audit: AuditService,
     private readonly analytics: AnalyticsService,
+    private readonly photos: StudentPhotoService,
+    private readonly storage: MediaStorage,
   ) {}
 
   async readHealthNote(studentId: string) {
@@ -145,7 +149,7 @@ export class StudentRecordsService {
   }
 
   async recordConsent(studentId: string, input: z.infer<typeof RecordConsentSchema>) {
-    await this.db.$transaction(async (tx) => {
+    const removedPhoto = await this.db.$transaction(async (tx) => {
       const student = await tx.student.findFirst({
         where: {
           AND: [{ id: studentId }, scopedWhere(this.cls, 'student.update', studentPolicy)],
@@ -204,7 +208,10 @@ export class StudentRecordsService {
         channel: input.channel,
         action: input.action,
       });
+      // Without photo consent any more, the student's photo is removed (G-06, C-97).
+      return input.action === 'WITHDRAW' ? this.photos.removeIfConsentGone(tx, studentId) : null;
     });
+    if (removedPhoto) await this.storage.deletePrivate(removedPhoto);
     return this.consents(studentId);
   }
 

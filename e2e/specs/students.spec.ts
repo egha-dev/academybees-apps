@@ -8,7 +8,9 @@ import { signInAt } from '../support/session.js';
 /**
  * Students and Student 360 (UX §11.3–11.4; G-05, G-26, C-106, C-108): search, add a student with
  * a parent, a second parent, a sibling who reuses the same parent, restricted medical notes, and
- * archive with Undo. The seeded demo-a has 30 students (Aarav Sharma has a medical note).
+ * archive with Undo. The seeded demo-a has 30 students (Aarav Sharma has a medical note). Tests
+ * share the sign-ins between the owner and the admin (both may do all of this): an account may
+ * sign in only 5 times a minute, and the device projects run in parallel.
  */
 test.beforeAll(requireSeededAcademies);
 test.beforeEach(({ context }) => ownClientIp(context));
@@ -68,7 +70,7 @@ test('add a student with two parents, then a sibling who reuses the first parent
   test.skip(testInfo.project.name !== 'desktop-chromium', 'Creates students; run once');
   const tag = `${Date.now()}`.slice(-6);
   const phone = `98${tag}11`;
-  await signInAt(page, testInfo, 'demo-a', 'owner@demo-a.test');
+  await signInAt(page, testInfo, 'demo-a', 'admin@demo-a.test');
   await page.goto(hostUrl(testInfo, 'demo-a', '/students'));
 
   const sheet = await addStudent(page, `Meera ${tag}`, { name: `Anita ${tag}`, phone });
@@ -135,7 +137,7 @@ test('archive with Undo, then archive and restore (G-26)', async ({ page }, test
   test.setTimeout(90_000);
   test.skip(testInfo.project.name !== 'desktop-chromium', 'Changes students; run once');
   const tag = `${Date.now()}`.slice(-6);
-  await signInAt(page, testInfo, 'demo-a', 'owner@demo-a.test');
+  await signInAt(page, testInfo, 'demo-a', 'admin@demo-a.test');
   await page.goto(hostUrl(testInfo, 'demo-a', '/students'));
   const sheet = await addStudent(page, `Archive ${tag}`);
   await sheet.getByRole('button', { name: 'Add student' }).click();
@@ -170,7 +172,7 @@ test('the people pages have no WCAG 2.1 AA violations in dark mode', async ({
   const ctx = await browser.newContext({ colorScheme: 'dark' });
   await ownClientIp(ctx);
   const page = await ctx.newPage();
-  await signInAt(page, testInfo, 'demo-a', 'owner@demo-a.test');
+  await signInAt(page, testInfo, 'demo-a', 'admin@demo-a.test');
   for (const path of [
     '/students',
     `/students/${AARAV}`,
@@ -183,4 +185,44 @@ test('the people pages have no WCAG 2.1 AA violations in dark mode', async ({
     await expectNoA11yViolations(page);
   }
   await ctx.close();
+});
+
+test('a photo needs consent for photos; then it shows on Student 360 (G-05, C-97)', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-chromium', 'Changes a student; run once');
+  test.setTimeout(90_000);
+  const tag = `${Date.now()}`.slice(-6);
+  await signInAt(page, testInfo, 'demo-a', 'admin@demo-a.test');
+  await page.goto(hostUrl(testInfo, 'demo-a', '/students'));
+  const sheet = await addStudent(page, `Photo ${tag}`, { name: `Mum ${tag}`, phone: `96${tag}22` });
+  await sheet.getByRole('button', { name: 'Add student' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: `Photo ${tag}` })).toBeVisible({
+    timeout: 15_000,
+  });
+  await settled(page);
+  await expect(page.getByText("Record a parent's consent for photos to add one.")).toBeVisible();
+
+  await page.getByRole('button', { name: 'Record consent' }).click();
+  const consent = page.getByRole('dialog');
+  await consent.getByRole('checkbox', { name: 'Photos of the student' }).check();
+  await consent.getByRole('button', { name: 'Record' }).click();
+  await expect(page.getByRole('button', { name: 'Add photo' })).toBeVisible();
+  await settled(page);
+
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Add photo' }).click();
+  await (
+    await chooser
+  ).setFiles({
+    name: 'photo.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      'base64',
+    ),
+  });
+  await expect(page.getByRole('img', { name: `Photo of Photo ${tag}` })).toBeVisible({
+    timeout: 15_000,
+  });
 });

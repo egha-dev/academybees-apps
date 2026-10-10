@@ -17,6 +17,8 @@ import { getTranslations } from 'next-intl/server';
 import { stepLabels } from '@/components/onboarding/labels.server';
 import { StepFormLazy } from '@/components/onboarding/onboarding-lazy';
 import { loadOnboarding, onboardingOwner } from '@/components/onboarding/owner.server';
+import { holds } from '@/components/shell/signed-in.server';
+import { peopleEnabled } from '@/lib/flags.server';
 import { ReadyActions } from '@/components/onboarding/ready-actions';
 import { stepName } from '@/components/onboarding/step-name';
 import { StepProgress } from '@/components/onboarding/step-progress';
@@ -53,11 +55,15 @@ export default async function StepPage({ params }: { params: Promise<{ step: str
   const step: OnboardingStep = parsed.data;
   const owner = await onboardingOwner();
   if (owner.state !== 'signed-in') return null;
-  const [state, t, { context }] = await Promise.all([
+  const [state, t, { context }, peopleT, people] = await Promise.all([
     loadOnboarding(),
     getTranslations('onboarding'),
     hostContext(),
+    getTranslations('people'),
+    peopleEnabled(),
   ]);
+  // G-02: import offered beside the quick-add form (release flag `p4-people`).
+  const importAvailable = people && holds(owner.me, 'student.import');
   // Finished: the academy's home, never `/` (which a stale gate could send back here, review H1).
   if (state.completed) redirect(homeFor(owner.me));
   const academy = academyName(context) ?? '';
@@ -174,6 +180,28 @@ export default async function StepPage({ params }: { params: Promise<{ step: str
         </Text>
         <Text tone="secondary">{titles[saved].body}</Text>
       </Stack>
+      {saved === 'students' && importAvailable && (
+        <Box
+          sx={{
+            padding: 3,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'ab.border',
+            bgcolor: 'ab.surface',
+          }}
+        >
+          <Text>
+            {peopleT('import.setupHint')}{' '}
+            <Box
+              component="a"
+              href="/onboarding/import"
+              sx={{ fontWeight: 600, color: 'ab.textPrimary' }}
+            >
+              {peopleT('import.open')}
+            </Box>
+          </Text>
+        </Box>
+      )}
       <StepFormLazy
         step={saved}
         state={state}

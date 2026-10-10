@@ -12,6 +12,7 @@ import {
   RestoreStudentSchema,
   StudentListQuerySchema,
   StudentPageSchema,
+  StudentPhotoSchema,
   StudentSchema,
   UpdateParentLinkSchema,
   UpdateStudentSchema,
@@ -28,7 +29,9 @@ import {
   Post,
   Put,
   Query,
+  Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { Inject } from '@nestjs/common';
 import type { TenantBoundClient } from '@academybee/database';
 
@@ -39,6 +42,7 @@ import { Can } from '../../core/rbac/can.decorator.js';
 import { createZodDto, ZodResponse } from '../../core/validation/zod-dto.js';
 import { ActivityService } from './activity.service.js';
 import { ParentsService } from './parents.service.js';
+import { StudentPhotoService } from './student-photo.service.js';
 import { StudentRecordsService } from './student-records.service.js';
 import { StudentsService } from './students.service.js';
 
@@ -67,6 +71,7 @@ export class StudentsController {
     private readonly parents: ParentsService,
     private readonly records: StudentRecordsService,
     private readonly activity: ActivityService,
+    private readonly photos: StudentPhotoService,
     @Inject(TENANT_DB) private readonly db: TenantBoundClient,
   ) {}
 
@@ -166,6 +171,33 @@ export class StudentsController {
   async unlinkParent(@Param('id', Id) id: string, @Param('linkId', Id) linkId: string) {
     await this.parents.unlink(id, linkId);
     return this.students.get(id);
+  }
+
+  // ── Photo (private, consent-gated, C-97) ──────────────────────────────────────────────────
+
+  /** Raw image bytes (PNG, JPEG, WebP; ≤ 2 MB). */
+  @Put(':id/photo')
+  @Can('student.update')
+  @ZodResponse(StudentSchema)
+  async uploadPhoto(@Param('id', Id) id: string, @Req() req: Request) {
+    await this.photos.upload(id, req.body);
+    return this.students.get(id);
+  }
+
+  @Delete(':id/photo')
+  @Can('student.update')
+  @ZodResponse(StudentSchema)
+  async removePhoto(@Param('id', Id) id: string) {
+    await this.photos.remove(id);
+    return this.students.get(id);
+  }
+
+  /** A link to the photo valid for 5 minutes; each one is an audited view. */
+  @Get(':id/photo')
+  @Can('student.read')
+  @ZodResponse(StudentPhotoSchema)
+  photo(@Param('id', Id) id: string) {
+    return this.photos.link(id);
   }
 
   // ── Restricted records ────────────────────────────────────────────────────────────────────

@@ -70,6 +70,7 @@ export default async function StudentsPage({
   if (query.status) api.set('status', query.status);
   if (query.archived) api.set('archived', 'true');
   const canCreate = holds(me, 'student.create');
+  const canImport = holds(me, 'student.import');
   const adding = canCreate && one(params.add) === '1';
   const [res, fieldsRes] = await Promise.all([
     apiServerGet(`/students?${api.toString()}`),
@@ -87,10 +88,17 @@ export default async function StudentsPage({
         title={t('students.title')}
         body={t('students.body', { academy })}
         action={
-          canCreate ? (
-            <PlainButton variant="primary" href="?add=1">
-              {t('students.add')}
-            </PlainButton>
+          canCreate || canImport ? (
+            <Stack direction="row" sx={{ gap: 2, flexWrap: 'wrap' }}>
+              {canImport && (
+                <PlainButton href="/students/import">{t('students.import')}</PlainButton>
+              )}
+              {canCreate && (
+                <PlainButton variant="primary" href="?add=1">
+                  {t('students.add')}
+                </PlainButton>
+              )}
+            </Stack>
           ) : undefined
         }
       />

@@ -84,6 +84,7 @@ model Tenant {
   onboarding    TenantOnboarding?
   media         MediaFile[]
   activity      ActivityEvent[]
+  imports       ImportJob[]
 
   @@map("tenant")
 }

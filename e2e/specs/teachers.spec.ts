@@ -20,7 +20,7 @@ test('add a teacher with subjects, edit, archive and restore', async ({ page }, 
   test.skip(testInfo.project.name !== 'desktop-chromium', 'Creates teachers; run once');
   test.setTimeout(90_000);
   const tag = `${Date.now()}`.slice(-6);
-  await signInAt(page, testInfo, 'demo-a', 'owner@demo-a.test');
+  await signInAt(page, testInfo, 'demo-a', 'admin@demo-a.test');
   await page.goto(hostUrl(testInfo, 'demo-a', '/teachers'));
   await expect(page.getByRole('heading', { level: 1, name: 'Teachers' })).toBeVisible();
   await page.getByRole('link', { name: 'Add teacher' }).first().click();
@@ -61,7 +61,7 @@ test('Ctrl+K finds a student by part of a name and opens Student 360', async ({
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-chromium', 'Keyboard shortcut: desktop');
   test.setTimeout(90_000);
-  await signInAt(page, testInfo, 'demo-a', 'owner@demo-a.test');
+  await signInAt(page, testInfo, 'demo-a', 'admin@demo-a.test');
   await page.goto(hostUrl(testInfo, 'demo-a', '/students'));
   await settled(page);
   await expect(async () => {
@@ -87,7 +87,7 @@ test('the palette button works on phones, and the teachers pages pass axe', asyn
   page,
 }, testInfo) => {
   test.setTimeout(90_000);
-  await signInAt(page, testInfo, 'demo-a', 'owner@demo-a.test');
+  await signInAt(page, testInfo, 'demo-a', 'admin@demo-a.test');
   await page.goto(hostUrl(testInfo, 'demo-a', '/teachers'));
   await expect(page.getByRole('heading', { level: 1, name: 'Teachers' })).toBeVisible();
   await settled(page);

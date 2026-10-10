@@ -250,6 +250,34 @@ Each slice: branch `p4/<slice>` from the latest `main` → PR with the DoD check
   - plan limit; malformed, oversized, zip-bomb and formula cells; cross-tenant job access → 404;
   - your real file imports cleanly (E2E fixture).
 
+*As built (S5):*
+- **Private media** (C-97):
+  - `MediaStorage.putPrivate` / `getPrivate` / `deletePrivate` / `signedGet` (presigned ≤ 300 s) on `MEDIA_PRIVATE_BUCKET`. Config refuses a bucket equal to the public one. Local SeaweedFS gets `academybee-private-local`, with no anonymous access.
+- **Import** (G-02, ADR-036, C-100, C-101):
+  - `import_job` migration.
+  - API: `GET /students/import/template`, `POST /students/import` (raw body, `x-file-name`), `GET /students/import/:id`, `PUT …/mapping`, `POST …/commit`, `GET …/errors.csv`. These routes are also open while SETUP, for onboarding.
+  - Parsing: `papaparse` and `exceljs`, with the ZIP central directory checked before inflating (≤ 50 MB, ≤ 2,000 entries). Formulas are read as values. Windows-1252 CSV fallback.
+  - Mapping: suggested from template headers, synonyms and custom field labels.
+  - Validation: the same rules as Add Student. Duplicates are caught inside the file and against the academy (name + date of birth, else name + parent phone) → `exists`.
+  - Commit: an in-API BullMQ consumer (`student-imports`, concurrency 1) re-checks the starter's `student.import` and commits in 200-row chunks. Each chunk marks its rows `created` in the same transaction.
+  - Parents are reused by phone/email; batch matched by name; plan limit checked before commit and per chunk. The file is deleted after commit.
+  - Error report CSV: plain-language problems, formula-safe, BOM for Excel.
+- **Photos:**
+  - `PUT/DELETE /students/:id/photo`, `GET /students/:id/photo` (5-minute link, audited view).
+  - **Consent-gated:** a parent's latest consent must include `photos`; withdrawing it removes the photo and file (G-06).
+  - Student 360 shows initials, or the photo with Add/Change/Remove.
+- **UI:**
+  - `/students/import` wizard: template, upload, preview with counts / mapping / problems in words, import, result and problem CSV. The job id stays in the URL.
+  - Onboarding Students step: "Import from spreadsheet" → `/onboarding/import`, a separate setup route.
+  - Students header gets an Import button.
+- **Budget:** `/students/import` 182.1, `/onboarding/import` 179.5 KB gz.
+- **Tests:**
+  - `parse.spec.ts` (9); `import.int.spec.ts` (6): 500/20 → 480 + 20, corrected re-upload adds 20, XLSX + re-mapping, bad/oversize/empty files, plan limit, roles and academies.
+  - `student-photo.int.spec.ts` (2). Cross-tenant registry +9 routes.
+  - E2E `import.spec.ts`; the photo test in `students.spec.ts`.
+  - People E2E share sign-ins between the owner and the admin (5 sign-ins a minute per account).
+- **Not built here:** the pilot's own spreadsheet (A10) as an E2E fixture. It arrives with the PO; the same steps then run on it.
+
 ### S6 `p4/family-link` — Parent invites, privacy notice, Join QR, Join requests (G-06, G-31; flag `p4-family-link`)
 
 - **4.18 Parent invites (C-102):**

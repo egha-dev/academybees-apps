@@ -19,6 +19,7 @@ export * from './legal.js';
 export * from './people.js';
 export * from './students.js';
 export * from './teachers.js';
+export * from './imports.js';
 export * from './academy-types.js';
 export * from './console.js';
 export * from './onboarding.js';

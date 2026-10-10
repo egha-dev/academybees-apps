@@ -35,6 +35,8 @@ const BUDGETS = [
   { route: '/students', page: `${ACADEMY}/(app)/students`, kb: 200 },
   { route: '/students/[id]', page: `${ACADEMY}/(app)/students/[id]`, kb: 200 },
   { route: '/teachers', page: `${ACADEMY}/(app)/teachers`, kb: 200 },
+  { route: '/students/import', page: `${ACADEMY}/(app)/students/import`, kb: 200 },
+  { route: '/onboarding/import', page: `${ACADEMY}/(setup)/onboarding/import`, kb: 200 },
   { route: '/teachers/[id]', page: `${ACADEMY}/(app)/teachers/[id]`, kb: 200 },
   // The owner's guided setup (UX v1.1 §5), phone-first.
   { route: '/legal', page: `${ACADEMY}/(setup)/legal`, kb: 200 },

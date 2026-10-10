@@ -31,6 +31,29 @@ export function configureApp(app: INestApplication, config: ApiConfig): void {
       limit: '3mb',
     }),
   );
+  // Student photos (G-05, C-97): private, ≤ 2 MB, checked by their bytes in the service.
+  express.use(
+    /^\/api\/v1\/students\/[0-9a-f-]{36}\/photo$/,
+    raw({
+      type: ['image/png', 'image/jpeg', 'image/webp', 'application/octet-stream'],
+      limit: '3mb',
+    }),
+  );
+  // Student import files (G-02, C-101): the service checks the 5 MB limit and the real type.
+  express.use(
+    /^\/api\/v1\/students\/import$/,
+    raw({
+      type: [
+        'text/csv',
+        'text/plain',
+        'application/csv',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/octet-stream',
+      ],
+      limit: '6mb',
+    }),
+  );
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI });
   // Registered here (not APP_FILTER) so it also handles unknown routes and body-parser errors.

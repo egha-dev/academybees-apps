@@ -54,6 +54,7 @@ const API_ENV = {
   MEDIA_S3_SECRET_ACCESS_KEY: 'academybee-local-secret',
   MEDIA_PUBLIC_BUCKET: 'academybee-local',
   MEDIA_PUBLIC_BASE_URL: `${process.env.E2E_MEDIA_S3_ENDPOINT ?? 'http://localhost:8333'}/academybee-local`,
+  MEDIA_PRIVATE_BUCKET: 'academybee-private-local',
 };
 
 const WEB_ENV = {

@@ -8,6 +8,8 @@ import { z } from 'zod';
 export const MEDIA_PURPOSES = {
   'branding.logo': { visibility: 'PUBLIC', maxBytes: 2 * 1024 * 1024, area: 'branding' },
   'branding.favicon': { visibility: 'PUBLIC', maxBytes: 512 * 1024, area: 'branding' },
+  /** A student's photo (G-05): private, consent-gated (`photos` purpose), every view audited. */
+  'student.photo': { visibility: 'PRIVATE', maxBytes: 2 * 1024 * 1024, area: 'students' },
 } as const satisfies Record<
   string,
   { visibility: 'PUBLIC' | 'PRIVATE'; maxBytes: number; area: string }

@@ -1,0 +1,53 @@
+// Bulk import of students and parents (G-02, ADR-036, C-100, C-101). One row per uploaded file;
+// the parsed rows live on the job until it is committed or expires (7 days), then the file and
+// the rows are removed. Tenant RLS applies (010's loop).
+
+enum ImportStatus {
+  UPLOADED
+  VALIDATING
+  PREVIEW_READY
+  COMMITTING
+  COMPLETED
+  FAILED
+
+  @@map("import_status")
+}
+
+model ImportJob {
+  id            String       @id @db.Uuid
+  tenantId      String       @map("tenant_id") @db.Uuid
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  /// STUDENTS for now.
+  kind          String       @db.VarChar(20)
+  status        ImportStatus @default(UPLOADED)
+  /// Private bucket key (C-97); null once removed.
+  fileKey       String?      @map("file_key") @db.VarChar(200)
+  fileName      String       @map("file_name") @db.VarChar(200)
+  fileSize      Int          @map("file_size")
+  /// csv | xlsx
+  fileType      String       @map("file_type") @db.VarChar(8)
+  /// Column headers as found in the file.
+  headers       Json         @default("[]")
+  /// `{ <field>: <column index> }` (contracts ImportMapping).
+  mapping       Json         @default("{}")
+  /// Parsed rows: `[{ n, cells: string[], status, issues: [{field, issue}], studentId? }]`.
+  rows          Json         @default("[]")
+  totalRows     Int          @default(0) @map("total_rows")
+  validRows     Int          @default(0) @map("valid_rows")
+  errorRows     Int          @default(0) @map("error_rows")
+  duplicateRows Int          @default(0) @map("duplicate_rows")
+  createdRows   Int          @default(0) @map("created_rows")
+  /// Why the job failed (an ErrorCode-like key, never raw text).
+  failure       String?      @db.VarChar(60)
+  createdById   String?      @map("created_by_id") @db.Uuid
+  version       Int          @default(1)
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  completedAt   DateTime?    @map("completed_at") @db.Timestamptz(3)
+  /// When the file and parsed rows are removed (createdAt + 7 days, C-101).
+  expiresAt     DateTime     @map("expires_at") @db.Timestamptz(3)
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([expiresAt])
+  @@map("import_job")
+}

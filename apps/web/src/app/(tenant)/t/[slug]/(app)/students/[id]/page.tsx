@@ -20,6 +20,7 @@ import {
   HealthNoteLazy,
   ParentActionsLazy,
   StudentActionsLazy,
+  StudentPhotoLazy,
 } from '@/components/people/students-lazy';
 import type { PeopleErrorLabels } from '@/components/people/errors';
 import { STATUS_TONE } from '@/components/people/status';
@@ -136,7 +137,15 @@ export default async function StudentPage({
           direction={{ xs: 'column', md: 'row' }}
           sx={{ gap: 3, justifyContent: 'space-between', alignItems: { md: 'flex-end' } }}
         >
-          <Stack spacing={1}>
+          <Stack spacing={2}>
+            <StudentPhotoLazy
+              studentId={student.id}
+              name={student.fullName}
+              hasPhoto={student.hasPhoto}
+              photoConsent={student.photoConsent}
+              canManage={can.update}
+              labels={p.photo}
+            />
             <Stack direction="row" sx={{ gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
               <Text variant="title" as="h1">
                 {student.fullName}

@@ -19,6 +19,7 @@ const ParentActions = lazy(() =>
 );
 const Health = lazy(() => import('./health-note').then((m) => ({ default: m.HealthNote })));
 const Consent = lazy(() => import('./consent-record').then((m) => ({ default: m.ConsentRecord })));
+const Photo = lazy(() => import('./student-photo').then((m) => ({ default: m.StudentPhoto })));
 const FieldsEditor = lazy(() =>
   import('./custom-fields-editor').then((m) => ({ default: m.CustomFieldsEditor })),
 );
@@ -40,3 +41,4 @@ export const ParentActionsLazy = lazyPart<ComponentProps<typeof ParentActions>>(
 export const HealthNoteLazy = lazyPart<ComponentProps<typeof Health>>(Health);
 export const ConsentRecordLazy = lazyPart<ComponentProps<typeof Consent>>(Consent);
 export const CustomFieldsEditorLazy = lazyPart<ComponentProps<typeof FieldsEditor>>(FieldsEditor);
+export const StudentPhotoLazy = lazyPart<ComponentProps<typeof Photo>>(Photo);

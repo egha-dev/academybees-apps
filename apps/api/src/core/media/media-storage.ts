@@ -20,11 +20,13 @@ export class MediaStorage {
   private readonly endpoint: string;
   private readonly publicBucket: string;
   private readonly publicBase: string;
+  private readonly privateBucket: string;
 
   constructor(@Inject(API_CONFIG) config: ApiConfig) {
     this.endpoint = (config.MEDIA_S3_ENDPOINT ?? '').replace(/\/+$/, '');
     this.publicBucket = config.MEDIA_PUBLIC_BUCKET ?? '';
     this.publicBase = (config.MEDIA_PUBLIC_BASE_URL ?? '').replace(/\/+$/, '');
+    this.privateBucket = config.MEDIA_PRIVATE_BUCKET ?? '';
     this.client =
       config.MEDIA_S3_ENDPOINT &&
       config.MEDIA_S3_ACCESS_KEY_ID &&
@@ -43,6 +45,11 @@ export class MediaStorage {
   /** Public uploads work in this deployment. */
   get available(): boolean {
     return this.client !== undefined;
+  }
+
+  /** Private uploads (student photos, import files) work in this deployment (C-97). */
+  get privateAvailable(): boolean {
+    return this.client !== undefined && this.privateBucket !== '';
   }
 
   /** Where a public object is served (built at read time, never stored — C-70). */
@@ -77,15 +84,79 @@ export class MediaStorage {
     }
   }
 
-  private async send(
-    method: 'PUT' | 'DELETE',
-    key: string,
-    init: { body?: Uint8Array; headers?: Record<string, string> } = {},
-  ): Promise<Response> {
-    if (!this.client) throw new DomainError('SERVICE_UNAVAILABLE', 'media storage not configured');
+  // ── Private media (C-97): its own bucket, never a public URL; reads by presigned GET ≤ 5 min ──
+
+  async putPrivate(key: string, body: Uint8Array, contentType: string): Promise<void> {
+    const res = await this.send(
+      'PUT',
+      key,
+      {
+        body,
+        headers: {
+          'content-type': contentType,
+          'content-length': String(body.byteLength),
+          'cache-control': 'private, no-store',
+        },
+      },
+      'private',
+    );
+    if (!res.ok) {
+      this.logger.error({ status: res.status }, 'Object storage refused a private upload');
+      throw new DomainError('SERVICE_UNAVAILABLE', `storage put ${res.status}`);
+    }
+  }
+
+  /** The object's bytes, for server-side processing (import files). */
+  async getPrivate(key: string): Promise<Uint8Array> {
+    const res = await this.send('GET', key, {}, 'private');
+    if (!res.ok) throw new DomainError('SERVICE_UNAVAILABLE', `storage get ${res.status}`);
+    return new Uint8Array(await res.arrayBuffer());
+  }
+
+  async deletePrivate(key: string): Promise<void> {
+    try {
+      const res = await this.send('DELETE', key, {}, 'private');
+      if (!res.ok && res.status !== 404)
+        this.logger.warn({ status: res.status }, 'Object storage did not delete a private object');
+    } catch (error) {
+      this.logger.warn({ err: error }, 'Object storage unreachable for a private delete');
+    }
+  }
+
+  /**
+   * A presigned GET for one private object, valid at most 5 minutes (C-97). Callers check the
+   * capability and scope first and audit reads of minors' media.
+   */
+  async signedGet(key: string, seconds = 300): Promise<string> {
+    if (!this.client || !this.privateBucket)
+      throw new DomainError('SERVICE_UNAVAILABLE', 'private media storage not configured');
+    this.assertKey(key);
+    const url = new URL(`${this.endpoint}/${this.privateBucket}/${key}`);
+    url.searchParams.set('X-Amz-Expires', String(Math.min(Math.max(seconds, 1), 300)));
+    const signed = await this.client.sign(url.toString(), {
+      method: 'GET',
+      aws: { signQuery: true },
+    });
+    return signed.url;
+  }
+
+  private assertKey(key: string): void {
     if (!/^t\/[0-9a-f-]{36}\/[a-z]+\/[0-9a-f-]{36}\.[a-z]+$/.test(key))
       throw new Error('unsafe storage key');
-    const url = `${this.endpoint}/${this.publicBucket}/${key}`;
+  }
+
+  private async send(
+    method: 'PUT' | 'DELETE' | 'GET',
+    key: string,
+    init: { body?: Uint8Array; headers?: Record<string, string> } = {},
+    visibility: 'public' | 'private' = 'public',
+  ): Promise<Response> {
+    if (!this.client) throw new DomainError('SERVICE_UNAVAILABLE', 'media storage not configured');
+    const bucket = visibility === 'private' ? this.privateBucket : this.publicBucket;
+    if (!bucket)
+      throw new DomainError('SERVICE_UNAVAILABLE', `${visibility} bucket not configured`);
+    this.assertKey(key);
+    const url = `${this.endpoint}/${bucket}/${key}`;
     return this.client.fetch(url, {
       method,
       ...(init.body ? { body: init.body } : {}),

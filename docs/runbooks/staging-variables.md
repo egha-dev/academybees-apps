@@ -92,7 +92,7 @@ CUSTOM_DOMAINS_ENABLED=false
 PAYMENT_PROVIDERS=manual
 ```
 
-**Media (Phase 3, C-97).** Logos and favicons go to the Cloudflare R2 bucket `academybees-media-staging`, which has the public domain `media.staging.academybees.com` and r2.dev turned off. That bucket holds **public branding only**; private media gets its own bucket without a public domain in Phase 4. Add these variables on `api` only. Seal the two keys (Railway → variable → ⋯ → Seal).
+**Media (Phase 3, C-97).** Logos and favicons go to the Cloudflare R2 bucket `academybees-media-staging`, which has the public domain `media.staging.academybees.com` and r2.dev turned off. That bucket holds **public branding only**; private media has its own bucket without a public domain (below). Add these variables on `api` only. Seal the two keys (Railway → variable → ⋯ → Seal).
 
 ```text
 MEDIA_S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
@@ -102,6 +102,14 @@ MEDIA_S3_SECRET_ACCESS_KEY=<R2 token Secret Access Key>
 MEDIA_PUBLIC_BUCKET=academybees-media-staging
 MEDIA_PUBLIC_BASE_URL=https://media.staging.academybees.com
 ```
+
+**Private media (Phase 4, C-97, C-101).** Student photos and import files go to a second R2 bucket, `academybees-private-staging`: APAC, **no custom domain, r2.dev off, no CORS**. Give the R2 token access to it, either by adding it to the existing token's buckets or with its own token in the same two variables. Then add on `api`:
+
+```text
+MEDIA_PRIVATE_BUCKET=academybees-private-staging
+```
+
+Without it, staging answers "importing/photos aren't available yet" instead of failing. The API refuses to start if it equals `MEDIA_PUBLIC_BUCKET`.
 
 Then add the signing keys as a separate variable (not in the Raw Editor):
 

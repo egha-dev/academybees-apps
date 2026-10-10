@@ -31,7 +31,8 @@
       "title": "Students aren't part of your role",
       "body": "Ask the owner of {academy} if you need to see students."
     },
-    "pickParent": "To add a parent, open their child below, then choose Add parent."
+    "pickParent": "To add a parent, open their child below, then choose Add parent.",
+    "import": "Import"
   },
   "status": {
     "ACTIVE": "Active",
@@ -457,5 +458,130 @@
       "students": "Go to students",
       "teachers": "Go to teachers"
     }
+  },
+  "import": {
+    "metaTitle": "Import students",
+    "title": "Import students and parents",
+    "body": "Bring your existing register in from a spreadsheet (CSV or Excel). Nothing is added until you check the preview and confirm.",
+    "open": "Import from spreadsheet",
+    "steps": {
+      "label": "Import steps",
+      "template": "Get the template",
+      "upload": "Upload",
+      "check": "Check",
+      "done": "Done"
+    },
+    "template": {
+      "title": "Start from our template, or use your own sheet",
+      "body": "Your own columns work too: you'll match them to our fields in the next step.",
+      "download": "Download template (CSV)"
+    },
+    "upload": {
+      "title": "Upload your spreadsheet",
+      "field": "Spreadsheet file",
+      "hint": "CSV or Excel (.xlsx), up to 5 MB and 2,000 students. The first row must be the column names.",
+      "submit": "Upload and check",
+      "uploading": "Uploading…",
+      "reading": "Reading your file…"
+    },
+    "mapping": {
+      "title": "Match your columns",
+      "body": "We matched what we could. Check each field reads from the right column.",
+      "field": "Field",
+      "column": "Column in your file",
+      "none": "Not in my file",
+      "apply": "Check again",
+      "required": "The student's name must come from a column."
+    },
+    "preview": {
+      "title": "Check before importing",
+      "summary": "{total, plural, one {# row} other {# rows}} read",
+      "ready": "{count, plural, =0 {No students ready to import} one {# student ready to import} other {# students ready to import}}",
+      "errors": "{count, plural, =0 {No rows with problems} one {# row has problems and will be skipped} other {# rows have problems and will be skipped}}",
+      "exists": "{count, plural, =0 {No students already here} one {# student is already here and will be skipped} other {# students are already here and will be skipped}}",
+      "problemsTitle": "Rows that need attention",
+      "row": "Row {n}",
+      "noName": "(no name)",
+      "existsLine": "Already at the academy",
+      "more": "Download the full list to see every problem.",
+      "limit": "Your plan has room for {seats, plural, one {# more student} other {# more students}}, but {count} are ready. Remove rows or ask the owner about upgrading.",
+      "commit": "Import {count, plural, one {# student} other {# students}}",
+      "committing": "Importing…",
+      "report": "Download problems (CSV)",
+      "startOver": "Upload a different file"
+    },
+    "done": {
+      "title": "Import finished",
+      "body": "{created, plural, one {# student was} other {# students were}} added.",
+      "skipped": "{count, plural, =0 {Nothing was skipped.} one {# row was skipped.} other {# rows were skipped.}}",
+      "view": "Go to students",
+      "again": "Import another file"
+    },
+    "failure": {
+      "file_unreadable": "We couldn't read that file. Save it as CSV or Excel (.xlsx) and try again.",
+      "too_many_rows": "That file has more than 2,000 rows. Split it into smaller files.",
+      "empty": "That file has no rows under the column names.",
+      "limit_reached": "Your plan's student limit was reached during the import. The students added so far are kept.",
+      "internal": "Something went wrong while importing. Try again; nothing is added twice."
+    },
+    "uploadError": {
+      "too_large": "That file is larger than 5 MB.",
+      "unsupported_type": "Choose a CSV or Excel (.xlsx) file.",
+      "empty": "That file is empty.",
+      "imports_unavailable": "Importing isn't available yet on this site. Ask AcademyBee support."
+    },
+    "fields": {
+      "fullName": "Student name",
+      "preferredName": "Preferred name",
+      "dateOfBirth": "Date of birth",
+      "gender": "Gender",
+      "schoolName": "School",
+      "grade": "Grade",
+      "admissionDate": "Admission date",
+      "parentName": "Parent name",
+      "parentPhone": "Parent mobile",
+      "parentEmail": "Parent email",
+      "parentRelationship": "Relationship",
+      "batch": "Batch"
+    },
+    "issue": {
+      "required": "Required — this is empty",
+      "too_long": "Too long",
+      "invalid_date": "Not a date we recognise (use DD/MM/YYYY)",
+      "invalid_phone": "Not a mobile number (10 digits, or starting with +)",
+      "invalid_email": "Not an email address",
+      "invalid_gender": "Use Female, Male, Other or Prefer not to say",
+      "invalid_relationship": "Use Mother, Father, Guardian, Grandparent or Other",
+      "invalid_value": "Not a value this field accepts",
+      "unknown_batch": "No batch with this name at the academy",
+      "duplicate_in_file": "Same student appears earlier in the file"
+    },
+    "report": {
+      "row": "Row",
+      "name": "Student",
+      "column": "Column",
+      "problem": "Problem",
+      "exists": "Already at the academy — not imported again"
+    },
+    "permission": {
+      "title": "Importing isn't part of your role",
+      "body": "Ask the owner of {academy} to import students."
+    },
+    "backToSetup": "Back to setup",
+    "setupHint": "Already have a list of students in a spreadsheet?"
+  },
+  "photo": {
+    "alt": "Photo of {name}",
+    "add": "Add photo",
+    "change": "Change photo",
+    "remove": "Remove photo",
+    "removed": "Photo removed",
+    "saved": "Photo saved",
+    "needsConsent": "Record a parent's consent for photos to add one.",
+    "uploading": "Uploading…",
+    "tooLarge": "Choose a photo under 2 MB.",
+    "notImage": "Choose a PNG, JPEG or WebP photo.",
+    "unavailable": "Photos aren't available yet on this site.",
+    "error": "We couldn't load the photo."
   }
 }
