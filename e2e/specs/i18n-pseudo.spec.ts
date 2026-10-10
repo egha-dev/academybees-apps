@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
+import { ownClientIp } from '../support/client-ip.js';
 import { hostUrl } from '../support/hosts.js';
 
 /**
@@ -34,6 +35,10 @@ const DATA_VALUES = [
   'CBSE',
   'ICSE',
   'State board',
+  // Teachers (Phase 4 S4): seeded teacher names.
+  'Demo Owner',
+  'Demo Teacher',
+  'teacher@demo-a.test',
 ];
 /** Intl output (dates, times) is formatted data, not catalogue text (G-32). */
 const DATA_PATTERNS = [
@@ -54,6 +59,8 @@ const SIGNED_IN_PATHS = [
   '/settings/custom-fields',
   '/students/01a10000-0000-7000-8000-00000000a001',
   '/students/01a10000-0000-7000-8000-00000000a001?tab=activity',
+  // Not the Teachers list: other specs add teachers to demo-a, so its names vary per run.
+  '/teachers/01a10000-0000-7000-8000-00000000e002',
 ];
 const DEV_PASSWORD = 'AcademyBees#2026';
 const VIEWPORTS = [
@@ -150,6 +157,8 @@ for (const viewport of VIEWPORTS) {
       page,
       context,
     }, testInfo) => {
+      // Its own client address: these tests sign in often, past the per-IP limit otherwise.
+      await ownClientIp(context);
       const login = await context.request.post(hostUrl(testInfo, 'demo-a', '/api/v1/auth/login'), {
         data: { identifier: 'owner@demo-a.test', password: DEV_PASSWORD },
       });

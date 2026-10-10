@@ -374,6 +374,53 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     capability: 'academy.settings.manage',
     body: { required: false },
   },
+  // Teachers and search (Phase 4 S4).
+  { method: 'GET', path: '/api/v1/teachers', session: true, capability: 'teacher.read' },
+  {
+    method: 'POST',
+    path: '/api/v1/teachers',
+    session: true,
+    capability: 'teacher.manage',
+    idempotent: true,
+    body: { mode: 'name', fullName: 'Cross Teacher' },
+    spoof: 'status',
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/teachers/linkable-members',
+    session: true,
+    capability: 'teacher.manage',
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/teachers/:id',
+    params: { id: 'teacher' },
+    session: true,
+    capability: 'teacher.read',
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/teachers/:id/activity',
+    params: { id: 'teacher' },
+    session: true,
+    capability: 'teacher.read',
+  },
+  {
+    method: 'PATCH',
+    path: '/api/v1/teachers/:id',
+    params: { id: 'teacher' },
+    session: true,
+    capability: 'teacher.manage',
+    body: { version: 1, subjects: ['x'] },
+    spoof: { skip: 'teachers.int.spec.ts › search finds what the caller may see' },
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/search',
+    session: true,
+    // Needs `?q=`; per-academy results are covered by the dedicated test.
+    spoof: { skip: 'teachers.int.spec.ts › search finds what the caller may see' },
+  },
   // Test-only signed-in routes guarded by @Can + a scope policy (shape of domain endpoints).
   {
     method: 'GET',

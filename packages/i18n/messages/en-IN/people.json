@@ -30,7 +30,8 @@
     "permission": {
       "title": "Students aren't part of your role",
       "body": "Ask the owner of {academy} if you need to see students."
-    }
+    },
+    "pickParent": "To add a parent, open their child below, then choose Add parent."
   },
   "status": {
     "ACTIVE": "Active",
@@ -283,7 +284,11 @@
       "parent_unlinked": "Parent removed ({relationship})",
       "parent_updated": "Parent details changed",
       "consent_recorded": "Consent {action, select, GRANT {given} other {withdrawn}}",
-      "health_note_updated": "Medical notes changed"
+      "health_note_updated": "Medical notes changed",
+      "teacher_created": "Teacher added",
+      "teacher_updated": "Details changed",
+      "teacher_archived": "Archived",
+      "teacher_restored": "Restored"
     }
   },
   "errors": {
@@ -332,6 +337,125 @@
   },
   "globalAdd": {
     "label": "Add",
-    "student": "Student"
+    "student": "Student",
+    "teacher": "Teacher",
+    "parent": "Parent"
+  },
+  "teachers": {
+    "metaTitle": "Teachers",
+    "title": "Teachers",
+    "body": "Everyone who teaches at {academy}: signed-in staff, invited teachers and visiting coaches.",
+    "add": "Add teacher",
+    "search": "Search teachers",
+    "searchSubmit": "Search",
+    "tabs": {
+      "label": "Teacher status",
+      "ACTIVE": "Current",
+      "ARCHIVED": "Archived"
+    },
+    "loadMore": "Show more teachers",
+    "emptyTitle": "No teachers yet",
+    "emptyBody": "Add yourself or the people who take your classes.",
+    "noResultsTitle": "No teachers match",
+    "noResultsBody": "Try part of their name.",
+    "archivedEmptyTitle": "No archived teachers",
+    "archivedEmptyBody": "Teachers you archive stay here with their history.",
+    "classes": "{count, plural, =0 {No classes} one {# class} other {# classes}}",
+    "access": {
+      "MEMBER": "Signs in",
+      "INVITED": "Invited",
+      "NONE": "No sign-in"
+    },
+    "permission": {
+      "title": "Teachers aren't part of your role",
+      "body": "Ask the owner of {academy} if you need to see teachers."
+    },
+    "profile": {
+      "back": "All teachers",
+      "tabs": {
+        "label": "Teacher sections",
+        "overview": "Overview",
+        "activity": "Activity"
+      },
+      "contact": "Contact",
+      "email": "Email",
+      "phone": "Phone",
+      "subjects": "Teaches",
+      "access": "Sign-in",
+      "accessMember": "Signs in to {academy} as a teacher.",
+      "accessInvited": "Invitation sent; the link works until {date}.",
+      "accessNone": "No sign-in. Invite them from Team if they should take attendance.",
+      "classes": "Classes",
+      "noClasses": "Not teaching a class yet. Classes come with the timetable.",
+      "since": "Added {date}",
+      "notGiven": "Not given",
+      "archivedBanner": "Archived. Restore to show them in lists again.",
+      "notFound": {
+        "title": "Teacher not found",
+        "body": "They may have been removed from your view, or the link is wrong.",
+        "action": "All teachers"
+      }
+    },
+    "form": {
+      "title": "Add teacher",
+      "mode": "How they join",
+      "modes": {
+        "name": "Just their name (no sign-in)",
+        "invite": "Invite them by email to sign in",
+        "member": "Someone already on the team"
+      },
+      "fullName": "Full name",
+      "email": "Email",
+      "phone": "Phone (optional)",
+      "subjects": "Teaches (optional)",
+      "subjectsHint": "Separate subjects with commas, e.g. Maths, Physics.",
+      "member": "Team member",
+      "noMembers": "Everyone on the team is already a teacher.",
+      "submit": "Add teacher",
+      "saving": "Adding…",
+      "added": "{name} added",
+      "alreadyMember": "This email already belongs to someone on the team. Choose 'Someone already on the team'.",
+      "alreadyTeacher": "This team member is already a teacher."
+    },
+    "actions": {
+      "label": "Teacher actions",
+      "edit": "Edit details",
+      "archive": "Archive",
+      "restore": "Restore"
+    },
+    "edit": {
+      "title": "Edit {name}",
+      "submit": "Save changes",
+      "saved": "Changes saved"
+    },
+    "archive": {
+      "title": "Archive {name}?",
+      "body": "They leave the teacher list. Their classes and history are kept, and you can restore them any time.",
+      "confirm": "Archive",
+      "archived": "{name} archived",
+      "restored": "{name} restored"
+    }
+  },
+  "palette": {
+    "open": "Search",
+    "shortcut": "Ctrl K",
+    "title": "Search the academy",
+    "input": "Search students, parents and teachers",
+    "hint": "Type at least two letters.",
+    "searching": "Searching…",
+    "none": "Nothing found for that.",
+    "error": "Search isn't available right now.",
+    "students": "Students",
+    "parents": "Parents",
+    "teachers": "Teachers",
+    "actions": "Quick actions",
+    "parentOf": "Parent of {name}",
+    "close": "Close",
+    "quick": {
+      "addStudent": "Add student",
+      "addTeacher": "Add teacher",
+      "students": "Go to students",
+      "teachers": "Go to teachers"
+    }
   }
 }

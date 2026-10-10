@@ -34,7 +34,9 @@
     "e2e:run": "pnpm --filter @academybee/e2e e2e",
     "perf:budget": "node scripts/perf/bundle-budget.mjs",
     "perf:lighthouse": "lhci autorun --config=lighthouserc.cjs",
-    "flags:check": "pnpm --filter @academybee/contracts flags:check"
+    "flags:check": "pnpm --filter @academybee/contracts flags:check",
+    "db:seed:perf": "pnpm --filter @academybee/database db:seed:perf",
+    "perf:search": "node scripts/perf/search-bench.mjs"
   },
   "devDependencies": {
     "@academybee/config": "workspace:*",

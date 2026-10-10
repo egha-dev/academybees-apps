@@ -76,3 +76,38 @@ export const parentPolicy = definePolicy<Prisma.ParentWhereInput, Record<string,
     return scope === 'TENANT';
   },
 });
+
+/**
+ * Teachers: TENANT all; BRANCH the member's branches; SELF only their own profile (a teacher sees
+ * themself, ARCHITECTURE §7.3 "read self").
+ */
+export const teacherPolicy = definePolicy<
+  Prisma.TeacherWhereInput,
+  { branchId: string; membershipId: string | null }
+>({
+  resource: 'Teacher',
+  where(scope, ctx) {
+    switch (scope) {
+      case 'TENANT':
+        return {};
+      case 'BRANCH':
+        return ctx.branchIds.length === 0 ? {} : { branchId: { in: [...ctx.branchIds] } };
+      case 'SELF':
+        return { membershipId: ctx.membershipId };
+      default:
+        return null;
+    }
+  },
+  can(scope, ctx, row) {
+    switch (scope) {
+      case 'TENANT':
+        return true;
+      case 'BRANCH':
+        return ctx.branchIds.length === 0 || ctx.branchIds.includes(row.branchId);
+      case 'SELF':
+        return row.membershipId === ctx.membershipId;
+      default:
+        return false;
+    }
+  },
+});

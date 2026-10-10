@@ -153,6 +153,12 @@ export const ANALYTICS_EVENTS = {
       action: z.enum(['GRANT', 'WITHDRAW']),
     }),
   }),
+  'teacher.created': defineAnalyticsEvent({
+    name: 'teacher.created',
+    version: 1,
+    description: 'A teacher was added: by name only, invited by email, or linked from the team.',
+    properties: z.strictObject({ mode: z.enum(['name', 'invite', 'member', 'onboarding']) }),
+  }),
   'batch.created': defineAnalyticsEvent({
     name: 'batch.created',
     version: 1,

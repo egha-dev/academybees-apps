@@ -96,6 +96,8 @@ describe('cross-tenant suite', () => {
         return a.people.studentId;
       case 'parent':
         return a.people.parentId;
+      case 'teacher':
+        return a.people.teacherId;
       case 'parent-link':
         return a.people.parentLinkId;
       case 'custom-field':
