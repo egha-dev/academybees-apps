@@ -344,6 +344,12 @@ Each slice: branch `p4/<slice>` from the latest `main` → PR with the DoD check
   - remove `p4-people` and `p4-family-link` once staging is verified;
   - ARCHITECTURE as-built notes (§7.3 matrix, §8.3, ADR-036/039 notes); CLAUDE.md §3/§8; README demo data; plan status.
 
+*As built (S7):*
+- **Exit journey** `e2e/specs/people-journey.spec.ts`, on desktop, Android and iPhone: Students from the navigation (the bottom bar on phones) → Add student with a parent (mobile + email) → Student 360 → add a second parent → both are shown, with the primary contact → invite the parent with an email (the other one says why they can't be invited) → the invitation email arrives in Mailpit with the hub link → the student is archived again. Join request → approve → linked is in `family.spec.ts` (S6); the palette is in `teachers.spec.ts` (S4); import in `import.spec.ts` (S5). The pilot spreadsheet (A10) is still to come from the PO.
+- **Flags removed:** `p4-people` and `p4-family-link` (both were on in local/ci/staging), with `peopleEnabled()` / `familyLinkEnabled()` and every check that used them. Phase 4 screens are now permanent; the Join requests nav item and the Student 360 invite controls follow `parent.manage`.
+- **Photo metadata (C-109):** the API strips EXIF/XMP/IPTC/comments (JPEG), text/eXIf/tIME chunks (PNG) and EXIF/XMP (WebP) before storing a student photo (`core/media/image-metadata.ts`, 4 unit tests). The browser redraws the photo upright at ≤ 800 px as a JPEG first. ARCHITECTURE had assigned this to Phase 4, and S5 had missed it.
+- **Docs:** ARCHITECTURE §5.6, §7.3, §8.3 and media as-built notes; CLAUDE.md §3 and §8; README (tables fixed, Phase 4 tour); C-109.
+
 | Slice | Branch | Tasks | Release flags |
 | --- | --- | --- | --- |
 | S1 | `p4/shell-diet` | 4.1–4.3 | — |
@@ -352,7 +358,7 @@ Each slice: branch `p4/<slice>` from the latest `main` → PR with the DoD check
 | S4 | `p4/teachers-search` | 4.13–4.14 | `p4-people` |
 | S5 | `p4/import` | 4.15–4.17 | `p4-people` |
 | S6 | `p4/family-link` | 4.18–4.21 | adds `p4-family-link` |
-| S7 | `p4/journey-e2e` | 4.22–4.23 | removes both |
+| S7 | `p4/journey-e2e` | 4.22–4.23 | removes both (done) |
 
 **Analytics (no personal data):** `student.created{source: manual|import|onboarding}`, `student.status_changed{to}`, `student.archived`, `student.restored`, `parent.linked`, `parent.invited`, `consent.recorded{channel, action}`, `import.previewed{rows, errors}`, `import.committed{created, skipped}`, `teacher.created{mode}`, `search.used{types}`, `join_request.received|approved|rejected`.
 

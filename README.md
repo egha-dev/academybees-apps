@@ -98,6 +98,10 @@ Then open:
 | http://paused.localhost:3000, http://closed-demo.localhost:3000, http://setup-demo.localhost:3000, http://nope.localhost:3000 | Academy status pages: suspended, archived, setting up, unknown |
 | http://old-demo-a.localhost:3000 | Old slug → 301 to demo-a |
 | http://app.localhost:3000 | Family Hub placeholder (G-31) |
+| http://localhost:3000/api/v1/health/ready | API through the web origin (DB + Redis) |
+| http://localhost:4000/api/docs | OpenAPI (not in production) |
+| http://localhost:8025 | Mailpit (email from Phase 2) |
+| http://localhost:8888 | SeaweedFS S3 browser |
 
 **Demo sign-ins (local/CI seeds only):** every demo user's password is `AcademyBees#2026`.
 
@@ -110,11 +114,9 @@ Then open:
 | `owner@setup-demo.test` | `setup-demo.localhost:3000` | Owner of the academy still setting up: legal step, Welcome and the guided setup (Phase 3) |
 | `superadmin@academybees.test` | `console.localhost:3000` | Super Admin (TOTP enrolment on first sign-in, C-66): Academies list, Create academy, suspend / reactivate / archive, change address (Phase 3) |
 
-Logos are stored in the local SeaweedFS (`pnpm infra:up`) and served from `http://localhost:8333/academybee-local/…` (C-97).
-| http://localhost:3000/api/v1/health/ready | API through the web origin (DB + Redis) |
-| http://localhost:4000/api/docs | OpenAPI (not in production) |
-| http://localhost:8025 | Mailpit (email from Phase 2) |
-| http://localhost:8888 | SeaweedFS S3 browser |
+Logos are stored in the local SeaweedFS (`pnpm infra:up`) and served from `http://localhost:8333/academybee-local/…` (C-97); student photos and import files go to the private bucket `academybee-private-local`, read only through 5-minute links.
+
+**People (Phase 4)** on `demo-a.localhost:3000`, signed in as the owner or admin: **Students** (30 seeded students; Aarav Sharma has a medical note; a photo needs a consent that includes photos) → Student 360 with parents, consent, medical notes, Activity and Family Hub invites (the email lands in Mailpit) · **Teachers** · **Import** from a spreadsheet (`/students/import`, template download) · **Join requests** · Settings → Custom fields, Parent app (Join QR poster), Privacy notice · Ctrl/⌘+K searches the academy. The public privacy notice is at `/privacy`. `pnpm hub:join-request --academy demo-a --email parent@demo-a.test --child "Aarav Sharma"` sends a join request through the real hub API; `pnpm db:seed:perf` + `pnpm perf:search` measure search on 50,000 students.
 
 Academy hosts (`http://demo-a.localhost:3000`), the Family Hub (`app.localhost`) and the console (`console.localhost`) arrive with Phases 1–3.
 
