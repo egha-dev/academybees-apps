@@ -1,4 +1,4 @@
-import { LEGAL_DOCUMENTS } from '@academybee/contracts';
+import { OWNER_LEGAL_DOCUMENTS } from '@academybee/contracts';
 import { addMemberFixture, createTenantFixture, FIXTURE_PASSWORD } from '@academybee/testing';
 import type { INestApplication } from '@nestjs/common';
 import pg from 'pg';
@@ -9,7 +9,7 @@ import { createTestApp } from '../support/test-app.js';
 
 /** Terms, Privacy and DPA acceptance before onboarding (G-06, ADR-034). */
 const urls = inject('databaseUrls');
-const CURRENT_IDS = LEGAL_DOCUMENTS.map((d) => d.id);
+const CURRENT_IDS = OWNER_LEGAL_DOCUMENTS.map((d) => d.id);
 type Doc = { id: string; kind: string; version: string; accepted: boolean };
 const docsOf = (res: { body: unknown }) => (res.body as { documents: Doc[] }).documents;
 

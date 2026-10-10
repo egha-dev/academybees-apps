@@ -9,7 +9,7 @@ import {
   type TenantRef,
   tenantSpoofAttempts,
 } from '@academybee/testing';
-import { LEGAL_DOCUMENTS } from '@academybee/contracts';
+import { OWNER_LEGAL_DOCUMENTS } from '@academybee/contracts';
 import type { INestApplication } from '@nestjs/common';
 import pg from 'pg';
 import request from 'supertest';
@@ -43,7 +43,7 @@ describe('cross-tenant suite', () => {
     // A's owner has accepted the current legal documents (onboarding needs them, ADR-034).
     const su = new pg.Client({ connectionString: urls.superuser });
     await su.connect();
-    for (const doc of LEGAL_DOCUMENTS)
+    for (const doc of OWNER_LEGAL_DOCUMENTS)
       await su.query(
         `INSERT INTO legal_acceptance (id, user_id, tenant_id, document_id, locale) VALUES ($1, $2, $3, $4, 'en-IN')`,
         [crypto.randomUUID(), a.user.id, a.id, doc.id],
@@ -92,6 +92,14 @@ describe('cross-tenant suite', () => {
         return a.invitationToken;
       case 'step-course':
         return 'course';
+      case 'student':
+        return a.people.studentId;
+      case 'parent':
+        return a.people.parentId;
+      case 'parent-link':
+        return a.people.parentLinkId;
+      case 'custom-field':
+        return a.people.customFieldId;
       default:
         throw new Error(`unknown fixture ${name}`);
     }

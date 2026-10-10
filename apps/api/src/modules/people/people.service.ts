@@ -101,17 +101,11 @@ export class PeopleService {
       students: QuickStudent[];
     },
   ): Promise<CreatedStudent[]> {
-    const prefix = await this.admissionPrefix(tx);
-    const first = await this.reserveSequence(
-      tx,
-      input.tenantId,
-      SEQUENCE_KEYS.admission,
-      input.students.length,
-    );
+    const numbers = await this.allocateAdmissionNos(tx, input.tenantId, input.students.length);
     const created: CreatedStudent[] = [];
     for (const [i, s] of input.students.entries()) {
       const studentId = newId();
-      const admissionNo = formatAdmissionNo(prefix, first + i);
+      const admissionNo = numbers[i]!;
       await tx.student.create({
         data: {
           id: studentId,
@@ -212,6 +206,20 @@ export class PeopleService {
       },
     });
     return parentId;
+  }
+
+  /**
+   * `count` consecutive admission numbers with the academy's prefix (C-91), reserved in the
+   * caller's transaction — shared by Add Student, onboarding and import.
+   */
+  async allocateAdmissionNos(
+    tx: TransactionClient,
+    tenantId: string,
+    count: number,
+  ): Promise<string[]> {
+    const prefix = await this.admissionPrefix(tx);
+    const first = await this.reserveSequence(tx, tenantId, SEQUENCE_KEYS.admission, count);
+    return Array.from({ length: count }, (_, i) => formatAdmissionNo(prefix, first + i));
   }
 
   private async admissionPrefix(tx: TransactionClient): Promise<string> {

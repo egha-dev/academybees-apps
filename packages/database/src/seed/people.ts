@@ -1,7 +1,7 @@
 import {
   DEFAULT_ADMISSION_PREFIX,
   formatAdmissionNo,
-  LEGAL_DOCUMENTS,
+  OWNER_LEGAL_DOCUMENTS,
 } from '@academybee/contracts';
 
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
@@ -89,7 +89,7 @@ export async function seedDevPeople(db: PrismaClient): Promise<number> {
     await db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT set_config('app.user_id', ${user}, true), set_config('app.tenant_id', ${tenant.id}, true)`;
       await tx.legalAcceptance.createMany({
-        data: LEGAL_DOCUMENTS.map((d) => ({
+        data: OWNER_LEGAL_DOCUMENTS.map((d) => ({
           // One stable id per document and owner (document id's first groups + its own last 4).
           id: `${d.id.slice(0, 19)}${d.id.slice(-4)}-${user.slice(-12)}`,
           userId: user,
