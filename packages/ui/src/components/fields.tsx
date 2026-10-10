@@ -151,6 +151,142 @@ export function TextInput({
   );
 }
 
+type NativeFieldProps = {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  name: string;
+  error?: string | undefined;
+  helperText?: string | undefined;
+  required?: boolean;
+  disabled?: boolean;
+};
+
+/** A native `<select>` with the same frame as TextInput (no MUI menu code, G-24). */
+export function SelectInput({
+  label,
+  value,
+  onChange,
+  options,
+  error,
+  helperText,
+  required,
+  ...rest
+}: NativeFieldProps & { options: ReadonlyArray<{ value: string; label: string }> }) {
+  const id = useId();
+  const messageId = `${id}-message`;
+  const message = error ?? helperText;
+  return (
+    <FieldFrame
+      id={id}
+      label={label}
+      required={required}
+      message={message}
+      messageId={messageId}
+      error={Boolean(error)}
+    >
+      <Box
+        component="select"
+        id={id}
+        value={value}
+        onChange={(e: ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={message ? messageId : undefined}
+        aria-required={required || undefined}
+        sx={{ ...inputSx, paddingInlineEnd: '8px', cursor: 'pointer' }}
+        {...rest}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </Box>
+    </FieldFrame>
+  );
+}
+
+/** A native date input (`YYYY-MM-DD`); the browser shows the user's own date format. */
+export function DateInput({
+  label,
+  value,
+  onChange,
+  error,
+  helperText,
+  required,
+  max,
+  ...rest
+}: NativeFieldProps & { max?: string }) {
+  const id = useId();
+  const messageId = `${id}-message`;
+  const message = error ?? helperText;
+  return (
+    <FieldFrame
+      id={id}
+      label={label}
+      required={required}
+      message={message}
+      messageId={messageId}
+      error={Boolean(error)}
+    >
+      <Box
+        component="input"
+        type="date"
+        id={id}
+        value={value}
+        max={max}
+        onChange={changeHandler(onChange)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={message ? messageId : undefined}
+        aria-required={required || undefined}
+        sx={inputSx}
+        {...rest}
+      />
+    </FieldFrame>
+  );
+}
+
+/** A native multi-line text field that grows with its content up to `rows`. */
+export function TextAreaInput({
+  label,
+  value,
+  onChange,
+  error,
+  helperText,
+  required,
+  rows = 4,
+  maxLength,
+  ...rest
+}: NativeFieldProps & { rows?: number; maxLength?: number }) {
+  const id = useId();
+  const messageId = `${id}-message`;
+  const message = error ?? helperText;
+  return (
+    <FieldFrame
+      id={id}
+      label={label}
+      required={required}
+      message={message}
+      messageId={messageId}
+      error={Boolean(error)}
+    >
+      <Box
+        component="textarea"
+        id={id}
+        value={value}
+        rows={rows}
+        maxLength={maxLength}
+        onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onChange(e.target.value)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={message ? messageId : undefined}
+        aria-required={required || undefined}
+        sx={{ ...inputSx, resize: 'vertical', lineHeight: 1.5 }}
+        {...rest}
+      />
+    </FieldFrame>
+  );
+}
+
 export type PasswordInputProps = Omit<TextInputProps, 'type' | 'inputMode'> & {
   labels: { show: string; hide: string; capsLock: string };
   autoComplete: 'current-password' | 'new-password';

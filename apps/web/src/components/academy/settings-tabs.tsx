@@ -1,15 +1,19 @@
 import { Box } from '@academybee/ui/components/layout';
 import { getTranslations } from 'next-intl/server';
 
+import { peopleEnabled } from '@/lib/flags.server';
+
 /**
  * Academy · Branding & address — the academy's settings sections (UX v1.1 §6). Server-rendered
  * links (no client JS: these pages sit at the route budget, G-24); the current one is marked.
  */
-export async function SettingsTabs({ current }: { current: 'academy' | 'branding' }) {
-  const t = await getTranslations('academy.tabs');
+export async function SettingsTabs({ current }: { current: 'academy' | 'branding' | 'fields' }) {
+  const [t, people] = await Promise.all([getTranslations('academy.tabs'), peopleEnabled()]);
   const tabs = [
     { key: 'academy', href: '/settings/academy', label: t('academy') },
     { key: 'branding', href: '/settings/branding', label: t('branding') },
+    // Phase 4 (release flag `p4-people`): student custom fields (G-05).
+    ...(people ? [{ key: 'fields', href: '/settings/custom-fields', label: t('fields') }] : []),
   ] as const;
   return (
     <Box

@@ -2,7 +2,8 @@
   "tabs": {
     "label": "Settings sections",
     "academy": "Academy",
-    "branding": "Branding & address"
+    "branding": "Branding & address",
+    "fields": "Custom fields"
   },
   "settings": {
     "metaTitle": "Academy",

@@ -30,3 +30,8 @@ export async function flagEnabled(key: FeatureFlagKey, host: string): Promise<bo
 export const roleHomesEnabled = cache(async (): Promise<boolean> =>
   flagEnabled('p2-role-homes', (await headers()).get('host') ?? ''),
 );
+
+/** Phase 4 people workspaces (Students, Student 360, Teachers…) while they are built (ADR-041). */
+export const peopleEnabled = cache(async (): Promise<boolean> =>
+  flagEnabled('p4-people', (await headers()).get('host') ?? ''),
+);

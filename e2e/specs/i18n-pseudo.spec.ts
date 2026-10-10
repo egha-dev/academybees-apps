@@ -23,6 +23,17 @@ const DATA_VALUES = [
   'Setup Music School',
   'Asha Owner',
   'owner@demo-a.test',
+  // Student 360 of the seeded Aarav (Phase 4): people, classes and the custom field are data.
+  'Aarav Sharma',
+  'Priya Sharma',
+  'parent@demo-a.test',
+  'Grade 8 — Evening',
+  'Grade 8',
+  'Mathematics',
+  'Board',
+  'CBSE',
+  'ICSE',
+  'State board',
 ];
 /** Intl output (dates, times) is formatted data, not catalogue text (G-32). */
 const DATA_PATTERNS = [
@@ -30,13 +41,19 @@ const DATA_PATTERNS = [
   /\b\d{1,2}:\d{2}\s?[ap]m\b/gi, // 5:30 pm
   /\b(?:Africa|America|Asia|Atlantic|Australia|Europe|Indian|Pacific|Etc)\/[A-Za-z_ /-]+/g, // Asia/Kolkata (IANA ids)
   /\b(?:INR|AED|SGD|GBP|USD|EUR|AUD|CAD)\b/g, // ISO currency codes
+  /\bADM-\d{4}\b/g, // admission numbers
+  /\+\d{10,15}\b/g, // phone numbers
+  /\b20\d{2}-\d{2}-draft\b|\bdemo\b/g, // privacy notice versions
 ];
-/** Signed-in pages (Phases 2–3), opened as the seeded owner (signed in through the API). */
+/** Signed-in pages (Phases 2–4), opened as the seeded owner (signed in through the API). */
 const SIGNED_IN_PATHS = [
   '/settings/security',
   '/settings/team',
   '/settings/academy',
   '/settings/branding',
+  '/settings/custom-fields',
+  '/students/01a10000-0000-7000-8000-00000000a001',
+  '/students/01a10000-0000-7000-8000-00000000a001?tab=activity',
 ];
 const DEV_PASSWORD = 'AcademyBees#2026';
 const VIEWPORTS = [

@@ -23,6 +23,7 @@
     "@serwist/turbopack": "catalog:",
     "@serwist/window": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@tanstack/react-virtual": "catalog:",
     "esbuild": "catalog:",
     "next": "catalog:",
     "next-intl": "catalog:",

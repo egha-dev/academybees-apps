@@ -26,6 +26,13 @@ export const FEATURE_FLAGS = {
     expiresOn: '2027-03-31',
     defaults: { local: true, ci: true, staging: true, production: false },
   },
+  'p4-people': {
+    description:
+      'Students, Student 360, Teachers, import and the command palette (Phase 4) while they are built — remove when the phase closes.',
+    owner: 'PO',
+    expiresOn: '2027-01-31',
+    defaults: { local: true, ci: true, staging: true, production: false },
+  },
   'p1-hub-placeholder': {
     description:
       'Family Hub placeholder on app. (G-31) until Parent Core ships in Phase 7P — remove then. Off: app. redirects to the marketing site.',

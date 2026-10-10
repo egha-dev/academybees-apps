@@ -5,6 +5,7 @@ import {
   LockIcon,
   MoreIcon,
   PeopleIcon,
+  SchoolIcon,
   SettingsIcon,
   TodayIcon,
 } from '@academybee/ui/icons';
@@ -13,7 +14,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 /** Navigation entries are plain data from the server; icons are picked here (client side). */
-export type ShellIcon = 'today' | 'home' | 'team' | 'security' | 'more' | 'settings';
+export type ShellIcon = 'today' | 'home' | 'team' | 'security' | 'more' | 'settings' | 'students';
 export type ShellNavItem = { key: string; label: string; href: string; icon: ShellIcon };
 export type ShellNavGroup = { key: string; label: string; items: ShellNavItem[] };
 
@@ -24,6 +25,7 @@ const ICONS: Record<ShellIcon, ReactNode> = {
   security: <LockIcon />,
   more: <MoreIcon />,
   settings: <SettingsIcon />,
+  students: <SchoolIcon />,
 };
 
 const isActive = (pathname: string, href: string) =>
