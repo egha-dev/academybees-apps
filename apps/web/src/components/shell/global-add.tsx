@@ -4,8 +4,8 @@ import { getTranslations } from 'next-intl/server';
 
 /**
  * Global Add (UX §9.2): "+ Add" in the shell's top bar. A native `<details>` menu of links — no
- * client JS on any page (G-24, C-99). Items appear as their workspaces ship (Student now; Parent
- * and Teacher with S4), and only for roles that may create them.
+ * client JS on any page (G-24, C-99). Student, Parent (pick the child
+ * first, C-106) and Teacher, and only for roles that may create them.
  */
 export async function GlobalAdd({ items }: { items: Array<{ key: string; href: string }> }) {
   if (items.length === 0) return null;
@@ -76,7 +76,7 @@ export async function GlobalAdd({ items }: { items: Array<{ key: string; href: s
                 '&:hover': { bgcolor: 'ab.surfaceRaised' },
               }}
             >
-              {t(item.key as 'student')}
+              {t(item.key as 'student' | 'parent' | 'teacher')}
             </Box>
           </Box>
         ))}

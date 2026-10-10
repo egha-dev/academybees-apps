@@ -43,7 +43,8 @@
     "db:seed": "prisma generate && tsx --conditions=@academybee/source src/seed/run.ts",
     "db:studio": "prisma studio",
     "bench": "tsx --conditions=@academybee/source bench/rls-overhead.ts",
-    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput"
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "db:seed:perf": "tsx --conditions=@academybee/source src/seed/perf.ts"
   },
   "dependencies": {
     "@academybee/auth": "workspace:*",

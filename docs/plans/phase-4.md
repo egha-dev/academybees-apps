@@ -199,6 +199,27 @@ Each slice: branch `p4/<slice>` from the latest `main` → PR with the DoD check
   - Cmd/Ctrl+K and a shell search button load the palette lazily: results per type, quick actions (Add student, Add teacher, Import), keyboard and screen-reader complete.
   - **Tests:** scope-aware results (a teacher finds only assigned students); no cross-tenant results; local benchmark with **50K seeded students, p95 < 300 ms** (`pnpm db:seed:perf` + `scripts/perf/search-bench.mjs`); E2E finds a student by a partial name.
 
+*As built (S4):*
+- **Teachers API:**
+  - `GET/POST /teachers`, `GET/PATCH /teachers/:id`, `/teachers/:id/activity`, `GET /teachers/linkable-members`.
+  - Add by name, by email invitation (teacher role; the invite is revoked if the profile can't be saved; the profile links on accept) or from the team.
+  - Scope policy: TENANT / BRANCH / SELF. Archive and restore via `status`, audited.
+- **Search API:** `GET /search?q=` (signed-in; each type through its own scope policy, ≤ 5 each, archived students left out).
+  - **Deviation from the plan:** no `search.used` analytics event. Search runs as people type, and each event is an outbox write.
+- **Screens** (flag `p4-people`):
+  - `/teachers`: server-rendered with a GET search and Current / Archived.
+  - `/teachers/[id]`: Overview and Activity, edit, archive/restore.
+  - Add Teacher sheet.
+  - **Command palette:** Search button in the top bar plus Ctrl/⌘ + K. The trigger is tiny; the dialog is a native `<dialog>` with combobox and arrow keys, loaded on first use, with quick actions.
+  - Global Add now has Student, Parent (opens Students with "open the child, then Add parent", C-106) and Teacher.
+  - RUN nav gets Teachers.
+- **Budget:** `/teachers` 185.5, `/students/[id]` 185.8, `/today` 181.8 KB gz.
+- **Benchmark:** `pnpm db:seed:perf` (50,000 students with parents in demo-b, local/CI only) and `pnpm perf:search`. **p95 150 ms** for `/search` and **148 ms** for `/students?q=` (p50 ≈ 75 ms), against the 300 ms budget.
+- **Tests:**
+  - `teachers.int.spec.ts` (4): modes, versions and audit, scopes, search scope and cross-academy. 7 routes in the cross-tenant registry. API integration 885.
+  - E2E `teachers.spec.ts`: add/edit/archive/restore, Ctrl+K → Student 360, palette on phones, axe.
+  - Pseudo-locale covers the teacher profile; the pseudo spec uses its own client IP.
+
 ### S5 `p4/import` — Import students & parents (G-02, ADR-036)
 
 > **Needs from you before this slice:** the anonymised pilot spreadsheet (A10) in `e2e/fixtures/`, and the private R2 bucket (below).

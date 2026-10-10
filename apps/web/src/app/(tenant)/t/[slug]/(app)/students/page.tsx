@@ -4,6 +4,7 @@ import {
   STUDENT_STATUSES,
   StudentPageSchema,
 } from '@academybee/contracts';
+import { InlineAlert } from '@academybee/ui/components/alert';
 import { PermissionState } from '@academybee/ui/components/feedback';
 import { Stack } from '@academybee/ui/components/layout';
 import { PlainButton } from '@academybee/ui/components/plain-button';
@@ -93,6 +94,9 @@ export default async function StudentsPage({
           ) : undefined
         }
       />
+      {one(params.pick) === 'parent' && (
+        <InlineAlert tone="info">{t('students.pickParent')}</InlineAlert>
+      )}
       <StudentsBrowserLazy
         initial={page}
         initialQuery={query}

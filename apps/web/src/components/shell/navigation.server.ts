@@ -61,10 +61,30 @@ export async function navigationFor(
     ? [{ key: 'today', label: t('today'), href: '/today', icon: 'today' }]
     : [];
   // RUN (UX §8): the people workspaces, phase by phase.
-  const run: ShellNavItem[] =
-    people && can('student.read')
-      ? [{ key: 'students', label: t('students'), href: '/students', icon: 'students' }]
-      : [];
+  const run: ShellNavItem[] = people
+    ? [
+        ...(can('student.read')
+          ? [
+              {
+                key: 'students',
+                label: t('students'),
+                href: '/students',
+                icon: 'students',
+              } as const,
+            ]
+          : []),
+        ...(can('teacher.read')
+          ? [
+              {
+                key: 'teachers',
+                label: t('teachers'),
+                href: '/teachers',
+                icon: 'teachers',
+              } as const,
+            ]
+          : []),
+      ]
+    : [];
   const academy: ShellNavItem[] = [
     ...(can('team.read')
       ? [{ key: 'team', label: t('team'), href: '/settings/team', icon: 'team' } as const]

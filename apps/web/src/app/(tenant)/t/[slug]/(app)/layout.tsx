@@ -1,7 +1,7 @@
 import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import { notFound, redirect } from 'next/navigation';
-import { getTranslations } from 'next-intl/server';
+import { getMessages, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 
 import { AcademyIdentity } from '@/components/academy-identity';
@@ -9,6 +9,7 @@ import { sessionGuardLabels } from '@/components/auth/labels.server';
 import { SessionGuard } from '@/components/auth/session-guard';
 import { AccountPanel } from '@/components/shell/account-panel';
 import { AcademyShell } from '@/components/shell/academy-shell';
+import { PaletteTrigger } from '@/components/palette/palette-trigger';
 import { GlobalAdd } from '@/components/shell/global-add';
 import { experienceFor, navigationFor } from '@/components/shell/navigation.server';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -78,6 +79,8 @@ export default async function SignedInLayout({ children }: { children: ReactNode
     sessionGuardLabels(),
   ]);
   const nav = await navigationFor(me, experience, roleHomes, people);
+  const caps = me.academy.capabilities as Record<string, string | undefined>;
+  const messages = await getMessages();
   return (
     <AcademyShell
       brand={<AcademyIdentity name={academy} primaryColor={primaryColor} logoUrl={logoUrl} />}
@@ -86,14 +89,35 @@ export default async function SignedInLayout({ children }: { children: ReactNode
       bottom={nav.bottom}
       topbarActions={
         <>
-          {experience === 'manage' && (
-            <GlobalAdd
-              items={
-                people && me.academy.capabilities['student.create']
-                  ? [{ key: 'student', href: '/students?add=1' }]
-                  : []
-              }
-            />
+          {experience === 'manage' && people && (
+            <>
+              <PaletteTrigger
+                labels={messages.people.palette}
+                actions={[
+                  ...(caps['student.create']
+                    ? [{ key: 'addStudent', href: '/students?add=1' } as const]
+                    : []),
+                  ...(caps['teacher.manage']
+                    ? [{ key: 'addTeacher', href: '/teachers?add=1' } as const]
+                    : []),
+                  ...(caps['student.read']
+                    ? [{ key: 'students', href: '/students' } as const]
+                    : []),
+                  ...(caps['teacher.read']
+                    ? [{ key: 'teachers', href: '/teachers' } as const]
+                    : []),
+                ]}
+              />
+              <GlobalAdd
+                items={[
+                  ...(caps['student.create'] ? [{ key: 'student', href: '/students?add=1' }] : []),
+                  ...(caps['parent.manage']
+                    ? [{ key: 'parent', href: '/students?pick=parent' }]
+                    : []),
+                  ...(caps['teacher.manage'] ? [{ key: 'teacher', href: '/teachers?add=1' }] : []),
+                ]}
+              />
+            </>
           )}
           <ThemeToggle compact />
         </>

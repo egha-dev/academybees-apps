@@ -41,7 +41,8 @@
       "run": "Run"
     },
     "security": "Security",
-    "academySettings": "Settings"
+    "academySettings": "Settings",
+    "teachers": "Teachers"
   },
   "account": {
     "signedInAs": "Signed in as {name}",

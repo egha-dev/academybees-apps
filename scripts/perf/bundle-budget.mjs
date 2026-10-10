@@ -34,6 +34,8 @@ const BUDGETS = [
   { route: '/settings/custom-fields', page: `${ACADEMY}/(app)/settings/custom-fields`, kb: 200 },
   { route: '/students', page: `${ACADEMY}/(app)/students`, kb: 200 },
   { route: '/students/[id]', page: `${ACADEMY}/(app)/students/[id]`, kb: 200 },
+  { route: '/teachers', page: `${ACADEMY}/(app)/teachers`, kb: 200 },
+  { route: '/teachers/[id]', page: `${ACADEMY}/(app)/teachers/[id]`, kb: 200 },
   // The owner's guided setup (UX v1.1 §5), phone-first.
   { route: '/legal', page: `${ACADEMY}/(setup)/legal`, kb: 200 },
   { route: '/welcome', page: `${ACADEMY}/(setup)/welcome`, kb: 200 },

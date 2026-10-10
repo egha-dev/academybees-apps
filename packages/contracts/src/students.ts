@@ -363,6 +363,10 @@ export const ACTIVITY_TYPES = [
   'parent.updated',
   'consent.recorded',
   'health_note.updated',
+  'teacher.created',
+  'teacher.updated',
+  'teacher.archived',
+  'teacher.restored',
 ] as const;
 export const ActivityTypeSchema = z.enum(ACTIVITY_TYPES);
 export type ActivityType = z.infer<typeof ActivityTypeSchema>;
