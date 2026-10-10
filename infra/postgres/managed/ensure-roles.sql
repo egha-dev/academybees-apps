@@ -33,3 +33,24 @@ ALTER DEFAULT PRIVILEGES FOR ROLE ab_migrator IN SCHEMA public
   GRANT USAGE, SELECT ON SEQUENCES TO ab_app, ab_platform;
 ALTER DEFAULT PRIVILEGES FOR ROLE ab_migrator IN SCHEMA public
   GRANT EXECUTE ON FUNCTIONS TO ab_app, ab_platform;
+
+-- Extensions the schema needs, created by the admin user: ab_migrator owns the schema but not the
+-- database, so it may not create extensions on a managed PostgreSQL (Phase 4: staging deploy of
+-- 42eccc7 failed with "permission denied to create extension pg_trgm"). The migration's own
+-- `CREATE EXTENSION IF NOT EXISTS` is then a no-op. pg_trgm: name search (ADR-026, C-105).
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- One-off repair for that failed deploy: `20261010090000_people_workspaces` failed on its first
+-- statement (CREATE EXTENSION), so nothing of it was applied. Mark the attempt rolled back, as
+-- `prisma migrate resolve --rolled-back` would, so `migrate deploy` applies it again. Matches only
+-- an unfinished, not yet resolved attempt of that one migration; a no-op everywhere else.
+DO $$
+BEGIN
+  IF to_regclass('public._prisma_migrations') IS NOT NULL THEN
+    UPDATE public._prisma_migrations
+       SET rolled_back_at = now()
+     WHERE migration_name = '20261010090000_people_workspaces'
+       AND finished_at IS NULL
+       AND rolled_back_at IS NULL;
+  END IF;
+END $$;
