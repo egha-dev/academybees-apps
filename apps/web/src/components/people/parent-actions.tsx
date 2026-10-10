@@ -51,7 +51,7 @@ export function ParentActions({
   studentName: string;
   link: ParentLink;
   canManage: boolean;
-  /** Family Hub invites (release flag `p4-family-link`). */
+  /** Family Hub invites (holders of `parent.manage`). */
   canInvite?: boolean;
   /** The open invitation's expiry, formatted on the server (tenant timezone). */
   inviteUntil?: string | undefined;

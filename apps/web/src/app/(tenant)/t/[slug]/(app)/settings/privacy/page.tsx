@@ -4,14 +4,12 @@ import { Box, Stack } from '@academybee/ui/components/layout';
 import { PlainButton } from '@academybee/ui/components/plain-button';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { SettingsTabs } from '@/components/academy/settings-tabs';
 import { loadPrivacyNotice, PrivacyNoticeBody } from '@/components/people/privacy-notice.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
-import { familyLinkEnabled } from '@/lib/flags.server';
 import { homeFor } from '@/lib/session.server';
 
 export const dynamic = 'force-dynamic';
@@ -23,15 +21,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /** Settings → Privacy notice (G-06): what parents see, with its version. */
 export default async function PrivacySettingsPage() {
-  const [{ me, academy }, enabled, t, academyT, shellT, notice] = await Promise.all([
+  const [{ me, academy }, t, academyT, shellT, notice] = await Promise.all([
     signedInMember({ experience: 'manage' }),
-    familyLinkEnabled(),
     getTranslations('people.privacy'),
     getTranslations('academy'),
     getTranslations('shell.permission'),
     loadPrivacyNotice(),
   ]);
-  if (!enabled) notFound();
   if (!holds(me, 'academy.settings.read'))
     return (
       <PermissionState

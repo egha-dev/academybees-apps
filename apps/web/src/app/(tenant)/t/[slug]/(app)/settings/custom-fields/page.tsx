@@ -3,7 +3,6 @@ import { PermissionState } from '@academybee/ui/components/feedback';
 import { Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getMessages, getTranslations } from 'next-intl/server';
 
 import { SettingsTabs } from '@/components/academy/settings-tabs';
@@ -11,7 +10,6 @@ import { CustomFieldsEditorLazy } from '@/components/people/students-lazy';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { peopleEnabled } from '@/lib/flags.server';
 import { homeFor } from '@/lib/session.server';
 
 export const dynamic = 'force-dynamic';
@@ -23,15 +21,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /** Settings → Custom fields (G-05): read by admins, changed by the owner. Online only. */
 export default async function CustomFieldsPage() {
-  const [{ me, academy }, enabled, t, academyT, shellT, messages] = await Promise.all([
+  const [{ me, academy }, t, academyT, shellT, messages] = await Promise.all([
     signedInMember({ experience: 'manage' }),
-    peopleEnabled(),
     getTranslations('people.fields'),
     getTranslations('academy'),
     getTranslations('shell.permission'),
     getMessages(),
   ]);
-  if (!enabled) notFound();
   if (!holds(me, 'academy.settings.read') || !holds(me, 'student.read'))
     return (
       <PermissionState
