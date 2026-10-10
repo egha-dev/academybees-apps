@@ -304,6 +304,35 @@ Each slice: branch `p4/<slice>` from the latest `main` → PR with the DoD check
   - approval links only the chosen students; every hub call runs under that academy's tenant context;
   - activation impossible without consent; cross-tenant registry.
 
+*As built (S6):*
+- **Schema:** migration `family_link`.
+  - `join_request` is tenant-owned, with DELETE/TRUNCATE revoked.
+  - `academy_link_attempt` carries `tenant_id` but is **user-owned**: RLS is `user_id = app.user_id`, it is left out of the tenant policy (`050-family-link.sql`), and academies can never read it.
+- **Invites (C-102):**
+  - `POST /parents/:id/invite` sends or re-sends (a new invite revokes the earlier open one); `POST /parents/:id/invite/revoke`.
+  - Email template `parent_invite` with a hub link valid 30 days.
+  - Student 360 parent cards show Family Hub access (on the hub / invited until … / not yet) with Invite, Send again and Cancel. The parent needs an email address.
+  - The activation guard lives in `ParentAccessService.activate` (not `MembershipService`): ACTIVE only when the latest consent for every linked child is a `FAMILY_HUB` GRANT that includes `service`. Paper consent never activates (C-103).
+- **Linking (C-107)**, hub host only:
+  - `POST /hub/academies/:slug/link/start` always returns 202 `sent_if_known`, and the 6-digit code goes only to an email the academy already holds (template `link_code`, the code sealed in the outbox).
+  - `POST …/link/verify` takes the code plus consent purposes (`service` required). It records the hub consent for each linked child and activates the parent.
+  - `POST …/join-requests` always returns 202.
+  - Limits: link 5/h per user, verify 10/h, plus per-IP and per-academy limits; join requests 5/day per user.
+  - Every academy read runs inside `TenantContext.run(tenantId)` with the tenant-bound client.
+- **Join requests:**
+  - API: `GET /join-requests`; `POST /join-requests/:id/approve` (chosen students; an existing parent with the same phone/email, or a new one; parent membership INVITED); `POST /join-requests/:id/reject`.
+  - Page `/join-requests` and a Manage nav item (`parent.manage`).
+  - `pnpm hub:join-request` creates a request through the real hub API (local/staging).
+- **Privacy notice (G-06):**
+  - Public `GET /academy/privacy-notice` and page `/privacy` (open while SETUP too), linked from academy sign-in.
+  - Settings → Privacy notice shows the version and missing-contact hints. The wording is a draft until legal review.
+- **Parent app:** Settings → Parent app has a printable A4 poster with a server-rendered QR of `app.<root>/join/<slug>` (`qrcode` SVG) and the address to type.
+- **Budget:** `/join-requests` 185.3, `/settings/parent-app` 181.9, `/privacy` 177.5 KB gz.
+- **Tests:**
+  - `family.int.spec.ts` (6): invite, resend and revoke; no enumeration; code to the held email only; verify with consent → active; approve links only the chosen students; activation refused without hub consent; public notice.
+  - Cross-tenant registry: new routes added.
+  - E2E `family.spec.ts`: invite email in Mailpit, poster and notice with axe, sign-in → privacy, approve a join request.
+
 ### S7 `p4/journey-e2e` — journey, flags, docs
 
 - **4.22 E2E:**

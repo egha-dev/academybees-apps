@@ -32,6 +32,7 @@ import { CustomFieldsService } from './custom-fields.service.js';
 import { ParentsService } from './parents.service.js';
 import { PeopleService } from './people.service.js';
 import { studentPolicy } from './people.policy.js';
+import { ParentAccessService } from './family/parent-access.service.js';
 import { StudentPhotoService } from './student-photo.service.js';
 
 const CursorKeys = z.object({ n: z.string(), id: z.uuid() });
@@ -81,6 +82,7 @@ export class StudentsService {
     private readonly audit: AuditService,
     private readonly entitlements: EntitlementService,
     private readonly photos: StudentPhotoService,
+    private readonly parentAccess: ParentAccessService,
   ) {}
 
   async list(query: StudentListQuery): Promise<CursorPage<StudentListItem>> {
@@ -148,7 +150,9 @@ export class StudentsService {
             relationship: true,
             isPrimaryContact: true,
             pickupAuthorised: true,
-            parent: { select: { id: true, fullName: true, phone: true, email: true } },
+            parent: {
+              select: { id: true, fullName: true, phone: true, email: true, userId: true },
+            },
           },
         },
         enrolments: {
@@ -164,6 +168,9 @@ export class StudentsService {
       },
     });
     if (!row) throw new DomainError('NOT_FOUND', 'student');
+    const parentAccess = await this.parentAccess.accessFor(
+      row.parents.map((l) => ({ id: l.parent.id, userId: l.parent.userId })),
+    );
     return {
       id: row.id,
       admissionNo: row.admissionNo,
@@ -197,6 +204,8 @@ export class StudentsService {
         relationship: l.relationship as ParentRelationship,
         isPrimaryContact: l.isPrimaryContact,
         pickupAuthorised: l.pickupAuthorised,
+        access: parentAccess.get(l.parent.id)?.access ?? 'NONE',
+        inviteExpiresAt: parentAccess.get(l.parent.id)?.inviteExpiresAt ?? null,
       })),
       enrolments: row.enrolments.map((e) => ({
         batchId: e.batch.id,

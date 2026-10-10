@@ -3,7 +3,9 @@
     "label": "Settings sections",
     "academy": "Academy",
     "branding": "Branding & address",
-    "fields": "Custom fields"
+    "fields": "Custom fields",
+    "parentApp": "Parent app",
+    "privacy": "Privacy notice"
   },
   "settings": {
     "metaTitle": "Academy",

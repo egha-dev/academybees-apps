@@ -159,6 +159,30 @@ export const ANALYTICS_EVENTS = {
     description: 'A teacher was added: by name only, invited by email, or linked from the team.',
     properties: z.strictObject({ mode: z.enum(['name', 'invite', 'member', 'onboarding']) }),
   }),
+  'parent.invited': defineAnalyticsEvent({
+    name: 'parent.invited',
+    version: 1,
+    description: 'A parent was invited to the Family Hub by the academy (C-102).',
+    properties: z.strictObject({ resend: z.boolean() }),
+  }),
+  'parent.hub_linked': defineAnalyticsEvent({
+    name: 'parent.hub_linked',
+    version: 1,
+    description: 'A parent linked their hub account to the academy with a code (C-107).',
+    properties: z.strictObject({ method: z.enum(['QR', 'URL']) }),
+  }),
+  'family.join_requested': defineAnalyticsEvent({
+    name: 'family.join_requested',
+    version: 1,
+    description: 'A parent asked to join from the Family Hub (G-31).',
+    properties: z.strictObject({}),
+  }),
+  'family.join_decided': defineAnalyticsEvent({
+    name: 'family.join_decided',
+    version: 1,
+    description: 'Staff approved or rejected a join request.',
+    properties: z.strictObject({ decision: z.enum(['APPROVED', 'REJECTED']) }),
+  }),
   'batch.created': defineAnalyticsEvent({
     name: 'batch.created',
     version: 1,

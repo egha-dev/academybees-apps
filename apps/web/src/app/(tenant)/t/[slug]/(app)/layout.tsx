@@ -14,7 +14,7 @@ import { GlobalAdd } from '@/components/shell/global-add';
 import { experienceFor, navigationFor } from '@/components/shell/navigation.server';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { apiServerGet } from '@/lib/api.server';
-import { peopleEnabled, roleHomesEnabled } from '@/lib/flags.server';
+import { familyLinkEnabled, peopleEnabled, roleHomesEnabled } from '@/lib/flags.server';
 import {
   academyColor,
   academyLogo,
@@ -73,12 +73,13 @@ export default async function SignedInLayout({ children }: { children: ReactNode
     redirect(`/legal?next=${encodeURIComponent(path)}`);
 
   const experience = experienceFor(path, me);
-  const [roleHomes, people, guard] = await Promise.all([
+  const [roleHomes, people, family, guard] = await Promise.all([
     roleHomesEnabled(),
     peopleEnabled(),
+    familyLinkEnabled(),
     sessionGuardLabels(),
   ]);
-  const nav = await navigationFor(me, experience, roleHomes, people);
+  const nav = await navigationFor(me, experience, roleHomes, people, family);
   const caps = me.academy.capabilities as Record<string, string | undefined>;
   const messages = await getMessages();
   return (

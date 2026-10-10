@@ -31,6 +31,7 @@ const SETUP_OPEN_PREFIXES = [
   '/welcome',
   '/onboarding',
   '/academy-icon',
+  '/privacy',
 ];
 export const SETUP_GATE = '/setup-gate';
 

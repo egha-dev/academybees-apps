@@ -34,6 +34,8 @@ export async function navigationFor(
   roleHomes: boolean,
   /** Phase 4 people workspaces (release flag `p4-people`). */
   people = false,
+  /** Phase 4 Family Hub, academy side (release flag `p4-family-link`). */
+  family = false,
 ): Promise<{ groups: ShellNavGroup[]; bottom: ShellNavItem[] }> {
   const t = await getTranslations('shell.nav');
   const can = (capability: string) =>
@@ -80,6 +82,16 @@ export async function navigationFor(
                 label: t('teachers'),
                 href: '/teachers',
                 icon: 'teachers',
+              } as const,
+            ]
+          : []),
+        ...(family && can('parent.manage')
+          ? [
+              {
+                key: 'joinRequests',
+                label: t('joinRequests'),
+                href: '/join-requests',
+                icon: 'team',
               } as const,
             ]
           : []),

@@ -1,0 +1,58 @@
+// The academy side of the Family Hub (G-31, ADR-039, C-107): parents linking themselves to an
+// academy by a verification code, and join requests staff approve.
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("join_request_status")
+}
+
+/// A parent asking to join an academy from the Family Hub when the academy has no record of their
+/// email (G-31 §3). Tenant-owned: it appears in the academy's Join requests queue.
+model JoinRequest {
+  id           String            @id @db.Uuid
+  tenantId     String            @map("tenant_id") @db.Uuid
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  /// The global user who asked (their hub account).
+  userId       String            @map("user_id") @db.Uuid
+  parentName   String            @map("parent_name") @db.VarChar(120)
+  /// E.164.
+  phone        String?           @db.VarChar(16)
+  email        String?           @db.VarChar(320)
+  childName    String            @map("child_name") @db.VarChar(120)
+  message      String?           @db.VarChar(500)
+  status       JoinRequestStatus @default(PENDING)
+  /// The parent record they were linked as, on approval.
+  parentId     String?           @map("parent_id") @db.Uuid
+  reviewedById String?           @map("reviewed_by_id") @db.Uuid
+  reviewedAt   DateTime?         @map("reviewed_at") @db.Timestamptz(3)
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([tenantId, status, createdAt])
+  @@index([tenantId, userId])
+  @@map("join_request")
+}
+
+/// A parent's attempt to link their hub account to an academy by a one-time code (G-31 §3,
+/// ADR-039). **User-owned** (RLS on `user_id`, C-107): no academy can read who tried to find it.
+/// The code is stored only as a hash.
+model AcademyLinkAttempt {
+  id        String    @id @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  /// QR | URL | INVITE
+  method    String    @db.VarChar(10)
+  codeHash  String?   @map("code_hash") @db.Char(64)
+  /// The academy's parent record the code was sent for (null = no match; nothing was sent).
+  parentId  String?   @map("parent_id") @db.Uuid
+  attempts  Int       @default(0)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([userId, tenantId, createdAt])
+  @@map("academy_link_attempt")
+}

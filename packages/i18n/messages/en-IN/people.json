@@ -226,7 +226,20 @@
     "flags": "Contact and pickup",
     "relationshipField": "Relationship",
     "save": "Save",
-    "childLine": " · {relationship} · {status}"
+    "childLine": " · {relationship} · {status}",
+    "access": {
+      "MEMBER": "Uses the Family Hub",
+      "INVITED": "Invited to the Family Hub",
+      "NONE": "Not on the Family Hub yet"
+    },
+    "inviteUntil": "Invited to the Family Hub · link open until {date}",
+    "invite": "Invite to the Family Hub",
+    "resend": "Send the invitation again",
+    "cancelInvite": "Cancel invitation",
+    "invited": "Invitation sent to {email}",
+    "inviteCancelled": "Invitation cancelled",
+    "needsEmail": "Add an email address to invite them.",
+    "inviteNote": "They'll create their account and agree to how the academy uses their child's details in the Family Hub."
   },
   "health": {
     "restricted": "Only the owner, admins and this student's teachers can see these notes. Every view is recorded.",
@@ -583,5 +596,101 @@
     "notImage": "Choose a PNG, JPEG or WebP photo.",
     "unavailable": "Photos aren't available yet on this site.",
     "error": "We couldn't load the photo."
+  },
+  "parentApp": {
+    "metaTitle": "Parent app",
+    "tab": "Parent app",
+    "title": "Parents join on the AcademyBee Family Hub",
+    "body": "Print this poster for your front desk. Parents scan the code, sign in to the Family Hub and ask to connect with {academy}. They only see their children after a code sent to the email you have for them, or after you approve their request.",
+    "posterTitle": "Join {academy} on AcademyBee",
+    "posterBody": "Scan with your phone camera to see classes, attendance, fees and messages for your child.",
+    "orType": "Or open {url}",
+    "print": "Print poster",
+    "qrAlt": "QR code to join {academy} on the AcademyBee Family Hub",
+    "requests": "Parents who ask without a match appear in Join requests."
+  },
+  "privacy": {
+    "metaTitle": "Privacy notice",
+    "tab": "Privacy notice",
+    "title": "Privacy notice",
+    "subtitle": "{academy}",
+    "settingsBody": "Generated from AcademyBee's template with your academy's name and contact details. Parents see it before they agree to how you use their child's details. Every consent records the version.",
+    "open": "Open the public page",
+    "version": "Version {version}",
+    "draft": "Draft wording until legal review is complete.",
+    "contactMissing": "Add your academy's email and phone in Settings → Academy so parents know whom to ask.",
+    "sections": {
+      "who": {
+        "title": "Who looks after your data",
+        "body": "{academy} decides how your and your child's details are used (the data fiduciary). AcademyBee runs the software for {academy} and processes the details only on its instructions."
+      },
+      "what": {
+        "title": "What we keep",
+        "body": "Your child's name, date of birth, class and progress records, attendance and fees; your name, phone and email; and, only if you agree, photos of your child."
+      },
+      "why": {
+        "title": "Why",
+        "body": "To run classes, take attendance, manage fees and keep you informed. Photos and news or offers are separate choices you can say no to."
+      },
+      "share": {
+        "title": "Who sees it",
+        "body": "Staff of {academy} who need it for their work. Medical notes are seen only by the owner, admins and your child's teachers. Nothing is sold or shared with other academies."
+      },
+      "keep": {
+        "title": "How long",
+        "body": "While your child learns at {academy}, and afterwards only as long as the law requires (for example, fee records)."
+      },
+      "rights": {
+        "title": "Your choices",
+        "body": "You can see and correct your details, withdraw a consent (we explain what changes), and ask for your child's details to be removed. Ask {academy} or use the Family Hub."
+      },
+      "contact": {
+        "title": "Contact",
+        "body": "{academy}",
+        "email": "Email: {email}",
+        "phone": "Phone: {phone}",
+        "address": "Address: {address}"
+      }
+    },
+    "loginLink": "Privacy notice"
+  },
+  "joinRequests": {
+    "metaTitle": "Join requests",
+    "title": "Join requests",
+    "body": "Parents who asked to connect with {academy} from the Family Hub. Approve by choosing their child, or reject.",
+    "emptyTitle": "No join requests",
+    "emptyBody": "When parents scan your poster and you don't have their email yet, their request shows here.",
+    "pending": "Waiting for you",
+    "decided": "Decided in the last 30 days",
+    "child": "Child: {name}",
+    "contact": "Phone: {phone}",
+    "email": "Email: {email}",
+    "message": "Message: {message}",
+    "status": {
+      "PENDING": "Waiting",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    },
+    "approve": "Approve",
+    "reject": "Reject",
+    "approveTitle": "Approve {name}",
+    "students": "Their child at the academy",
+    "studentsHint": "Search and choose one or more students.",
+    "search": "Search students",
+    "noMatch": "No students match.",
+    "parentChoice": "Parent record",
+    "newParent": "Add {name} as a new parent",
+    "existingParent": "Use {name} (parent of {children})",
+    "relationship": "Relationship",
+    "submit": "Approve and link",
+    "approved": "{name} linked. They'll confirm in the Family Hub.",
+    "rejectTitle": "Reject {name}'s request?",
+    "rejectBody": "They'll see that the academy couldn't confirm the request.",
+    "rejected": "Request rejected",
+    "chooseStudent": "Choose at least one student.",
+    "permission": {
+      "title": "Join requests aren't part of your role",
+      "body": "Ask the owner of {academy}."
+    }
   }
 }

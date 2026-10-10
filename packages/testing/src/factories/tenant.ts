@@ -300,6 +300,12 @@ async function insertPeopleAndScheduling(
      VALUES ($1, $2, 'STUDENTS', 'COMPLETED', 'students.csv', 10, 'csv', now() + interval '7 days', now())`,
     [newId(), t.id],
   );
+  await q(
+    `INSERT INTO join_request (id, tenant_id, user_id, parent_name, child_name, status, updated_at)
+     SELECT $1, $2, user_id, 'Fixture Parent', 'Fixture Child', 'REJECTED', now()
+       FROM membership WHERE id = $3`,
+    [newId(), t.id, membershipId],
+  );
   // An earlier (replaced) logo: every tenant table has fixture rows (media_file, C-97).
   const mediaId = newId();
   await q(

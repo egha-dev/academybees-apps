@@ -26,7 +26,7 @@ import type { PeopleErrorLabels } from '@/components/people/errors';
 import { STATUS_TONE } from '@/components/people/status';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { peopleEnabled } from '@/lib/flags.server';
+import { familyLinkEnabled, peopleEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 
 export const dynamic = 'force-dynamic';
@@ -80,15 +80,17 @@ export default async function StudentPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string; cursor?: string }>;
 }) {
-  const [{ me, academy }, enabled, { id }, query, { context }, t, messages] = await Promise.all([
-    signedInMember({ experience: 'manage' }),
-    peopleEnabled(),
-    params,
-    searchParams,
-    hostContext(),
-    getTranslations('people'),
-    getMessages(),
-  ]);
+  const [{ me, academy }, enabled, familyLink, { id }, query, { context }, t, messages] =
+    await Promise.all([
+      signedInMember({ experience: 'manage' }),
+      peopleEnabled(),
+      familyLinkEnabled(),
+      params,
+      searchParams,
+      hostContext(),
+      getTranslations('people'),
+      getMessages(),
+    ]);
   if (!enabled) notFound();
   if (!holds(me, 'student.read'))
     return (
@@ -252,7 +254,13 @@ export default async function StudentPage({
       {tab === 'activity' ? (
         <Activity studentId={student.id} cursor={query.cursor} date={date} />
       ) : (
-        <Overview student={student} date={date} can={can} errorLabels={errorLabels} />
+        <Overview
+          student={student}
+          date={date}
+          can={can}
+          errorLabels={errorLabels}
+          familyLink={familyLink && holds(me, 'parent.manage')}
+        />
       )}
     </Stack>
   );
@@ -263,7 +271,9 @@ async function Overview({
   date,
   can,
   errorLabels,
+  familyLink,
 }: {
+  familyLink: boolean;
   student: Student;
   date: (v: string) => string;
   can: { parents: boolean; healthRead: boolean; healthManage: boolean; consentRead: boolean };
@@ -403,6 +413,8 @@ async function Overview({
                     studentName={student.fullName}
                     link={parent}
                     canManage={can.parents}
+                    canInvite={familyLink}
+                    inviteUntil={parent.inviteExpiresAt ? date(parent.inviteExpiresAt) : undefined}
                     labels={{
                       parents: p.parents,
                       relationship: p.relationship,

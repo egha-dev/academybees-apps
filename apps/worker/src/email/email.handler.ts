@@ -39,8 +39,18 @@ export class EmailHandler implements OnModuleInit {
       return;
     }
     const url = parsed.data.link ? this.linkUrl(parsed.data) : undefined;
+    // A sealed one-time code becomes the `{code}` variable only here, at send time (C-62).
+    const request = parsed.data.code
+      ? {
+          ...parsed.data,
+          vars: {
+            ...parsed.data.vars,
+            code: decryptSecret(parsed.data.code.sealedToken, this.keys),
+          },
+        }
+      : parsed.data;
     await this.port.send({
-      ...renderEmail(parsed.data, url),
+      ...renderEmail(request, url),
       ...(eventId ? { idempotencyKey: `email-${eventId}` } : {}),
     });
     this.logger.log({ template: parsed.data.template }, 'Email sent');

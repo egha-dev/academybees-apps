@@ -33,6 +33,13 @@ export const FEATURE_FLAGS = {
     expiresOn: '2027-01-31',
     defaults: { local: true, ci: true, staging: true, production: false },
   },
+  'p4-family-link': {
+    description:
+      'Parent invites, Settings → Parent app and Privacy notice, the public privacy page and Join requests (Phase 4 S6) — remove when the phase closes.',
+    owner: 'PO',
+    expiresOn: '2027-01-31',
+    defaults: { local: true, ci: true, staging: true, production: false },
+  },
   'p1-hub-placeholder': {
     description:
       'Family Hub placeholder on app. (G-31) until Parent Core ships in Phase 7P — remove then. Off: app. redirects to the marketing site.',

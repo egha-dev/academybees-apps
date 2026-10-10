@@ -15,6 +15,8 @@ const KEYS = {
   account_setup: { ns: 'accountSetup', lines: ['body', 'expiry'], cta: true },
   new_device: { ns: 'newDevice', lines: ['body', 'notYou'], cta: false },
   mfa_disabled: { ns: 'mfaDisabled', lines: ['body', 'notYou'], cta: false },
+  parent_invite: { ns: 'parentInvite', lines: ['body', 'next', 'expiry'], cta: true },
+  link_code: { ns: 'linkCode', lines: ['body', 'code', 'expiry', 'notYou'], cta: false },
 } as const;
 
 const escapeHtml = (value: string) =>
