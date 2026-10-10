@@ -129,6 +129,23 @@ Each slice: branch `p4/<slice>` from the latest `main` → PR with the DoD check
   - plan limit; archive keeps history; restore window; version conflicts;
   - **every route in the cross-tenant registry.**
 
+*As built (S2):*
+- **Migration** `20261010090000_people_workspaces`: `pg_trgm`; GIN trigram indexes on student, parent and teacher names; `(tenant_id, full_name, id)` for the name-ordered keyset; `activity_event` (append-only for `ab_app`, like the audit log); `teacher.subjects`; `invitation.parent_id`.
+- **API** (`modules/people`):
+  - `people.policy.ts`: lists and single records both use `where`.
+  - Students: `GET/POST /students`, `GET/PATCH /students/:id`, `/status`, `/archive`, `/restore`, `/activity`.
+  - Parents: `POST /students/:id/parents`, `PATCH/DELETE …/parents/:linkId`, `GET/PATCH /parents/:id`, `/parents/:id/activity`, `GET /parents/duplicates`.
+  - Restricted records: `GET/PUT /students/:id/health-note` (every read audited, even when there is no note), `GET/POST /students/:id/consents`.
+  - Custom fields: `GET/POST/PATCH /custom-fields`.
+- **Details:**
+  - Only holders of `student.health.read` learn that a note exists (`hasHealthNote`).
+  - The first parent becomes the primary contact; unlinking moves the flag.
+  - Moving back into a seat (restore, or status → ACTIVE/ON_HOLD) checks the student limit.
+  - Consent records carry the version of the new `ACADEMY_PRIVACY_TEMPLATE` legal document (draft).
+  - `OWNER_LEGAL_DOCUMENTS` is what owners accept.
+  - Analytics: `student.created{source}`, `student.status_changed`, `student.archived`, `student.restored`, `parent.linked`, `consent.recorded`.
+- **Tests:** `students.int.spec.ts` (14), `people.policy.spec.ts`; 22 routes in the cross-tenant registry. API integration 619 → 816.
+
 ### S3 `p4/students-ui` — Students, Student 360, Add Student (flag `p4-people`)
 
 - **4.8 Students list** (`/students`):
