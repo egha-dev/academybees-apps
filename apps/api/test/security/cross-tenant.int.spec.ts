@@ -96,6 +96,8 @@ describe('cross-tenant suite', () => {
         return a.people.studentId;
       case 'parent':
         return a.people.parentId;
+      case 'missing-import':
+        return '019a0000-0000-7000-8000-0000000000ee';
       case 'teacher':
         return a.people.teacherId;
       case 'parent-link':

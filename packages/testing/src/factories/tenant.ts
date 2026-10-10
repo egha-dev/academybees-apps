@@ -295,6 +295,11 @@ async function insertPeopleAndScheduling(
      VALUES ($1, $2, 'STUDENT', $3, 'student.created', $4, '{"source":"manual"}')`,
     [newId(), t.id, f.studentId, membershipId],
   );
+  await q(
+    `INSERT INTO import_job (id, tenant_id, kind, status, file_name, file_size, file_type, expires_at, updated_at)
+     VALUES ($1, $2, 'STUDENTS', 'COMPLETED', 'students.csv', 10, 'csv', now() + interval '7 days', now())`,
+    [newId(), t.id],
+  );
   // An earlier (replaced) logo: every tenant table has fixture rows (media_file, C-97).
   const mediaId = newId();
   await q(

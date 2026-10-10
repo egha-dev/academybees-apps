@@ -211,6 +211,10 @@ export const StudentSchema = z.object({
   /** Last day a restore is possible (90 days after archiving, C-108). */
   restorableUntil: z.string().nullable(),
   hasHealthNote: z.boolean(),
+  /** A photo is stored (private; fetch a short-lived link from `/students/:id/photo`). */
+  hasPhoto: z.boolean(),
+  /** A parent's current consent includes photos, so one may be added (G-05, G-06). */
+  photoConsent: z.boolean(),
   version: z.number().int(),
   createdAt: z.string(),
   parents: z.array(ParentLinkSchema),
@@ -265,6 +269,9 @@ export const RestoreStudentSchema = z.object({ version: Version });
 
 /** Restore window after archiving (G-26, C-108). */
 export const RESTORE_WINDOW_DAYS = 90;
+
+/** `GET /students/:id/photo` — a presigned link valid ≤ 5 minutes (C-97). */
+export const StudentPhotoSchema = z.object({ url: z.url(), expiresAt: z.string() });
 
 // ── Health notes (G-05, C-90, C-104) ────────────────────────────────────────────────────────
 

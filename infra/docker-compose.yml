@@ -69,11 +69,15 @@ services:
     entrypoint: ['/bin/sh', '-c']
     command:
       - |
-        if echo 's3.bucket.list' | weed shell -master=s3:9333 | grep -q academybee-local; then
-          echo 'bucket academybee-local already exists'
-        else
-          echo 's3.bucket.create -name academybee-local' | weed shell -master=s3:9333
-        fi
+        # Public branding bucket (anonymous read, s3.json) and the private bucket (C-97: no
+        # anonymous access; read only through presigned GETs).
+        for bucket in academybee-local academybee-private-local; do
+          if echo 's3.bucket.list' | weed shell -master=s3:9333 | grep -q "$$bucket"; then
+            echo "bucket $$bucket already exists"
+          else
+            echo "s3.bucket.create -name $$bucket" | weed shell -master=s3:9333
+          fi
+        done
     restart: 'no'
 
 volumes:

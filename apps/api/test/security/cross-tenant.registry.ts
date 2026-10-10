@@ -421,6 +421,46 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     // Needs `?q=`; per-academy results are covered by the dedicated test.
     spoof: { skip: 'teachers.int.spec.ts › search finds what the caller may see' },
   },
+  // Student import (Phase 4 S5). The job routes are exercised end to end, including another
+  // academy's attempts, in the dedicated test (needs storage and a job in flight).
+  {
+    method: 'GET',
+    path: '/api/v1/students/import/template',
+    session: true,
+    capability: 'student.import',
+  },
+  ...(
+    [
+      ['POST', '/api/v1/students/import'],
+      ['GET', '/api/v1/students/import/:id'],
+      ['PUT', '/api/v1/students/import/:id/mapping'],
+      ['POST', '/api/v1/students/import/:id/commit'],
+      ['GET', '/api/v1/students/import/:id/errors.csv'],
+    ] as const
+  ).map(([method, path]) => ({
+    method,
+    path,
+    params: { id: 'missing-import' },
+    session: true,
+    capability: 'student.import',
+    ...(method === 'GET' ? {} : { idempotent: true, body: { version: 1, mapping: {} } }),
+    spoof: { skip: 'import.int.spec.ts › roles and academies' },
+  })),
+  // Student photos (Phase 4 S5): need private storage; covered by student-photo.int.spec.ts.
+  ...(
+    [
+      ['GET', 'student.read'],
+      ['PUT', 'student.update'],
+      ['DELETE', 'student.update'],
+    ] as const
+  ).map(([method, capability]) => ({
+    method,
+    path: '/api/v1/students/:id/photo',
+    params: { id: 'student' },
+    session: true,
+    capability,
+    spoof: { skip: "student-photo.int.spec.ts › another academy can't see" },
+  })),
   // Test-only signed-in routes guarded by @Can + a scope policy (shape of domain endpoints).
   {
     method: 'GET',

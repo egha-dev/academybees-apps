@@ -24,6 +24,7 @@ import {
 
 import { Idempotent } from '../../core/idempotency/idempotent.js';
 import { Can } from '../../core/rbac/can.decorator.js';
+import { TenantHost } from '../../core/tenant/host-policy.js';
 import { createZodDto, ZodResponse } from '../../core/validation/zod-dto.js';
 import { ActivityService } from './activity.service.js';
 import { CustomFieldsService } from './custom-fields.service.js';
@@ -76,8 +77,12 @@ export class ParentsController {
   }
 }
 
-/** Academy-defined student fields (G-05): read by anyone who sees students, changed by the owner. */
+/**
+ * Academy-defined student fields (G-05): read by anyone who sees students, changed by the owner.
+ * Open during setup too (the import step maps columns to them).
+ */
 @Controller({ path: 'custom-fields', version: '1' })
+@TenantHost('SETUP', 'ACTIVE')
 export class CustomFieldsController {
   constructor(private readonly fields: CustomFieldsService) {}
 

@@ -32,6 +32,7 @@ import { CustomFieldsService } from './custom-fields.service.js';
 import { ParentsService } from './parents.service.js';
 import { PeopleService } from './people.service.js';
 import { studentPolicy } from './people.policy.js';
+import { StudentPhotoService } from './student-photo.service.js';
 
 const CursorKeys = z.object({ n: z.string(), id: z.uuid() });
 const DAY_MS = 86_400_000;
@@ -57,6 +58,7 @@ const DETAIL_SELECT = {
   customFields: true,
   status: true,
   archivedAt: true,
+  photoMediaId: true,
   version: true,
   createdAt: true,
 } as const satisfies Prisma.StudentSelect;
@@ -78,6 +80,7 @@ export class StudentsService {
     private readonly analytics: AnalyticsService,
     private readonly audit: AuditService,
     private readonly entitlements: EntitlementService,
+    private readonly photos: StudentPhotoService,
   ) {}
 
   async list(query: StudentListQuery): Promise<CursorPage<StudentListItem>> {
@@ -181,6 +184,8 @@ export class StudentsService {
         ? dateOnly(new Date(row.archivedAt.getTime() + RESTORE_WINDOW_DAYS * DAY_MS))
         : null,
       hasHealthNote: Boolean(row.healthNote),
+      hasPhoto: row.photoMediaId !== null,
+      photoConsent: await this.photos.hasPhotoConsent(this.db, row.id),
       version: row.version,
       createdAt: row.createdAt.toISOString(),
       parents: (this.canRead('parent.read') ? row.parents : []).map((l) => ({
