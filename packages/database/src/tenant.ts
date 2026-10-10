@@ -77,7 +77,8 @@ const PLATFORM_ROW_MODELS = new Set([
 /**
  * Identity models protected by user-bound RLS (`app.user_id`, C-59), not by tenant context.
  * `AuthSession` has a nullable tenant_id (TENANT sessions only) but is user-owned; so does
- * `LegalAcceptance` (the academy where a document was accepted, ADR-034).
+ * `LegalAcceptance` (the academy where a document was accepted, ADR-034), and
+ * `AcademyLinkAttempt` (the academy a hub user is linking to; never readable by it, C-107).
  */
 export const USER_OWNED_MODELS: ReadonlySet<string> = new Set([
   'User',
@@ -89,6 +90,7 @@ export const USER_OWNED_MODELS: ReadonlySet<string> = new Set([
   'KnownDevice',
   'PlatformStaff',
   'LegalAcceptance',
+  'AcademyLinkAttempt',
 ]);
 
 /** How each Prisma model relates to tenants, derived from the generated client. */
