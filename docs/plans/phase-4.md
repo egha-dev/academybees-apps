@@ -73,6 +73,24 @@ Each slice: branch `p4/<slice>` from the latest `main` → PR with the DoD check
   - `syncSystemRoleGrants()` in `packages/database/src/reference.ts`, called from `applySqlFolder` at deploy;
   - unit tests on the role matrix; an integration test that an existing academy gains the new grants and keeps custom ones.
 
+*As built (S1):*
+- **Shell diet (C-99), measured with `perf:budget`:**
+
+  | Route | Before | After |
+  | --- | --- | --- |
+  | `/today`, `/teach`, `/more` | 196.4 | **180.8** |
+  | `/settings/academy`, `/settings/branding` | 196.8 | 181.3 |
+  | `/settings/security` | 197.0 | 191.9 |
+  | `/login` | 197.7 | 192.7 |
+  | `/legal` | 198.9 | 193.9 |
+  | `/onboarding/[step]` | 199.0 | 194.1 |
+
+  - The service worker registers from the lazy PWA prompts after page load (`components/service-worker.ts`; `SerwistProvider` removed): −2.1 KB on every route.
+  - The root `error.tsx` / `global-error.tsx` load their UI (and the catalogue JSON) only when an error happens: −3 KB.
+  - Empty / error / permission state actions, sign-out, shell nav and the theme toggle use native controls (`PlainButton`, `plainControl` in `@academybee/ui`), so MUI's button code (≈ 10.7 KB) loads only on pages with forms.
+  - **Tried and dropped:** moving `ToastProvider` into its own module added ≈ 6–17 KB, because the page needs `feedback` anyway and Turbopack duplicated the shared code into an extra chunk.
+- **Capabilities (C-104):** `student.health.read`, `student.health.manage`, `student.import` in the catalogue and templates. `syncSystemRoleGrants()` runs with the reference data on every deploy: it adds missing template grants to every academy's system roles (add-only) and bumps `permissions_version` for affected members. Tested in `packages/database/test/role-grants.int.spec.ts`.
+
 ### S2 `p4/people-api` — Students, parents, health, consent, custom fields (API)
 
 - **4.4 Migration** `…_people_workspaces` (expand-only):
