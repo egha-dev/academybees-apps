@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-09 · Current phase: **Phase 4 — Students + Parents + Teachers (not started)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`)
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-10 · Current phase: **Phase 4 — Students + Parents + Teachers (🟨 in progress since 2026-10-10)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -15,7 +15,7 @@
 | 1 | Multi-Tenant + Wildcard Domain | ✅ 2026-10-02 | Default branch per tenant; `app.` Family Hub host reserved + classified (G-31) | ADR-003/004/005/039, C-07 |
 | 2 | Authentication + RBAC | ✅ 2026-10-07 | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
 | 3 | Academy Provisioning + Onboarding | ✅ 2026-10-09 | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, C-85…C-98, ADR-028/034 |
-| 4 | Students + Parents + Teachers | ⬜ | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
+| 4 | Students + Parents + Teachers | 🟨 | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
 | 5 | Courses + Batches + Timetable | ⬜ | Owner Today v1; terminology; holidays (G-03); transfer (G-27) | ADR-024/029/037 |
 | 6 | Attendance + Offline Sync | ⬜ | Teacher PWA core; outbox → in-app notifications; teacher nudge (G-16) | ADR-016/017, C-04, C-06 |
 | 7 | Finance | ⬜ | Onboarding fee step; fee-reminder intents (in-app); **all payment methods enabled without a gateway (G-30)**; gateway-ready provider layer + simulator (G-01); fee rules (G-04); opening balances (G-02); share receipts (G-18) | ADR-010/018/033/038, C-08, C-18, C-19, C-24, C-26 |
@@ -567,6 +567,19 @@ Phase 2 is **not** started.
 
 **Goal.** Core people and relationships are managed through contextual workspaces, not CRUD tables.
 **Refs.** PRD v2 §17, v3 §9; UX §9–11.4, §24; ARCHITECTURE §7, §8.
+**Status.** 🟨 started 2026-10-10 (`phase-4-start` = `7b89578`). Approved slice plan: [`docs/plans/phase-4.md`](plans/phase-4.md) (decisions C-99…C-108).
+
+**Slices (each = one PR, ADR-041)**
+
+| Slice | Branch | Tasks | State |
+| --- | --- | --- | --- |
+| S1 | `p4/shell-diet` | 4.1 plan + decisions, 4.2 shell diet (C-99), 4.3 capabilities + role-grant sync (C-104) | 🟨 PR |
+| S2 | `p4/people-api` | 4.4 migration (`pg_trgm`, ActivityEvent, …), 4.5 scope policy + Students API, 4.6 Parents API, 4.7 health notes, consent, custom fields, activity | ⬜ |
+| S3 | `p4/students-ui` | 4.8 Students list, 4.9 Add Student + Global Add, 4.10 Student 360, 4.11 parent sheet + links, 4.12 Settings → Custom fields (flag `p4-people`) | ⬜ |
+| S4 | `p4/teachers-search` | 4.13 Teachers API + workspace, 4.14 `/search` + command palette (50K benchmark) | ⬜ |
+| S5 | `p4/import` | 4.15 private media bucket, 4.16 import pipeline (C-100, C-101), 4.17 import UI + onboarding entry | ⬜ |
+| S6 | `p4/family-link` | 4.18 parent invites + activation guard (C-102), 4.19 privacy notice, 4.20 Settings → Parent app (Join QR), 4.21 link API + Join requests (C-107) (flag `p4-family-link`) | ⬜ |
+| S7 | `p4/journey-e2e` | 4.22 journey E2E, 4.23 flag removal + docs | ⬜ |
 
 **Scope**
 - Students: list (search with `pg_trgm`, filters: status, batch, course; keyset pagination, virtualised), **Add Student** drawer (minimum fields, optional parent, optional batch), **Student 360** (Overview, Activity tabs now; Attendance/Fees/Learning/Progress/Communication/Documents tabs appear as their phases land — no placeholders), status changes (ON_HOLD, COMPLETED, LEFT) with reason; archive.

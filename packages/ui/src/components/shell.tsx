@@ -1,12 +1,12 @@
 'use client';
 
 import Box from '@mui/material/Box';
-import ButtonBase from '@mui/material/ButtonBase';
 import Stack from '@mui/material/Stack';
 import type { ElementType, ReactNode } from 'react';
 
 import { radius, THEME_ATTRIBUTE, TOUCH_TARGET } from '../tokens.js';
 import { ab } from './ab.js';
+import { plainControl } from './plain-button.js';
 import { Text } from './text.js';
 
 export type NavItem = {
@@ -51,11 +51,12 @@ const BOTTOM_NAV_HEIGHT = 64;
 
 function SidebarLink({ item, linkComponent }: { item: NavItem; linkComponent: ElementType }) {
   return (
-    <ButtonBase
+    <Box
       component={linkComponent}
       href={item.href}
       aria-current={item.active ? 'page' : undefined}
       sx={{
+        ...plainControl,
         justifyContent: 'flex-start',
         gap: 3,
         minHeight: 44,
@@ -71,7 +72,7 @@ function SidebarLink({ item, linkComponent }: { item: NavItem; linkComponent: El
     >
       {item.icon}
       <span>{item.label}</span>
-    </ButtonBase>
+    </Box>
   );
 }
 
@@ -230,11 +231,12 @@ export function AppShell({
                 key={item.key}
                 sx={{ flex: 1, listStyle: 'none', display: 'flex' }}
               >
-                <ButtonBase
+                <Box
                   component={linkComponent}
                   href={item.href}
                   aria-current={item.active ? 'page' : undefined}
                   sx={{
+                    ...plainControl,
                     flex: 1,
                     flexDirection: 'column',
                     gap: 0.5,
@@ -247,7 +249,7 @@ export function AppShell({
                 >
                   {item.icon}
                   <span>{item.label}</span>
-                </ButtonBase>
+                </Box>
               </Box>
             ))}
           </Box>
