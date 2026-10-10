@@ -15,7 +15,7 @@ import {
 import { ErrorIcon, LockIcon } from '../icons.js';
 import { PlainButton } from './plain-button.js';
 import { Text } from './text.js';
-import type { ToastMessage, ToastTone } from './toast-view.js';
+import type { ToastAction, ToastMessage, ToastTone } from './toast-view.js';
 
 const ToastView = lazy(() => import('./toast-view.js'));
 
@@ -93,12 +93,13 @@ export function EmptyState({
 }: {
   title: string;
   body: string;
-  action: StateAction;
+  /** The next step; leave out only when the viewer's role has none (the body says what to do). */
+  action?: StateAction | undefined;
   illustration?: ReactNode;
 }) {
   return (
     <StateLayout icon={illustration} title={title} body={body}>
-      <ActionButton action={action} />
+      {action && <ActionButton action={action} />}
     </StateLayout>
   );
 }
@@ -157,7 +158,8 @@ export function PermissionState({
   );
 }
 
-const ToastContext = createContext<((message: string, tone?: ToastTone) => void) | null>(null);
+type ShowToast = (message: string, tone?: ToastTone, action?: ToastAction) => void;
+const ToastContext = createContext<ShowToast | null>(null);
 
 /** Toasts for confirmations ("Attendance saved"). Announced politely to screen readers. */
 export function ToastProvider({
@@ -168,8 +170,8 @@ export function ToastProvider({
   closeLabel: string;
 }) {
   const [current, setCurrent] = useState<ToastMessage | null>(null);
-  const show = useCallback((message: string, tone: ToastTone = 'success') => {
-    setCurrent({ id: Date.now(), message, tone });
+  const show = useCallback<ShowToast>((message, tone = 'success', action) => {
+    setCurrent({ id: Date.now(), message, tone, ...(action ? { action } : {}) });
   }, []);
   const value = useMemo(() => show, [show]);
   return (

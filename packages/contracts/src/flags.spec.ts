@@ -18,8 +18,9 @@ describe('feature flag registry', () => {
 
   it('lists expired flags', () => {
     expect(expiredFeatureFlags('2026-10-01')).toEqual([]);
-    expect(expiredFeatureFlags('2027-02-01')).toEqual([]);
-    expect(expiredFeatureFlags('2027-04-01')).toEqual(['p2-role-homes']);
+    expect(expiredFeatureFlags('2027-01-31')).toEqual([]);
+    expect(expiredFeatureFlags('2027-02-01')).toEqual(['p4-people']);
+    expect(expiredFeatureFlags('2027-04-01')).toEqual(['p2-role-homes', 'p4-people']);
   });
 
   it('recognises registered keys only', () => {

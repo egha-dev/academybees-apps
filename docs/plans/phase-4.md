@@ -171,6 +171,24 @@ Each slice: branch `p4/<slice>` from the latest `main` → PR with the DoD check
   - E2E: add a student with two parents → Student 360 shows both; add a second child to the same parent; receptionist sees no medical note; archive → restore; Undo;
   - axe light/dark; pseudo-locale and 40 % text.
 
+*As built (S3):*
+- **Screens** (flag `p4-people`):
+  - `/students`: search as you type, status and archived filters, show more, a virtualised list over 120 rows.
+  - `/students/[id]` (Student 360):
+    - **Overview** is server-rendered: profile, custom fields, classes, parents, medical notes (shown on request, every view audited), consent history plus "Record consent".
+    - **Activity** tab.
+  - `/settings/custom-fields`, a new Settings tab.
+  - Global Add (`+ Add`) in the shell top bar: a native `<details>` menu with no JS.
+- **Interactive parts** load as their own chunks (`students-lazy.tsx`): the browser, Add Student, the 360 actions, parent actions, the health note, consent and the field editor.
+- **Budget:** `/students` 181.8, `/students/[id]` 185.1, `/settings/custom-fields` 181.8 KB gz.
+- **UI kit:** native `SelectInput` / `DateInput` / `TextAreaInput`; toasts take an action (Undo stays 8 s); `EmptyState` action is optional.
+- **Navigation:** RUN → Students; the phone bottom bar is Today • Students • More (UX §25).
+- **Seeds:** demo-a has 30 students (siblings share a parent), a medical note on Aarav and a Board custom field.
+- **Fixes found while testing:**
+  - API keep-alive raised to 65 s: the web proxy's "socket hang up" was a reused socket the API had just closed.
+  - `pg_trgm` is created by the deploy's admin step: staging's migrator may not, so the deploy of #68 failed and is repaired here (C-105).
+- **E2E:** `students.spec.ts`, on desktop, Android and iPhone: search, add with two parents, sibling reuses a parent, medical notes for receptionist vs owner, archive with Undo, axe in dark mode. Pseudo-locale covers Student 360 and Custom fields.
+
 ### S4 `p4/teachers-search` — Teachers, command palette
 
 - **4.13 Teachers:**

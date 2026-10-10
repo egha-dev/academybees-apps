@@ -152,7 +152,7 @@ Notes:
 Runs after CI passes on a push to `main` (while `STAGING_ENABLED` is true), or by hand from **Actions → Deploy staging → Run workflow**.
 
 1. **Roles and migrations** (`db-migrate.yml`):
-   - `ensure-roles.sql` as the admin user (idempotent, re-applies passwords);
+   - `ensure-roles.sql` as the admin user (idempotent, re-applies passwords, creates the extensions the schema needs — `ab_migrator` may not, e.g. `pg_trgm`);
    - `pnpm db:deploy` as `ab_migrator` over the public endpoint.
 
    This finishes before any new code is built.

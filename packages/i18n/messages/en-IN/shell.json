@@ -37,7 +37,8 @@
     "groups": {
       "home": "Home",
       "academy": "Academy",
-      "account": "Your account"
+      "account": "Your account",
+      "run": "Run"
     },
     "security": "Security",
     "academySettings": "Settings"

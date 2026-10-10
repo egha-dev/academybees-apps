@@ -24,7 +24,7 @@ export function experienceFor(path: string, me: MeResponse): Experience {
 /**
  * Navigation for one experience (UX §8, §25): **only built modules**, and only those the user's
  * capabilities open (ADR-008). Phase 2: Today and Team (Manage), Home (Teacher), and Security;
- * Phase 3 adds the academy's settings (Academy, Branding & address)
+ * Phase 3 adds the academy's settings (Academy, Branding & address); Phase 4 adds Students (RUN)
  * (everyone's own account, G-11); "More" holds the rest on phones. Grows phase by phase — never
  * "coming soon" entries.
  */
@@ -32,6 +32,8 @@ export async function navigationFor(
   me: MeResponse,
   experience: Experience,
   roleHomes: boolean,
+  /** Phase 4 people workspaces (release flag `p4-people`). */
+  people = false,
 ): Promise<{ groups: ShellNavGroup[]; bottom: ShellNavItem[] }> {
   const t = await getTranslations('shell.nav');
   const can = (capability: string) =>
@@ -58,6 +60,11 @@ export async function navigationFor(
   const today: ShellNavItem[] = roleHomes
     ? [{ key: 'today', label: t('today'), href: '/today', icon: 'today' }]
     : [];
+  // RUN (UX §8): the people workspaces, phase by phase.
+  const run: ShellNavItem[] =
+    people && can('student.read')
+      ? [{ key: 'students', label: t('students'), href: '/students', icon: 'students' }]
+      : [];
   const academy: ShellNavItem[] = [
     ...(can('team.read')
       ? [{ key: 'team', label: t('team'), href: '/settings/team', icon: 'team' } as const]
@@ -77,9 +84,11 @@ export async function navigationFor(
   return {
     groups: [
       { key: 'home', label: t('groups.home'), items: today },
+      { key: 'run', label: t('groups.run'), items: run },
       { key: 'academy', label: t('groups.academy'), items: academy },
       account,
     ],
-    bottom: [...today, more],
+    // UX §25 Owner/Admin: Today • Students • Finance • More.
+    bottom: [...today, ...run.slice(0, 1), more],
   };
 }

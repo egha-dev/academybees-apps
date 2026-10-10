@@ -53,6 +53,7 @@ catalog:
   next: 16.3.8
   '@next/eslint-plugin-next': 16.3.8
   '@tanstack/react-query': 5.104.0
+  '@tanstack/react-virtual': 3.14.14
   '@serwist/turbopack': 9.5.12
   '@serwist/window': 9.5.12
   serwist: 9.5.12
@@ -171,3 +172,5 @@ minimumReleaseAgeExclude:
   - '@next/swc-win32-arm64-msvc@16.3.8'
   - '@next/swc-win32-x64-msvc@16.3.8'
   - next@16.3.8
+  - '@tanstack/react-virtual@3.14.14'
+  - '@tanstack/virtual-core@3.18.0'

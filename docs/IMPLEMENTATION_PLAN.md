@@ -574,8 +574,8 @@ Phase 2 is **not** started.
 | Slice | Branch | Tasks | State |
 | --- | --- | --- | --- |
 | S1 | `p4/shell-diet` | 4.1 plan + decisions, 4.2 shell diet (C-99), 4.3 capabilities + role-grant sync (C-104) | ✅ #67 |
-| S2 | `p4/people-api` | 4.4 migration (`pg_trgm`, ActivityEvent, …), 4.5 scope policy + Students API, 4.6 Parents API, 4.7 health notes, consent, custom fields, activity | 🟨 PR |
-| S3 | `p4/students-ui` | 4.8 Students list, 4.9 Add Student + Global Add, 4.10 Student 360, 4.11 parent sheet + links, 4.12 Settings → Custom fields (flag `p4-people`) | ⬜ |
+| S2 | `p4/people-api` | 4.4 migration (`pg_trgm`, ActivityEvent, …), 4.5 scope policy + Students API, 4.6 Parents API, 4.7 health notes, consent, custom fields, activity | ✅ #68 |
+| S3 | `p4/students-ui` | 4.8 Students list, 4.9 Add Student + Global Add, 4.10 Student 360, 4.11 parent sheet + links, 4.12 Settings → Custom fields (flag `p4-people`) | 🟨 PR |
 | S4 | `p4/teachers-search` | 4.13 Teachers API + workspace, 4.14 `/search` + command palette (50K benchmark) | ⬜ |
 | S5 | `p4/import` | 4.15 private media bucket, 4.16 import pipeline (C-100, C-101), 4.17 import UI + onboarding entry | ⬜ |
 | S6 | `p4/family-link` | 4.18 parent invites + activation guard (C-102), 4.19 privacy notice, 4.20 Settings → Parent app (Join QR), 4.21 link API + Join requests (C-107) (flag `p4-family-link`) | ⬜ |

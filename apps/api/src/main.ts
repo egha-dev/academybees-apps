@@ -32,6 +32,13 @@ async function bootstrap(): Promise<void> {
     bodyParser: false,
   });
   configureApp(app, config);
+  // The API sits behind proxies that keep connections alive (the web's /api rewrite, Railway's
+  // edge). Node closes idle sockets after 5 s by default, so a proxy could reuse a socket just as
+  // it closed and get "socket hang up" (seen in E2E). Keep idle sockets longer than any client
+  // does; headersTimeout must exceed keepAliveTimeout.
+  const server = app.getHttpServer();
+  server.keepAliveTimeout = 65_000;
+  server.headersTimeout = 66_000;
   await app.listen(config.PORT);
 }
 

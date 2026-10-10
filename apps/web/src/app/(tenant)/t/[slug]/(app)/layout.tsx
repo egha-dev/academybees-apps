@@ -9,10 +9,11 @@ import { sessionGuardLabels } from '@/components/auth/labels.server';
 import { SessionGuard } from '@/components/auth/session-guard';
 import { AccountPanel } from '@/components/shell/account-panel';
 import { AcademyShell } from '@/components/shell/academy-shell';
+import { GlobalAdd } from '@/components/shell/global-add';
 import { experienceFor, navigationFor } from '@/components/shell/navigation.server';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { apiServerGet } from '@/lib/api.server';
-import { roleHomesEnabled } from '@/lib/flags.server';
+import { peopleEnabled, roleHomesEnabled } from '@/lib/flags.server';
 import {
   academyColor,
   academyLogo,
@@ -71,15 +72,32 @@ export default async function SignedInLayout({ children }: { children: ReactNode
     redirect(`/legal?next=${encodeURIComponent(path)}`);
 
   const experience = experienceFor(path, me);
-  const [roleHomes, guard] = await Promise.all([roleHomesEnabled(), sessionGuardLabels()]);
-  const nav = await navigationFor(me, experience, roleHomes);
+  const [roleHomes, people, guard] = await Promise.all([
+    roleHomesEnabled(),
+    peopleEnabled(),
+    sessionGuardLabels(),
+  ]);
+  const nav = await navigationFor(me, experience, roleHomes, people);
   return (
     <AcademyShell
       brand={<AcademyIdentity name={academy} primaryColor={primaryColor} logoUrl={logoUrl} />}
       navLabel={t('label')}
       groups={nav.groups}
       bottom={nav.bottom}
-      topbarActions={<ThemeToggle compact />}
+      topbarActions={
+        <>
+          {experience === 'manage' && (
+            <GlobalAdd
+              items={
+                people && me.academy.capabilities['student.create']
+                  ? [{ key: 'student', href: '/students?add=1' }]
+                  : []
+              }
+            />
+          )}
+          <ThemeToggle compact />
+        </>
+      }
       sidebarFooter={
         <AccountPanel
           name={me.user.name}

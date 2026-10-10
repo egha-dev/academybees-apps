@@ -8,6 +8,7 @@ import errors from '../messages/en-IN/errors.json' with { type: 'json' };
 import marketing from '../messages/en-IN/marketing.json' with { type: 'json' };
 import offline from '../messages/en-IN/offline.json' with { type: 'json' };
 import onboarding from '../messages/en-IN/onboarding.json' with { type: 'json' };
+import people from '../messages/en-IN/people.json' with { type: 'json' };
 import shell from '../messages/en-IN/shell.json' with { type: 'json' };
 import team from '../messages/en-IN/team.json' with { type: 'json' };
 import tenant from '../messages/en-IN/tenant.json' with { type: 'json' };
@@ -30,6 +31,7 @@ export const EN_IN_MESSAGES = {
   console: consoleMessages,
   academy,
   onboarding,
+  people,
 };
 
 export type Messages = typeof EN_IN_MESSAGES;
@@ -50,4 +52,5 @@ export const NAMESPACE_FILES: Record<Namespace, string> = {
   console: 'console.json',
   academy: 'academy.json',
   onboarding: 'onboarding.json',
+  people: 'people.json',
 };
