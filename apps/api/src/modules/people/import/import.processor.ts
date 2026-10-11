@@ -42,9 +42,19 @@ export class ImportProcessor implements OnApplicationBootstrap, OnApplicationShu
       connection: this.connection,
       concurrency: 1,
     });
-    this.worker.on('failed', (job, err) =>
-      this.logger.warn({ jobId: job?.data.jobId, err: err.message }, 'Import step failed'),
-    );
+    this.worker.on('failed', (job, err) => {
+      this.logger.warn({ jobId: job?.data.jobId, err: err.message }, 'Import step failed');
+      // Out of retries: mark the job failed so the academy isn't left waiting (review M6).
+      if (job && job.attemptsMade >= (job.opts.attempts ?? 1))
+        void this.context
+          .run(job.data.tenantId, () => this.imports.markFailed(job.data.jobId, 'internal'))
+          .catch((e: unknown) =>
+            this.logger.error(
+              { jobId: job.data.jobId, err: e },
+              'Import could not be marked failed',
+            ),
+          );
+    });
   }
 
   async process(job: Job<ImportJobData>): Promise<void> {
@@ -56,7 +66,8 @@ export class ImportProcessor implements OnApplicationBootstrap, OnApplicationShu
         membership.status !== 'ACTIVE' ||
         !membership.capabilities['student.import']
       ) {
-        this.logger.warn({ jobId }, 'Import starter may no longer import; step skipped');
+        this.logger.warn({ jobId }, 'Import starter may no longer import; job failed');
+        await this.imports.markFailed(jobId, 'not_allowed');
         return;
       }
       this.cls.set('membership', membership);

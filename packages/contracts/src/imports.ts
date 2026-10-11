@@ -89,7 +89,7 @@ export const ImportJobSchema = z.object({
   errorRows: z.number().int(),
   duplicateRows: z.number().int(),
   createdRows: z.number().int(),
-  /** `file_unreadable` | `too_many_rows` | `empty` | `limit_reached` | `internal`. */
+  /** `file_unreadable` | `too_many_rows` | `empty` | `limit_reached` | `not_allowed` | `internal`. */
   failure: z.string().nullable(),
   version: z.number().int(),
   /** Up to 100 rows needing attention first (errors, then existing), for the preview. */

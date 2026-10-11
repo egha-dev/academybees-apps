@@ -36,7 +36,8 @@ export class StudentPhotoService {
     studentId: string,
   ): Promise<boolean> {
     const records = await db.consentRecord.findMany({
-      where: { studentId },
+      // Only parents linked to the student now: an unlinked parent's old grant no longer counts (review L6).
+      where: { studentId, parent: { children: { some: { studentId } } } },
       orderBy: { recordedAt: 'desc' },
       select: { parentId: true, action: true, purposes: true },
     });

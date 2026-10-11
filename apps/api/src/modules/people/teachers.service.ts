@@ -159,7 +159,12 @@ export class TeachersService {
       email = input.email!;
     } else if (input.mode === 'member') {
       const member = await this.db.membership.findFirst({
-        where: { id: input.membershipId!, status: { not: 'DISABLED' } },
+        // Staff only, as in `linkableMembers`: never a parent's or student's membership (review L5).
+        where: {
+          id: input.membershipId!,
+          status: { not: 'DISABLED' },
+          roles: { some: { role: { key: { notIn: ['parent', 'student'] } } } },
+        },
         select: { id: true, user: { select: { name: true, email: true } } },
       });
       if (!member) throw new DomainError('NOT_FOUND', 'member');

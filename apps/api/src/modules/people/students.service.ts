@@ -97,7 +97,10 @@ export class StudentsService {
       and.push({ enrolments: { some: { batchId: query.batchId, endedOn: null } } });
     if (query.courseId)
       and.push({ enrolments: { some: { endedOn: null, batch: { courseId: query.courseId } } } });
-    if (query.q) and.push(searchWhere(query.q));
+    if (query.q) {
+      const caps = this.cls.get('membership')?.capabilities as Record<string, unknown> | undefined;
+      and.push(searchWhere(query.q, Boolean(caps?.['parent.read'])));
+    }
     if (after)
       and.push({
         OR: [{ fullName: { gt: after.n } }, { fullName: after.n, id: { gt: after.id } }],
@@ -466,14 +469,15 @@ export class StudentsService {
  * Search (C-105): name or preferred name contains the text (trigram index), admission number
  * starts with it, or — with 4+ digits — a parent's phone contains them.
  */
-export function searchWhere(q: string): Prisma.StudentWhereInput {
+/** `byParentPhone` only for callers who may read parents (review L4). */
+export function searchWhere(q: string, byParentPhone = false): Prisma.StudentWhereInput {
   const digits = q.replace(/\D/g, '');
   return {
     OR: [
       { fullName: { contains: q, mode: 'insensitive' } },
       { preferredName: { contains: q, mode: 'insensitive' } },
       { admissionNo: { startsWith: q, mode: 'insensitive' } },
-      ...(digits.length >= 4
+      ...(byParentPhone && digits.length >= 4
         ? [{ parents: { some: { parent: { phone: { contains: digits } } } } }]
         : []),
     ],

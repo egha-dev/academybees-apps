@@ -130,6 +130,23 @@ export class JoinRequestsService {
           throw new DomainError('CONFLICT', 'parent has another account', [
             { path: 'parentId', issue: 'other_account' },
           ]);
+        // The requester will see every child of this parent record: each must be a child the
+        // approver may manage, otherwise attaching the account reaches beyond their scope (review M1).
+        const children = await tx.parentStudent.findMany({
+          where: { parentId, student: { archivedAt: null } },
+          select: { studentId: true },
+        });
+        if (children.length > 0) {
+          const visible = await tx.student.count({
+            where: {
+              AND: [
+                { id: { in: children.map((c) => c.studentId) } },
+                scopedWhere(this.cls, 'student.update', studentPolicy) as Prisma.StudentWhereInput,
+              ],
+            },
+          });
+          if (visible !== children.length) throw new DomainError('NOT_FOUND', 'parent');
+        }
         await tx.parent.update({ where: { id: parentId }, data: { userId: request.userId } });
       } else {
         parentId = newId();
