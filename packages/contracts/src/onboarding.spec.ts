@@ -17,6 +17,11 @@ describe('onboarding steps (UX v1.1 §5, C-08)', () => {
 
   it('accepts Indian mobile numbers as typed and stores E.164', () => {
     expect(PhoneSchema.parse('98400 12345')).toBe('+919840012345');
+    expect(PhoneSchema.parse('098400 12345')).toBe('+919840012345');
+    expect(PhoneSchema.parse('919840012345')).toBe('+919840012345');
+    expect(PhoneSchema.parse('(+91) 98400-12345')).toBe('+919840012345');
+    expect(PhoneSchema.parse('+91 98400 12345')).toBe('+919840012345');
+    expect(PhoneSchema.safeParse('98400 1234').success).toBe(false);
     expect(PhoneSchema.parse('+44 20 7946 0958')).toBe('+442079460958');
     expect(PhoneSchema.safeParse('12345').success).toBe(false);
   });

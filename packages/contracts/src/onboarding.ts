@@ -31,7 +31,9 @@ const Email = z.string().trim().toLowerCase().max(320).pipe(z.email());
 export const PhoneSchema = z
   .string()
   .trim()
-  .transform((v) => v.replace(/[\s()-]/g, ''))
+  .transform((v) => v.replace(/[\s().-]/g, ''))
+  // Indian mobiles as people write them: 98400 12345, 098400 12345, 919840012345, +91 98400 12345.
+  .transform((v) => v.replace(/^(?:0|91)(?=[6-9]\d{9}$)/, ''))
   .transform((v) => (/^[6-9]\d{9}$/.test(v) ? `+91${v}` : v))
   .pipe(z.string().regex(/^\+[1-9]\d{6,14}$/));
 /** `HH:MM`, 24-hour. */

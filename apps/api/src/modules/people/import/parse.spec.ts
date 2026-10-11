@@ -92,6 +92,9 @@ describe('import parsing (G-02, C-101)', () => {
   it('parses Indian date order and refuses impossible dates', () => {
     expect(parseDate('02/04/2016')).toBe('2016-04-02');
     expect(parseDate('2016-04-02')).toBe('2016-04-02');
+    expect(parseDate('5-Jun-2015')).toBe('2015-06-05');
+    expect(parseDate('05 June 2015')).toBe('2015-06-05');
+    expect(parseDate('5-Jux-2015')).toBe(INVALID_DATE);
     expect(parseDate('31/02/2016')).toBe(INVALID_DATE);
     expect(parseDate('yesterday')).toBe(INVALID_DATE);
     expect(parseDate('')).toBeNull();

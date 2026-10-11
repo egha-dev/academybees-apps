@@ -364,6 +364,15 @@ Each slice: branch `p4/<slice>` from the latest `main` → PR with the DoD check
 - **Deferred or kept, with reasons in C-110:** M2 (7P, release-blocking), L3, L7, L8, L10.
 - **Tests:** `family.int.spec.ts` +4, `import.int.spec.ts` +1.
 
+*Synthetic pilot register (C-111, PO 2026-10-11):* no pilot academy has shared a register yet, so `e2e/fixtures/pilot-register.mjs` generates a realistic one: `.csv` committed, `.xlsx` generated. It has 48 rows with mixed date and mobile formats, blank rows, duplicates and problem rows. Building it found three gaps, now fixed:
+- `0`/`91`-prefixed mobiles were rejected (`PhoneSchema`);
+- `5-Jun-2015` dates were rejected;
+- common register headers such as `Mobile No.` and `Email ID` didn't map.
+
+Tests: `import.int.spec.ts` (CSV then the `.xlsx` copy: 40 created, 8 explained, 40 already here) and `import.spec.ts` (the same through the wizard on demo-b).
+
+> **Still open before 7P:** a real, anonymised register from a pilot academy (A10). Put it in `e2e/fixtures/` and run the same two tests on it.
+
 | Slice | Branch | Tasks | Release flags |
 | --- | --- | --- | --- |
 | S1 | `p4/shell-diet` | 4.1–4.3 | — |

@@ -111,6 +111,8 @@ MEDIA_PRIVATE_BUCKET=academybees-private-staging
 
 Without it, staging answers "importing/photos aren't available yet" instead of failing. The API refuses to start if it equals `MEDIA_PUBLIC_BUCKET`.
 
+Set it on the **`api` service only**. The worker never reads media: imports and photos run inside the API (C-100). The existing R2 token must cover both buckets.
+
 Then add the signing keys as a separate variable (not in the Raw Editor):
 
 1. **Variables** tab → **New Variable**.

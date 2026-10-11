@@ -121,9 +121,18 @@ function cellText(value: ExcelJS.CellValue): string {
  * always match). English for now; Phase L adds the launch languages.
  */
 const SYNONYMS: Record<(typeof BASE_FIELDS)[number], string[]> = {
-  fullName: ['name', 'student name', 'full name', 'student', 'child name', 'name of student'],
+  fullName: [
+    'name',
+    'student name',
+    "student's name",
+    'full name',
+    'student',
+    'child name',
+    'name of student',
+    'name of the student',
+  ],
   preferredName: ['preferred name', 'nickname', 'nick name', 'called'],
-  dateOfBirth: ['date of birth', 'dob', 'birth date', 'birthday', 'd.o.b'],
+  dateOfBirth: ['date of birth', 'dob', 'birth date', 'birthday', 'd.o.b', 'd o b'],
   gender: ['gender', 'sex'],
   schoolName: ['school', 'school name'],
   grade: ['grade', 'class', 'std', 'standard', 'year'],
@@ -137,6 +146,10 @@ const SYNONYMS: Record<(typeof BASE_FIELDS)[number], string[]> = {
     "father's name",
     'mother name',
     "mother's name",
+    "parent's name",
+    'father/mother name',
+    'parent/guardian name',
+    "father / guardian's name",
   ],
   parentPhone: [
     'phone',
@@ -148,8 +161,16 @@ const SYNONYMS: Record<(typeof BASE_FIELDS)[number], string[]> = {
     'phone number',
     'mobile number',
     'contact number',
+    'mobile no',
+    'phone no',
+    'contact no',
+    'ph no',
+    'cell',
+    'cell no',
+    'whatsapp no',
+    'whatsapp number',
   ],
-  parentEmail: ['email', 'parent email', 'e-mail', 'mail'],
+  parentEmail: ['email', 'parent email', 'e-mail', 'mail', 'email id', 'e-mail id', 'mail id'],
   parentRelationship: ['relationship', 'relation'],
   batch: ['batch', 'group', 'batch name', 'class name', 'section'],
 };
@@ -253,15 +274,25 @@ const RELATIONSHIPS: Record<string, NonNullable<ParsedStudent['parent']>['relati
 /** A value that isn't a date. */
 export const INVALID_DATE: unique symbol = Symbol('invalid date');
 
-/** `YYYY-MM-DD`, `DD/MM/YYYY`, `DD-MM-YYYY` or `DD.MM.YYYY` (Indian order) → `YYYY-MM-DD`. */
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+/**
+ * `YYYY-MM-DD`, `DD/MM/YYYY`, `DD-MM-YYYY`, `DD.MM.YYYY` (Indian order) or `5-Jun-2015` /
+ * `5 June 2015` (English month names, as spreadsheets often show them) → `YYYY-MM-DD`.
+ */
 export function parseDate(value: string): string | null | typeof INVALID_DATE {
   if (!value) return null;
   let y: number, m: number, d: number;
   const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value);
   const dmy = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(value);
+  const named = /^(\d{1,2})[\s/.-]+([a-z]{3,9})[\s/.,-]+(\d{4})$/i.exec(value);
   if (iso) [y, m, d] = [Number(iso[1]), Number(iso[2]), Number(iso[3])];
   else if (dmy) [d, m, y] = [Number(dmy[1]), Number(dmy[2]), Number(dmy[3])];
-  else return INVALID_DATE;
+  else if (named) {
+    const month = MONTHS.indexOf(named[2]!.slice(0, 3).toLowerCase());
+    if (month < 0) return INVALID_DATE;
+    [d, m, y] = [Number(named[1]), month + 1, Number(named[3])];
+  } else return INVALID_DATE;
   const date = new Date(Date.UTC(y, m - 1, d));
   if (
     date.getUTCFullYear() !== y ||

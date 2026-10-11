@@ -47,3 +47,6 @@ apps/marketing/next-env.d.ts
 **/.windsurf/
 **/.claude/skills/
 **/skills-lock.json
+
+# Generated from e2e/fixtures/pilot-register.mjs (no binaries in git)
+e2e/fixtures/*.xlsx

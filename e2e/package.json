@@ -17,6 +17,7 @@
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
     "eslint": "catalog:",
+    "exceljs": "catalog:",
     "pg": "catalog:",
     "typescript": "catalog:"
   }
