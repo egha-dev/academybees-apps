@@ -97,6 +97,25 @@ Each slice: branch `p5/<slice>` from the latest `main` → PR with the DoD check
   - unit: generator (holidays skipped, effective dates, DST, past slots today not created, idempotent);
   - integration: job twice → same rows; cancelled and modified sessions survive re-runs; timezone "today".
 
+*As built (S1):*
+- **Migration `scheduling_workspace`:**
+  - `class_session` gains cancel reason/when/by, `modified_at`, a make-up link (composite FK), `holiday_id` and `note`;
+  - `batch_enrolment.weekdays` (day plan);
+  - new `holiday` (with `removed_at`: holidays are never deleted) and `notification_intent` tables.
+- **`060-scheduling-workspace.sql`:** DELETE/TRUNCATE revoked on holidays and intents, plus CHECKs:
+  - holiday shape;
+  - weekdays within 1–7;
+  - a cancelled session ⇔ it has a reason; a HOLIDAY reason requires a holiday;
+  - a make-up is manual and never its own make-up.
+- **Generator:** `plannedSessions` (pure) and `generateSessions` (rules + holidays → inserts with skip-duplicates). Onboarding and timezone changes use it; untouched now also means `modified_at` is null; the window is 28 days.
+- **Daily job (C-112):**
+  - the `platform-jobs` queue has a scheduler at 02:00 Asia/Kolkata. Its fan-out lists ACTIVE/SETUP academies with the platform client and writes a platform audit row, `platform.sessions_generation_queued`;
+  - one `session-generation` job per academy and day, processed in the API in tenant context, concurrency 1;
+  - analytics `session.generated {source: daily|manual|onboarding}`;
+  - `pnpm scheduling:generate` queues the run now (not in production);
+  - `bullConnection` moved to `core/redis`.
+- **Tests:** `generate.spec.ts` (5: 2/3/5/7-day patterns, times per day, effective dates, batch dates, holidays by branch, started classes, DST); `sessions.int.spec.ts` (3: idempotent, other academy untouched, cancelled/changed never touched, holiday skipped, fan-out and audit). Database integration: 355.
+
 ### S2 `p5/batches-api` — courses, batches, teachers, enrolments, transfer
 
 - **5.5 Policies** `scheduling.policy.ts`: batch and session scopes (TENANT/BRANCH/ASSIGNED); student ASSIGNED reuses the Phase 4 `assignedEnrolment`.
