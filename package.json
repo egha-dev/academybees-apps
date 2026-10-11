@@ -37,7 +37,8 @@
     "flags:check": "pnpm --filter @academybee/contracts flags:check",
     "db:seed:perf": "pnpm --filter @academybee/database db:seed:perf",
     "perf:search": "node scripts/perf/search-bench.mjs",
-    "hub:join-request": "node scripts/hub-join-request.mjs"
+    "hub:join-request": "node scripts/hub-join-request.mjs",
+    "scheduling:generate": "turbo run build --filter=@academybee/api --output-logs=errors-only && pnpm --filter @academybee/api scheduling:generate"
   },
   "devDependencies": {
     "@academybee/config": "workspace:*",

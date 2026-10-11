@@ -214,9 +214,9 @@ export const ANALYTICS_EVENTS = {
   'session.generated': defineAnalyticsEvent({
     name: 'session.generated',
     version: 1,
-    description: 'Class sessions were generated from weekly slots (ADR-024).',
+    description: 'Class sessions were generated from weekly slots (ADR-024, C-112).',
     properties: z.strictObject({
-      source: z.enum(['onboarding']),
+      source: z.enum(['onboarding', 'daily', 'manual']),
       count: z.number().int().min(0),
     }),
   }),

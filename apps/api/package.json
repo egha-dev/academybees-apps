@@ -12,7 +12,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "platform:create-admin": "node --env-file-if-exists=.env dist/platform/cli/create-admin.js"
+    "platform:create-admin": "node --env-file-if-exists=.env dist/platform/cli/create-admin.js",
+    "scheduling:generate": "node --env-file-if-exists=.env dist/platform/cli/generate-sessions.js"
   },
   "dependencies": {
     "@academybee/auth": "workspace:*",
