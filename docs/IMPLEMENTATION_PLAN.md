@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-11 · Current phase: **Phase 5 — Courses + Batches + Timetable (next; starts with P5-1)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`) · Phase 4 ✅ 2026-10-11 (tag `phase-4`)
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-11 · Current phase: **Phase 5 — Courses + Batches + Timetable (🟨 in progress since 2026-10-11)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`) · Phase 4 ✅ 2026-10-11 (tag `phase-4`)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -16,7 +16,7 @@
 | 2 | Authentication + RBAC | ✅ 2026-10-07 | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
 | 3 | Academy Provisioning + Onboarding | ✅ 2026-10-09 | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, C-85…C-98, ADR-028/034 |
 | 4 | Students + Parents + Teachers | ✅ 2026-10-11 | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
-| 5 | Courses + Batches + Timetable | ⬜ | Owner Today v1; terminology; holidays (G-03); transfer (G-27) | ADR-024/029/037 |
+| 5 | Courses + Batches + Timetable | 🟨 | Owner Today v1; terminology; holidays (G-03); transfer (G-27) | ADR-024/029/037 |
 | 6 | Attendance + Offline Sync | ⬜ | Teacher PWA core; outbox → in-app notifications; teacher nudge (G-16) | ADR-016/017, C-04, C-06 |
 | 7 | Finance | ⬜ | Onboarding fee step; fee-reminder intents (in-app); **all payment methods enabled without a gateway (G-30)**; gateway-ready provider layer + simulator (G-01); fee rules (G-04); opening balances (G-02); share receipts (G-18) | ADR-010/018/033/038, C-08, C-18, C-19, C-24, C-26 |
 | **7P** | **Pilot Readiness Pack** | ⬜ | Parent Core **as the multi-academy Family Hub** (from 11, G-31); help & support (G-10); consent live (G-06); activation dashboard (G-09); demo academy (G-13); pilot runbook (G-29) | C-21, C-23 |
@@ -675,6 +675,20 @@ Phase 2 is **not** started.
 
 **Goal.** Every teacher has a reliable daily schedule made of concrete class sessions.
 **Refs.** PRD v2 §17, v3 §9 (time-aware membership, recurring sessions), UX §11.5–11.6; ADR-024, ADR-029.
+**Status.** 🟨 started 2026-10-11 (`phase-5-start` = `8e50d25`). Approved slice plan: [`docs/plans/phase-5.md`](plans/phase-5.md) (decisions C-112…C-121; scheduling patterns reviewed by the PO: 2/3/5/7-day batches, different times per day, student day plans).
+
+**Slices (each = one PR, ADR-041)**
+
+| Slice | Branch | Tasks | State |
+| --- | --- | --- | --- |
+| S1 | `p5/scheduling-core` | 5.1 plan + decisions, 5.2 migration (session fields, day plans, Holiday, NotificationIntent), 5.3 generator (28 days), 5.4 daily job (C-112) | 🟨 PR |
+| S2 | `p5/batches-api` | 5.5 policies, 5.6 courses/levels, 5.7 batches + teachers, 5.8 enrolments, day plans, transfer (G-27, C-120) | ⬜ |
+| S3 | `p5/schedule-api` | 5.9 weekly patterns (C-113, C-121), 5.10 sessions, 5.11 holidays (G-03, C-114, C-115) | ⬜ |
+| S4 | `p5/terminology-today` | 5.12 `useTerm` + Settings terminology (C-118), 5.13 Owner Today v1, 5.14 Teacher home v1 (C-117), 5.15 remove `p2-role-homes` (flag `p5-scheduling` added) | ⬜ |
+| S5 | `p5/batches-ui` | 5.16 Batches list, 5.17 Batch Workspace, 5.18 Courses | ⬜ |
+| S6 | `p5/timetable-ui` | 5.19 Timetable Day/Week/Teacher, 5.20 Holidays with impact preview | ⬜ |
+| S7 | `p5/journey-e2e` | 5.21 exit E2E, 5.22 flag removal + docs | ⬜ |
+
 
 **Scope**
 - Courses & levels management; Batches (course, level, branch, capacity, start/end, status); teachers per batch (primary/assistant); **time-aware enrolments** (join/leave dates, move between batches preserves history); capacity warnings.
