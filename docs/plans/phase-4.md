@@ -352,6 +352,18 @@ Each slice: branch `p4/<slice>` from the latest `main` → PR with the DoD check
 
 *Gate fixes (P4-3):* the plan's analytics list had import events that were never emitted. Added `people.import_previewed {fileType, rows, valid, errors, duplicates}` and `people.import_committed {created, skipped}` (asserted in `import.int.spec.ts`). `search.used` is deliberately not emitted (C-105 note).
 
+*Review fixes (P4-4, independent review of `phase-4-start..main`):*
+- **H1:** the hub could reactivate a DISABLED staff membership, with its staff roles, through link/verify. Now `ensureMembership` refuses a DISABLED membership, and `activate` refuses an INVITED membership that holds staff roles.
+- **M1:** approving a join request onto an existing parent now requires every child of that parent to be in the approver's `student.update` scope.
+- **M3:** import never reuses a parent who has a Family Hub account.
+- **M4:** parent invitations are excluded from staff invitation preview/accept, the Team list, resend/revoke and same-email revocation.
+- **M5:** parent email/phone changes are audited (`parent.contact_changed`, old value masked).
+- **M6:** import jobs that can't finish are marked FAILED (`not_allowed` / `internal`).
+- **L1, L2, L4, L5, L6:** wizard renders on the server without `document`; loading skeletons on the people pages; parent-phone search only with `parent.read`; teacher-from-member only for staff memberships; photo consent counts only currently linked parents.
+- **L9:** cross-tenant approve test.
+- **Deferred or kept, with reasons in C-110:** M2 (7P, release-blocking), L3, L7, L8, L10.
+- **Tests:** `family.int.spec.ts` +4, `import.int.spec.ts` +1.
+
 | Slice | Branch | Tasks | Release flags |
 | --- | --- | --- | --- |
 | S1 | `p4/shell-diet` | 4.1–4.3 | — |

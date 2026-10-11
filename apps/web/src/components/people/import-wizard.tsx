@@ -385,7 +385,9 @@ function fillCount(template: string, n: number, name = 'count'): string {
   if (!m) return fill(template, { [name]: String(n) });
   const branches = new Map<string, string>();
   for (const b of m[1]!.matchAll(/(=\d+|one|other)\s*\{([^{}]*)\}/g)) branches.set(b[1]!, b[2]!);
-  const category = new Intl.PluralRules(document.documentElement.lang || undefined).select(n);
+  // Also renders on the server (a reload with ?job=…), where there is no document (review L1).
+  const lang = typeof document === 'undefined' ? undefined : document.documentElement.lang;
+  const category = new Intl.PluralRules(lang || 'en-IN').select(n);
   const pick = branches.get(`=${n}`) ?? branches.get(category) ?? branches.get('other') ?? '';
   return template.replace(m[0], pick.replace(/#/g, String(n)));
 }

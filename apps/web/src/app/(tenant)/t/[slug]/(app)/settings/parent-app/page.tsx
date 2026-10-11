@@ -74,6 +74,8 @@ export default async function ParentAppPage() {
           border: '1px solid',
           borderColor: 'ab.border',
           borderRadius: 3,
+          // Deliberately not theme tokens: the poster is paper, black on white in both themes, and
+          // the QR code needs that contrast to scan (review L3).
           bgcolor: '#FFFFFF',
           color: '#171817',
           textAlign: 'center',
