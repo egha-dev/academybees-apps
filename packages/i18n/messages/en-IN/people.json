@@ -313,7 +313,8 @@
     "archived": "Archived students can't be changed. Restore them first.",
     "alreadyLinked": "This parent is already linked to the student.",
     "limit": "Your plan's student limit is reached.",
-    "forbidden": "Your role can't do this."
+    "forbidden": "Your role can't do this.",
+    "unavailable": "This isn't available right now — please contact support."
   },
   "fields": {
     "metaTitle": "Custom fields",
@@ -542,7 +543,7 @@
       "too_large": "That file is larger than 5 MB.",
       "unsupported_type": "Choose a CSV or Excel (.xlsx) file.",
       "empty": "That file is empty.",
-      "imports_unavailable": "Importing isn't available yet on this site. Ask AcademyBee support."
+      "imports_unavailable": "Student import isn't available right now — please contact support."
     },
     "fields": {
       "fullName": "Student name",
@@ -595,7 +596,7 @@
     "uploading": "Uploading…",
     "tooLarge": "Choose a photo under 2 MB.",
     "notImage": "Choose a PNG, JPEG or WebP photo.",
-    "unavailable": "Photos aren't available yet on this site.",
+    "unavailable": "Student photos aren't available right now — please contact support.",
     "error": "We couldn't load the photo."
   },
   "parentApp": {

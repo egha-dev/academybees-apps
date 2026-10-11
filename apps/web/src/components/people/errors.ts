@@ -24,6 +24,9 @@ export function peopleErrorMessage(error: ApiError, labels: PeopleErrorLabels): 
       return labels.limit;
     case 'FORBIDDEN':
       return labels.forbidden;
+    case 'SERVICE_UNAVAILABLE':
+      // Not something a retry fixes (e.g. storage not set up): say so, never "try again".
+      return labels.unavailable;
     default:
       return labels.generic;
   }
