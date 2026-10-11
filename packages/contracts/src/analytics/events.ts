@@ -209,7 +209,25 @@ export const ANALYTICS_EVENTS = {
     name: 'batch.created',
     version: 1,
     description: 'A batch (class, group) was created.',
-    properties: z.strictObject({ source: z.enum(['onboarding']) }),
+    properties: z.strictObject({ source: z.enum(['onboarding', 'manual']) }),
+  }),
+  'enrolment.created': defineAnalyticsEvent({
+    name: 'enrolment.created',
+    version: 1,
+    description: 'A student joined a batch (C-120: every day, or only some days).',
+    properties: z.strictObject({ dayPlan: z.enum(['all', 'some']), overCapacity: z.boolean() }),
+  }),
+  'enrolment.ended': defineAnalyticsEvent({
+    name: 'enrolment.ended',
+    version: 1,
+    description: 'A student left a batch.',
+    properties: z.strictObject({}),
+  }),
+  'student.transferred': defineAnalyticsEvent({
+    name: 'student.transferred',
+    version: 1,
+    description: 'A student moved to another batch on a date (G-27).',
+    properties: z.strictObject({ dayPlan: z.enum(['all', 'some']) }),
   }),
   'session.generated': defineAnalyticsEvent({
     name: 'session.generated',

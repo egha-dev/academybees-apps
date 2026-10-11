@@ -421,6 +421,123 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     // Needs `?q=`; per-academy results are covered by the dedicated test.
     spoof: { skip: 'teachers.int.spec.ts › search finds what the caller may see' },
   },
+  // Courses, batches and enrolments (Phase 5 S2). Writes that change state once (versioned edits,
+  // enrolments) are covered, including another academy's ids, by batches.int.spec.ts.
+  { method: 'GET', path: '/api/v1/courses', session: true, capability: 'course.read' },
+  {
+    method: 'POST',
+    path: '/api/v1/courses',
+    session: true,
+    capability: 'course.manage',
+    idempotent: true,
+    body: { name: 'Cross Course' },
+    spoof: 'status',
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/courses/:id',
+    params: { id: 'course' },
+    session: true,
+    capability: 'course.read',
+  },
+  {
+    method: 'PATCH',
+    path: '/api/v1/courses/:id',
+    params: { id: 'course' },
+    session: true,
+    capability: 'course.manage',
+    body: { version: 1, name: 'Renamed' },
+    spoof: {
+      skip: 'batches.int.spec.ts › another academy’s courses, batches and enrolments are 404',
+    },
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/courses/:id/levels',
+    params: { id: 'course' },
+    session: true,
+    capability: 'course.manage',
+    body: { name: 'Cross level' },
+    spoof: 'status',
+  },
+  {
+    method: 'PATCH',
+    path: '/api/v1/courses/:id/levels/:levelId',
+    params: { id: 'course', levelId: 'level' },
+    session: true,
+    capability: 'course.manage',
+    body: { name: 'Level renamed' },
+    spoof: 'status',
+  },
+  { method: 'GET', path: '/api/v1/batches', session: true, capability: 'batch.read' },
+  {
+    method: 'POST',
+    path: '/api/v1/batches',
+    session: true,
+    capability: 'batch.manage',
+    idempotent: true,
+    body: { name: 'Cross Batch', courseId: '@fixture:course' },
+    spoof: 'status',
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/batches/:id',
+    params: { id: 'batch' },
+    session: true,
+    capability: 'batch.read',
+  },
+  {
+    method: 'PATCH',
+    path: '/api/v1/batches/:id',
+    params: { id: 'batch' },
+    session: true,
+    capability: 'batch.manage',
+    body: { version: 1, capacity: 30 },
+    spoof: {
+      skip: 'batches.int.spec.ts › another academy’s courses, batches and enrolments are 404',
+    },
+  },
+  {
+    method: 'PUT',
+    path: '/api/v1/batches/:id/teachers',
+    params: { id: 'batch' },
+    session: true,
+    capability: 'batch.manage',
+    // Fixture values fill only top-level body fields; an empty list is a valid full replace.
+    body: { teachers: [] },
+    spoof: 'status',
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/batches/:id/activity',
+    params: { id: 'batch' },
+    session: true,
+    capability: 'batch.read',
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/batches/:id/students',
+    params: { id: 'batch' },
+    session: true,
+    capability: 'batch.read',
+  },
+  ...(
+    [
+      ['POST', '/api/v1/batches/:id/enrolments', 'batch'],
+      ['POST', '/api/v1/enrolments/:id/days', 'enrolment'],
+      ['POST', '/api/v1/enrolments/:id/end', 'enrolment'],
+      ['POST', '/api/v1/students/:id/transfer', 'student'],
+    ] as const
+  ).map(([method, path, fixture]) => ({
+    method,
+    path,
+    params: { id: fixture },
+    session: true,
+    capability: 'batch.enrol',
+    spoof: {
+      skip: 'batches.int.spec.ts › another academy’s courses, batches and enrolments are 404',
+    },
+  })),
   // Student import (Phase 4 S5). The job routes are exercised end to end, including another
   // academy's attempts, in the dedicated test (needs storage and a job in flight).
   {

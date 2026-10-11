@@ -257,11 +257,18 @@ export const UpdateStudentSchema = z.object({
 export type UpdateStudent = z.infer<typeof UpdateStudentSchema>;
 
 /** `POST /students/:id/status` (G-27): a reason is required; Undo sends the previous status. */
-export const ChangeStudentStatusSchema = z.object({
-  version: Version,
-  status: StudentStatusSchema,
-  reason: z.string().trim().min(1).max(300),
-});
+export const ChangeStudentStatusSchema = z
+  .object({
+    version: Version,
+    status: StudentStatusSchema,
+    reason: z.string().trim().min(1).max(300),
+    /** G-27: also end every open class enrolment on this date (their last day). Not for ACTIVE. */
+    endEnrolmentsOn: CalendarDateSchema.optional(),
+  })
+  .refine((c) => !(c.endEnrolmentsOn && c.status === 'ACTIVE'), {
+    message: 'not_for_active',
+    path: ['endEnrolmentsOn'],
+  });
 
 /** `POST /students/:id/archive` and `/restore` (C-108). */
 export const ArchiveStudentSchema = z.object({
@@ -377,6 +384,15 @@ export const ACTIVITY_TYPES = [
   'teacher.updated',
   'teacher.archived',
   'teacher.restored',
+  // Phase 5 (C-120, G-27): on the student's and the batch's timelines.
+  'batch.created',
+  'batch.updated',
+  'batch.archived',
+  'batch.teachers_changed',
+  'enrolment.started',
+  'enrolment.days_changed',
+  'enrolment.ended',
+  'student.transferred',
 ] as const;
 export const ActivityTypeSchema = z.enum(ACTIVITY_TYPES);
 export type ActivityType = z.infer<typeof ActivityTypeSchema>;

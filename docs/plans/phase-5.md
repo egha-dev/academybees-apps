@@ -1,6 +1,6 @@
 # P5-1 · Phase 5 — Courses + Batches + Timetable: plan
 
-> **Approved by the PO on 2026-10-11** (`phase-5-start` = `8e50d25`), after a PO review of real scheduling patterns. Decisions C-112…C-121 recorded in DECISIONS.md.
+> **Approved by the PO on 2026-10-11** (`phase-5-start` = `8e50d25`), after a PO review of real scheduling patterns. Decisions C-112…C-122 recorded in DECISIONS.md.
 
 ## Context
 
@@ -46,7 +46,7 @@ Not in Phase 5 (recorded, not built):
 - **every second week / fortnightly**: rare; backlog;
 - **room/resource clashes**: out of scope.
 
-## Decisions I'll record in S1 (C-112…C-121, safe defaults; tell me to change any)
+## Decisions I'll record in S1 (C-112…C-122, safe defaults; tell me to change any)
 
 | ID | Question | Default |
 | --- | --- | --- |
@@ -78,7 +78,7 @@ Each slice: branch `p5/<slice>` from the latest `main` → PR with the DoD check
 - **5.1 Docs:**
   - `docs/plans/phase-5.md`;
   - IMPLEMENTATION_PLAN: Phase 5 🟨 plus the slice table;
-  - DECISIONS C-112…C-121.
+  - DECISIONS C-112…C-122.
 - **5.2 Migration `…_scheduling_workspace` (expand-only):**
   - `class_session` gains `cancel_reason` (enum TEACHER_UNAVAILABLE | HOLIDAY | OTHER), `cancelled_at`, `cancelled_by_id`, `modified_at`, `makeup_for_session_id`, `holiday_id`, `note`; index `(tenant_id, teacher_id, session_date)`;
   - `batch_enrolment.weekdays SMALLINT[]` (student day plan, C-120; empty = every day);
@@ -140,6 +140,25 @@ Each slice: branch `p5/<slice>` from the latest `main` → PR with the DoD check
   - day plans: who is expected per weekday; changing days from a date keeps history; per-weekday capacity;
   - version conflicts;
   - cross-tenant registry for every route.
+
+*As built (S2):*
+- **Policies** (`scheduling.policy.ts`):
+  - `batchPolicy`: TENANT / BRANCH / ASSIGNED via BatchTeacher; LINKED/SELF via enrolments;
+  - `coursePolicy`: follows batches;
+  - `sessionPolicy`: ASSIGNED also covers a session the member teaches.
+- **Courses API:** `/courses` list/create (levels inline)/get/patch (archive refused while batches are active); `/courses/:id/levels` add and patch.
+- **Batches API:** `/batches` list (keyset; filters course/teacher/branch/status/q) with meeting weekdays, enrolled count, fullest day and next session; get with per-day load; create (default or scoped branch; first teacher primary); versioned patch/archive; `PUT /batches/:id/teachers`; `/batches/:id/activity`.
+- **Enrolments (people module, C-122):**
+  - roster on a date;
+  - enrol with a day plan;
+  - per-weekday capacity: 409 with `weekday.N over_capacity` details unless confirmed;
+  - days outside the schedule refused (`not_in_schedule`);
+  - change days from a date (end + start, or an in-place fix on the start day), end, transfer;
+  - status change `endEnrolmentsOn` ends all open enrolments (G-27).
+- **Shared code:** `batchLoads` / `attends` / `overCapacity` in `batch-load.ts`; `ActivityService` moved to `core/activity`; new activity types for batches and enrolments; analytics `enrolment.created {dayPlan, overCapacity}`, `enrolment.ended`, `student.transferred`, `batch.created {source: manual}`.
+- **Tests:**
+  - `batches.int.spec.ts` (6): courses/levels/archive guard/versions/activity; teacher sees only taught batches and the accountant is read-only; day plans with per-day capacity and the schedule check; change days and transfer keep history (past rosters true, nothing deleted); leaving via end or status; another academy's ids are 404.
+  - Cross-tenant registry: 17 routes; the fixture gains `enrolmentId`.
 
 ### S3 `p5/schedule-api` — rules, sessions, holidays
 

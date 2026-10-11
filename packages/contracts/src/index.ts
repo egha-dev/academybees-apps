@@ -17,6 +17,7 @@ export * from './security.js';
 export * from './plans.js';
 export * from './legal.js';
 export * from './people.js';
+export * from './scheduling.js';
 export * from './students.js';
 export * from './teachers.js';
 export * from './imports.js';
