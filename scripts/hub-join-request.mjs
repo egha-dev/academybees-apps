@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Create a Family Hub join request through the real API (C-107), for checking the academy's
 // Join requests queue before the hub screens exist (Phase 7P). Local and staging only.
-//   pnpm hub:join-request --academy demo-a --email parent@demo-b.test --password '…' \
+//   pnpm hub:join-request --academy demo-a --email parent@demo-a.test \
 //     --parent "Ravi Kumar" --child "Aarav Sharma" [--phone 9840012345] [--hub http://app.localhost:3000]
+// Locally the demo password is used; elsewhere set HUB_PASSWORD or type it when asked.
 // The account must be able to sign in to the Family Hub (an ACTIVE parent or student somewhere).
 const arg = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -11,13 +12,41 @@ const arg = (name, fallback) => {
 const hub = arg('hub', 'http://app.localhost:3000').replace(/\/+$/, '');
 const academy = arg('academy');
 const email = arg('email');
-const password = arg('password', 'AcademyBees#2026');
+const local = /localhost/.test(hub);
+// Never pass a real password as a flag (shell history): staging reads HUB_PASSWORD or asks.
+const password =
+  arg('password') ?? process.env.HUB_PASSWORD ?? (local ? 'AcademyBees#2026' : await ask());
+
+async function ask() {
+  if (!process.stdin.isTTY) {
+    console.error('Set HUB_PASSWORD, or run in a terminal to be asked for the password.');
+    process.exit(1);
+  }
+  process.stdout.write(`Password for ${arg('email')}: `);
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  let value = '';
+  for await (const chunk of process.stdin) {
+    for (const ch of chunk.toString('utf8')) {
+      if (ch === '\r' || ch === '\n') {
+        process.stdin.setRawMode(false);
+        process.stdin.pause();
+        process.stdout.write('\n');
+        return value;
+      }
+      if (ch === '\u0003') process.exit(130);
+      if (ch === '\u007f') value = value.slice(0, -1);
+      else value += ch;
+    }
+  }
+  return value;
+}
 const parentName = arg('parent', 'Join Request Parent');
 const childName = arg('child');
 const phone = arg('phone');
 if (!academy || !email || !childName) {
   console.error(
-    'Usage: pnpm hub:join-request --academy <slug> --email <hub account> --child <name> [--parent <name>] [--phone <mobile>] [--password <pw>] [--hub <origin>]',
+    'Usage: pnpm hub:join-request --academy <slug> --email <hub account> --child <name> [--parent <name>] [--phone <mobile>] [--hub <origin>]',
   );
   process.exit(1);
 }
