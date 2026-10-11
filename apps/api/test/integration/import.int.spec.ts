@@ -316,6 +316,74 @@ describe('student import', () => {
     expect(rows[1]!.parent_id).toBe(plainParent);
   });
 
+  it('imports the synthetic pilot register (messy formats), then finds every student in the Excel copy', async () => {
+    // e2e/fixtures/pilot-register.mjs: register-style headers, mixed date and mobile formats,
+    // blank rows, duplicates written differently, five problem rows, Tamil and Hindi names.
+    const fixture = (await import('../../../../e2e/fixtures/pilot-register.mjs')) as {
+      csv: () => string;
+      xlsx: () => Promise<Buffer>;
+      EXPECTED: { rows: number; valid: number; problems: number };
+    };
+    const t = await createTenantFixture(urls.migrator, {
+      name: 'Pilot Register Academy',
+      plan: 'pro',
+    });
+    const s = await signIn(t, t.user.email);
+    const first = await upload(s, fixture.csv(), 'pilot-register.csv');
+    expect(first.status, JSON.stringify(first.body)).toBe(201);
+    const preview = await until(s, first.body.id, ['PREVIEW_READY', 'FAILED']);
+    expect(preview).toMatchObject({
+      status: 'PREVIEW_READY',
+      totalRows: fixture.EXPECTED.rows,
+      validRows: fixture.EXPECTED.valid,
+      errorRows: fixture.EXPECTED.problems,
+      duplicateRows: 0,
+    });
+    expect(preview.mapping).toMatchObject({
+      fullName: 1,
+      dateOfBirth: 2,
+      gender: 3,
+      grade: 4,
+      schoolName: 5,
+      parentName: 6,
+      parentRelationship: 7,
+      parentPhone: 8,
+      parentEmail: 9,
+    });
+    await send(s, 'post', `/students/import/${preview.id}/commit`, { version: preview.version });
+    const done = await until(s, preview.id, ['COMPLETED', 'FAILED']);
+    expect(done).toMatchObject({ status: 'COMPLETED', createdRows: fixture.EXPECTED.valid });
+    // Siblings share one parent; "098400…", "9198…" and "+91 98…" are the same number.
+    const { rows: shared } = await su.query<{ n: number }>(
+      `SELECT count(DISTINCT ps.parent_id)::int AS n FROM parent_student ps
+         JOIN student s ON s.id = ps.student_id
+        WHERE s.tenant_id = $1 AND s.full_name IN ('Aditi Ramesh', 'Ananya Krishnan')`,
+      [t.id],
+    );
+    expect(shared[0]!.n).toBe(1);
+    const { rows: phones } = await su.query<{ phone: string }>(
+      `SELECT DISTINCT p.phone FROM parent p WHERE p.tenant_id = $1 AND p.phone NOT LIKE '+91%'`,
+      [t.id],
+    );
+    expect(phones).toEqual([]);
+
+    const again = await upload(
+      s,
+      await fixture.xlsx(),
+      'pilot-register.xlsx',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    expect(again.status, JSON.stringify(again.body)).toBe(201);
+    const second = await until(s, again.body.id, ['PREVIEW_READY', 'FAILED']);
+    expect(second).toMatchObject({
+      status: 'PREVIEW_READY',
+      totalRows: fixture.EXPECTED.rows,
+      validRows: 0,
+      duplicateRows: fixture.EXPECTED.valid,
+      errorRows: fixture.EXPECTED.problems,
+    });
+  });
+
   it('refuses what isn’t a spreadsheet, empty files and files over 5 MB', async () => {
     const binary = await upload(owner, Buffer.from([0x7f, 0x45, 0x4c, 0x46, 0, 0, 1]), 'x.csv');
     expect(binary.status).toBe(400);

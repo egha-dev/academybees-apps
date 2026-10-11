@@ -1,0 +1,54 @@
+S.No,Name of the Student,D.O.B,Gender,Std,School,Father/Mother Name,Relation,Mobile No.,Email ID
+1,Aditi Ramesh,14/03/2014,F,5,DAV Public School,Ramesh Krishnan,Father,98401 22311,
+2,Arjun Venkat,02-11-2013,M,6,Chettinad Vidyashram,Venkatesh S,Father,+91 98402 33422,venkat.s@example.in
+3,Meenakshi Sundaram,2015-07-21,Female,4,PSBB,Sundaram P,father,094440 55533,
+4,Rohan Gupta,09.01.2012,Male,7,Kendriya Vidyalaya,Sunita Gupta,Mother,919884066644,sunita.gupta@example.in
+5,Kavya Nair,5-Jun-2015,F,4,Bhavan Vidyalaya,Lakshmi Nair,Mother,(+91) 97910-77755,
+6,Ishaan Reddy,23/08/2013,M,6,Vels Global,Srinivas Reddy,Dad,9791088866,srinivas.r@example.in
+7,Saanvi Iyer,17 April 2014,Girl,5,Sishya,Gayathri Iyer,Amma,98843 99977,
+8,Vihaan Malhotra,30/12/2012,Boy,7,DPS,Neha Malhotra,Mother,+919600111222,neha.m@example.in
+9,Ananya Krishnan,11/02/2016,F,3,Vidya Mandir,Ramesh Krishnan,Father,98401 22311,
+10,Pranav Subramanian,08-05-2014,M,5,PSBB,Subramanian K,Father,9600222333,
+
+11,Diya Chatterjee,19/09/2013,F,6,St. Michael’s,Rupa Chatterjee,Mother,096002 33444,rupa.c@example.in
+12,Aryan Mehta,2012-03-04,M,8,Kendriya Vidyalaya,Hitesh Mehta,Father,+91 96003 44555,
+13,Nila Murugan,25/11/2015,F,4,Govt. Higher Sec. School,Murugan R,Appa,9600455666,
+14,Kabir Thomas,01/01/2014,M,5,Don Bosco,Mary Thomas,Mother,98410 56677,mary.thomas@example.in
+15,Tanvi Joshi,13-Oct-2013,F,6,DAV Public School,Prakash Joshi,Father,9841067788,
+16,Aditi Ramesh,2014-03-14,F,5,DAV Public School,Ramesh Krishnan,Father,+91 98401 22311,
+17,Siddharth Rao,27/06/2012,M,7,Sishya,Anitha Rao,Mother,98410 78899,
+18,Lakshmi Priya,06/04/2015,F,4,Bhavan Vidyalaya,Senthil Kumar,Father,919841089900,senthil.k@example.in
+19,Mohammed Faiz,14/02/2013,M,6,Crescent School,Abdul Rahman,Father,9841090011,
+20,Zara Sheikh,22/07/2014,F,5,Crescent School,Abdul Rahman,Father,9841090011,
+21,Harini Balaji,03.03.2016,F,3,Vidya Mandir,Balaji N,Father,+91 99400 11223,
+22,Adithya Varma,18/10/2012,M,8,Chettinad Vidyashram,Varma K,Guardian,9940022334,
+23,Riya Desai,09/09/2014,F,5,DPS,Pooja Desai,Mother,99400 33445,pooja.desai@example.in
+24,Karthik Raja,29/01/2013,M,6,Velammal,Raja M,Father,099400 44556,
+25,Sneha Pillai,15-Aug-2014,F,5,Bhavan Vidyalaya,Anil Pillai,Father,9940055667,
+
+26,Yash Agarwal,21/12/2011,M,8,Kendriya Vidyalaya,Rekha Agarwal,Mother,99400 66778,
+27,Divya Shankar,07/07/2015,F,4,PSBB,Shankar V,Father,+919940077889,shankar.v@example.in
+28,Rahul Dsouza,12/05/2013,M,6,Don Bosco,Grace Dsouza,Mother,9940088990,
+29,Pooja Kumari,28/02/2014,F,5,Govt. Higher Sec. School,Ravi Kumar,Father,99401 00112,
+30,Aakash Singh,16-03-2012,M,7,DAV Public School,Manpreet Singh,Father,8939011223,
+31,Swetha Natarajan,04/11/2015,F,4,Sishya,Natarajan G,Father,89390 22334,natarajan.g@example.in
+32,Bhavya Srinivasan,12/03/2014,F,5,PSBB,Srinivasan T,Father,98400 1234,
+33,Charan Teja,31/02/2013,M,6,Vels Global,Teja Rao,Father,9884012121,
+34,Esha Bhatt,01/01/2031,F,1,DPS,Mehul Bhatt,Father,9884023232,
+35,Kavya Nair,05/06/2015,F,4,Bhavan Vidyalaya,Lakshmi Nair,Mother,9791077755,
+36,Mohammed Faiz,14-Feb-2013,M,6,Crescent School,Abdul Rahman,Father,098410 90011,
+37,Gautham Menon,26/06/2013,M,6,Vels Global,Sreeja Menon,Mother,+91 89390 33445,
+38,Fathima Begum,10/10/2014,F,5,Crescent School,Shabana Begum,Mother,8939044556,
+39,Nikhil Bose,31/08/2012,M,7,St. Michael’s,Arup Bose,Father,089390 55667,
+40,Shreya Kulkarni,19-Jan-2016,F,3,Vidya Mandir,Vinay Kulkarni,Father,8939066778,
+41,Dhruv Saxena,05/05/2013,M,6,DPS,Kavita Saxena,Mother,89390 77889,kavita.s@example.in
+
+42,Janani Ravi,24/12/2014,F,5,Velammal,Ravi Chandran,Father,919939088990,
+43,Arnav Kapoor,13/04/2012,M,8,Kendriya Vidyalaya,Ritu Kapoor,Mother,7550111223,
+44,Preethi Selvam,08/08/2015,F,4,Govt. Higher Sec. School,Selvam A,Father,75501 22334,
+45,அருண் குமார்,20/02/2014,M,5,Govt. Higher Sec. School,குமார் எஸ்,Father,7550133445,
+46,अनन्या शर्मा,11/11/2013,F,6,Kendriya Vidyalaya,सुनील शर्मा,Father,+91 75501 44556,
+47,,14/05/2014,M,5,Don Bosco,Joseph Antony,Father,9884034343,
+48,Gokul Prasad,17/09/2013,M,6,Sishya,Prasad R,Father,9884045454,prasad.r@gmail
+
+
