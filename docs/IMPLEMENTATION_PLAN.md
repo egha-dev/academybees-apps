@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-10 · Current phase: **Phase 4 — Students + Parents + Teachers (🟨 in progress since 2026-10-10)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`)
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-11 · Current phase: **Phase 5 — Courses + Batches + Timetable (next; starts with P5-1)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`) · Phase 4 ✅ 2026-10-11 (tag `phase-4`)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -15,7 +15,7 @@
 | 1 | Multi-Tenant + Wildcard Domain | ✅ 2026-10-02 | Default branch per tenant; `app.` Family Hub host reserved + classified (G-31) | ADR-003/004/005/039, C-07 |
 | 2 | Authentication + RBAC | ✅ 2026-10-07 | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
 | 3 | Academy Provisioning + Onboarding | ✅ 2026-10-09 | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, C-85…C-98, ADR-028/034 |
-| 4 | Students + Parents + Teachers | 🟨 | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
+| 4 | Students + Parents + Teachers | ✅ 2026-10-11 | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
 | 5 | Courses + Batches + Timetable | ⬜ | Owner Today v1; terminology; holidays (G-03); transfer (G-27) | ADR-024/029/037 |
 | 6 | Attendance + Offline Sync | ⬜ | Teacher PWA core; outbox → in-app notifications; teacher nudge (G-16) | ADR-016/017, C-04, C-06 |
 | 7 | Finance | ⬜ | Onboarding fee step; fee-reminder intents (in-app); **all payment methods enabled without a gateway (G-30)**; gateway-ready provider layer + simulator (G-01); fee rules (G-04); opening balances (G-02); share receipts (G-18) | ADR-010/018/033/038, C-08, C-18, C-19, C-24, C-26 |
@@ -567,7 +567,7 @@ Phase 2 is **not** started.
 
 **Goal.** Core people and relationships are managed through contextual workspaces, not CRUD tables.
 **Refs.** PRD v2 §17, v3 §9; UX §9–11.4, §24; ARCHITECTURE §7, §8.
-**Status.** 🟨 started 2026-10-10 (`phase-4-start` = `7b89578`). Approved slice plan: [`docs/plans/phase-4.md`](plans/phase-4.md) (decisions C-99…C-111).
+**Status.** ✅ 2026-10-11 (tag `phase-4`; started 2026-10-10, `phase-4-start` = `7b89578`). Approved slice plan: [`docs/plans/phase-4.md`](plans/phase-4.md) (decisions C-99…C-111).
 
 **Slices (each = one PR, ADR-041)**
 
@@ -579,7 +579,11 @@ Phase 2 is **not** started.
 | S4 | `p4/teachers-search` | 4.13 Teachers API + workspace, 4.14 `/search` + command palette (50K benchmark) | ✅ #70 |
 | S5 | `p4/import` | 4.15 private media bucket, 4.16 import pipeline (C-100, C-101), 4.17 import UI + onboarding entry | ✅ #71 |
 | S6 | `p4/family-link` | 4.18 parent invites + activation guard (C-102), 4.19 privacy notice, 4.20 Settings → Parent app (Join QR), 4.21 link API + Join requests (C-107) (flag `p4-family-link`) | ✅ #72 |
-| S7 | `p4/journey-e2e` | 4.22 journey E2E, 4.23 flag removal (`p4-people`, `p4-family-link`) + docs; photo metadata stripping (C-109) | 🟨 PR |
+| S7 | `p4/journey-e2e` | 4.22 journey E2E, 4.23 flag removal (`p4-people`, `p4-family-link`) + docs; photo metadata stripping (C-109) | ✅ #73 |
+| Gate | `p4/gate-analytics` | P4-3 fixes: import analytics events, `hub:join-request` password prompt | ✅ #74 |
+| Review | `p4/review-fixes` | P4-4 fixes: H1, M1, M3–M6, L1, L2, L4–L6, L9 (C-110) | ✅ #75 |
+| Fixture | `p4/pilot-fixture` | Synthetic pilot register; 0/91 mobiles, month-name dates, register headers (C-111) | ✅ #76 |
+| Acceptance | `p4/import-unavailable` | Clear "not available" messages instead of "try again" on 503 (PO request) | ✅ #77 |
 
 **Scope**
 - Students: list (search with `pg_trgm`, filters: status, batch, course; keyset pagination, virtualised), **Add Student** drawer (minimum fields, optional parent, optional batch), **Student 360** (Overview, Activity tabs now; Attendance/Fees/Learning/Progress/Communication/Documents tabs appear as their phases land — no placeholders), status changes (ON_HOLD, COMPLETED, LEFT) with reason; archive.
@@ -598,6 +602,72 @@ Phase 2 is **not** started.
 **Tests.** Join/link: code sent only to identifiers the academy already holds; uniform responses (no enumeration); rate limits; approved join request links only the chosen students. Import: 500 rows with 20 invalid → 480 created, 20 reported; re-upload corrected file → no duplicates; plan limit respected. Medical notes hidden from receptionist/accountant and reads audited. Parent activation impossible without consent record. Scope policies (receptionist create/update, accountant read, teacher denied until assignments exist in Ph 5, parent denied); IDOR on `/students/:id` across tenants and across scopes; parent-child many-to-many; dedupe; archiving preserves history; search latency with 50K seeded students < 300 ms p95 (local benchmark).
 
 **Exit gate.** Common gate + E2E: add student with two parents → Student 360 shows both → parent invite email sent.
+
+**Exit notes (2026-10-11 — Phase 4 ✅)**
+
+*PO acceptance.* **Accepted by the Product Owner on 2026-10-11** after the staging walkthrough. The walkthrough covered: synthetic register imported; two parents and a sibling; Student 360 with the medical note hidden from the receptionist; parent invite email; privacy notice; Ctrl/⌘+K search; archive/restore; Join QR poster and a join request approved; real phones.
+
+*Delivered.*
+- **Students** (UX §11.3–11.4, G-05, G-26, G-27):
+  - Students list with trigram search, filters, keyset "load more" and a virtualised list.
+  - Add Student, with an optional parent and "Use existing" for a matching phone or email (C-106).
+  - Student 360: Overview, Activity, parents, custom fields, enrolments; status changes with a reason and consequences; archive/restore within 90 days with Undo (C-108).
+- **Medical notes:** owner, admin and assigned teacher only; hidden until asked; every read audited (C-90, C-104).
+- **Consent** (G-06, ADR-034):
+  - Staff-recorded consent and its history (C-103).
+  - The academy privacy notice: public `/privacy`, linked from sign-in, and Settings → Privacy notice.
+  - The activation guard: a parent becomes ACTIVE only with their own Family Hub consent for every linked child (C-102).
+- **Teachers:** list and profile; name-only, invite-as-member or link an existing member.
+- **Search:** `/search` and the command palette, scope-aware; 95% of searches 150 ms on 50,000 students (C-105).
+- **Import** (G-02, ADR-036, C-100, C-101): CSV/XLSX through the private bucket; mapping, preview with problems in words, commit in chunks with no duplicates, problem CSV; also in onboarding.
+- **Photos:** private bucket, links valid at most 5 minutes, every view audited, photo consent required; metadata stripped before storing (C-109).
+- **Family Hub, academy side** (G-31, ADR-039, C-107):
+  - Parent invites from Student 360 (30-day link).
+  - Hub link API: a code goes only to an email the academy holds; consent is taken at verify; responses are the same whatever the academy knows; rate limits.
+  - Join requests queue with approve/reject.
+  - Settings → Parent app: printable Join QR poster.
+  - `pnpm hub:join-request` for local/staging.
+- **Platform pieces:**
+  - Shell diet: shell pages down from 196–199 to about 182 KB (C-99).
+  - Capabilities `student.health.*` and `student.import`, synced to existing academies (C-104).
+  - `pg_trgm` and `ActivityEvent`; private media methods; 30 seeded demo students; `pnpm db:seed:perf` / `pnpm perf:search`.
+
+*Pinned toolchain.* Unchanged, plus (pnpm catalog):
+- `@tanstack/react-virtual` 3.14.14;
+- `papaparse` 5.5.2 (`@types/papaparse` 5.5.2);
+- `exceljs` 4.4.0;
+- `qrcode` 1.5.4 (`@types/qrcode` 1.5.6).
+
+*Deviations, each recorded before or while coding.* C-99…C-111. The main ones:
+- **C-100:** imports run as a BullMQ job inside the API, not the worker.
+- **C-101:** `exceljs` instead of SheetJS.
+- **C-102 / C-103:** invite now, accept and consent in the hub in 7P; staff-recorded consent never activates a parent.
+- **C-107:** link codes go by email only until Phase 10.
+- **C-109:** photo metadata stripping was added late; S5 had missed it.
+- **C-110:** review items deferred, with reasons.
+- **C-111:** synthetic register in place of the pilot's.
+- **Not emitted:** a `search.used` analytics event (noted on C-105).
+
+*Known limitations.*
+- **A real, anonymised register from a pilot academy (A10) is still needed before 7P** (C-111). The same `import.int.spec.ts` / `import.spec.ts` steps then run on it.
+- **Release-blocking for 7P (C-110, M2):** every hub/LINKED read must require the parent's latest Family Hub consent for that child before any hub read ships.
+- The hub's own screens (accept, consent, join, children) are 7P; phone codes are Phase 10; the parent merge tool and exports are Phase 12; erasure and the import-file sweep are Phase 15.
+- Fee consequences of status changes and opening balances are Phase 7; batches in the palette, transfers and the teacher's student list are Phases 5–6.
+- Consent and privacy-notice wording is a draft until legal review (needed before 7P).
+- Route budget: people pages are 185.7–189.4 KB of 200 KB, and `/onboarding/[step]` is 194.2 KB.
+
+*Release flags (ADR-041).*
+- `p4-people` (added in S3) and `p4-family-link` (added in S6): **both removed in S7**.
+- Still defined: `p2-role-homes` (PO, remove Phase 5/6, expires 2027-03-31) and `p1-hub-placeholder` (PO, remove 7P, expires 2027-06-30).
+
+*Gate and review.*
+- **P4-3:** all checks passed. CI E2E: 360 passed, 0 failed. Integration: 974 API, 339 database, 9 worker. The import analytics gap was fixed in #74.
+- **P4-4 (independent review):** H1 (the hub could reactivate a disabled staff membership) and M1, M3–M6 fixed in #75, with 6 new tests. M2, L3, L7, L8 and L10 are deferred or kept in C-110.
+
+*Process notes.*
+- **Staging variables:** a new Railway variable reaches the API only through a new deployment after it is applied (the 503 on import, 2026-10-11).
+- **Local E2E:** Playwright reuses servers already on its ports. Stop `pnpm dev` before a local `pnpm e2e`, or the run tests the dev build.
+- **Merging:** never `gh pr merge --auto` (C-43).
 
 ---
 
@@ -894,4 +964,4 @@ P7 payment provider layer + simulator (ADR-038) ──────────�
 - Pre-Phase-0 blockers for the PO: toolchain in WSL2 (OD-20), paid GitHub plan for rulesets (OD-19), staging accounts (OD-03).
 
 ### Phases 0 and 1
-- Exit notes live in each phase's section above (Phase 0 ✅ 2026-10-01, Phase 1 ✅ 2026-10-02).
+- Exit notes live in each phase's section above (Phase 0 ✅ 2026-10-01, Phase 1 ✅ 2026-10-02, Phase 2 ✅ 2026-10-07, Phase 3 ✅ 2026-10-09, Phase 4 ✅ 2026-10-11).
