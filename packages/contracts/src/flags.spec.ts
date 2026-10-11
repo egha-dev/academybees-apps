@@ -19,18 +19,14 @@ describe('feature flag registry', () => {
   it('lists expired flags', () => {
     expect(expiredFeatureFlags('2026-10-01')).toEqual([]);
     expect(expiredFeatureFlags('2027-01-31')).toEqual([]);
-    expect(expiredFeatureFlags('2027-02-01')).toEqual(['p4-people', 'p4-family-link']);
-    expect(expiredFeatureFlags('2027-04-01')).toEqual([
-      'p2-role-homes',
-      'p4-people',
-      'p4-family-link',
-    ]);
+    expect(expiredFeatureFlags('2027-04-01')).toEqual(['p2-role-homes']);
   });
 
   it('recognises registered keys only', () => {
     expect(isFeatureFlagKey('p2-role-homes')).toBe(true);
     expect(isFeatureFlagKey('p1-tenant-home')).toBe(false);
     expect(isFeatureFlagKey('p0-flag-probe')).toBe(false);
+    expect(isFeatureFlagKey('p4-people')).toBe(false);
     expect(isFeatureFlagKey('constructor')).toBe(false);
   });
 });

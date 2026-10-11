@@ -18,7 +18,6 @@ import { stepLabels } from '@/components/onboarding/labels.server';
 import { StepFormLazy } from '@/components/onboarding/onboarding-lazy';
 import { loadOnboarding, onboardingOwner } from '@/components/onboarding/owner.server';
 import { holds } from '@/components/shell/signed-in.server';
-import { peopleEnabled } from '@/lib/flags.server';
 import { ReadyActions } from '@/components/onboarding/ready-actions';
 import { stepName } from '@/components/onboarding/step-name';
 import { StepProgress } from '@/components/onboarding/step-progress';
@@ -55,15 +54,14 @@ export default async function StepPage({ params }: { params: Promise<{ step: str
   const step: OnboardingStep = parsed.data;
   const owner = await onboardingOwner();
   if (owner.state !== 'signed-in') return null;
-  const [state, t, { context }, peopleT, people] = await Promise.all([
+  const [state, t, { context }, peopleT] = await Promise.all([
     loadOnboarding(),
     getTranslations('onboarding'),
     hostContext(),
     getTranslations('people'),
-    peopleEnabled(),
   ]);
-  // G-02: import offered beside the quick-add form (release flag `p4-people`).
-  const importAvailable = people && holds(owner.me, 'student.import');
+  // G-02: import offered beside the quick-add form.
+  const importAvailable = holds(owner.me, 'student.import');
   // Finished: the academy's home, never `/` (which a stale gate could send back here, review H1).
   if (state.completed) redirect(homeFor(owner.me));
   const academy = academyName(context) ?? '';

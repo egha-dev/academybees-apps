@@ -5,14 +5,12 @@ import { EmptyState, PermissionState } from '@academybee/ui/components/feedback'
 import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getMessages, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 
 import { TeacherActionsLazy } from '@/components/people/teachers-lazy';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { peopleEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 
 export const dynamic = 'force-dynamic';
@@ -45,18 +43,15 @@ export default async function TeacherPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string; cursor?: string }>;
 }) {
-  const [{ me, academy }, enabled, { id }, query, { context }, t, peopleT, messages] =
-    await Promise.all([
-      signedInMember({ experience: 'manage' }),
-      peopleEnabled(),
-      params,
-      searchParams,
-      hostContext(),
-      getTranslations('people.teachers'),
-      getTranslations('people'),
-      getMessages(),
-    ]);
-  if (!enabled) notFound();
+  const [{ me, academy }, { id }, query, { context }, t, peopleT, messages] = await Promise.all([
+    signedInMember({ experience: 'manage' }),
+    params,
+    searchParams,
+    hostContext(),
+    getTranslations('people.teachers'),
+    getTranslations('people'),
+    getMessages(),
+  ]);
   if (!holds(me, 'teacher.read'))
     return (
       <PermissionState title={t('permission.title')} body={t('permission.body', { academy })} />

@@ -9,14 +9,12 @@ import { PermissionState } from '@academybee/ui/components/feedback';
 import { Stack } from '@academybee/ui/components/layout';
 import { PlainButton } from '@academybee/ui/components/plain-button';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getMessages, getTranslations } from 'next-intl/server';
 
 import { AddStudentLazy, StudentsBrowserLazy } from '@/components/people/students-lazy';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { peopleEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { homeFor } from '@/lib/session.server';
 
@@ -39,16 +37,14 @@ export default async function StudentsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [{ me, academy }, enabled, params, { context }, t, shellT, messages] = await Promise.all([
+  const [{ me, academy }, params, { context }, t, shellT, messages] = await Promise.all([
     signedInMember({ experience: 'manage' }),
-    peopleEnabled(),
     searchParams,
     hostContext(),
     getTranslations('people'),
     getTranslations('shell.permission'),
     getMessages(),
   ]);
-  if (!enabled) notFound();
   if (!holds(me, 'student.read'))
     return (
       <PermissionState

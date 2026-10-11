@@ -32,10 +32,6 @@ export async function navigationFor(
   me: MeResponse,
   experience: Experience,
   roleHomes: boolean,
-  /** Phase 4 people workspaces (release flag `p4-people`). */
-  people = false,
-  /** Phase 4 Family Hub, academy side (release flag `p4-family-link`). */
-  family = false,
 ): Promise<{ groups: ShellNavGroup[]; bottom: ShellNavItem[] }> {
   const t = await getTranslations('shell.nav');
   const can = (capability: string) =>
@@ -63,40 +59,38 @@ export async function navigationFor(
     ? [{ key: 'today', label: t('today'), href: '/today', icon: 'today' }]
     : [];
   // RUN (UX §8): the people workspaces, phase by phase.
-  const run: ShellNavItem[] = people
-    ? [
-        ...(can('student.read')
-          ? [
-              {
-                key: 'students',
-                label: t('students'),
-                href: '/students',
-                icon: 'students',
-              } as const,
-            ]
-          : []),
-        ...(can('teacher.read')
-          ? [
-              {
-                key: 'teachers',
-                label: t('teachers'),
-                href: '/teachers',
-                icon: 'teachers',
-              } as const,
-            ]
-          : []),
-        ...(family && can('parent.manage')
-          ? [
-              {
-                key: 'joinRequests',
-                label: t('joinRequests'),
-                href: '/join-requests',
-                icon: 'team',
-              } as const,
-            ]
-          : []),
-      ]
-    : [];
+  const run: ShellNavItem[] = [
+    ...(can('student.read')
+      ? [
+          {
+            key: 'students',
+            label: t('students'),
+            href: '/students',
+            icon: 'students',
+          } as const,
+        ]
+      : []),
+    ...(can('teacher.read')
+      ? [
+          {
+            key: 'teachers',
+            label: t('teachers'),
+            href: '/teachers',
+            icon: 'teachers',
+          } as const,
+        ]
+      : []),
+    ...(can('parent.manage')
+      ? [
+          {
+            key: 'joinRequests',
+            label: t('joinRequests'),
+            href: '/join-requests',
+            icon: 'team',
+          } as const,
+        ]
+      : []),
+  ];
   const academy: ShellNavItem[] = [
     ...(can('team.read')
       ? [{ key: 'team', label: t('team'), href: '/settings/team', icon: 'team' } as const]

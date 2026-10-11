@@ -14,7 +14,7 @@ import { GlobalAdd } from '@/components/shell/global-add';
 import { experienceFor, navigationFor } from '@/components/shell/navigation.server';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { apiServerGet } from '@/lib/api.server';
-import { familyLinkEnabled, peopleEnabled, roleHomesEnabled } from '@/lib/flags.server';
+import { roleHomesEnabled } from '@/lib/flags.server';
 import {
   academyColor,
   academyLogo,
@@ -73,13 +73,8 @@ export default async function SignedInLayout({ children }: { children: ReactNode
     redirect(`/legal?next=${encodeURIComponent(path)}`);
 
   const experience = experienceFor(path, me);
-  const [roleHomes, people, family, guard] = await Promise.all([
-    roleHomesEnabled(),
-    peopleEnabled(),
-    familyLinkEnabled(),
-    sessionGuardLabels(),
-  ]);
-  const nav = await navigationFor(me, experience, roleHomes, people, family);
+  const [roleHomes, guard] = await Promise.all([roleHomesEnabled(), sessionGuardLabels()]);
+  const nav = await navigationFor(me, experience, roleHomes);
   const caps = me.academy.capabilities as Record<string, string | undefined>;
   const messages = await getMessages();
   return (
@@ -90,7 +85,7 @@ export default async function SignedInLayout({ children }: { children: ReactNode
       bottom={nav.bottom}
       topbarActions={
         <>
-          {experience === 'manage' && people && (
+          {experience === 'manage' && (
             <>
               <PaletteTrigger
                 labels={messages.people.palette}

@@ -11,7 +11,6 @@ import { EmptyState, PermissionState } from '@academybee/ui/components/feedback'
 import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getMessages, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 
@@ -26,7 +25,6 @@ import type { PeopleErrorLabels } from '@/components/people/errors';
 import { STATUS_TONE } from '@/components/people/status';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { familyLinkEnabled, peopleEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 
 export const dynamic = 'force-dynamic';
@@ -80,18 +78,14 @@ export default async function StudentPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string; cursor?: string }>;
 }) {
-  const [{ me, academy }, enabled, familyLink, { id }, query, { context }, t, messages] =
-    await Promise.all([
-      signedInMember({ experience: 'manage' }),
-      peopleEnabled(),
-      familyLinkEnabled(),
-      params,
-      searchParams,
-      hostContext(),
-      getTranslations('people'),
-      getMessages(),
-    ]);
-  if (!enabled) notFound();
+  const [{ me, academy }, { id }, query, { context }, t, messages] = await Promise.all([
+    signedInMember({ experience: 'manage' }),
+    params,
+    searchParams,
+    hostContext(),
+    getTranslations('people'),
+    getMessages(),
+  ]);
   if (!holds(me, 'student.read'))
     return (
       <PermissionState
@@ -259,7 +253,7 @@ export default async function StudentPage({
           date={date}
           can={can}
           errorLabels={errorLabels}
-          familyLink={familyLink && holds(me, 'parent.manage')}
+          familyLink={holds(me, 'parent.manage')}
         />
       )}
     </Stack>

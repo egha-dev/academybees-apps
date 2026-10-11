@@ -5,14 +5,12 @@ import { EmptyState, PermissionState } from '@academybee/ui/components/feedback'
 import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getMessages, getTranslations } from 'next-intl/server';
 
 import { JoinRequestActionsLazy } from '@/components/people/join-requests-lazy';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { familyLinkEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { homeFor } from '@/lib/session.server';
 
@@ -27,15 +25,13 @@ const TONE = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'neutral' } as
 
 /** Join requests (G-31 §3): parents who asked from the Family Hub; approve by linking a child. */
 export default async function JoinRequestsPage() {
-  const [{ me, academy }, enabled, { context }, t, shellT, messages] = await Promise.all([
+  const [{ me, academy }, { context }, t, shellT, messages] = await Promise.all([
     signedInMember({ experience: 'manage' }),
-    familyLinkEnabled(),
     hostContext(),
     getTranslations('people.joinRequests'),
     getTranslations('shell.permission'),
     getMessages(),
   ]);
-  if (!enabled) notFound();
   if (!holds(me, 'parent.manage'))
     return (
       <PermissionState

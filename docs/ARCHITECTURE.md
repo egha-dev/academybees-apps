@@ -283,6 +283,12 @@ Parent opens app.academybees.com ──▶ HUB session (user-bound, no tid)
 - Academy sites show a "Parents: open your AcademyBee app" entry that deep-links to `app.academybees.com/a/<slug>`.
 - `HubChildGroup` stores parent-private groupings of the same child across academies; never visible to tenants.
 
+*As built (Phase 4, academy side; C-102, C-103, C-107):*
+- **Hub routes** (hub host, HUB session): `POST /hub/academies/:slug/link/start` (always 202 `sent_if_known`; a 6-digit code, 10 minutes, 5 tries, goes **only** to an email the academy already holds; phone codes arrive in Phase 10), `POST …/link/verify` (code + consent purposes, `service` required) and `POST …/join-requests` (always 202). Unknown, closed and real academies answer the same. Each academy read runs in `TenantContext.run(tenantId)` with the tenant-bound client; limits per user, IP and academy.
+- **Tables:** `AcademyLinkAttempt` carries `tenant_id` but is **user-owned** (RLS `user_id = app.user_id`, classed user-owned in `@academybee/database`), so an academy can never read who tried to link. `JoinRequest` is tenant-owned, with no DELETE.
+- **Activation guard:** a parent membership becomes ACTIVE only in `ParentAccessService.activate`, and only when the latest consent for every linked child is a `FAMILY_HUB` GRANT including `service`. Staff-recorded (paper) consent never activates. Verify activates in the same step because it carries the consent. Join approval and invite leave the membership INVITED until the parent consents in the hub (7P).
+- **Academy screens:** parent invites from Student 360 (30-day hub link), the Join requests queue, Settings → Parent app (A4 poster with a server-rendered QR of `app.<root>/join/<slug>`) and Privacy notice, the public `/privacy` page. The hub screens themselves (accept, consent, join) are Phase 7P.
+
 ### 5.5 Per-tenant PWA identity
 
 `app/manifest.ts` is dynamic: name, short_name, icons and theme colour come from `TenantBranding`. *As built (Phase 1):*
@@ -414,6 +420,8 @@ Policies are written once per resource in `apps/api/src/modules/<m>/<m>.policy.t
 
 Custom tenant roles are a later capability (`role.manage`); the model supports them now.
 
+*As built (Phase 4, C-104):* `student.health.read` (owner TENANT, admin BRANCH, teacher ASSIGNED; every read audited) and `student.health.manage` (owner, admin) guard medical notes; `student.import` (owner, admin) guards imports; consent recording and Join requests use `parent.manage`; custom fields use `academy.settings.manage`. `syncSystemRoleGrants()` adds new system grants to every existing academy at deploy (add-only). People scopes live in `modules/people/people.policy.ts` (TENANT / BRANCH / ASSIGNED via an active enrolment in a batch the member's Teacher teaches / LINKED / SELF), used for both list `where` and single records; out of scope is `404`.
+
 ---
 
 ## 8. Data architecture
@@ -461,6 +469,7 @@ CREATE POLICY tenant_isolation ON student
 | legal & consent | `LegalDocument` (variants per locale), `LegalAcceptance` (records the locale shown), `ConsentRecord` (ADR-034) | 3 / 4 |
 | i18n | `User.preferredLocale`, `Parent.preferredLocale`, `TenantSettings.i18n`; locale-keyed variants on `MessageTemplate`, `Announcement`, `HelpArticle`, public page; `TemplateRegistration` (channel, template, locale, provider id, status) (ADR-040) | 0 / 2 / 3 / 10 / L |
 | import | `ImportJob` (ADR-036) | 4 |
+| *as built Ph 4* | `ActivityEvent` (no sensitive fields), `ImportJob` (C-100, C-101), `JoinRequest`, `AcademyLinkAttempt` (user-owned), `Teacher.subjects`, `Invitation.parentId`; `pg_trgm` GIN indexes on student/parent/teacher names (C-105) | 4 |
 | people | `Student` (G-05 fields, `customFields` JSONB validated against `CustomFieldDefinition`), `Parent`, `ParentStudent`, `Teacher`, `CustomFieldDefinition`, `ActivityEvent` | 3 (min) / 4 |
 | scheduling | `Course`, `CourseLevel`, `Batch`, `BatchTeacher`, `BatchEnrolment`, `ScheduleRule`, `ClassSession`, `Holiday` (ADR-037) | 3 (min) / 5 |
 | attendance | `Attendance`, `SyncOperation`, `AttendanceDailySummary`, `StudentMonthlyAttendance` | 6 |
@@ -894,6 +903,11 @@ domain event → NotificationIntent (type, tenant, subjects, data, dedupeKey)
 - **Public bucket.** It holds **public branding only** and is served from `media.<root>`. Private media gets a separate bucket with no public domain in Phase 4, read through presigned GETs of 5 minutes or less.
 - **Uploads.** Branding uploads go **through the API** (raw bytes; size, magic-byte type PNG/JPEG/WebP, dimensions), so there is no presigned PUT and no CORS. No server re-encoding yet: branding images carry no personal data, and EXIF stripping arrives with photos in Phase 4.
 - **Keys and metadata.** Keys are `t/<tenantId>/branding/<uuid>.<ext>`, immutable. `MediaFile` holds the metadata, and a database check allows only `branding.*` to be public.
+
+*As built (Phase 4, C-97, C-101, C-109):*
+- **Private bucket** (`MEDIA_PRIVATE_BUCKET`, refused if equal to the public one): student photos (`t/<tenantId>/students/<uuid>.<ext>`) and import files. Read only through presigned GETs of 300 s after a permission and scope check; every photo view is audited.
+- **Photos** need a parent's consent that includes `photos`; withdrawing it removes the photo and its file. Metadata (EXIF/XMP/IPTC, PNG text, WebP EXIF/XMP) is stripped by the API before storing, and the browser first redraws the photo upright at ≤ 800 px.
+- **Import files** are deleted on commit; uncommitted ones are purged after 7 days on the academy's next import, with a platform sweep in Phase 15.
 
 ---
 

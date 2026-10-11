@@ -1,13 +1,12 @@
 import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { loadOnboarding, onboardingOwner } from '@/components/onboarding/owner.server';
 import { ImportWorkspace } from '@/components/people/import-page.server';
 import { holds } from '@/components/shell/signed-in.server';
-import { peopleEnabled } from '@/lib/flags.server';
 import { homeFor } from '@/lib/session.server';
 
 export const dynamic = 'force-dynamic';
@@ -27,13 +26,11 @@ export default async function OnboardingImportPage({
 }: {
   searchParams: Promise<{ job?: string }>;
 }) {
-  const [enabled, owner, params, t] = await Promise.all([
-    peopleEnabled(),
+  const [owner, params, t] = await Promise.all([
     onboardingOwner(),
     searchParams,
     getTranslations('people.import'),
   ]);
-  if (!enabled) notFound();
   if (owner.state !== 'signed-in') return null;
   const state = await loadOnboarding();
   if (state.completed) redirect(homeFor(owner.me));

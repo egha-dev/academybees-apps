@@ -1,13 +1,11 @@
 import { PermissionState } from '@academybee/ui/components/feedback';
 import { Box, Stack } from '@academybee/ui/components/layout';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { ImportWorkspace } from '@/components/people/import-page.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
-import { peopleEnabled } from '@/lib/flags.server';
 import { homeFor } from '@/lib/session.server';
 
 export const dynamic = 'force-dynamic';
@@ -23,15 +21,13 @@ export default async function ImportStudentsPage({
 }: {
   searchParams: Promise<{ job?: string }>;
 }) {
-  const [{ me, academy }, enabled, params, t, studentsT, shellT] = await Promise.all([
+  const [{ me, academy }, params, t, studentsT, shellT] = await Promise.all([
     signedInMember({ experience: 'manage' }),
-    peopleEnabled(),
     searchParams,
     getTranslations('people.import'),
     getTranslations('people.students'),
     getTranslations('shell.permission'),
   ]);
-  if (!enabled) notFound();
   if (!holds(me, 'student.import'))
     return (
       <PermissionState

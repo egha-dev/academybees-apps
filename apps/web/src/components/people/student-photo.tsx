@@ -12,6 +12,31 @@ import { api } from '@/lib/api';
 import { useOnline } from '@/lib/use-online';
 
 const SIZE = 72;
+/** Longest side of the stored photo: enough for a profile picture, small on a parent's phone. */
+const MAX_SIDE = 800;
+
+/**
+ * Redraw the picture upright (the browser applies the camera's orientation) at most MAX_SIDE
+ * pixels as a JPEG. The canvas carries no metadata; the API strips it again regardless.
+ * Falls back to the original file when the browser cannot decode it.
+ */
+async function prepare(file: File): Promise<Blob> {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', 0.85),
+    );
+    return blob ?? file;
+  } catch {
+    return file;
+  }
+}
 
 /**
  * The student's photo (G-05, C-97): initials until there is one; the photo itself comes through a
@@ -56,9 +81,13 @@ export function StudentPhoto({
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) return toast(labels.tooLarge, 'error');
     setBusy(true);
-    const res = await api(`/students/${studentId}/photo`, { method: 'PUT', raw: file });
+    const photo = await prepare(file);
+    if (photo.size > 2 * 1024 * 1024) {
+      setBusy(false);
+      return toast(labels.tooLarge, 'error');
+    }
+    const res = await api(`/students/${studentId}/photo`, { method: 'PUT', raw: photo });
     setBusy(false);
     if (!res.ok) {
       const issue = res.error.details?.[0]?.issue;

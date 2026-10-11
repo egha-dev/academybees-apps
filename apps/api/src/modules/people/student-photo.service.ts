@@ -7,6 +7,7 @@ import { AuditService } from '../../core/audit/audit.service.js';
 import type { RequestContext } from '../../core/context/request-context.js';
 import { TENANT_DB } from '../../core/database/database.module.js';
 import { DomainError } from '../../core/errors/domain-error.js';
+import { stripImageMetadata } from '../../core/media/image-metadata.js';
 import { MediaStorage } from '../../core/media/media-storage.js';
 import { scopedWhere } from '../../core/rbac/scope.js';
 import { studentPolicy } from './people.policy.js';
@@ -70,7 +71,9 @@ export class StudentPhotoService {
     const ext =
       image.mimeType === 'image/png' ? 'png' : image.mimeType === 'image/webp' ? 'webp' : 'jpg';
     const key = `t/${student.tenantId}/students/${mediaId}.${ext}`;
-    await this.storage.putPrivate(key, bytes, image.mimeType);
+    // No location, camera or time metadata leaves with a child's photo (G-05, G-06).
+    const clean = stripImageMetadata(bytes, image.mimeType);
+    await this.storage.putPrivate(key, clean, image.mimeType);
     const previous = await this.db.$transaction(async (tx) => {
       await tx.mediaFile.create({
         data: {
@@ -80,7 +83,7 @@ export class StudentPhotoService {
           visibility: 'PRIVATE',
           storageKey: key,
           mimeType: image.mimeType,
-          sizeBytes: bytes.byteLength,
+          sizeBytes: clean.byteLength,
           width: image.width,
           height: image.height,
           createdById: this.cls.get('membership')?.id ?? null,

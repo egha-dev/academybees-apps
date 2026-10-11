@@ -567,7 +567,7 @@ Phase 2 is **not** started.
 
 **Goal.** Core people and relationships are managed through contextual workspaces, not CRUD tables.
 **Refs.** PRD v2 §17, v3 §9; UX §9–11.4, §24; ARCHITECTURE §7, §8.
-**Status.** 🟨 started 2026-10-10 (`phase-4-start` = `7b89578`). Approved slice plan: [`docs/plans/phase-4.md`](plans/phase-4.md) (decisions C-99…C-108).
+**Status.** 🟨 started 2026-10-10 (`phase-4-start` = `7b89578`). Approved slice plan: [`docs/plans/phase-4.md`](plans/phase-4.md) (decisions C-99…C-109).
 
 **Slices (each = one PR, ADR-041)**
 
@@ -578,8 +578,8 @@ Phase 2 is **not** started.
 | S3 | `p4/students-ui` | 4.8 Students list, 4.9 Add Student + Global Add, 4.10 Student 360, 4.11 parent sheet + links, 4.12 Settings → Custom fields (flag `p4-people`) | ✅ #69 |
 | S4 | `p4/teachers-search` | 4.13 Teachers API + workspace, 4.14 `/search` + command palette (50K benchmark) | ✅ #70 |
 | S5 | `p4/import` | 4.15 private media bucket, 4.16 import pipeline (C-100, C-101), 4.17 import UI + onboarding entry | ✅ #71 |
-| S6 | `p4/family-link` | 4.18 parent invites + activation guard (C-102), 4.19 privacy notice, 4.20 Settings → Parent app (Join QR), 4.21 link API + Join requests (C-107) (flag `p4-family-link`) | 🟨 PR |
-| S7 | `p4/journey-e2e` | 4.22 journey E2E, 4.23 flag removal + docs | ⬜ |
+| S6 | `p4/family-link` | 4.18 parent invites + activation guard (C-102), 4.19 privacy notice, 4.20 Settings → Parent app (Join QR), 4.21 link API + Join requests (C-107) (flag `p4-family-link`) | ✅ #72 |
+| S7 | `p4/journey-e2e` | 4.22 journey E2E, 4.23 flag removal (`p4-people`, `p4-family-link`) + docs; photo metadata stripping (C-109) | 🟨 PR |
 
 **Scope**
 - Students: list (search with `pg_trgm`, filters: status, batch, course; keyset pagination, virtualised), **Add Student** drawer (minimum fields, optional parent, optional batch), **Student 360** (Overview, Activity tabs now; Attendance/Fees/Learning/Progress/Communication/Documents tabs appear as their phases land — no placeholders), status changes (ON_HOLD, COMPLETED, LEFT) with reason; archive.
