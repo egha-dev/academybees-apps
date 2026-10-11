@@ -119,3 +119,39 @@ test('the synthetic pilot register imports cleanly from CSV, and the Excel copy 
   await expect(rerun).toBeVisible();
   await expect(page.getByRole('button', { name: /^Import \d+ student/ })).toBeDisabled();
 });
+
+test('when importing isn’t available, the page says so and offers no retry', async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(90_000);
+  // Staging without a private bucket answers 503 `imports_unavailable` (C-97); simulate it.
+  await signInAt(page, testInfo, 'demo-a', 'admin@demo-a.test');
+  await page.route('**/api/v1/students/import', (route) =>
+    route.request().method() === 'POST'
+      ? route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            error: {
+              code: 'SERVICE_UNAVAILABLE',
+              message: 'private storage not configured',
+              details: [{ path: 'file', issue: 'imports_unavailable' }],
+              requestId: 'e2e',
+            },
+          }),
+        })
+      : route.continue(),
+  );
+  await page.goto(hostUrl(testInfo, 'demo-a', '/students/import'));
+  await page.waitForLoadState('networkidle');
+  await page.getByLabel('Spreadsheet file').setInputFiles({
+    name: 'register.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('Name,Mobile\nAsha,9840012345\n'),
+  });
+  await page.getByRole('button', { name: 'Upload and check' }).click();
+  await expect(
+    page.getByText("Student import isn't available right now — please contact support."),
+  ).toBeVisible();
+  await expect(page.getByText(/Try again/)).toHaveCount(0);
+});
