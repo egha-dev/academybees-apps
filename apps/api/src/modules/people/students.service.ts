@@ -27,7 +27,7 @@ import { TENANT_DB } from '../../core/database/database.module.js';
 import { EntitlementService } from '../../core/entitlements/entitlement.service.js';
 import { DomainError } from '../../core/errors/domain-error.js';
 import { scopedWhere } from '../../core/rbac/scope.js';
-import { ActivityService } from './activity.service.js';
+import { ActivityService } from '../../core/activity/activity.service.js';
 import { CustomFieldsService } from './custom-fields.service.js';
 import { ParentsService } from './parents.service.js';
 import { PeopleService } from './people.service.js';
@@ -308,7 +308,12 @@ export class StudentsService {
   /** G-27: ON_HOLD / COMPLETED / LEFT / ACTIVE with a reason (audited). Undo sends the old one. */
   async changeStatus(
     id: string,
-    input: { version: number; status: Student['status']; reason: string },
+    input: {
+      version: number;
+      status: Student['status'];
+      reason: string;
+      endEnrolmentsOn?: string | undefined;
+    },
   ): Promise<Student> {
     await this.db.$transaction(async (tx) => {
       const row = await this.loadForWrite(tx, id, 'student.update');
@@ -337,6 +342,24 @@ export class StudentsService {
         data: { from: row.status, to: input.status },
       });
       await this.analytics.track(tx, 'student.status_changed', { to: input.status });
+      // G-27: leaving can end their classes too; enrolments started later than the date stay.
+      if (input.endEnrolmentsOn) {
+        const last = new Date(`${input.endEnrolmentsOn}T00:00:00Z`);
+        const open = await tx.batchEnrolment.findMany({
+          where: { studentId: id, endedOn: null, startedOn: { lte: last } },
+          select: { id: true, batchId: true },
+        });
+        for (const e of open) {
+          await tx.batchEnrolment.update({ where: { id: e.id }, data: { endedOn: last } });
+          await this.activity.record(tx, {
+            tenantId: row.tenantId,
+            entityType: 'BATCH',
+            entityId: e.batchId,
+            type: 'enrolment.ended',
+            data: { studentId: id },
+          });
+        }
+      }
     });
     return this.get(id);
   }

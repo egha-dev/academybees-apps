@@ -16,7 +16,7 @@ import { TENANT_DB } from '../../core/database/database.module.js';
 import { DomainError } from '../../core/errors/domain-error.js';
 import { MediaStorage } from '../../core/media/media-storage.js';
 import { scopedWhere } from '../../core/rbac/scope.js';
-import { ActivityService } from './activity.service.js';
+import { ActivityService } from '../../core/activity/activity.service.js';
 import { studentPolicy } from './people.policy.js';
 import { StudentPhotoService } from './student-photo.service.js';
 

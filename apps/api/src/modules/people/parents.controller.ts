@@ -26,7 +26,7 @@ import { Idempotent } from '../../core/idempotency/idempotent.js';
 import { Can } from '../../core/rbac/can.decorator.js';
 import { TenantHost } from '../../core/tenant/host-policy.js';
 import { createZodDto, ZodResponse } from '../../core/validation/zod-dto.js';
-import { ActivityService } from './activity.service.js';
+import { ActivityService } from '../../core/activity/activity.service.js';
 import { CustomFieldsService } from './custom-fields.service.js';
 import { ParentsService } from './parents.service.js';
 

@@ -1,6 +1,12 @@
 import { Module } from '@nestjs/common';
 
 import { MediaModule } from '../../core/media/media.module.js';
+import {
+  BatchStudentsController,
+  EnrolmentsController,
+  StudentTransferController,
+} from './enrolments.controller.js';
+import { EnrolmentsService } from './enrolments.service.js';
 import { SchedulingModule } from '../scheduling/index.js';
 import { TeamModule } from '../team/index.js';
 import {
@@ -16,7 +22,6 @@ import { ImportController } from './import/import.controller.js';
 import { ImportProcessor } from './import/import.processor.js';
 import { ImportQueue } from './import/import.queue.js';
 import { ImportService } from './import/import.service.js';
-import { ActivityService } from './activity.service.js';
 import { CustomFieldsService } from './custom-fields.service.js';
 import { CustomFieldsController, ParentsController } from './parents.controller.js';
 import { ParentsService } from './parents.service.js';
@@ -49,6 +54,9 @@ import { TeachersService } from './teachers.service.js';
     JoinRequestsController,
     HubLinkController,
     PrivacyNoticeController,
+    BatchStudentsController,
+    EnrolmentsController,
+    StudentTransferController,
   ],
   providers: [
     StudentPhotoService,
@@ -65,8 +73,8 @@ import { TeachersService } from './teachers.service.js';
     ParentsService,
     StudentRecordsService,
     CustomFieldsService,
-    ActivityService,
+    EnrolmentsService,
   ],
-  exports: [PeopleService, StudentsService, ParentsService, ActivityService, CustomFieldsService],
+  exports: [PeopleService, StudentsService, ParentsService, CustomFieldsService],
 })
 export class PeopleModule {}

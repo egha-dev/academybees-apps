@@ -23,7 +23,7 @@ import { EntitlementService } from '../../../core/entitlements/entitlement.servi
 import { DomainError } from '../../../core/errors/domain-error.js';
 import { MediaStorage } from '../../../core/media/media-storage.js';
 import { SchedulingService } from '../../scheduling/index.js';
-import { ActivityService } from '../activity.service.js';
+import { ActivityService } from '../../../core/activity/activity.service.js';
 import { CustomFieldsService } from '../custom-fields.service.js';
 import { PeopleService } from '../people.service.js';
 import { ImportQueue } from './import.queue.js';
