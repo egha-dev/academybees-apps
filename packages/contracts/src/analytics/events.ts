@@ -120,6 +120,28 @@ export const ANALYTICS_EVENTS = {
       count: z.number().int().min(1),
     }),
   }),
+  'people.import_previewed': defineAnalyticsEvent({
+    name: 'people.import_previewed',
+    version: 1,
+    description: 'A student spreadsheet was read and its preview is ready (G-02).',
+    properties: z.strictObject({
+      fileType: z.enum(['csv', 'xlsx']),
+      rows: z.number().int().min(0),
+      valid: z.number().int().min(0),
+      errors: z.number().int().min(0),
+      duplicates: z.number().int().min(0),
+    }),
+  }),
+  'people.import_committed': defineAnalyticsEvent({
+    name: 'people.import_committed',
+    version: 1,
+    description:
+      'A student import finished; rows not created were errors or already at the academy.',
+    properties: z.strictObject({
+      created: z.number().int().min(0),
+      skipped: z.number().int().min(0),
+    }),
+  }),
   'student.status_changed': defineAnalyticsEvent({
     name: 'student.status_changed',
     version: 1,

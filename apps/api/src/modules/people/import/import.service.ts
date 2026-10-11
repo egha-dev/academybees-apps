@@ -274,16 +274,26 @@ export class ImportService {
         dataRows.map((cells, i) => ({ n: i + 2, cells })),
         mapping,
       );
-      await this.db.importJob.update({
-        where: { id },
-        data: {
-          status: 'PREVIEW_READY',
-          headers,
-          mapping,
-          rows: rows,
-          ...this.counts(rows),
-          version: { increment: 1 },
-        },
+      const counts = this.counts(rows);
+      await this.db.$transaction(async (tx) => {
+        await tx.importJob.update({
+          where: { id },
+          data: {
+            status: 'PREVIEW_READY',
+            headers,
+            mapping,
+            rows: rows,
+            ...counts,
+            version: { increment: 1 },
+          },
+        });
+        await this.analytics.track(tx, 'people.import_previewed', {
+          fileType: job.fileType as 'csv' | 'xlsx',
+          rows: counts.totalRows,
+          valid: counts.validRows,
+          errors: counts.errorRows,
+          duplicates: counts.duplicateRows,
+        });
       });
     } catch (error) {
       if (error instanceof UnreadableFileError) return await this.fail(id, 'file_unreadable');
@@ -350,6 +360,10 @@ export class ImportService {
         );
         if (created > 0)
           await this.analytics.track(tx, 'student.created', { source: 'import', count: created });
+        await this.analytics.track(tx, 'people.import_committed', {
+          created,
+          skipped: Math.max(0, job.totalRows - created),
+        });
       });
       if (job.fileKey) await this.storage.deletePrivate(job.fileKey);
       await this.db.importJob.update({ where: { id }, data: { fileKey: null } });
