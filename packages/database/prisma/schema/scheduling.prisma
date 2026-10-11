@@ -101,6 +101,8 @@ model BatchEnrolment {
   student   Student   @relation(fields: [tenantId, studentId], references: [tenantId, id], onDelete: Restrict)
   startedOn DateTime  @map("started_on") @db.Date
   endedOn   DateTime? @map("ended_on") @db.Date
+  /// Student day plan (C-120): ISO weekdays the student attends; empty = every day the batch meets.
+  weekdays  Int[]     @default([]) @db.SmallInt
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -150,32 +152,127 @@ enum SessionStatus {
   @@map("session_status")
 }
 
+enum SessionCancelReason {
+  TEACHER_UNAVAILABLE
+  HOLIDAY
+  OTHER
+
+  @@map("session_cancel_reason")
+}
+
 /// One meeting of a batch (ADR-024). `sessionDate` is the academy-local date; start/end instants
 /// are UTC. Generated sessions are unique per rule and date, so generation can be re-run.
 model ClassSession {
-  id             String        @id @db.Uuid
-  tenantId       String        @map("tenant_id") @db.Uuid
-  branchId       String        @map("branch_id") @db.Uuid
-  branch         Branch        @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
-  batchId        String        @map("batch_id") @db.Uuid
-  batch          Batch         @relation(fields: [tenantId, batchId], references: [tenantId, id], onDelete: Restrict)
-  scheduleRuleId String?       @map("schedule_rule_id") @db.Uuid
-  scheduleRule   ScheduleRule? @relation(fields: [tenantId, scheduleRuleId], references: [tenantId, id], onDelete: Restrict)
-  teacherId      String?       @map("teacher_id") @db.Uuid
-  teacher        Teacher?      @relation(fields: [tenantId, teacherId], references: [tenantId, id], onDelete: Restrict)
-  sessionDate    DateTime      @map("session_date") @db.Date
-  startsAt       DateTime      @map("starts_at") @db.Timestamptz(3)
-  endsAt         DateTime      @map("ends_at") @db.Timestamptz(3)
-  origin         SessionOrigin
-  status         SessionStatus @default(SCHEDULED)
-  version        Int           @default(1)
-  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                 String               @id @db.Uuid
+  tenantId           String               @map("tenant_id") @db.Uuid
+  branchId           String               @map("branch_id") @db.Uuid
+  branch             Branch               @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  batchId            String               @map("batch_id") @db.Uuid
+  batch              Batch                @relation(fields: [tenantId, batchId], references: [tenantId, id], onDelete: Restrict)
+  scheduleRuleId     String?              @map("schedule_rule_id") @db.Uuid
+  scheduleRule       ScheduleRule?        @relation(fields: [tenantId, scheduleRuleId], references: [tenantId, id], onDelete: Restrict)
+  teacherId          String?              @map("teacher_id") @db.Uuid
+  teacher            Teacher?             @relation(fields: [tenantId, teacherId], references: [tenantId, id], onDelete: Restrict)
+  sessionDate        DateTime             @map("session_date") @db.Date
+  startsAt           DateTime             @map("starts_at") @db.Timestamptz(3)
+  endsAt             DateTime             @map("ends_at") @db.Timestamptz(3)
+  origin             SessionOrigin
+  status             SessionStatus        @default(SCHEDULED)
+  cancelReason       SessionCancelReason? @map("cancel_reason")
+  cancelledAt        DateTime?            @map("cancelled_at") @db.Timestamptz(3)
+  /// Membership that cancelled it (null = the system, e.g. a holiday).
+  cancelledById      String?              @map("cancelled_by_id") @db.Uuid
+  /// Set when staff change this one session (time, teacher, cancel): generation never overwrites it (C-113).
+  modifiedAt         DateTime?            @map("modified_at") @db.Timestamptz(3)
+  /// A make-up for a cancelled session (C-115).
+  makeupForSessionId String?              @map("makeup_for_session_id") @db.Uuid
+  makeupFor          ClassSession?        @relation("SessionMakeup", fields: [tenantId, makeupForSessionId], references: [tenantId, id], onDelete: Restrict)
+  makeups            ClassSession[]       @relation("SessionMakeup")
+  /// The holiday that cancelled it (C-115).
+  holidayId          String?              @map("holiday_id") @db.Uuid
+  holiday            Holiday?             @relation(fields: [tenantId, holidayId], references: [tenantId, id], onDelete: Restrict)
+  note               String?              @db.VarChar(500)
+  version            Int                  @default(1)
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
+  @@unique([tenantId, id])
   @@unique([tenantId, scheduleRuleId, sessionDate])
   @@index([tenantId, sessionDate])
   @@index([tenantId, batchId, sessionDate])
+  @@index([tenantId, teacherId, sessionDate])
+  @@index([tenantId, holidayId])
   @@map("class_session")
+}
+
+enum HolidayKind {
+  HOLIDAY
+  CLOSURE
+
+  @@map("holiday_kind")
+}
+
+/// A day or range with no classes (G-03, ADR-037): the whole academy, or one branch. Generation
+/// skips these dates; creating one cancels the sessions inside it (C-115).
+model Holiday {
+  id          String      @id @db.Uuid
+  tenantId    String      @map("tenant_id") @db.Uuid
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  /// Null = every branch.
+  branchId    String?     @map("branch_id") @db.Uuid
+  branch      Branch?     @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  name        String      @db.VarChar(120)
+  startDate   DateTime    @map("start_date") @db.Date
+  endDate     DateTime    @map("end_date") @db.Date
+  kind        HolidayKind @default(HOLIDAY)
+  createdById String?     @map("created_by_id") @db.Uuid
+  /// Removed (future holidays only): its sessions are reinstated; the row stays for history (C-115).
+  removedAt   DateTime?   @map("removed_at") @db.Timestamptz(3)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  sessions ClassSession[]
+  intents  NotificationIntent[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, startDate])
+  @@map("holiday")
+}
+
+enum NotificationIntentKind {
+  SESSION_CANCELLED_HOLIDAY
+
+  @@map("notification_intent_kind")
+}
+
+enum NotificationIntentStatus {
+  PENDING
+  DELIVERED
+  VOID
+
+  @@map("notification_intent_status")
+}
+
+/// Something a student's parents should be told (C-114): stored now, delivered from Phase 6
+/// (in-app) and Phase 10 (SMS/WhatsApp). Append-only: never deleted, voided instead.
+model NotificationIntent {
+  id        String                   @id @db.Uuid
+  tenantId  String                   @map("tenant_id") @db.Uuid
+  tenant    Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  kind      NotificationIntentKind
+  studentId String                   @map("student_id") @db.Uuid
+  student   Student                  @relation(fields: [tenantId, studentId], references: [tenantId, id], onDelete: Restrict)
+  holidayId String?                  @map("holiday_id") @db.Uuid
+  holiday   Holiday?                 @relation(fields: [tenantId, holidayId], references: [tenantId, id], onDelete: Restrict)
+  /// Dates and batch names for the message; no contact details.
+  payload   Json                     @default("{}")
+  status    NotificationIntentStatus @default(PENDING)
+  createdAt DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([tenantId, kind, holidayId, studentId])
+  @@index([tenantId, status, createdAt])
+  @@map("notification_intent")
 }
 
 /// The academy's guided setup (UX v1.1 §5, C-08, C-92): the current step and, per step, its

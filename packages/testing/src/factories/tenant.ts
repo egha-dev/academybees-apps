@@ -306,6 +306,19 @@ async function insertPeopleAndScheduling(
        FROM membership WHERE id = $3`,
     [newId(), t.id, membershipId],
   );
+  // A removed past holiday and its voided intent (C-114, C-115): rows in every tenant table,
+  // without affecting today's schedule.
+  const holidayId = newId();
+  await q(
+    `INSERT INTO holiday (id, tenant_id, name, start_date, end_date, removed_at, updated_at)
+     VALUES ($1, $2, 'Fixture holiday', DATE '2020-01-15', DATE '2020-01-15', now(), now())`,
+    [holidayId, t.id],
+  );
+  await q(
+    `INSERT INTO notification_intent (id, tenant_id, kind, student_id, holiday_id, status, updated_at)
+     VALUES ($1, $2, 'SESSION_CANCELLED_HOLIDAY', $3, $4, 'VOID', now())`,
+    [newId(), t.id, f.studentId, holidayId],
+  );
   // An earlier (replaced) logo: every tenant table has fixture rows (media_file, C-97).
   const mediaId = newId();
   await q(
