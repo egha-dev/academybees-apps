@@ -1,6 +1,6 @@
 # P4-1 · Phase 4 — Students + Parents + Teachers: plan
 
-> **Approved by the PO on 2026-10-10** (`phase-4-start` = `7b89578`). Decisions C-99…C-108 recorded in DECISIONS.md.
+> **Approved by the PO on 2026-10-10** (`phase-4-start` = `7b89578`). Decisions C-99…C-111 recorded in DECISIONS.md. **Phase 4 ✅ 2026-10-11** (tag `phase-4`); exit notes in IMPLEMENTATION_PLAN.
 
 ## Context
 
