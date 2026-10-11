@@ -1,15 +1,8 @@
-import {
-  minutesToTime,
-  newId,
-  timeToMinutes,
-  weeklyOccurrences,
-  zonedInstant,
-} from '@academybee/contracts';
+import { minutesToTime, newId, timeToMinutes } from '@academybee/contracts';
 import type { TransactionClient } from '@academybee/database';
 import { Injectable } from '@nestjs/common';
 
-/** Days of classes onboarding creates at once, until the Phase 5 rolling job exists (C-92). */
-export const ONBOARDING_SESSION_DAYS = 14;
+import { generateSessions } from './session-generator.js';
 
 export type Slot = { weekday: number; start: string; end: string };
 
@@ -150,9 +143,9 @@ export class SchedulingService {
   }
 
   /**
-   * Replace the batch's weekly slots and create its classes for the next 14 days (C-92). Earlier
-   * onboarding rules and their untouched future sessions are removed first: nothing has been
-   * marked on them yet (attendance arrives in Phase 6). Returns the new rule ids.
+   * Replace the batch's weekly slots (onboarding, C-92) and create its classes for the rolling
+   * window (C-112). Earlier onboarding rules and their untouched future sessions are removed first:
+   * nothing has been marked on them yet. Returns the new rule ids and the classes created.
    */
   async replaceWeeklySlots(
     tx: TransactionClient,
@@ -173,6 +166,7 @@ export class SchedulingService {
           scheduleRuleId: { in: input.previousRuleIds },
           status: 'SCHEDULED',
           origin: 'GENERATED',
+          modifiedAt: null,
         },
       });
       await tx.scheduleRule.deleteMany({ where: { id: { in: input.previousRuleIds } } });
@@ -191,96 +185,31 @@ export class SchedulingService {
           effectiveFrom: new Date(`${input.today}T00:00:00Z`),
         })),
       });
-    const occurrences = weeklyOccurrences(
-      rules.map((r) => ({ ...r.slot, ruleId: r.id })),
-      input.today,
-      ONBOARDING_SESSION_DAYS,
-    );
-    const now = Date.now();
-    const sessions = occurrences
-      .map(({ date, slot }) => ({
-        date,
-        ruleId: slot.ruleId,
-        startsAt: zonedInstant(date, timeToMinutes(slot.start), input.timeZone),
-        endsAt: zonedInstant(date, timeToMinutes(slot.end), input.timeZone),
-      }))
-      // A slot later today that has already started is not created.
-      .filter((s) => s.startsAt.getTime() > now);
-    if (sessions.length)
-      await tx.classSession.createMany({
-        data: sessions.map((s) => ({
-          id: newId(),
-          tenantId: input.tenantId,
-          branchId: input.branchId,
-          batchId: input.batchId,
-          scheduleRuleId: s.ruleId,
-          teacherId: input.teacherId,
-          sessionDate: new Date(`${s.date}T00:00:00Z`),
-          startsAt: s.startsAt,
-          endsAt: s.endsAt,
-          origin: 'GENERATED' as const,
-        })),
-        skipDuplicates: true,
-      });
-    return { ruleIds: rules.map((r) => r.id), sessionCount: sessions.length };
+    const sessionCount = await generateSessions(tx, {
+      tenantId: input.tenantId,
+      batchIds: [input.batchId],
+    });
+    return { ruleIds: rules.map((r) => r.id), sessionCount };
   }
 
   /**
    * The academy's timezone changed: its upcoming generated classes move with it (review M1).
-   * Untouched future sessions of current rules are recreated from the rules in the new timezone;
-   * past ones, manual ones and anything already acted on stay as they were.
+   * Untouched future sessions are recreated from the rules in the new timezone (the tenant row is
+   * already updated in this transaction); past, manual, cancelled or changed ones stay (C-113).
    */
   async regenerateForTimezone(
     tx: TransactionClient,
     input: { tenantId: string; timeZone: string; today: string },
   ): Promise<number> {
-    const rules = await tx.scheduleRule.findMany({
-      where: { effectiveTo: null },
-      select: {
-        id: true,
-        batchId: true,
-        teacherId: true,
-        weekday: true,
-        startMinute: true,
-        endMinute: true,
-        batch: { select: { branchId: true } },
-      },
-    });
-    if (!rules.length) return 0;
     await tx.classSession.deleteMany({
       where: {
-        scheduleRuleId: { in: rules.map((r) => r.id) },
         status: 'SCHEDULED',
         origin: 'GENERATED',
+        modifiedAt: null,
         sessionDate: { gte: new Date(`${input.today}T00:00:00Z`) },
       },
     });
-    const now = Date.now();
-    const sessions = weeklyOccurrences(rules, input.today, ONBOARDING_SESSION_DAYS)
-      .map(({ date, slot }) => ({
-        date,
-        rule: slot,
-        startsAt: zonedInstant(date, slot.startMinute, input.timeZone),
-        endsAt: zonedInstant(date, slot.endMinute, input.timeZone),
-      }))
-      .filter((s) => s.startsAt.getTime() > now);
-    if (sessions.length)
-      await tx.classSession.createMany({
-        data: sessions.map((s) => ({
-          id: newId(),
-          tenantId: input.tenantId,
-          branchId: s.rule.batch.branchId,
-          batchId: s.rule.batchId,
-          scheduleRuleId: s.rule.id,
-          teacherId: s.rule.teacherId,
-          sessionDate: new Date(`${s.date}T00:00:00Z`),
-          startsAt: s.startsAt,
-          endsAt: s.endsAt,
-          origin: 'GENERATED' as const,
-        })),
-        skipDuplicates: true,
-      });
-    return sessions.length;
+    return generateSessions(tx, { tenantId: input.tenantId });
   }
 
   /** The batch's weekly slots and its next classes, for the onboarding preview. */

@@ -86,6 +86,8 @@ model Tenant {
   activity      ActivityEvent[]
   imports       ImportJob[]
   joinRequests  JoinRequest[]
+  holidays      Holiday[]
+  intents       NotificationIntent[]
 
   @@map("tenant")
 }
@@ -166,6 +168,7 @@ model Branch {
   teachers Teacher[]
   batches  Batch[]
   sessions ClassSession[]
+  holidays Holiday[]
 
   @@unique([tenantId, id])
   @@unique([tenantId], map: "branch_one_default", where: raw("is_default"))

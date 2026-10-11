@@ -1,9 +1,10 @@
 import { Inject, Injectable, type OnApplicationShutdown } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 
 import { API_CONFIG } from '../../../core/config/config.module.js';
 import type { ApiConfig } from '../../../core/config/config.schema.js';
+import { bullConnection } from '../../../core/redis/bull-connection.js';
 
 /** BullMQ queue for student imports (C-100): consumed inside the API process. */
 export const IMPORT_QUEUE = 'student-imports';
@@ -16,10 +17,7 @@ export type ImportJobData = {
   action: 'parse' | 'commit';
 };
 
-/** BullMQ needs its own connection settings (no command retries limit for blocking calls). */
-export function bullConnection(config: ApiConfig): Redis {
-  return new Redis(config.REDIS_URL, { maxRetriesPerRequest: null, lazyConnect: false });
-}
+export { bullConnection } from '../../../core/redis/bull-connection.js';
 
 @Injectable()
 export class ImportQueue implements OnApplicationShutdown {
