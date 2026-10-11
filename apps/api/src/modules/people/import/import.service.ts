@@ -382,7 +382,9 @@ export class ImportService {
     rows: StoredRow[],
   ): Promise<void> {
     const numbers = await this.people.allocateAdmissionNos(tx, ctx.tenantId, chunk.length);
-    // Parents already at the academy (or created earlier in this import) are reused (C-106).
+    // Parents already at the academy (or created earlier in this import) are reused (C-106) —
+    // except parents with a Family Hub account: a wrong number in a spreadsheet must never put a
+    // stranger's child in someone's app. They get a separate record staff can link (review M3).
     const phones = chunk.map((r) => r.student?.parent?.phone).filter((v): v is string => !!v);
     const emails = chunk.map((r) => r.student?.parent?.email).filter((v): v is string => !!v);
     const existing =
@@ -390,6 +392,7 @@ export class ImportService {
         ? await tx.parent.findMany({
             where: {
               status: 'ACTIVE',
+              userId: null,
               OR: [
                 ...(phones.length ? [{ phone: { in: phones } }] : []),
                 ...(emails.length ? [{ email: { in: emails } }] : []),
@@ -596,6 +599,17 @@ export class ImportService {
   private async fail(id: string, failure: string): Promise<void> {
     await this.db.importJob.update({
       where: { id },
+      data: { status: 'FAILED', failure, version: { increment: 1 } },
+    });
+  }
+
+  /**
+   * Ends a job the processor can't finish (starter lost the capability, retries used up), so the
+   * wizard stops waiting and shows why (review M6). A completed job is left alone.
+   */
+  async markFailed(id: string, failure: 'not_allowed' | 'internal'): Promise<void> {
+    await this.db.importJob.updateMany({
+      where: { id, status: { in: ['UPLOADED', 'VALIDATING', 'COMMITTING'] } },
       data: { status: 'FAILED', failure, version: { increment: 1 } },
     });
   }

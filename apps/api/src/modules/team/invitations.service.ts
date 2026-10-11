@@ -93,7 +93,7 @@ export class InvitationsService {
     const row = await this.db.$transaction(async (tx) => {
       // Inviting the same email again replaces the earlier link.
       await tx.invitation.updateMany({
-        where: { email: input.email, acceptedAt: null, revokedAt: null },
+        where: { email: input.email, acceptedAt: null, revokedAt: null, parentId: null },
         data: { revokedAt: new Date() },
       });
       const created = await tx.invitation.create({
@@ -127,7 +127,9 @@ export class InvitationsService {
 
   async list() {
     const rows = await this.db.invitation.findMany({
-      where: { acceptedAt: null, revokedAt: null },
+      // Staff invitations only: parent invitations live on Student 360 and are accepted in the
+      // Family Hub (C-102, review M4).
+      where: { acceptedAt: null, revokedAt: null, parentId: null },
       orderBy: { createdAt: 'desc' },
       take: 200,
       select: INVITATION_SELECT,
@@ -337,6 +339,7 @@ export class InvitationsService {
           acceptedAt: null,
           revokedAt: null,
           expiresAt: { gt: new Date() },
+          parentId: null,
         },
         select: { ...INVITATION_SELECT, invitedById: true },
       }),
@@ -358,7 +361,7 @@ export class InvitationsService {
 
   private async pending(id: string): Promise<InvitationRow> {
     const row = await this.db.invitation.findFirst({
-      where: { id, acceptedAt: null, revokedAt: null },
+      where: { id, acceptedAt: null, revokedAt: null, parentId: null },
       select: INVITATION_SELECT,
     });
     if (!row) throw new DomainError('NOT_FOUND', 'invitation missing');

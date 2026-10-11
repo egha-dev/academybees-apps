@@ -12,6 +12,7 @@ import { ClsService } from 'nestjs-cls';
 import type { z } from 'zod';
 
 import { AnalyticsService } from '../../core/analytics/analytics.service.js';
+import { AuditService } from '../../core/audit/audit.service.js';
 import type { RequestContext } from '../../core/context/request-context.js';
 import { TENANT_DB } from '../../core/database/database.module.js';
 import { DomainError } from '../../core/errors/domain-error.js';
@@ -32,6 +33,7 @@ export class ParentsService {
     private readonly cls: ClsService<RequestContext>,
     private readonly activity: ActivityService,
     private readonly analytics: AnalyticsService,
+    private readonly audit: AuditService,
   ) {}
 
   /** Link an existing parent or create one, inside the caller's transaction. */
@@ -213,7 +215,7 @@ export class ParentsService {
     await this.db.$transaction(async (tx) => {
       const parent = await tx.parent.findFirst({
         where: { AND: [{ id }, this.parentScope('parent.manage')] },
-        select: { id: true, tenantId: true, version: true },
+        select: { id: true, tenantId: true, version: true, email: true, phone: true },
       });
       if (!parent) throw new DomainError('NOT_FOUND', 'parent');
       const { version, ...fields } = input;
@@ -235,6 +237,21 @@ export class ParentsService {
         type: 'parent.updated',
         data: { fields: changed.join(',') },
       });
+      // Contact details decide where hub link codes go (C-107): every change is audited, with the
+      // earlier value masked (review M5).
+      const contact = (['email', 'phone'] as const).filter(
+        (k) => fields[k] !== undefined && fields[k] !== parent[k],
+      );
+      if (contact.length)
+        await this.audit.record(
+          {
+            action: 'parent.contact_changed',
+            entityType: 'Parent',
+            entityId: id,
+            metadata: Object.fromEntries(contact.map((k) => [k, mask(parent[k])])),
+          },
+          tx,
+        );
     });
     return this.get(id);
   }
@@ -299,4 +316,12 @@ export class ParentsService {
 
 function stripUndefined<T extends Record<string, unknown>>(value: T): Partial<T> {
   return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined)) as Partial<T>;
+}
+
+/** `pr***@example.com`, `******2345`: enough to recognise in an audit trail, not to reuse. */
+function mask(value: string | null): string | null {
+  if (!value) return null;
+  const at = value.indexOf('@');
+  if (at > 0) return `${value.slice(0, Math.min(2, at))}***${value.slice(at)}`;
+  return `${'*'.repeat(Math.max(0, value.length - 4))}${value.slice(-4)}`;
 }

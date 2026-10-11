@@ -35,7 +35,9 @@ export class SearchService {
     const [students, parents, teachers] = await Promise.all([
       studentScope
         ? this.db.student.findMany({
-            where: { AND: [studentScope, { archivedAt: null }, searchWhere(q)] },
+            where: {
+              AND: [studentScope, { archivedAt: null }, searchWhere(q, can('parent.read'))],
+            },
             orderBy: [{ fullName: 'asc' }, { id: 'asc' }],
             take,
             select: { id: true, fullName: true, admissionNo: true, status: true, archivedAt: true },

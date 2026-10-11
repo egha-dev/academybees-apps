@@ -1,4 +1,4 @@
-import { decryptSecret, hashPassword, loadMasterKeys } from '@academybee/auth';
+import { decryptSecret, hashPassword, hashToken, loadMasterKeys } from '@academybee/auth';
 import { newId, OWNER_LEGAL_DOCUMENTS, ROLE_TEMPLATES, type Student } from '@academybee/contracts';
 import {
   addMemberFixture,
@@ -314,6 +314,13 @@ describe('family hub, academy side', () => {
     const bList = await get(other, '/join-requests');
     expect((bList.body.items as Array<{ id: string }>).map((r) => r.id)).not.toContain(request.id);
     expect((await send(other, 'post', `/join-requests/${request.id}/reject`, {})).status).toBe(404);
+    expect(
+      (
+        await send(other, 'post', `/join-requests/${request.id}/approve`, {
+          studentIds: [b.people.studentId],
+        })
+      ).status,
+    ).toBe(404);
     // Roles: the accountant doesn't manage parents.
     const acc = await addMemberFixture(urls.migrator, a.id, {
       email: `acc-join-${a.slug}@example.test`,
@@ -350,6 +357,132 @@ describe('family hub, academy side', () => {
       [st.id],
     );
     expect(channels.rows.map((r) => r.channel)).toEqual(['PAPER', 'FAMILY_HUB']);
+  });
+
+  it('the hub never gives back access the academy took away, nor starts staff access (review H1)', async () => {
+    const email = `disabled-${Date.now()}@example.test`;
+    const userId = await hubUser(email);
+    // The same person was a receptionist at A and was disabled; their child is at A.
+    const membershipId = newId();
+    await su.query(
+      `INSERT INTO membership (id, tenant_id, user_id, status, updated_at) VALUES ($1, $2, $3, 'DISABLED', now())`,
+      [membershipId, a.id, userId],
+    );
+    await su.query(
+      `INSERT INTO membership_role (tenant_id, membership_id, role_id) VALUES ($1, $2, $3)`,
+      [a.id, membershipId, a.roleIds.receptionist],
+    );
+    await addStudentWithParent('Disabled Staff Kid', email);
+    const hub = await login(HUB, email);
+    await send(hub, 'post', `/hub/academies/${a.slug}/link/start`, { method: 'URL' });
+    const code = await lastCode(email);
+    const verify = await send(hub, 'post', `/hub/academies/${a.slug}/link/verify`, {
+      code,
+      purposes: ['service'],
+    });
+    expect(verify.status).toBe(403);
+    expect(verify.body.error.details).toEqual([
+      { path: 'membership', issue: 'membership_disabled' },
+    ]);
+    const m = await su.query('SELECT status FROM membership WHERE id = $1', [membershipId]);
+    expect(m.rows).toEqual([{ status: 'DISABLED' }]);
+
+    // Invited as staff but never accepted: the hub doesn't activate it either.
+    await su.query(`UPDATE membership SET status = 'INVITED' WHERE id = $1`, [membershipId]);
+    await send(hub, 'post', `/hub/academies/${a.slug}/link/start`, { method: 'URL' });
+    const second = await send(hub, 'post', `/hub/academies/${a.slug}/link/verify`, {
+      code: await lastCode(email),
+      purposes: ['service'],
+    });
+    expect(second.status).toBe(409);
+    const after = await su.query('SELECT status FROM membership WHERE id = $1', [membershipId]);
+    expect(after.rows).toEqual([{ status: 'INVITED' }]);
+  });
+
+  it('approving onto an existing parent needs every child of theirs in the approver’s scope (review M1)', async () => {
+    const email = `scope-${Date.now()}@example.test`;
+    await hubUser(email);
+    // Parent P has one child in the main branch and one in a second branch.
+    const st = await addStudentWithParent('Main Branch Kid', `p-${email}`);
+    const parentId = st.parents[0]!.parentId;
+    const branch2 = newId();
+    await su.query(
+      `INSERT INTO branch (id, tenant_id, name, is_default, updated_at) VALUES ($1, $2, 'Second', false, now())`,
+      [branch2, a.id],
+    );
+    const other = await send(owner, 'post', '/students', {
+      fullName: 'Second Branch Kid',
+      parent: { parentId, relationship: 'MOTHER' },
+    });
+    expect(other.status, JSON.stringify(other.body)).toBe(201);
+    await su.query('UPDATE student SET branch_id = $1 WHERE id = $2', [branch2, other.body.id]);
+    const hub = await login(HUB, email);
+    await send(hub, 'post', `/hub/academies/${a.slug}/join-requests`, {
+      parentName: 'Scope Parent',
+      childName: 'Main Branch Kid',
+    });
+    const request = (
+      (await get(owner, '/join-requests')).body.items as Array<{ id: string; parentName: string }>
+    ).find((r) => r.parentName === 'Scope Parent')!;
+    // A receptionist of the main branch only.
+    const rec = await addMemberFixture(urls.migrator, a.id, {
+      email: `rec-scope-${a.slug}-${Date.now()}@example.test`,
+      roleKey: 'receptionist',
+      branchIds: [a.branchId],
+      grants: Object.entries(ROLE_TEMPLATES.receptionist.grants).map(([capability, scope]) => ({
+        capability,
+        scope,
+      })),
+    });
+    const reception = await academy(a, rec.email);
+    const denied = await send(reception, 'post', `/join-requests/${request.id}/approve`, {
+      studentIds: [st.id],
+      parentId,
+    });
+    expect(denied.status).toBe(404);
+    const p = await su.query('SELECT user_id FROM parent WHERE id = $1', [parentId]);
+    expect(p.rows).toEqual([{ user_id: null }]);
+    // The owner sees both children and may attach the account.
+    const ok = await send(owner, 'post', `/join-requests/${request.id}/approve`, {
+      studentIds: [st.id],
+      parentId,
+    });
+    expect(ok.status, JSON.stringify(ok.body)).toBe(204);
+  });
+
+  it('parent invitations stay out of the staff flow: no preview, no Team list (review M4)', async () => {
+    const token = `parent-token-${Date.now()}-abcdefghijklmnop`;
+    await su.query(
+      `INSERT INTO invitation (id, tenant_id, email, role_keys, parent_id, token_hash, expires_at)
+       VALUES ($1, $2, $3, ARRAY['parent'], $4, $5, now() + interval '1 day')`,
+      [newId(), a.id, `m4-${Date.now()}@example.test`, a.people.parentId, hashToken(token)],
+    );
+    const preview = await http()
+      .post('/api/v1/invitations/preview')
+      .set('Host', `${a.slug}.localhost`)
+      .send({ token });
+    expect(preview.status).toBe(404);
+    const team = await get(owner, '/team/invitations');
+    expect(JSON.stringify(team.body)).not.toContain('m4-');
+  });
+
+  it('changing a parent’s email or phone is audited, with the old value masked (review M5)', async () => {
+    const st = await addStudentWithParent('Audit Kid', `audit-${Date.now()}@example.test`);
+    const parentId = st.parents[0]!.parentId;
+    const before = (await get(owner, `/parents/${parentId}`)).body as { version: number };
+    const res = await http()
+      .patch(`/api/v1/parents/${parentId}`)
+      .set('Host', owner.host)
+      .set('Cookie', owner.cookie)
+      .set('x-csrf-token', owner.csrf)
+      .send({ version: before.version, email: `new-${Date.now()}@example.test` });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    const { rows } = await su.query<{ metadata: { email: string } }>(
+      `SELECT metadata FROM audit_log WHERE action = 'parent.contact_changed' AND entity_id = $1`,
+      [parentId],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.metadata.email).toMatch(/^au\*\*\*@example\.test$/);
   });
 
   it('publishes the academy privacy notice without signing in', async () => {

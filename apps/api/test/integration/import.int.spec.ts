@@ -1,4 +1,9 @@
-import { type ImportJob, OWNER_LEGAL_DOCUMENTS, ROLE_TEMPLATES } from '@academybee/contracts';
+import {
+  type ImportJob,
+  newId,
+  OWNER_LEGAL_DOCUMENTS,
+  ROLE_TEMPLATES,
+} from '@academybee/contracts';
 import {
   addMemberFixture,
   createTenantFixture,
@@ -274,6 +279,41 @@ describe('student import', () => {
       mapping: { fullName: 1 },
     });
     expect(stale.status).toBe(409);
+  });
+
+  it('never attaches an imported child to a parent who has a Family Hub account (review M3)', async () => {
+    const tag = `h${Date.now()}`;
+    const phone = `97${String(Date.now()).slice(-8)}`;
+    // A parent at the academy with a hub account, and one without, both matching the file.
+    const hubParent = newId();
+    const plainParent = newId();
+    const userId = newId();
+    await su.query(
+      `INSERT INTO "user" (id, email, name, updated_at) VALUES ($1, $2, 'Hub Parent', now())`,
+      [userId, `${tag}@example.test`],
+    );
+    await su.query(
+      `INSERT INTO parent (id, tenant_id, full_name, phone, user_id, updated_at) VALUES
+         ($1, $3, 'Hub Parent', $4, $5, now()), ($2, $3, 'Plain Parent', $6, NULL, now())`,
+      [hubParent, plainParent, a.id, `+91${phone}`, userId, `+91${phone.slice(0, -1)}9`],
+    );
+    const csv = [
+      'Student name,Date of birth,Parent name,Parent mobile,Gender',
+      `Kid ${tag} 1,01/01/2016,Hub Parent,${phone},F`,
+      `Kid ${tag} 2,02/01/2016,Plain Parent,${phone.slice(0, -1)}9,M`,
+    ].join('\n');
+    const res = await upload(owner, `${csv}\n`, 'hub.csv');
+    const job = await until(owner, res.body.id, ['PREVIEW_READY', 'FAILED']);
+    await send(owner, 'post', `/students/import/${job.id}/commit`, { version: job.version });
+    await until(owner, job.id, ['COMPLETED', 'FAILED']);
+    const { rows } = await su.query<{ full_name: string; parent_id: string }>(
+      `SELECT s.full_name, ps.parent_id FROM student s JOIN parent_student ps ON ps.student_id = s.id
+        WHERE s.tenant_id = $1 AND s.full_name LIKE $2 ORDER BY s.full_name`,
+      [a.id, `Kid ${tag} %`],
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.parent_id).not.toBe(hubParent);
+    expect(rows[1]!.parent_id).toBe(plainParent);
   });
 
   it('refuses what isn’t a spreadsheet, empty files and files over 5 MB', async () => {

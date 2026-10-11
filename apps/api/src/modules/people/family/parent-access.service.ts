@@ -5,6 +5,7 @@ import {
   INVITATION_LINK_PATH,
   newId,
   PARENT_INVITATION_TTL_MS,
+  STAFF_ROLE_KEYS,
 } from '@academybee/contracts';
 import type { TenantBoundClient, TransactionClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
@@ -199,10 +200,22 @@ export class ParentAccessService {
 
   /**
    * The user's parent membership here, created INVITED if missing (join approval, link verify).
-   * It becomes ACTIVE only through `activate`.
+   * It becomes ACTIVE only through `activate`. A DISABLED membership is refused: the hub must
+   * never give back access an academy took away (review H1).
    */
-  async ensureMembership(tx: TransactionClient, tenantId: string, userId: string): Promise<string> {
-    const existing = await tx.membership.findFirst({ where: { userId }, select: { id: true } });
+  async ensureMembership(
+    tx: TransactionClient,
+    tenantId: string,
+    userId: string,
+  ): Promise<{ id: string; status: 'INVITED' | 'ACTIVE' | 'DISABLED'; staff: boolean }> {
+    const existing = await tx.membership.findFirst({
+      where: { userId },
+      select: { id: true, status: true, roles: { select: { role: { select: { key: true } } } } },
+    });
+    if (existing?.status === 'DISABLED')
+      throw new DomainError('FORBIDDEN', 'membership disabled', [
+        { path: 'membership', issue: 'membership_disabled' },
+      ]);
     const role = await tx.role.findFirst({ where: { key: 'parent' }, select: { id: true } });
     if (!role) throw new DomainError('INTERNAL', 'parent role missing');
     const membershipId = existing?.id ?? newId();
@@ -214,7 +227,13 @@ export class ParentAccessService {
       data: [{ tenantId, membershipId, roleId: role.id }],
       skipDuplicates: true,
     });
-    return membershipId;
+    return {
+      id: membershipId,
+      status: existing?.status ?? 'INVITED',
+      staff: (existing?.roles ?? []).some((r) =>
+        (STAFF_ROLE_KEYS as readonly string[]).includes(r.role.key),
+      ),
+    };
   }
 
   /**
@@ -277,9 +296,14 @@ export class ParentAccessService {
           { path: 'consent', issue: 'consent_required' },
         ]);
     }
-    const membershipId = await this.ensureMembership(tx, input.tenantId, input.userId);
+    const membership = await this.ensureMembership(tx, input.tenantId, input.userId);
+    // Staff access starts only by accepting a staff invitation, never through the hub (review H1).
+    if (membership.status === 'INVITED' && membership.staff)
+      throw new DomainError('CONFLICT', 'staff invitation pending', [
+        { path: 'membership', issue: 'staff_invitation_pending' },
+      ]);
     await tx.membership.update({
-      where: { id: membershipId },
+      where: { id: membership.id },
       data: { status: 'ACTIVE', permissionsVersion: { increment: 1 } },
     });
     await this.audit.record(

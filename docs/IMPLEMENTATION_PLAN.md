@@ -567,7 +567,7 @@ Phase 2 is **not** started.
 
 **Goal.** Core people and relationships are managed through contextual workspaces, not CRUD tables.
 **Refs.** PRD v2 §17, v3 §9; UX §9–11.4, §24; ARCHITECTURE §7, §8.
-**Status.** 🟨 started 2026-10-10 (`phase-4-start` = `7b89578`). Approved slice plan: [`docs/plans/phase-4.md`](plans/phase-4.md) (decisions C-99…C-109).
+**Status.** 🟨 started 2026-10-10 (`phase-4-start` = `7b89578`). Approved slice plan: [`docs/plans/phase-4.md`](plans/phase-4.md) (decisions C-99…C-110).
 
 **Slices (each = one PR, ADR-041)**
 
