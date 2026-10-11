@@ -40,7 +40,7 @@ import { Limit } from '../../core/entitlements/entitlement.decorators.js';
 import { Idempotent } from '../../core/idempotency/idempotent.js';
 import { Can } from '../../core/rbac/can.decorator.js';
 import { createZodDto, ZodResponse } from '../../core/validation/zod-dto.js';
-import { ActivityService } from './activity.service.js';
+import { ActivityService } from '../../core/activity/activity.service.js';
 import { ParentsService } from './parents.service.js';
 import { StudentPhotoService } from './student-photo.service.js';
 import { StudentRecordsService } from './student-records.service.js';

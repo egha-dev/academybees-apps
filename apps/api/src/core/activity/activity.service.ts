@@ -11,11 +11,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { z } from 'zod';
 
-import type { RequestContext } from '../../core/context/request-context.js';
-import { TENANT_DB } from '../../core/database/database.module.js';
-import { DomainError } from '../../core/errors/domain-error.js';
+import type { RequestContext } from '../context/request-context.js';
+import { TENANT_DB } from '../database/database.module.js';
+import { DomainError } from '../errors/domain-error.js';
 
-export type ActivityEntity = 'STUDENT' | 'PARENT' | 'TEACHER';
+export type ActivityEntity = 'STUDENT' | 'PARENT' | 'TEACHER' | 'BATCH';
 type ActivityData = Record<string, string | number | boolean | null>;
 
 export type ActivityItem = {

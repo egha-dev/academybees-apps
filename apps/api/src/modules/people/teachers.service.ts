@@ -21,7 +21,7 @@ import { TENANT_DB } from '../../core/database/database.module.js';
 import { DomainError } from '../../core/errors/domain-error.js';
 import { scopedWhere } from '../../core/rbac/scope.js';
 import { InvitationsService } from '../team/index.js';
-import { ActivityService } from './activity.service.js';
+import { ActivityService } from '../../core/activity/activity.service.js';
 import { teacherPolicy } from './people.policy.js';
 
 const CursorKeys = z.object({ n: z.string(), id: z.uuid() });

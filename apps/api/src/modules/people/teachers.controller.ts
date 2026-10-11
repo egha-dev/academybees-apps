@@ -25,7 +25,7 @@ import {
 import { Idempotent } from '../../core/idempotency/idempotent.js';
 import { Can, SignedIn } from '../../core/rbac/can.decorator.js';
 import { createZodDto, ZodResponse } from '../../core/validation/zod-dto.js';
-import { ActivityService } from './activity.service.js';
+import { ActivityService } from '../../core/activity/activity.service.js';
 import { SearchService } from './search.service.js';
 import { TeachersService } from './teachers.service.js';
 

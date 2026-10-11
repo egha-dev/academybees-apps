@@ -2,6 +2,7 @@ import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 
 import { AnalyticsModule } from './core/analytics/analytics.module.js';
+import { ActivityModule } from './core/activity/activity.module.js';
 import { AuditModule } from './core/audit/audit.module.js';
 import { AuditedInterceptor } from './core/audit/audited.js';
 import { AuthModule } from './core/auth/auth.module.js';
@@ -52,6 +53,7 @@ export class AppModule {
         RbacModule,
         EntitlementsModule,
         AuditModule,
+        ActivityModule,
         OutboxModule,
         AnalyticsModule,
         IdempotencyModule,

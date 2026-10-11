@@ -67,6 +67,8 @@ export type PeopleFixture = {
   courseId: string;
   levelId: string;
   batchId: string;
+  /** The student's open enrolment in the batch. */
+  enrolmentId: string;
   ruleId: string;
   sessionId: string;
   admissionNo: string;
@@ -206,6 +208,7 @@ async function insertPeopleAndScheduling(
     courseId: newId(),
     levelId: newId(),
     batchId: newId(),
+    enrolmentId: newId(),
     ruleId: newId(),
     sessionId: newId(),
     admissionNo: 'ADM-0001',
@@ -272,7 +275,7 @@ async function insertPeopleAndScheduling(
   await q(
     `INSERT INTO batch_enrolment (id, tenant_id, batch_id, student_id, started_on, updated_at)
      VALUES ($1, $2, $3, $4, CURRENT_DATE, now())`,
-    [newId(), t.id, f.batchId, f.studentId],
+    [f.enrolmentId, t.id, f.batchId, f.studentId],
   );
   // Mondays 17:00–18:00 local; the session below is the next Monday, stored in UTC (IST −5:30).
   await q(

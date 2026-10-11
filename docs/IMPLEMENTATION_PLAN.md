@@ -675,14 +675,14 @@ Phase 2 is **not** started.
 
 **Goal.** Every teacher has a reliable daily schedule made of concrete class sessions.
 **Refs.** PRD v2 §17, v3 §9 (time-aware membership, recurring sessions), UX §11.5–11.6; ADR-024, ADR-029.
-**Status.** 🟨 started 2026-10-11 (`phase-5-start` = `8e50d25`). Approved slice plan: [`docs/plans/phase-5.md`](plans/phase-5.md) (decisions C-112…C-121; scheduling patterns reviewed by the PO: 2/3/5/7-day batches, different times per day, student day plans).
+**Status.** 🟨 started 2026-10-11 (`phase-5-start` = `8e50d25`). Approved slice plan: [`docs/plans/phase-5.md`](plans/phase-5.md) (decisions C-112…C-122; scheduling patterns reviewed by the PO: 2/3/5/7-day batches, different times per day, student day plans).
 
 **Slices (each = one PR, ADR-041)**
 
 | Slice | Branch | Tasks | State |
 | --- | --- | --- | --- |
-| S1 | `p5/scheduling-core` | 5.1 plan + decisions, 5.2 migration (session fields, day plans, Holiday, NotificationIntent), 5.3 generator (28 days), 5.4 daily job (C-112) | 🟨 PR |
-| S2 | `p5/batches-api` | 5.5 policies, 5.6 courses/levels, 5.7 batches + teachers, 5.8 enrolments, day plans, transfer (G-27, C-120) | ⬜ |
+| S1 | `p5/scheduling-core` | 5.1 plan + decisions, 5.2 migration (session fields, day plans, Holiday, NotificationIntent), 5.3 generator (28 days), 5.4 daily job (C-112) | ✅ #79 |
+| S2 | `p5/batches-api` | 5.5 policies, 5.6 courses/levels, 5.7 batches + teachers, 5.8 enrolments, day plans, transfer (G-27, C-120) | 🟨 PR |
 | S3 | `p5/schedule-api` | 5.9 weekly patterns (C-113, C-121), 5.10 sessions, 5.11 holidays (G-03, C-114, C-115) | ⬜ |
 | S4 | `p5/terminology-today` | 5.12 `useTerm` + Settings terminology (C-118), 5.13 Owner Today v1, 5.14 Teacher home v1 (C-117), 5.15 remove `p2-role-homes` (flag `p5-scheduling` added) | ⬜ |
 | S5 | `p5/batches-ui` | 5.16 Batches list, 5.17 Batch Workspace, 5.18 Courses | ⬜ |

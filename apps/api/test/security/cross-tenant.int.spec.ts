@@ -104,6 +104,14 @@ describe('cross-tenant suite', () => {
         return a.people.parentLinkId;
       case 'custom-field':
         return a.people.customFieldId;
+      case 'course':
+        return a.people.courseId;
+      case 'level':
+        return a.people.levelId;
+      case 'batch':
+        return a.people.batchId;
+      case 'enrolment':
+        return a.people.enrolmentId;
       default:
         throw new Error(`unknown fixture ${name}`);
     }
