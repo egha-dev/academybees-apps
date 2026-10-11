@@ -350,6 +350,8 @@ Each slice: branch `p4/<slice>` from the latest `main` → PR with the DoD check
 - **Photo metadata (C-109):** the API strips EXIF/XMP/IPTC/comments (JPEG), text/eXIf/tIME chunks (PNG) and EXIF/XMP (WebP) before storing a student photo (`core/media/image-metadata.ts`, 4 unit tests). The browser redraws the photo upright at ≤ 800 px as a JPEG first. ARCHITECTURE had assigned this to Phase 4, and S5 had missed it.
 - **Docs:** ARCHITECTURE §5.6, §7.3, §8.3 and media as-built notes; CLAUDE.md §3 and §8; README (tables fixed, Phase 4 tour); C-109.
 
+*Gate fixes (P4-3):* the plan's analytics list had import events that were never emitted. Added `people.import_previewed {fileType, rows, valid, errors, duplicates}` and `people.import_committed {created, skipped}` (asserted in `import.int.spec.ts`). `search.used` is deliberately not emitted (C-105 note).
+
 | Slice | Branch | Tasks | Release flags |
 | --- | --- | --- | --- |
 | S1 | `p4/shell-diet` | 4.1–4.3 | — |

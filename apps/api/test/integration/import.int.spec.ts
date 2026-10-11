@@ -226,6 +226,24 @@ describe('student import', () => {
       again.id,
     ]);
     expect(job[0].file_key).toBeNull();
+    // Product analytics: counts only, no names or contacts (G-09).
+    const { rows: events } = await su.query<{ name: string; properties: Record<string, unknown> }>(
+      `SELECT payload->>'name' AS name, payload->'properties' AS properties FROM outbox_event
+        WHERE type = 'analytics.event' AND tenant_id = $1
+          AND payload->>'name' IN ('people.import_previewed', 'people.import_committed')
+        ORDER BY created_at`,
+      [a.id],
+    );
+    expect(events).toEqual(
+      expect.arrayContaining([
+        {
+          name: 'people.import_previewed',
+          properties: { fileType: 'csv', rows: 500, valid: 480, errors: 20, duplicates: 0 },
+        },
+        { name: 'people.import_committed', properties: { created: 480, skipped: 20 } },
+        { name: 'people.import_committed', properties: { created: 20, skipped: 480 } },
+      ]),
+    );
   });
 
   it('reads Excel files, and lets columns be matched again', async () => {
