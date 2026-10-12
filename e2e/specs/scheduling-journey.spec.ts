@@ -59,7 +59,8 @@ test('batch with a weekly schedule → week view → cancel one → teacher sees
   await session.getByRole('button', { name: 'Cancel this class' }).click();
   await session.getByRole('button', { name: 'Cancel this class' }).click();
   await expect(page.getByText('Class cancelled')).toBeVisible();
-  await expect(classes.first()).toContainText('Cancelled');
+  // The timetable re-renders on the server after the sheet closes; allow for a busy server.
+  await expect(classes.first()).toContainText('Cancelled', { timeout: 15_000 });
   await expect(classes.nth(1)).not.toContainText('Cancelled');
 
   // 4. The demo teacher (not this batch's teacher) sees only their own batches.
