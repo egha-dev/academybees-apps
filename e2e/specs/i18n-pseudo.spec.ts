@@ -39,6 +39,17 @@ const DATA_VALUES = [
   'Demo Owner',
   'Demo Teacher',
   'teacher@demo-a.test',
+  // Timetable (Phase 5): seeded batches, courses and the holiday (longer names first: values are
+  // removed in order).
+  'Spoken English Tue/Thu',
+  'Weekend Science',
+  'Board Prep Mon–Fri',
+  'Early Morning Mon–Sat',
+  'One-to-one: Physics',
+  'Board Exam Preparation',
+  'Spoken English',
+  'Science',
+  'Founders’ Day',
 ];
 /** Intl output (dates, times) is formatted data, not catalogue text (G-32). */
 const DATA_PATTERNS = [

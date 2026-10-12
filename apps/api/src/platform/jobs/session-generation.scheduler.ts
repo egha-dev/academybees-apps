@@ -53,15 +53,21 @@ export class SessionGenerationScheduler implements OnApplicationBootstrap, OnApp
       PLATFORM_JOBS_QUEUE,
       async (job) => {
         if (job.name === DAILY_SESSIONS_JOB) return this.queueAll('daily');
-        if (job.name === 'manual-sessions') return this.queueAll('manual');
+        if (job.name === 'manual-sessions') return this.queueAll('manual', true);
         throw new Error(`Unknown platform job: ${job.name}`);
       },
       { connection: this.connection, concurrency: 1 },
     );
+    // Catch up on start (fresh deploys, local seeds): classes appear without waiting for 02:00.
+    await this.queue.add(
+      'manual-sessions',
+      {},
+      { removeOnComplete: { count: 30 }, removeOnFail: { count: 30 } },
+    );
   }
 
   /** Queue every open academy now. Returns how many were queued. */
-  async queueAll(reason: 'daily' | 'manual'): Promise<number> {
+  async queueAll(reason: 'daily' | 'manual', always = false): Promise<number> {
     let db;
     try {
       db = this.platform.db;
@@ -74,7 +80,8 @@ export class SessionGenerationScheduler implements OnApplicationBootstrap, OnApp
       select: { id: true },
     });
     const day = localDate(new Date(), 'Asia/Kolkata');
-    for (const a of academies) await this.generation.add({ tenantId: a.id, reason }, day);
+    for (const a of academies)
+      await this.generation.add({ tenantId: a.id, reason }, always ? null : day);
     await this.audit.record({
       tenantId: null,
       action: 'platform.sessions_generation_queued',

@@ -29,9 +29,16 @@ export class SessionGenerationQueue implements OnApplicationShutdown {
     });
   }
 
-  /** One job per academy and day: re-queuing the same day is a no-op (`jobId`). */
-  async add(job: SessionGenerationJob, day: string): Promise<void> {
-    await this.queue.add('academy', job, { jobId: `${job.tenantId}-${day}-${job.reason}` });
+  /**
+   * One job per academy and day for the nightly run (re-queuing the same day is a no-op, `jobId`);
+   * a run on start (`day` null) always goes through — generation itself is idempotent.
+   */
+  async add(job: SessionGenerationJob, day: string | null): Promise<void> {
+    await this.queue.add(
+      'academy',
+      job,
+      day ? { jobId: `${job.tenantId}-${day}-${job.reason}` } : {},
+    );
   }
 
   async onApplicationShutdown(): Promise<void> {

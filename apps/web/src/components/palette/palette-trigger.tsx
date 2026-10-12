@@ -11,7 +11,7 @@ const Palette = lazy(() => import('./palette').then((m) => ({ default: m.Palette
 
 export type PaletteLabels = Messages['people']['palette'];
 export type QuickAction = {
-  key: 'addStudent' | 'addTeacher' | 'students' | 'teachers';
+  key: 'addStudent' | 'addTeacher' | 'addBatch' | 'students' | 'teachers' | 'batches';
   href: string;
 };
 

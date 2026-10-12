@@ -5,7 +5,8 @@
     "branding": "Branding & address",
     "fields": "Custom fields",
     "parentApp": "Parent app",
-    "privacy": "Privacy notice"
+    "privacy": "Privacy notice",
+    "courses": "{course, select, program {Programs} other {Courses}}"
   },
   "settings": {
     "metaTitle": "Academy",

@@ -22,7 +22,8 @@ import {
   hostContext,
   requestPath,
 } from '@/lib/host-context.server';
-import { termsFor } from '@/lib/terms.server';
+import { schedulingEnabled } from '@/lib/flags.server';
+import { academyTerms, termsFor } from '@/lib/terms.server';
 import { getSession } from '@/lib/session.server';
 
 export const dynamic = 'force-dynamic';
@@ -74,8 +75,14 @@ export default async function SignedInLayout({ children }: { children: ReactNode
     redirect(`/legal?next=${encodeURIComponent(path)}`);
 
   const experience = experienceFor(path, me);
-  const [guard, terms] = await Promise.all([sessionGuardLabels(), termsFor()]);
-  const nav = await navigationFor(me, experience);
+  const [guard, terminology, scheduling, quickT] = await Promise.all([
+    sessionGuardLabels(),
+    academyTerms(),
+    schedulingEnabled(),
+    getTranslations('people.palette.quick'),
+  ]);
+  const terms = await termsFor(terminology);
+  const nav = await navigationFor(me, experience, { scheduling, terms: terminology });
   const caps = me.academy.capabilities as Record<string, string | undefined>;
   const messages = await getMessages();
   return (
@@ -89,7 +96,14 @@ export default async function SignedInLayout({ children }: { children: ReactNode
           {experience === 'manage' && (
             <>
               <PaletteTrigger
-                labels={messages.people.palette}
+                labels={{
+                  ...messages.people.palette,
+                  quick: {
+                    ...messages.people.palette.quick,
+                    addBatch: quickT('addBatch', { term: terminology.batch }),
+                    batches: quickT('batches', { term: terminology.batch }),
+                  },
+                }}
                 actions={[
                   ...(caps['student.create']
                     ? [{ key: 'addStudent', href: '/students?add=1' } as const]
@@ -97,11 +111,17 @@ export default async function SignedInLayout({ children }: { children: ReactNode
                   ...(caps['teacher.manage']
                     ? [{ key: 'addTeacher', href: '/teachers?add=1' } as const]
                     : []),
+                  ...(scheduling && caps['batch.manage']
+                    ? [{ key: 'addBatch', href: '/batches?add=1' } as const]
+                    : []),
                   ...(caps['student.read']
                     ? [{ key: 'students', href: '/students' } as const]
                     : []),
                   ...(caps['teacher.read']
                     ? [{ key: 'teachers', href: '/teachers' } as const]
+                    : []),
+                  ...(scheduling && caps['batch.read']
+                    ? [{ key: 'batches', href: '/batches' } as const]
                     : []),
                 ]}
               />
@@ -112,6 +132,9 @@ export default async function SignedInLayout({ children }: { children: ReactNode
                     ? [{ key: 'parent', href: '/students?pick=parent' }]
                     : []),
                   ...(caps['teacher.manage'] ? [{ key: 'teacher', href: '/teachers?add=1' }] : []),
+                  ...(scheduling && caps['batch.manage']
+                    ? [{ key: 'batch', href: '/batches?add=1' }]
+                    : []),
                 ]}
               />
             </>

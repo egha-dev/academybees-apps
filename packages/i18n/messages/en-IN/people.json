@@ -358,7 +358,8 @@
     "label": "Add",
     "student": "Student",
     "teacher": "Teacher",
-    "parent": "Parent"
+    "parent": "Parent",
+    "batch": "{term, select, class {Class} group {Group} other {Batch}}"
   },
   "teachers": {
     "metaTitle": "Teachers",
@@ -474,7 +475,9 @@
       "addStudent": "Add student",
       "addTeacher": "Add teacher",
       "students": "Go to students",
-      "teachers": "Go to teachers"
+      "teachers": "Go to teachers",
+      "addBatch": "Add {term, select, class {class} group {group} other {batch}}",
+      "batches": "Go to {term, select, class {classes} group {groups} other {batches}}"
     }
   },
   "import": {

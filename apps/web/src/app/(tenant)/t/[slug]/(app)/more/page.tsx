@@ -5,6 +5,8 @@ import { getTranslations } from 'next-intl/server';
 
 import { AccountPanel } from '@/components/shell/account-panel';
 import { experienceFor, navigationFor } from '@/components/shell/navigation.server';
+import { schedulingEnabled } from '@/lib/flags.server';
+import { academyTerms } from '@/lib/terms.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { signedInMember } from '@/components/shell/signed-in.server';
 import { requestPath } from '@/lib/host-context.server';
@@ -27,7 +29,10 @@ export default async function MorePage() {
     getTranslations('shell.account'),
   ]);
   const experience = experienceFor(path, me);
-  const nav = await navigationFor(me, experience);
+  const nav = await navigationFor(me, experience, {
+    scheduling: await schedulingEnabled(),
+    terms: await academyTerms(),
+  });
   return (
     <Stack spacing={6}>
       <PageHeader title={t('moreTitle')} body={t('moreBody', { academy })} />

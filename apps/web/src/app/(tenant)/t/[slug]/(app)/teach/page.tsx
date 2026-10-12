@@ -49,6 +49,8 @@ export default async function TeachPage() {
   if (!batchesRes.ok) throw new Error(`batches ${batchesRes.status}`);
   const sessions = SessionListSchema.parse(await sessionsRes.json()).items;
   const batches = BatchPageSchema.parse(await batchesRes.json()).items;
+  // The read-only Batch Workspace (C-117) is part of the same release flag.
+  const enabledWorkspace = enabled;
   const todays = sessions.filter((s) => s.date === today);
   const later = sessions.filter((s) => s.date > today);
   const byDay = [...new Set(later.map((s) => s.date))];
@@ -120,11 +122,21 @@ export default async function TeachPage() {
                 key={b.id}
                 sx={{ padding: 3, border: '1px solid', borderColor: 'ab.border', borderRadius: 2 }}
               >
-                <Text>{b.name}</Text>
+                {enabledWorkspace ? (
+                  <Box
+                    component="a"
+                    href={`/batches/${b.id}`}
+                    sx={{ fontWeight: 600, color: 'ab.textPrimary' }}
+                  >
+                    {b.name}
+                  </Box>
+                ) : (
+                  <Text>{b.name}</Text>
+                )}
                 <Text variant="meta" tone="secondary">
                   {b.courseName} · {t('students', { count: b.enrolled })}
                   {b.weekdays.length > 0 &&
-                    ` · ${new Intl.ListFormat(undefined, { style: 'narrow', type: 'unit' }).format(
+                    ` · ${new Intl.ListFormat(undefined, { style: 'short', type: 'unit' }).format(
                       b.weekdays.map((w) => sched(`weekdayShort.d${w}` as 'weekdayShort.d1')),
                     )}`}
                 </Text>

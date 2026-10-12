@@ -80,7 +80,7 @@ const EXTRA_STUDENTS: Array<[name: string, grade: string, parent: string, phone:
   ['Siya Hegde', 'Grade 8', 'Prakash Hegde', '+919800000223'],
   ['Yuvraj Thakur', 'Grade 9', 'Sunita Thakur', '+919800000224'],
 ];
-const extraId = (kind: 'a' | 'b' | 'c', i: number) =>
+export const extraId = (kind: 'a' | 'b' | 'c', i: number) =>
   `01a10000-0000-7000-8000-0000000${kind}${String(i + 1).padStart(4, '0')}`;
 
 const userId = (email: string) => {

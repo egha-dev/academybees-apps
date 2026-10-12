@@ -2,6 +2,8 @@ import { AddIcon } from '@academybee/ui/icons';
 import { Box } from '@academybee/ui/components/layout';
 import { getTranslations } from 'next-intl/server';
 
+import { academyTerms } from '@/lib/terms.server';
+
 /**
  * Global Add (UX §9.2): "+ Add" in the shell's top bar. A native `<details>` menu of links — no
  * client JS on any page (G-24, C-99). Student, Parent (pick the child
@@ -9,7 +11,7 @@ import { getTranslations } from 'next-intl/server';
  */
 export async function GlobalAdd({ items }: { items: Array<{ key: string; href: string }> }) {
   if (items.length === 0) return null;
-  const t = await getTranslations('people.globalAdd');
+  const [t, terms] = await Promise.all([getTranslations('people.globalAdd'), academyTerms()]);
   return (
     <Box
       component="details"
@@ -76,7 +78,9 @@ export async function GlobalAdd({ items }: { items: Array<{ key: string; href: s
                 '&:hover': { bgcolor: 'ab.surfaceRaised' },
               }}
             >
-              {t(item.key as 'student' | 'parent' | 'teacher')}
+              {item.key === 'batch'
+                ? t('batch', { term: terms.batch })
+                : t(item.key as 'student' | 'parent' | 'teacher')}
             </Box>
           </Box>
         ))}
