@@ -6,14 +6,12 @@ import { Box, Stack } from '@academybee/ui/components/layout';
 import { PlainButton } from '@academybee/ui/components/plain-button';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getMessages, getTranslations } from 'next-intl/server';
 
 import { AddHolidayLazy, RemoveHolidayLazy } from '@/components/scheduling/timetable-lazy';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { schedulingEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { homeFor } from '@/lib/session.server';
 import { academyTerms, withWords, wordsOf } from '@/lib/terms.server';
@@ -31,16 +29,14 @@ export async function generateMetadata(): Promise<Metadata> {
  * future one brings its classes back.
  */
 export default async function HolidaysPage() {
-  const [{ me, academy }, enabled, { context }, terms, t, shellT, messages] = await Promise.all([
+  const [{ me, academy }, { context }, terms, t, shellT, messages] = await Promise.all([
     signedInMember(),
-    schedulingEnabled(),
     hostContext(),
     academyTerms(),
     getTranslations('scheduling.holidays'),
     getTranslations('shell.permission'),
     getMessages(),
   ]);
-  if (!enabled) notFound();
   if (!holds(me, 'timetable.read'))
     return (
       <PermissionState

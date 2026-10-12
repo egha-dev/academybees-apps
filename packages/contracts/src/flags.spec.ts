@@ -19,11 +19,12 @@ describe('feature flag registry', () => {
   it('lists expired flags', () => {
     expect(expiredFeatureFlags('2026-10-01')).toEqual([]);
     expect(expiredFeatureFlags('2027-01-31')).toEqual([]);
-    expect(expiredFeatureFlags('2027-04-01')).toEqual(['p5-scheduling']);
+    expect(expiredFeatureFlags('2027-07-01')).toEqual(['p1-hub-placeholder']);
   });
 
   it('recognises registered keys only', () => {
-    expect(isFeatureFlagKey('p5-scheduling')).toBe(true);
+    expect(isFeatureFlagKey('p1-hub-placeholder')).toBe(true);
+    expect(isFeatureFlagKey('p5-scheduling')).toBe(false);
     expect(isFeatureFlagKey('p1-tenant-home')).toBe(false);
     expect(isFeatureFlagKey('p0-flag-probe')).toBe(false);
     expect(isFeatureFlagKey('p4-people')).toBe(false);

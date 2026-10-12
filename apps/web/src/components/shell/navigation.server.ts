@@ -31,8 +31,8 @@ export function experienceFor(path: string, me: MeResponse): Experience {
 export async function navigationFor(
   me: MeResponse,
   experience: Experience,
-  /** Phase 5 screens (release flag `p5-scheduling`) and the academy's words (C-118). */
-  options: { scheduling?: boolean; terms?: Terminology } = {},
+  /** The academy's words (C-118). */
+  options: { terms?: Terminology } = {},
 ): Promise<{ groups: ShellNavGroup[]; bottom: ShellNavItem[] }> {
   const t = await getTranslations('shell.nav');
   const can = (capability: string) =>
@@ -70,7 +70,7 @@ export async function navigationFor(
         ]
       : []),
     // UX §8 order: Timetable, then Batches, then people.
-    ...(options.scheduling && can('timetable.read')
+    ...(can('timetable.read')
       ? [
           {
             key: 'timetable',
@@ -80,7 +80,7 @@ export async function navigationFor(
           } as const,
         ]
       : []),
-    ...(options.scheduling && can('batch.read')
+    ...(can('batch.read')
       ? [
           {
             key: 'batches',

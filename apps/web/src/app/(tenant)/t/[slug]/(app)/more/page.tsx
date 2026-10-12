@@ -5,7 +5,6 @@ import { getTranslations } from 'next-intl/server';
 
 import { AccountPanel } from '@/components/shell/account-panel';
 import { experienceFor, navigationFor } from '@/components/shell/navigation.server';
-import { schedulingEnabled } from '@/lib/flags.server';
 import { academyTerms } from '@/lib/terms.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { signedInMember } from '@/components/shell/signed-in.server';
@@ -30,7 +29,6 @@ export default async function MorePage() {
   ]);
   const experience = experienceFor(path, me);
   const nav = await navigationFor(me, experience, {
-    scheduling: await schedulingEnabled(),
     terms: await academyTerms(),
   });
   return (

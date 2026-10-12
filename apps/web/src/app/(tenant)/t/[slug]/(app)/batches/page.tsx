@@ -6,14 +6,12 @@ import { Box, Stack } from '@academybee/ui/components/layout';
 import { PlainButton } from '@academybee/ui/components/plain-button';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getMessages, getTranslations } from 'next-intl/server';
 
 import { AddBatchLazy } from '@/components/scheduling/batches-lazy';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { schedulingEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { homeFor } from '@/lib/session.server';
 import { academyTerms, withWords } from '@/lib/terms.server';
@@ -36,10 +34,9 @@ export default async function BatchesPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [{ me, academy }, enabled, params, { context }, terms, t, sched, shellT, messages] =
+  const [{ me, academy }, params, { context }, terms, t, sched, shellT, messages] =
     await Promise.all([
       signedInMember({ experience: 'manage' }),
-      schedulingEnabled(),
       searchParams,
       hostContext(),
       academyTerms(),
@@ -48,7 +45,6 @@ export default async function BatchesPage({
       getTranslations('shell.permission'),
       getMessages(),
     ]);
-  if (!enabled) notFound();
   const words = { term: terms.batch, course: terms.course, teacher: terms.teacher };
   if (!holds(me, 'batch.read'))
     return (

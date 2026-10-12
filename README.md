@@ -118,6 +118,16 @@ Logos are stored in the local SeaweedFS (`pnpm infra:up`) and served from `http:
 
 **People (Phase 4)** on `demo-a.localhost:3000`, signed in as the owner or admin: **Students** (30 seeded students; Aarav Sharma has a medical note; a photo needs a consent that includes photos) → Student 360 with parents, consent, medical notes, Activity and Family Hub invites (the email lands in Mailpit) · **Teachers** · **Import** from a spreadsheet (`/students/import`, template download) · **Join requests** · Settings → Custom fields, Parent app (Join QR poster), Privacy notice · Ctrl/⌘+K searches the academy. The public privacy notice is at `/privacy`. `pnpm hub:join-request --academy demo-a --email parent@demo-a.test --child "Aarav Sharma"` sends a join request through the real hub API; `pnpm db:seed:perf` + `pnpm perf:search` measure search on 50,000 students.
 
+**Classes and timetable (Phase 5)** on `demo-a.localhost:3000`:
+- **Owner or admin:**
+  - **Today** shows today's classes, what needs attention and recent changes.
+  - **Batches** holds the seeded patterns: a weekend batch, Tue/Thu at different times, a full Mon–Fri batch, Mon–Sat with students on some days, and a one-to-one. Each opens the Batch Workspace: students and their days, the weekly pattern editor with presets, and activity.
+  - **Timetable** has Day, Week and By-teacher views. A class opens a sheet to cancel it, bring it back, move it, change its teacher or add a make-up.
+  - **Timetable → Holidays** previews exactly which classes a holiday cancels before you confirm.
+  - **Settings** has Courses and "Words your academy uses" (batch / class / group, …).
+- **Teacher:** `teacher@demo-a.test` sees only their own classes and batches, read-only.
+- **Generating classes:** classes are made 28 days ahead nightly and on API start; `pnpm scheduling:generate` makes them now.
+
 Academy hosts (`http://demo-a.localhost:3000`), the Family Hub (`app.localhost`) and the console (`console.localhost`) arrive with Phases 1–3.
 
 **Checks** (the same as CI): `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:integration` (Docker), `pnpm build`, `pnpm e2e` (builds, then Playwright), `pnpm perf:budget`, `pnpm perf:lighthouse`, `pnpm i18n:check`, `pnpm flags:check`.

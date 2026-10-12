@@ -10,7 +10,6 @@ import { SessionList } from '@/components/scheduling/session-list.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { schedulingEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { academyTerms } from '@/lib/terms.server';
 
@@ -24,12 +23,11 @@ export async function generateMetadata(): Promise<Metadata> {
 /**
  * Teacher home v1 (C-117, UX §25): today's and the next 7 days' classes and "My batches", read
  * only and limited to what this teacher teaches (ASSIGNED scope). Attendance comes with the
- * Teacher PWA in Phase 6; its button shows why it isn't there yet. Behind `p5-scheduling`.
+ * Teacher PWA in Phase 6; its button shows why it isn't there yet.
  */
 export default async function TeachPage() {
-  const [{ me, academy }, enabled, { context }, terms, t, sched] = await Promise.all([
+  const [{ me, academy }, { context }, terms, t, sched] = await Promise.all([
     signedInMember({ experience: 'teach' }),
-    schedulingEnabled(),
     hostContext(),
     academyTerms(),
     getTranslations('scheduling.teach'),
@@ -38,7 +36,7 @@ export default async function TeachPage() {
   const header = (
     <PageHeader title={t('title', { name: me.user.name })} body={t('body', { academy })} />
   );
-  if (!enabled || !holds(me, 'timetable.read')) return header;
+  if (!holds(me, 'timetable.read')) return header;
   const timeZone = academyTimeZone(context) ?? 'Asia/Kolkata';
   const today = localDate(new Date(), timeZone);
   const [sessionsRes, batchesRes] = await Promise.all([
@@ -49,8 +47,6 @@ export default async function TeachPage() {
   if (!batchesRes.ok) throw new Error(`batches ${batchesRes.status}`);
   const sessions = SessionListSchema.parse(await sessionsRes.json()).items;
   const batches = BatchPageSchema.parse(await batchesRes.json()).items;
-  // The read-only Batch Workspace (C-117) is part of the same release flag.
-  const enabledWorkspace = enabled;
   const todays = sessions.filter((s) => s.date === today);
   const later = sessions.filter((s) => s.date > today);
   const byDay = [...new Set(later.map((s) => s.date))];
@@ -122,17 +118,13 @@ export default async function TeachPage() {
                 key={b.id}
                 sx={{ padding: 3, border: '1px solid', borderColor: 'ab.border', borderRadius: 2 }}
               >
-                {enabledWorkspace ? (
-                  <Box
-                    component="a"
-                    href={`/batches/${b.id}`}
-                    sx={{ fontWeight: 600, color: 'ab.textPrimary' }}
-                  >
-                    {b.name}
-                  </Box>
-                ) : (
-                  <Text>{b.name}</Text>
-                )}
+                <Box
+                  component="a"
+                  href={`/batches/${b.id}`}
+                  sx={{ fontWeight: 600, color: 'ab.textPrimary' }}
+                >
+                  {b.name}
+                </Box>
                 <Text variant="meta" tone="secondary">
                   {b.courseName} · {t('students', { count: b.enrolled })}
                   {b.weekdays.length > 0 &&

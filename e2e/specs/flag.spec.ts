@@ -1,17 +1,17 @@
-import { expect, type Page, test } from '@playwright/test';
+import { type APIRequestContext, expect, test } from '@playwright/test';
 
 import { ownClientIp } from '../support/client-ip.js';
 import { asMigrator } from '../support/db.js';
 import { DEMO_B_ID, hostUrl, requireSeededAcademies } from '../support/hosts.js';
 
 const OVERRIDE_ID = '0199a0a0-0000-7000-8000-0000000e2e01';
-const FLAG = 'p5-scheduling';
+const FLAG = 'p1-hub-placeholder';
 
 /**
- * ADR-041: a release flag hides unfinished work. `p5-scheduling` (Phase 5 screens while they are
- * built: Today's classes and attention items, Batches, Timetable) is turned off for demo-b only — a
- * per-tenant override written under demo-b's RLS context — so parallel specs on demo-a are
- * unaffected.
+ * ADR-041: release flags resolve per academy. A per-tenant override (written under demo-b's RLS
+ * context) turns `p1-hub-placeholder` off for demo-b only; the flags endpoint reflects it there
+ * and nowhere else. The Family Hub itself has no academy, so parallel hub specs are unaffected.
+ * (`p5-scheduling`, which this spec used before, was removed when Phase 5's screens shipped.)
  */
 test.describe.configure({ mode: 'serial' });
 test.beforeAll(requireSeededAcademies);
@@ -40,36 +40,21 @@ async function setOverride(enabled: boolean | null) {
 
 test.afterAll(() => setOverride(null));
 
-async function signInToDemoB(page: Page, url: string) {
-  await page.goto(url);
-  await page.getByLabel('Email or mobile number').fill('owner@demo-b.test');
-  await page.getByLabel('Password', { exact: true }).fill('AcademyBees#2026');
-  await page.getByRole('button', { name: 'Sign in' }).click();
+async function flagOn(request: APIRequestContext, url: string) {
+  const res = await request.get(url);
+  expect(res.ok()).toBe(true);
+  return ((await res.json()) as { flags: Record<string, boolean> }).flags[FLAG];
 }
 
-test('Today shows the Phase 5 content while p5-scheduling is on', async ({ page }, testInfo) => {
-  await signInToDemoB(page, hostUrl(testInfo, 'demo-b', '/login'));
-  // An Owner without 2FA is asked first (C-80); Today is one step away.
-  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-b', '/settings/security?prompt=mfa'), {
-    timeout: 15_000,
-  });
-  await page.getByRole('link', { name: 'Not now' }).click();
-  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-b', '/today'));
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Today at Demo B Dance Studio');
-  // The counts line ("… students in … active classes") is Phase 5 content, shown with or without
-  // classes yet.
-  await expect(page.getByText(/ in \d+ active (batch|class|group)/)).toBeVisible();
-});
-
-test('turning the flag off for one academy hides the unfinished content', async ({
-  page,
+test('a per-academy override turns a flag off for that academy only', async ({
+  request,
 }, testInfo) => {
+  const demoB = hostUrl(testInfo, 'demo-b', '/api/v1/flags');
+  const demoA = hostUrl(testInfo, 'demo-a', '/api/v1/flags');
+  expect(await flagOn(request, demoB)).toBe(true);
   await setOverride(false);
-  await signInToDemoB(page, hostUrl(testInfo, 'demo-b', '/login'));
-  await expect(page).toHaveURL(/\/settings\/security/, { timeout: 15_000 });
-  await page.goto(hostUrl(testInfo, 'demo-b', '/today'));
-  // Today is a real page now (p2-role-homes is gone); only the Phase 5 parts are hidden.
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Today at Demo B Dance Studio');
-  await expect(page.getByText(/^Welcome, /)).toBeVisible();
-  await expect(page.getByText(/ in \d+ active (batch|class|group)/)).toHaveCount(0);
+  await expect.poll(() => flagOn(request, demoB), { timeout: 15_000 }).toBe(false);
+  expect(await flagOn(request, demoA)).toBe(true);
+  await setOverride(null);
+  await expect.poll(() => flagOn(request, demoB), { timeout: 15_000 }).toBe(true);
 });

@@ -13,7 +13,6 @@ import { EmptyState } from '@academybee/ui/components/feedback';
 import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getMessages, getTranslations } from 'next-intl/server';
 
 import {
@@ -28,7 +27,6 @@ import { SessionList } from '@/components/scheduling/session-list.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { schedulingEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { academyTerms, withWords, wordsOf } from '@/lib/terms.server';
 
@@ -59,19 +57,16 @@ export default async function BatchPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string; edit?: string }>;
 }) {
-  const [{ me }, enabled, { id }, query, { context }, terms, t, sched, messages] =
-    await Promise.all([
-      signedInMember(),
-      schedulingEnabled(),
-      params,
-      searchParams,
-      hostContext(),
-      academyTerms(),
-      getTranslations('scheduling.batch'),
-      getTranslations('scheduling'),
-      getMessages(),
-    ]);
-  if (!enabled) notFound();
+  const [{ me }, { id }, query, { context }, terms, t, sched, messages] = await Promise.all([
+    signedInMember(),
+    params,
+    searchParams,
+    hostContext(),
+    academyTerms(),
+    getTranslations('scheduling.batch'),
+    getTranslations('scheduling'),
+    getMessages(),
+  ]);
   const words = wordsOf(terms);
   const res = /^[0-9a-f-]{36}$/i.test(id) ? await apiServerGet(`/batches/${id}`) : undefined;
   if (!res?.ok) {

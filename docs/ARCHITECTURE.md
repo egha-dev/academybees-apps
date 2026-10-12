@@ -472,6 +472,7 @@ CREATE POLICY tenant_isolation ON student
 | *as built Ph 4* | `ActivityEvent` (no sensitive fields), `ImportJob` (C-100, C-101), `JoinRequest`, `AcademyLinkAttempt` (user-owned), `Teacher.subjects`, `Invitation.parentId`; `pg_trgm` GIN indexes on student/parent/teacher names (C-105) | 4 |
 | people | `Student` (G-05 fields, `customFields` JSONB validated against `CustomFieldDefinition`), `Parent`, `ParentStudent`, `Teacher`, `CustomFieldDefinition`, `ActivityEvent` | 3 (min) / 4 |
 | scheduling | `Course`, `CourseLevel`, `Batch`, `BatchTeacher`, `BatchEnrolment`, `ScheduleRule`, `ClassSession`, `Holiday` (ADR-037) | 3 (min) / 5 |
+| *as built Ph 5* | `ClassSession` gains cancel reason/when/by, `modifiedAt` (C-113), `makeupForSessionId`, `holidayId`, `note`; `BatchEnrolment.weekdays` (student day plan, C-120); `Holiday` (never deleted: `removedAt`); `NotificationIntent` pulled forward, storage only (C-114; DELETE revoked) | 5 |
 | attendance | `Attendance`, `SyncOperation`, `AttendanceDailySummary`, `StudentMonthlyAttendance` | 6 |
 | notification (foundation) | `Notification` (in-app), `NotificationIntent` | 6 |
 | finance | `FeePlan`, `FeeComponent`, `StudentFeeAssignment`, `Discount`, `FeePolicy` (proration, sibling, late fee), `Invoice` (kind: REGULAR / ONE_TIME / INSTALMENT / OPENING_BALANCE), `InvoiceItem`, `Payment`, `PaymentAllocation`, `StudentCredit`, `Refund`, `Receipt`, `DocumentShareLink`, `NumberSequence`, `GatewayEvent`, `TenantPaymentAccount` (ADR-033) | 7 |
@@ -657,6 +658,10 @@ After login on an academy URL, `/` sends staff to the home of their primary expe
 - **Settings:** one nav entry, Settings → `/settings/academy`, with server tabs to `/settings/branding`.
 - **Console:** `/academies`, `/academies/new`, `/academies/[id]/created`, and `/academies/[id]/(overview|domain)`, in the Deep Ink shell (`AppShell chrome="ink"`).
 
+*As built (Phase 5):*
+- **Manage:** `/today` (Owner Today v1: today's classes, attention items, recent activity), `/timetable` (`?view=day|week|teacher&date=&course=&teacher=&session=`), `/timetable/holidays` (instead of `/settings/calendar`), `/batches` (`?add=1`), `/batches/[id]` (`?tab=students|schedule|activity`), and `/settings/courses` (instead of `/courses`). All are server-rendered; sheets load as lazy chunks.
+- **Teacher:** `/teach` (Teacher home v1, C-117). Teachers open `/batches/[id]` and `/timetable` read-only, limited by the API to their ASSIGNED scope; the `/teach/*` sub-routes come with the Teacher PWA in Phase 6.
+
 ### 10.4 Shells and navigation (UX §7, §8, §25)
 
 | Shell | Desktop | Mobile |
@@ -668,6 +673,8 @@ After login on an academy URL, `/` sends staff to the home of their primary expe
 | Console | Distinct visual variant (Deep Ink chrome), dense-but-calm tables | Desktop-first; responsive read-only on mobile |
 
 Navigation items are rendered from a config filtered by capabilities **and** entitlements; items for unbuilt modules are absent.
+
+*As built (Phase 5):* RUN gains Timetable and Batches (labels in the academy's words, C-118, via `termsFor`/`useTerm`; client sheets get `withWords`-resolved labels). On phones the Manage bottom bar is Today · Students · More until Finance ships (Phase 7).
 
 ### 10.5 Design system (`packages/ui`)
 
@@ -868,7 +875,7 @@ Domain services write `OutboxEvent` rows in the same DB transaction as the state
 | `system` | heartbeat, outbox relay, cleanup (expired idempotency, synced ops, sessions) | 0 |
 | `email` | transactional email (invite, reset) | 2 |
 | `provisioning` | post-provision tasks (welcome email, default data) | 3 |
-| `scheduling` | rolling class-session generation (daily, 28 days ahead) | 5 |
+| `scheduling` | rolling class-session generation (daily, 28 days ahead). *As built (C-112):* runs **in the API**: a platform fan-out at 02:00 IST (and once on start) queues one job per open academy; `pnpm scheduling:generate` queues a run now | 5 |
 | `attendance` | summaries, absence notification intents | 6 |
 | `notifications` | fan-out intent → per-recipient per-channel deliveries | 6 (in-app) / 10 |
 | `finance` | recurring invoice generation, overdue marking, receipt PDF, reminders, reconciliation | 7 |
