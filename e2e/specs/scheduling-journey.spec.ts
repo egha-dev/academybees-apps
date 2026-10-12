@@ -39,7 +39,8 @@ test('batch with a weekly schedule → week view → cancel one → teacher sees
   const editor = page.getByRole('dialog');
   await expect(async () => {
     if (!(await editor.isVisible()))
-      await page.getByRole('button', { name: 'Set days and times' }).click();
+      // Short click timeout: if the editor opens meanwhile, its backdrop covers the button.
+      await page.getByRole('button', { name: 'Set days and times' }).click({ timeout: 2_000 });
     await expect(editor).toBeVisible({ timeout: 2_000 });
   }).toPass({ timeout: 20_000 });
   await editor.getByRole('button', { name: 'Mon–Fri', exact: true }).click();
