@@ -42,6 +42,7 @@ export function PlainButton({
   href,
   disabled,
   busy = false,
+  type = 'button',
 }: {
   children: ReactNode;
   variant?: 'primary' | 'secondary' | 'ghost';
@@ -51,6 +52,8 @@ export function PlainButton({
   disabled?: boolean;
   /** Blocks repeat clicks while working; announced as busy. */
   busy?: boolean;
+  /** `submit` for a plain GET form (filters) that needs no client code. */
+  type?: 'button' | 'submit';
 }) {
   const sx: SxProps<Theme> = (t) => {
     const primary = t.vars?.palette.primary ?? t.palette.primary;
@@ -87,7 +90,7 @@ export function PlainButton({
   return (
     <Box
       component="button"
-      type="button"
+      type={type}
       onClick={onClick}
       disabled={disabled || busy}
       aria-busy={busy || undefined}

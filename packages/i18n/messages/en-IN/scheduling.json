@@ -296,6 +296,109 @@
   "loading": {
     "batches": "Loading…",
     "batch": "Loading…",
-    "courses": "Loading…"
+    "courses": "Loading…",
+    "timetable": "Loading…",
+    "holidays": "Loading…"
+  },
+  "timetable": {
+    "metaTitle": "Timetable",
+    "title": "Timetable",
+    "body": "Every class at {academy}, as it really happens: cancellations, moves and holidays included.",
+    "views": {
+      "label": "View",
+      "day": "Day",
+      "week": "Week",
+      "teacher": "By {teacher, select, coach {coach} instructor {instructor} trainer {trainer} other {teacher}}"
+    },
+    "prev": "Previous",
+    "next": "Next",
+    "today": "Today",
+    "range": "{start} – {end}",
+    "filterCourse": "{course, select, program {Program} other {Course}}",
+    "filterTeacher": "{teacher, select, coach {Coach} instructor {Instructor} trainer {Trainer} other {Teacher}}",
+    "all": "All",
+    "apply": "Show",
+    "holidays": "Holidays",
+    "empty": "No classes in this period.",
+    "emptyDay": "No classes",
+    "noTeacher": "No {teacher, select, coach {coach} instructor {instructor} trainer {trainer} other {teacher}}",
+    "holidayBand": "{name}",
+    "permission": {
+      "title": "The timetable isn't part of your role",
+      "body": "Ask the owner of {academy}."
+    }
+  },
+  "sessionSheet": {
+    "title": "{batch}, {date}",
+    "when": "{start}–{end}",
+    "status": "Status",
+    "teacher": "{teacher, select, coach {Coach} instructor {Instructor} trainer {Trainer} other {Teacher}}",
+    "noTeacher": "Nobody yet",
+    "openBatch": "Open {term, select, class {the class} group {the group} other {the batch}}",
+    "cancel": "Cancel this class",
+    "cancelTitle": "Cancel {batch} on {date}?",
+    "cancelBody": "Students and the {teacher, select, coach {coach} instructor {instructor} trainer {trainer} other {teacher}} see it as cancelled. You can add a make-up class later.",
+    "reason": "Why",
+    "reasons": {
+      "TEACHER_UNAVAILABLE": "{teacher, select, coach {Coach} instructor {Instructor} trainer {Trainer} other {Teacher}} not available",
+      "OTHER": "Something else"
+    },
+    "note": "Note (optional)",
+    "cancelled": "Class cancelled",
+    "restore": "Bring it back",
+    "restored": "Class is on again",
+    "holidayNote": "Cancelled for {name}. Remove the holiday to bring it back.",
+    "move": "Move or change {teacher, select, coach {coach} instructor {instructor} trainer {trainer} other {teacher}}",
+    "moveTitle": "Move {batch}",
+    "date": "Date",
+    "start": "Starts",
+    "end": "Ends",
+    "save": "Save",
+    "moved": "Saved",
+    "makeup": "Add a make-up class",
+    "makeupTitle": "Make-up for {batch} on {date}",
+    "makeupAdded": "Make-up class added",
+    "started": "This class has started, so it can't be changed.",
+    "doubleBooked": "{teacher} also teaches {other} at {start}–{end} that day.",
+    "close": "Close",
+    "inPast": "Choose a date and time that haven't passed."
+  },
+  "holidays": {
+    "metaTitle": "Holidays",
+    "title": "Holidays and closures",
+    "body": "Days with no classes at {academy}. Adding one shows exactly which classes it cancels first.",
+    "add": "Add a holiday",
+    "name": "Name",
+    "nameHint": "For example: Diwali",
+    "start": "First day",
+    "end": "Last day",
+    "kind": "Type",
+    "kinds": {
+      "HOLIDAY": "Holiday",
+      "CLOSURE": "Closure"
+    },
+    "preview": "See which classes it cancels",
+    "previewTitle": "{name} cancels",
+    "previewTotals": "{sessions, plural, =0 {No classes} one {# class} other {# classes}} in {batches, plural, one {# {term, select, class {class} group {group} other {batch}}} other {# {term, select, class {classes} group {groups} other {batches}}}}; {students, plural, one {# student} other {# students}} will be told",
+    "previewDay": "{date}: {sessions, plural, one {# class} other {# classes}}, {students, plural, one {# student} other {# students}}",
+    "nothing": "No classes fall on these days. It still stops new ones being made.",
+    "confirm": "Add holiday and cancel {count, plural, =0 {no classes} one {# class} other {# classes}}",
+    "added": "{name} added; {count, plural, =0 {no classes} one {# class} other {# classes}} cancelled",
+    "noticeNote": "Parents get a notice when notifications arrive; nothing is sent yet.",
+    "upcoming": "Upcoming",
+    "past": "Earlier",
+    "empty": "No holidays yet.",
+    "dates": "{start} – {end}",
+    "cancelledCount": "{count, plural, =0 {No classes cancelled} one {# class cancelled} other {# classes cancelled}}",
+    "remove": "Remove",
+    "removeTitle": "Remove {name}?",
+    "removeBody": "Its upcoming classes come back. Parents' notices for it are withdrawn.",
+    "removed": "{name} removed; its classes are back",
+    "tooMany": "That would cancel too many classes at once. Choose fewer days.",
+    "inPast": "Holidays can't start in the past.",
+    "permission": {
+      "title": "Holidays aren't part of your role",
+      "body": "Ask the owner of {academy}."
+    }
   }
 }

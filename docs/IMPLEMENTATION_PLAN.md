@@ -685,8 +685,8 @@ Phase 2 is **not** started.
 | S2 | `p5/batches-api` | 5.5 policies, 5.6 courses/levels, 5.7 batches + teachers, 5.8 enrolments, day plans, transfer (G-27, C-120) | ✅ #80 |
 | S3 | `p5/schedule-api` | 5.9 weekly patterns (C-113, C-121), 5.10 sessions, 5.11 holidays (G-03, C-114, C-115) | ✅ #81 |
 | S4 | `p5/terminology-today` | 5.12 `useTerm` + Settings terminology (C-118), 5.13 Owner Today v1, 5.14 Teacher home v1 (C-117), 5.15 remove `p2-role-homes` (flag `p5-scheduling` added) | ✅ #82 |
-| S5 | `p5/batches-ui` | 5.16 Batches list, 5.17 Batch Workspace, 5.18 Courses | 🟨 PR |
-| S6 | `p5/timetable-ui` | 5.19 Timetable Day/Week/Teacher, 5.20 Holidays with impact preview | ⬜ |
+| S5 | `p5/batches-ui` | 5.16 Batches list, 5.17 Batch Workspace, 5.18 Courses | ✅ #83 |
+| S6 | `p5/timetable-ui` | 5.19 Timetable Day/Week/Teacher, 5.20 Holidays with impact preview | 🟨 PR |
 | S7 | `p5/journey-e2e` | 5.21 exit E2E, 5.22 flag removal + docs | ⬜ |
 
 
