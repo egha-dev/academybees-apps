@@ -3,7 +3,8 @@ import { createMigratorClient } from '../clients.js';
 import { requireEnv } from '../cli/env.js';
 import { syncFeatureFlagDefinitions } from './flags.js';
 import { assertSeedAllowed, SeedNotAllowedError } from './guard.js';
-import { seedDevPeople } from './people.js';
+import { extraId, seedDevPeople } from './people.js';
+import { seedDevScheduling } from './scheduling.js';
 import { seedDevTenants } from './tenants.js';
 import { seedDevUsers } from './users.js';
 
@@ -23,8 +24,9 @@ try {
   const tenants = await seedDevTenants(db);
   const users = await seedDevUsers(db);
   const students = await seedDevPeople(db);
+  const batches = await seedDevScheduling(db, (i) => extraId('a', i));
   console.warn(
-    `Seeded: ${flags} feature flag definition(s), ${tenants} demo academies, ${users} demo users, ${students} demo students.`,
+    `Seeded: ${flags} feature flag definition(s), ${tenants} demo academies, ${users} demo users, ${students} demo students, ${batches} demo timetable batches.`,
   );
 } finally {
   await db.$disconnect();

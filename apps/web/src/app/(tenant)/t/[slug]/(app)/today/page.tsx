@@ -55,10 +55,12 @@ export default async function TodayPage() {
   const items = [
     ...attention.batchesWithoutTeacher.map((b) => ({
       key: `t-${b.id}`,
+      href: `/batches/${b.id}`,
       text: t('withoutTeacher', { name: b.name, term: terms.teacher }),
     })),
     ...attention.batchesFull.map((b) => ({
       key: `f-${b.id}`,
+      href: `/batches/${b.id}?tab=students`,
       text: t('full', {
         name: b.name,
         day: sched(`weekday.d${b.weekday}` as 'weekday.d1'),
@@ -95,6 +97,14 @@ export default async function TodayPage() {
         <EmptyState
           title={t('noBatchesTitle', { term: terms.batch })}
           body={t('noBatchesBody', { term: terms.batch })}
+          {...(holds(me, 'batch.manage')
+            ? {
+                action: {
+                  label: sched('batches.add', { term: terms.batch }),
+                  href: '/batches?add=1',
+                },
+              }
+            : {})}
         />
       ) : (
         <Box
@@ -121,7 +131,13 @@ export default async function TodayPage() {
                 <Stack component="ul" spacing={1.5} sx={{ margin: 0, paddingInlineStart: 4 }}>
                   {items.map((i) => (
                     <li key={i.key}>
-                      <Text>{i.text}</Text>
+                      {'href' in i && i.href ? (
+                        <Box component="a" href={i.href} sx={{ color: 'ab.textPrimary' }}>
+                          {i.text}
+                        </Box>
+                      ) : (
+                        <Text>{i.text}</Text>
+                      )}
                     </li>
                   ))}
                 </Stack>

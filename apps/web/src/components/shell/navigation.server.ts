@@ -1,6 +1,6 @@
 import 'server-only';
 
-import type { MeResponse } from '@academybee/contracts';
+import { type MeResponse, DEFAULT_TERMINOLOGY, type Terminology } from '@academybee/contracts';
 import { getTranslations } from 'next-intl/server';
 
 import type { ShellNavGroup, ShellNavItem } from './academy-shell';
@@ -31,6 +31,8 @@ export function experienceFor(path: string, me: MeResponse): Experience {
 export async function navigationFor(
   me: MeResponse,
   experience: Experience,
+  /** Phase 5 screens (release flag `p5-scheduling`) and the academy's words (C-118). */
+  options: { scheduling?: boolean; terms?: Terminology } = {},
 ): Promise<{ groups: ShellNavGroup[]; bottom: ShellNavItem[] }> {
   const t = await getTranslations('shell.nav');
   const can = (capability: string) =>
@@ -64,6 +66,16 @@ export async function navigationFor(
             label: t('students'),
             href: '/students',
             icon: 'students',
+          } as const,
+        ]
+      : []),
+    ...(options.scheduling && can('batch.read')
+      ? [
+          {
+            key: 'batches',
+            label: t('batches', { term: (options.terms ?? DEFAULT_TERMINOLOGY).batch }),
+            href: '/batches',
+            icon: 'batches',
           } as const,
         ]
       : []),

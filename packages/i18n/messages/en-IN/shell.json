@@ -43,7 +43,8 @@
     "security": "Security",
     "academySettings": "Settings",
     "teachers": "Teachers",
-    "joinRequests": "Join requests"
+    "joinRequests": "Join requests",
+    "batches": "{term, select, class {Classes} group {Groups} other {Batches}}"
   },
   "account": {
     "signedInAs": "Signed in as {name}",

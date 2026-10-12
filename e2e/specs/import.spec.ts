@@ -82,11 +82,17 @@ test('the synthetic pilot register imports cleanly from CSV, and the Excel copy 
   await page.goto(hostUrl(testInfo, 'demo-b', '/students/import'));
   await page.waitForLoadState('networkidle');
 
-  await page.getByLabel('Spreadsheet file').setInputFiles({
-    name: 'pilot-register.csv',
-    mimeType: 'text/csv',
-    buffer: Buffer.from(fixture.csv()),
-  });
+  // The wizard loads as its own chunk: pick the file again until it is listening.
+  await expect(async () => {
+    await page.getByLabel('Spreadsheet file').setInputFiles({
+      name: 'pilot-register.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(fixture.csv()),
+    });
+    await expect(page.getByRole('button', { name: 'Upload and check' })).toBeEnabled({
+      timeout: 2_000,
+    });
+  }).toPass({ timeout: 20_000 });
   await page.getByRole('button', { name: 'Upload and check' }).click();
   const fresh = page.getByText(`${fixture.EXPECTED.valid} students ready to import`);
   const rerun = page.getByText(`${fixture.EXPECTED.valid} students are already here`);

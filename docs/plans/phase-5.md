@@ -254,6 +254,35 @@ Each slice: branch `p5/<slice>` from the latest `main` → PR with the DoD check
 - **5.18 Courses** (Settings → Courses, or under Batches; decided by UX fit): levels editor, archive.
 - **Tests:** E2E create a course → batch → Mon/Wed/Fri schedule → sessions listed; Tue/Thu with different times; a student enrolled for 2 of 5 days; enrol over capacity on one day shows that day's warning; transfer; phones; axe.
 
+*As built (S5):*
+- **Batches list** (`/batches`, RUN nav "Batches" in the academy's word, flag `p5-scheduling`):
+  - search, course filter, Active/Archived;
+  - each row shows days ("Mon, Wed, Fri"), students, the fullest day ("Fullest: Wed 3 of 3", a warning at the limit) and the next class;
+  - Add sheet (`?add=1`): name, course or a new one inline, level, most students a day, optional term dates, teachers. It then opens the workspace on Days and times with the editor.
+- **Batch Workspace** (`/batches/[id]`):
+  - header: course, level, teachers, capacity, dates, per-day load badges; Take attendance disabled with a reason (Phase 6); Edit details / Archive / Restore;
+  - **Students** tab (in-place roster): add with "Which days does this student come?" (every day or some days), the per-day capacity warning with "Add anyway", change days, leave, move to another batch; each student shows their days and "N classes a week";
+  - **Days and times** tab: the pattern, then the editor (presets Mon–Fri, Mon/Wed/Fri, Tue/Thu/Sat, Tue/Thu, Weekend, Mon–Sat, Every day; one time or a time per day; "starting from"); plans on days it no longer meets; double bookings; the next classes;
+  - **Activity** tab.
+  - Teachers open it read-only from their home's "My batches" (C-117); other batches are not found.
+- **Settings → Courses** (`/settings/courses`): courses with levels, add (levels one per line), rename, add a level, archive (refused while batches are active).
+- **Shell:**
+  - Global Add and the palette gain Batch;
+  - Today's attention items link to their batch, and its empty state offers Add batch;
+  - client sheets get labels with the academy's words already applied (`withWords`, server side);
+  - a server-safe `fill` lives in `lib/fill.ts`.
+- **Seeds (C-37):** demo-a gains Weekend Science (Sat/Sun with a longer Sunday), Spoken English Tue/Thu at different times (also the demo teacher's), Board Prep Mon–Fri (full), Early Morning Mon–Sat (students on day plans), One-to-one: Physics (no teacher) and an upcoming holiday.
+- **Generation on start:** the API also queues a generation run on start (not deduplicated by day; generation is idempotent), so fresh deploys and local seeds get their classes without waiting for 02:00.
+- **Fixed while testing:**
+  - a stale student choice could be submitted after a new search (now cleared when it leaves the results);
+  - a move to a batch the student is already in now says so.
+- **Budget:** `/batches` and `/batches/[id]` 189.5, `/settings/courses` 186.0 KB gz.
+- **Tests:** E2E `batches.spec.ts`:
+  - add a batch → Mon/Wed/Fri preset → a Wednesday-only student → capacity warning → Add anyway → move → archive;
+  - seeded patterns in the list;
+  - a teacher sees only theirs, read-only.
+  Seed test updated; `words.spec.ts` (2).
+
 ### S6 `p5/timetable-ui` — Timetable and Holidays
 
 - **5.19 Timetable** (`/timetable`, UX §11.6):

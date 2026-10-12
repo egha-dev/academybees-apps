@@ -1,6 +1,8 @@
 'use client';
 
 import {
+  CalendarIcon,
+  ClassIcon,
   HomeIcon,
   LockIcon,
   MoreIcon,
@@ -16,7 +18,16 @@ import type { ReactNode } from 'react';
 
 /** Navigation entries are plain data from the server; icons are picked here (client side). */
 export type ShellIcon =
-  'today' | 'home' | 'team' | 'security' | 'more' | 'settings' | 'students' | 'teachers';
+  | 'today'
+  | 'home'
+  | 'team'
+  | 'security'
+  | 'more'
+  | 'settings'
+  | 'students'
+  | 'teachers'
+  | 'batches'
+  | 'timetable';
 export type ShellNavItem = { key: string; label: string; href: string; icon: ShellIcon };
 export type ShellNavGroup = { key: string; label: string; items: ShellNavItem[] };
 
@@ -29,6 +40,8 @@ const ICONS: Record<ShellIcon, ReactNode> = {
   settings: <SettingsIcon />,
   students: <SchoolIcon />,
   teachers: <TeacherIcon />,
+  batches: <ClassIcon />,
+  timetable: <CalendarIcon />,
 };
 
 const isActive = (pathname: string, href: string) =>

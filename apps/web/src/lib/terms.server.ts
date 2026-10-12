@@ -51,3 +51,5 @@ export async function termsFor(terminology?: Terminology): Promise<TermLabels> {
     Teachers: t('Teachers', teacher),
   };
 }
+
+export { withWords, wordsOf } from './words';
