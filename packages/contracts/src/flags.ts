@@ -19,13 +19,6 @@ export type FeatureFlagDefinition = {
 };
 
 export const FEATURE_FLAGS = {
-  'p5-scheduling': {
-    description:
-      'Phase 5 screens while they are built: Owner Today v1 and Teacher home v1 content, Batches, Batch Workspace, Timetable and Holidays (C-117) — remove when the phase closes.',
-    owner: 'PO',
-    expiresOn: '2027-03-31',
-    defaults: { local: true, ci: true, staging: true, production: false },
-  },
   'p1-hub-placeholder': {
     description:
       'Family Hub placeholder on app. (G-31) until Parent Core ships in Phase 7P — remove then. Off: app. redirects to the marketing site.',

@@ -1,8 +1,6 @@
 import 'server-only';
 
 import type { FeatureFlagKey } from '@academybee/contracts';
-import { headers } from 'next/headers';
-import { cache } from 'react';
 
 import { serverEnv } from './env';
 import { type FlagsResponse, isFlagOn } from './flags';
@@ -25,8 +23,3 @@ export async function flagEnabled(key: FeatureFlagKey, host: string): Promise<bo
     return false;
   }
 }
-
-/** `p5-scheduling` for the current request's academy: Phase 5 screens while they are built. */
-export const schedulingEnabled = cache(async (): Promise<boolean> =>
-  flagEnabled('p5-scheduling', (await headers()).get('host') ?? ''),
-);

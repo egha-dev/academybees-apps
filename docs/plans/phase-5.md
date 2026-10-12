@@ -324,6 +324,14 @@ Each slice: branch `p5/<slice>` from the latest `main` → PR with the DoD check
 - **5.21 Exit E2E:** create batch with weekly schedule → week view → cancel one → teacher signs in and sees only their batches (desktop + phones).
 - **5.22** Remove `p5-scheduling`; ARCHITECTURE as-built notes (§8.3, ADR-024/037 notes, jobs); CLAUDE.md §3/§8; README tour; plan status.
 
+*As built (S7):*
+- **Exit E2E** `scheduling-journey.spec.ts` (desktop Chromium, Android Chromium, iPhone WebKit):
+  - the admin adds a batch → Mon–Fri preset → next week's timetable shows its 5 classes → cancels one from its sheet (the others stay scheduled);
+  - `teacher@demo-a.test` sees their own batches on `/teach` and the timetable, not the new one, and its workspace is "Not found";
+  - the batch is then archived.
+- **`p5-scheduling` removed:** from the registry, the pages, the navigation, Settings tabs and Global Add. The flag E2E (`flag.spec.ts`) now proves per-academy overrides through `GET /api/v1/flags` with `p1-hub-placeholder`, overridden for demo-b only. The hub has no academy, so hub specs are unaffected.
+- **Docs:** ARCHITECTURE as-built notes (§8.3, §10.3, §10.4, §13.2), CLAUDE.md §8, README tour, plan tracker.
+
 | Slice | Branch | Tasks | Release flags |
 | --- | --- | --- | --- |
 | S1 | `p5/scheduling-core` | 5.1–5.4 | — |

@@ -11,7 +11,6 @@ import { SessionList } from '@/components/scheduling/session-list.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { schedulingEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { academyTerms } from '@/lib/terms.server';
 
@@ -24,13 +23,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /**
  * Owner Today v1 (UX §10, §11.1): where am I (the academy's day), what needs attention, today's
- * classes, what happened recently. Finance and growth join in Phases 7–8. The Phase 5 content is
- * behind `p5-scheduling` until the phase closes; without it the page is the plain welcome.
+ * classes, what happened recently. Finance and growth join in Phases 7–8. Roles without the timetable
+ * see the plain welcome.
  */
 export default async function TodayPage() {
-  const [{ me, academy }, enabled, { context }, terms, t, sched] = await Promise.all([
+  const [{ me, academy }, { context }, terms, t, sched] = await Promise.all([
     signedInMember({ experience: 'manage' }),
-    schedulingEnabled(),
     hostContext(),
     academyTerms(),
     getTranslations('scheduling.today'),
@@ -38,7 +36,7 @@ export default async function TodayPage() {
   ]);
   const timeZone = academyTimeZone(context);
   const welcome = t('welcome', { name: me.user.name });
-  if (!enabled || !holds(me, 'timetable.read'))
+  if (!holds(me, 'timetable.read'))
     return <PageHeader title={t('title', { academy })} body={welcome} />;
   const res = await apiServerGet('/today');
   if (!res.ok) throw new Error(`today ${res.status}`);

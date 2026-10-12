@@ -1,7 +1,6 @@
 import { Box } from '@academybee/ui/components/layout';
 import { getTranslations } from 'next-intl/server';
 
-import { schedulingEnabled } from '@/lib/flags.server';
 import { academyTerms } from '@/lib/terms.server';
 
 /**
@@ -13,26 +12,14 @@ export async function SettingsTabs({
 }: {
   current: 'academy' | 'branding' | 'fields' | 'courses' | 'parentApp' | 'privacy';
 }) {
-  const [t, terms, scheduling] = await Promise.all([
-    getTranslations('academy.tabs'),
-    academyTerms(),
-    schedulingEnabled(),
-  ]);
+  const [t, terms] = await Promise.all([getTranslations('academy.tabs'), academyTerms()]);
   const tabs = [
     { key: 'academy', href: '/settings/academy', label: t('academy') },
     { key: 'branding', href: '/settings/branding', label: t('branding') },
     // Phase 4: student custom fields (G-05), the Family Hub poster and the privacy notice (G-06).
     { key: 'fields', href: '/settings/custom-fields', label: t('fields') },
-    // Phase 5 (release flag `p5-scheduling`): courses and their levels.
-    ...(scheduling
-      ? [
-          {
-            key: 'courses',
-            href: '/settings/courses',
-            label: t('courses', { course: terms.course }),
-          } as const,
-        ]
-      : []),
+    // Phase 5: courses and their levels.
+    { key: 'courses', href: '/settings/courses', label: t('courses', { course: terms.course }) },
     { key: 'parentApp', href: '/settings/parent-app', label: t('parentApp') },
     { key: 'privacy', href: '/settings/privacy', label: t('privacy') },
   ];

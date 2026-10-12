@@ -2,7 +2,6 @@ import { CourseListSchema } from '@academybee/contracts';
 import { PermissionState } from '@academybee/ui/components/feedback';
 import { Stack } from '@academybee/ui/components/layout';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getMessages, getTranslations } from 'next-intl/server';
 
 import { SettingsTabs } from '@/components/academy/settings-tabs';
@@ -10,7 +9,6 @@ import { CoursesEditorLazy } from '@/components/scheduling/courses-lazy';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { schedulingEnabled } from '@/lib/flags.server';
 import { homeFor } from '@/lib/session.server';
 import { academyTerms, withWords, wordsOf } from '@/lib/terms.server';
 
@@ -23,16 +21,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /** Settings → Courses (PRD v3 §9): what students learn and its levels. Changed by owners. */
 export default async function CoursesPage() {
-  const [{ me, academy }, enabled, terms, t, academyT, shellT, messages] = await Promise.all([
+  const [{ me, academy }, terms, t, academyT, shellT, messages] = await Promise.all([
     signedInMember({ experience: 'manage' }),
-    schedulingEnabled(),
     academyTerms(),
     getTranslations('scheduling.courses'),
     getTranslations('academy'),
     getTranslations('shell.permission'),
     getMessages(),
   ]);
-  if (!enabled) notFound();
   const words = wordsOf(terms);
   if (!holds(me, 'course.read'))
     return (
