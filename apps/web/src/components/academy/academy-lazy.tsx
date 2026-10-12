@@ -7,6 +7,9 @@ import { type ComponentProps, lazy, Suspense } from 'react';
 const Profile = lazy(() =>
   import('./academy-profile-form').then((m) => ({ default: m.AcademyProfileForm })),
 );
+const Terminology = lazy(() =>
+  import('./terminology-form').then((m) => ({ default: m.TerminologyForm })),
+);
 const Branding = lazy(() =>
   import('./branding-editor').then((m) => ({ default: m.BrandingEditor })),
 );
@@ -15,6 +18,14 @@ export function AcademyProfileLazy(props: ComponentProps<typeof Profile>) {
   return (
     <Suspense fallback={null}>
       <Profile {...props} />
+    </Suspense>
+  );
+}
+
+export function TerminologyLazy(props: ComponentProps<typeof Terminology>) {
+  return (
+    <Suspense fallback={null}>
+      <Terminology {...props} />
     </Suspense>
   );
 }

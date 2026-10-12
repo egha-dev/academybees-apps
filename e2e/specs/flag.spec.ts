@@ -5,12 +5,13 @@ import { asMigrator } from '../support/db.js';
 import { DEMO_B_ID, hostUrl, requireSeededAcademies } from '../support/hosts.js';
 
 const OVERRIDE_ID = '0199a0a0-0000-7000-8000-0000000e2e01';
-const FLAG = 'p2-role-homes';
+const FLAG = 'p5-scheduling';
 
 /**
- * ADR-041: a release flag hides unfinished work. `p2-role-homes` (the signed-in landing until the
- * real homes ship) is turned off for demo-b only — a per-tenant override written under demo-b's
- * RLS context — so parallel specs on demo-a are unaffected.
+ * ADR-041: a release flag hides unfinished work. `p5-scheduling` (Phase 5 screens while they are
+ * built: Today's classes and attention items, Batches, Timetable) is turned off for demo-b only — a
+ * per-tenant override written under demo-b's RLS context — so parallel specs on demo-a are
+ * unaffected.
  */
 test.describe.configure({ mode: 'serial' });
 test.beforeAll(requireSeededAcademies);
@@ -46,30 +47,29 @@ async function signInToDemoB(page: Page, url: string) {
   await page.getByRole('button', { name: 'Sign in' }).click();
 }
 
-test('the signed-in landing is visible while p2-role-homes is on', async ({ page }, testInfo) => {
+test('Today shows the Phase 5 content while p5-scheduling is on', async ({ page }, testInfo) => {
   await signInToDemoB(page, hostUrl(testInfo, 'demo-b', '/login'));
-  // An Owner without 2FA is asked first (C-80); the landing is one step away.
+  // An Owner without 2FA is asked first (C-80); Today is one step away.
   await expect(page).toHaveURL(hostUrl(testInfo, 'demo-b', '/settings/security?prompt=mfa'), {
     timeout: 15_000,
   });
   await page.getByRole('link', { name: 'Not now' }).click();
   await expect(page).toHaveURL(hostUrl(testInfo, 'demo-b', '/today'));
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'Signed in to Demo B Dance Studio',
-  );
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Today at Demo B Dance Studio');
+  // The counts line ("… students in … active classes") is Phase 5 content, shown with or without
+  // classes yet.
+  await expect(page.getByText(/ in \d+ active (batch|class|group)/)).toBeVisible();
 });
 
-test('turning the flag off for one academy hides the unfinished page', async ({
+test('turning the flag off for one academy hides the unfinished content', async ({
   page,
 }, testInfo) => {
   await setOverride(false);
   await signInToDemoB(page, hostUrl(testInfo, 'demo-b', '/login'));
   await expect(page).toHaveURL(/\/settings\/security/, { timeout: 15_000 });
-  // Without the role homes, staff land on their (real) Security page, with no "Not now" link to
-  // a home that isn't there (C-68, C-80).
   await page.goto(hostUrl(testInfo, 'demo-b', '/today'));
-  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-b', '/settings/security'));
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Security');
-  await expect(page.getByRole('link', { name: 'Not now' })).toHaveCount(0);
-  await expect(page.getByRole('navigation').getByRole('link', { name: 'Today' })).toHaveCount(0);
+  // Today is a real page now (p2-role-homes is gone); only the Phase 5 parts are hidden.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Today at Demo B Dance Studio');
+  await expect(page.getByText(/^Welcome, /)).toBeVisible();
+  await expect(page.getByText(/ in \d+ active (batch|class|group)/)).toHaveCount(0);
 });

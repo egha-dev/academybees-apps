@@ -1,20 +1,158 @@
-import { redirect } from 'next/navigation';
+import { TodaySchema } from '@academybee/contracts';
+import { formatDate } from '@academybee/i18n';
+import { Card } from '@academybee/ui/components/display';
+import { EmptyState } from '@academybee/ui/components/feedback';
+import { Box, Stack } from '@academybee/ui/components/layout';
+import { Text } from '@academybee/ui/components/text';
+import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 
+import { SessionList } from '@/components/scheduling/session-list.server';
 import { PageHeader } from '@/components/shell/page-header';
-import { signedInMember } from '@/components/shell/signed-in.server';
-import { roleHomesEnabled } from '@/lib/flags.server';
+import { holds, signedInMember } from '@/components/shell/signed-in.server';
+import { apiServerGet } from '@/lib/api.server';
+import { schedulingEnabled } from '@/lib/flags.server';
+import { academyTimeZone, hostContext } from '@/lib/host-context.server';
+import { academyTerms } from '@/lib/terms.server';
 
 export const dynamic = 'force-dynamic';
 
-/** Manage home. Phase 5 builds Today; until then the signed-in landing (flag `p2-role-homes`). */
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('scheduling.today');
+  return { title: t('metaTitle') };
+}
+
+/**
+ * Owner Today v1 (UX §10, §11.1): where am I (the academy's day), what needs attention, today's
+ * classes, what happened recently. Finance and growth join in Phases 7–8. The Phase 5 content is
+ * behind `p5-scheduling` until the phase closes; without it the page is the plain welcome.
+ */
 export default async function TodayPage() {
-  const [{ me, academy }, roleHomes, t] = await Promise.all([
+  const [{ me, academy }, enabled, { context }, terms, t, sched] = await Promise.all([
     signedInMember({ experience: 'manage' }),
-    roleHomesEnabled(),
-    getTranslations('auth.home'),
+    schedulingEnabled(),
+    hostContext(),
+    academyTerms(),
+    getTranslations('scheduling.today'),
+    getTranslations('scheduling'),
   ]);
-  // Until the real homes ship, staff land on their Security page (C-68, C-80).
-  if (!roleHomes) redirect('/settings/security');
-  return <PageHeader title={t('title', { academy })} body={t('body', { name: me.user.name })} />;
+  const timeZone = academyTimeZone(context);
+  const welcome = t('welcome', { name: me.user.name });
+  if (!enabled || !holds(me, 'timetable.read'))
+    return <PageHeader title={t('title', { academy })} body={welcome} />;
+  const res = await apiServerGet('/today');
+  if (!res.ok) throw new Error(`today ${res.status}`);
+  const today = TodaySchema.parse(await res.json());
+  const date = formatDate(today.date, { style: 'full', ...(timeZone ? { timeZone } : {}) });
+  const dates = (start: string, end: string) =>
+    start === end
+      ? formatDate(start, { style: 'medium' })
+      : t('holidayDates', {
+          start: formatDate(start, { style: 'medium' }),
+          end: formatDate(end, { style: 'medium' }),
+        });
+  const { attention } = today;
+  const items = [
+    ...attention.batchesWithoutTeacher.map((b) => ({
+      key: `t-${b.id}`,
+      text: t('withoutTeacher', { name: b.name, term: terms.teacher }),
+    })),
+    ...attention.batchesFull.map((b) => ({
+      key: `f-${b.id}`,
+      text: t('full', {
+        name: b.name,
+        day: sched(`weekday.d${b.weekday}` as 'weekday.d1'),
+        students: b.students,
+        capacity: b.capacity,
+      }),
+    })),
+    ...(attention.sessionsWithoutTeacher > 0
+      ? [
+          {
+            key: 'swt',
+            text: t('sessionsWithoutTeacher', { count: attention.sessionsWithoutTeacher }),
+          },
+        ]
+      : []),
+    ...attention.upcomingHolidays.map((h) => ({
+      key: `h-${h.id}`,
+      text: t('upcomingHoliday', { name: h.name, dates: dates(h.startDate, h.endDate) }),
+    })),
+  ];
+
+  return (
+    <Stack spacing={6}>
+      <PageHeader title={t('title', { academy })} body={t('body', { date })} />
+      <Text tone="secondary">
+        {welcome}{' '}
+        {t('counts', {
+          students: today.counts.students,
+          batches: today.counts.batches,
+          term: terms.batch,
+        })}
+      </Text>
+      {today.counts.batches === 0 ? (
+        <EmptyState
+          title={t('noBatchesTitle', { term: terms.batch })}
+          body={t('noBatchesBody', { term: terms.batch })}
+        />
+      ) : (
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 4,
+            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 2fr) minmax(0, 1fr)' },
+            alignItems: 'start',
+          }}
+        >
+          <Card title={t('classesTitle', { term: terms.batch })}>
+            {today.holiday && <Text>{t('holidayToday', { name: today.holiday.name })}</Text>}
+            {today.sessions.length === 0 ? (
+              <Text tone="secondary">{t('classesEmpty')}</Text>
+            ) : (
+              <SessionList sessions={today.sessions} timeZone={timeZone} terms={terms} />
+            )}
+          </Card>
+          <Stack spacing={4}>
+            <Card title={t('attentionTitle')}>
+              {items.length === 0 ? (
+                <Text tone="secondary">{t('allClear')}</Text>
+              ) : (
+                <Stack component="ul" spacing={1.5} sx={{ margin: 0, paddingInlineStart: 4 }}>
+                  {items.map((i) => (
+                    <li key={i.key}>
+                      <Text>{i.text}</Text>
+                    </li>
+                  ))}
+                </Stack>
+              )}
+            </Card>
+            {today.recent.length > 0 && (
+              <Card title={t('recentTitle')}>
+                <Stack
+                  component="ul"
+                  spacing={1.5}
+                  sx={{ margin: 0, padding: 0, listStyle: 'none' }}
+                >
+                  {today.recent.map((r) => (
+                    <li key={r.id}>
+                      <Text>
+                        {t(`recent.${r.type.replace('.', '_')}` as 'recent.batch_created', {
+                          name: r.batchName,
+                        })}
+                      </Text>
+                      <Text variant="meta" tone="secondary">
+                        {formatDate(r.at, { style: 'medium', ...(timeZone ? { timeZone } : {}) })}
+                        {r.actorName ? ` · ${t('by', { name: r.actorName })}` : ''}
+                      </Text>
+                    </li>
+                  ))}
+                </Stack>
+              </Card>
+            )}
+          </Stack>
+        </Box>
+      )}
+    </Stack>
+  );
 }

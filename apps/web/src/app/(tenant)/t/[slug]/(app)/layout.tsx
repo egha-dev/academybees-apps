@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 
 import { AcademyIdentity } from '@/components/academy-identity';
 import { sessionGuardLabels } from '@/components/auth/labels.server';
+import { TermsProvider } from '@/components/terms';
 import { SessionGuard } from '@/components/auth/session-guard';
 import { AccountPanel } from '@/components/shell/account-panel';
 import { AcademyShell } from '@/components/shell/academy-shell';
@@ -14,7 +15,6 @@ import { GlobalAdd } from '@/components/shell/global-add';
 import { experienceFor, navigationFor } from '@/components/shell/navigation.server';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { apiServerGet } from '@/lib/api.server';
-import { roleHomesEnabled } from '@/lib/flags.server';
 import {
   academyColor,
   academyLogo,
@@ -22,6 +22,7 @@ import {
   hostContext,
   requestPath,
 } from '@/lib/host-context.server';
+import { termsFor } from '@/lib/terms.server';
 import { getSession } from '@/lib/session.server';
 
 export const dynamic = 'force-dynamic';
@@ -73,8 +74,8 @@ export default async function SignedInLayout({ children }: { children: ReactNode
     redirect(`/legal?next=${encodeURIComponent(path)}`);
 
   const experience = experienceFor(path, me);
-  const [roleHomes, guard] = await Promise.all([roleHomesEnabled(), sessionGuardLabels()]);
-  const nav = await navigationFor(me, experience, roleHomes);
+  const [guard, terms] = await Promise.all([sessionGuardLabels(), termsFor()]);
+  const nav = await navigationFor(me, experience);
   const caps = me.academy.capabilities as Record<string, string | undefined>;
   const messages = await getMessages();
   return (
@@ -126,7 +127,7 @@ export default async function SignedInLayout({ children }: { children: ReactNode
         />
       }
     >
-      {children}
+      <TermsProvider terms={terms}>{children}</TermsProvider>
       <SessionGuard labels={guard} identifier={me.user.email ?? me.user.phone ?? ''} />
     </AcademyShell>
   );

@@ -83,6 +83,8 @@ describe('tenant resolution', () => {
       displayName: 'Resolution Academy',
       timezone: 'Asia/Kolkata',
       locale: 'en-IN',
+      // The academy's words are public UI labels, not data (C-118).
+      terminology: { batch: 'batch', course: 'course', teacher: 'teacher' },
       branding: {
         primaryColor: '#1F6F5C',
         secondaryColor: null,

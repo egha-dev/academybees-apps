@@ -13,6 +13,7 @@ const active: ContextLookup = {
     displayName: 'Demo A Academy',
     timezone: 'Asia/Kolkata',
     locale: 'en-IN',
+    terminology: { batch: 'batch', course: 'course', teacher: 'teacher' },
     branding: {
       primaryColor: '#1F6F5C',
       secondaryColor: null,
@@ -104,6 +105,7 @@ describe('decideRoute (ARCHITECTURE §10.2)', () => {
         displayName: 'Setup Music School',
         timezone: 'Asia/Kolkata',
         locale: 'en-IN',
+        terminology: { batch: 'batch', course: 'course', teacher: 'teacher' },
         branding: {
           primaryColor: null,
           secondaryColor: null,

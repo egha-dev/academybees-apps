@@ -47,7 +47,7 @@ test('the academy URL opens its own sign-in; the owner is asked for 2FA, then To
   ).toBeVisible();
   await page.getByRole('link', { name: 'Not now' }).click();
   await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/today'));
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Signed in to Demo A Academy');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Today at Demo A Academy');
 
   // Signed in, the sign-in page and the root both go home.
   await page.goto(hostUrl(testInfo, 'demo-a', '/login'));
@@ -166,7 +166,7 @@ test('invite → accept → signed in; then forgot → reset → sign in with th
   await page.getByLabel('Create a password').fill('Garden-Tiger#2026');
   await page.getByRole('button', { name: 'Accept and join' }).click();
   await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/teach'));
-  await expect(page.getByRole('main').getByText("You're signed in as Esha Teacher.")).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Hello, Esha Teacher' })).toBeVisible();
 
   // The link is single use.
   await signOut(page, testInfo);
@@ -253,7 +253,7 @@ test('a teacher of two academies signs in to each one separately', async ({ page
   // Both sessions now live side by side; each host shows its own academy.
   await page.goto(hostUrl(testInfo, 'demo-a', '/teach'));
   await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/teach'));
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Demo A Academy');
+  await expect(page.getByRole('main').getByText('Your classes at Demo A Academy.')).toBeVisible();
 
   // Signing out of demo-a leaves demo-b signed in.
   await signOut(page, testInfo, 'demo-a');

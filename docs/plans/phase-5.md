@@ -221,6 +221,25 @@ Each slice: branch `p5/<slice>` from the latest `main` → PR with the DoD check
 - **5.15** Remove `p2-role-homes` (both homes are real now).
 - **Tests:** E2E Today (owner) and Teach (teacher sees only own classes); terminology switch E2E; axe light/dark; route budget for both homes.
 
+*As built (S4):*
+- **The academy's words (C-118):**
+  - `terminology` in the public tenant context (cached up to 60 s by the web proxy) and in `GET /academy/settings`; `PATCH /academy/terminology` (versioned, audited `academy.terminology_changed`);
+  - `termsFor()` (server) and `TermsProvider` / `useTerm()` (client, in the academy layout) resolve every form through `common.terms` ICU selects;
+  - Settings → Academy gets "Words your academy uses";
+  - Student 360 activity labels for enrolments and transfers use the academy's word.
+- **Owner Today v1** (`GET /today`, `/today`): the academy's date (C-119), today's classes (holiday noted), attention items (no teacher, full on a day, classes without a teacher in 7 days, upcoming holidays), student and batch counts, recent batch changes, empty state. All in the caller's scope.
+- **Teacher home v1** (`/teach`, C-117): today, the next 7 days and "My batches" from the scoped `/sessions` and `/batches`; Take attendance shown disabled with a reason.
+- **Release flags:**
+  - `p2-role-homes` **removed**: `/today` and `/teach` are real pages, the nav always has them, and the security prompt always offers "Not now";
+  - `p5-scheduling` **added**: it gates the Phase 5 content of Today and the Teacher home (off → the plain welcome);
+  - `flag.spec.ts` now proves the mechanism with it.
+- **Messages:** new namespace `scheduling` (weekday keys `d1`–`d7`; numeric keys aren't allowed).
+- **Budget:** `/today` and `/teach` 185.4, `/settings/academy` 182.4 KB gz.
+- **Tests:**
+  - integration: terminology (context, versions, invalid choice) in `academy-branding.int.spec.ts`; Today attention in `schedule.int.spec.ts`; registry +2 routes;
+  - E2E `scheduling-home.spec.ts`: Today, the Teacher home, Batch→Group / Teacher→Coach on demo-b, waiting out the context cache;
+  - `flag.spec.ts`, `auth.spec.ts` updated.
+
 ### S5 `p5/batches-ui` — Courses, Batches, Batch Workspace
 
 - **5.16 Batches list** (`/batches`, RUN nav, `useTerm` label):

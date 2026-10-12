@@ -5,7 +5,7 @@ import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
 import { getMessages, getTranslations } from 'next-intl/server';
 
-import { AcademyProfileLazy } from '@/components/academy/academy-lazy';
+import { AcademyProfileLazy, TerminologyLazy } from '@/components/academy/academy-lazy';
 import { SettingsTabs } from '@/components/academy/settings-tabs';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
@@ -53,6 +53,11 @@ export default async function AcademySettingsPage() {
           saved: t('settings.saved'),
           errors: messages.academy.errors,
         }}
+      />
+      <TerminologyLazy
+        value={value}
+        canManage={canManage}
+        labels={{ ...messages.academy.terminology, errors: messages.academy.errors }}
       />
     </Stack>
   );

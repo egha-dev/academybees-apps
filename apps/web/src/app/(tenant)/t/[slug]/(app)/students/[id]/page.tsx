@@ -25,6 +25,7 @@ import type { PeopleErrorLabels } from '@/components/people/errors';
 import { STATUS_TONE } from '@/components/people/status';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
+import { academyTerms } from '@/lib/terms.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 
 export const dynamic = 'force-dynamic';
@@ -488,7 +489,7 @@ async function Activity({
   cursor: string | undefined;
   date: (v: string) => string;
 }) {
-  const t = await getTranslations('people');
+  const [t, terms] = await Promise.all([getTranslations('people'), academyTerms()]);
   const res = await apiServerGet(
     `/students/${studentId}/activity?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
   );
@@ -513,6 +514,13 @@ async function Activity({
         });
       case 'consent.recorded':
         return t('activity.type.consent_recorded', { action: String(d.action) });
+      case 'enrolment.started':
+      case 'enrolment.days_changed':
+      case 'enrolment.ended':
+      case 'student.transferred':
+        return t(`activity.type.${e.type.replace('.', '_') as 'enrolment_started'}`, {
+          term: terms.batch,
+        });
       default:
         return t(`activity.type.${e.type.replace('.', '_') as 'student_created'}`);
     }
