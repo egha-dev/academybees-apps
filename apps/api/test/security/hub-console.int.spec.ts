@@ -222,6 +222,8 @@ describe('family hub and console sessions', () => {
 
     let secret = '';
     let recoveryCodes: string[] = [];
+    /** The code that confirmed enrolment: replaying it must fail whichever time step it is now. */
+    let enrolledCode = '';
 
     it('first sign-in: no session, an enrol step; enrolment confirms a code and signs in', async () => {
       const res = await consoleLogin();
@@ -244,10 +246,11 @@ describe('family hub and console sessions', () => {
         .send({ token, code: '000000' });
       expect(wrong.status).toBe(401);
 
+      enrolledCode = totpCode(secret);
       const confirm = await http()
         .post('/api/v1/auth/mfa/enrol/confirm')
         .set('Host', CONSOLE)
-        .send({ token, code: totpCode(secret) });
+        .send({ token, code: enrolledCode });
       expect(confirm.status).toBe(200);
       recoveryCodes = confirm.body.recoveryCodes as string[];
       expect(recoveryCodes).toHaveLength(10);
@@ -266,11 +269,12 @@ describe('family hub and console sessions', () => {
     it('later sign-ins need a code: a replayed step is refused, a recovery code works once', async () => {
       const step = (await consoleLogin()).body.mfa as { step: string; token: string };
       expect(step.step).toBe('verify');
-      // The enrolment already used the current time step.
+      // Replaying the enrolment's code is refused (a fresh code would pass if a new 30 s step
+      // had begun since, which made this test flaky).
       const replay = await http()
         .post('/api/v1/auth/mfa/verify')
         .set('Host', CONSOLE)
-        .send({ token: step.token, code: totpCode(secret) });
+        .send({ token: step.token, code: enrolledCode });
       expect(replay.status).toBe(401);
 
       const recovered = await http()
