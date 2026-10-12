@@ -44,7 +44,8 @@
     "academySettings": "Settings",
     "teachers": "Teachers",
     "joinRequests": "Join requests",
-    "batches": "{term, select, class {Classes} group {Groups} other {Batches}}"
+    "batches": "{term, select, class {Classes} group {Groups} other {Batches}}",
+    "timetable": "Timetable"
   },
   "account": {
     "signedInAs": "Signed in as {name}",

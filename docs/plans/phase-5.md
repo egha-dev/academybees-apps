@@ -296,6 +296,29 @@ Each slice: branch `p5/<slice>` from the latest `main` → PR with the DoD check
   - seed: an Indian holiday sample for demo-a.
 - **Tests:** E2E week view shows generated sessions; cancel one; Diwali preview lists affected classes → confirm → cancelled; make-up session; mobile timeline; axe.
 
+*As built (S6):*
+- **Timetable** (`/timetable`, RUN nav "Timetable" before Batches, flag `p5-scheduling`; staff and teachers, scoped by the API):
+  - views Day, Week (default) and "By teacher", in the URL (`?view=&date=`), with Previous / Today / Next;
+  - course and teacher filters as a plain GET form (no client code);
+  - server-rendered: a CSS grid of seven day columns on wide screens and one chronological column on phones (the timeline); today's column is marked; holidays show as a band on their days;
+  - each class is a link (`?session=<id>`) that opens its sheet.
+- **Session sheet** (lazy chunk):
+  - time, status, teacher, note;
+  - move it or change its teacher, cancel with a reason (teacher not available / something else), bring it back;
+  - add a make-up for a cancelled class; open its batch;
+  - double-booking warnings after a save;
+  - a class that has started can't be changed, and a holiday's classes come back only by removing the holiday.
+- **Holidays** (`/timetable/holidays`): upcoming and earlier ones (90 days back) with classes cancelled. Add a holiday shows a preview first: totals, then classes and students per day, with "parents get a notice when notifications arrive". Nothing changes before "Add holiday and cancel N classes". Future holidays can be removed, which brings their classes back.
+- **Shell:** the phone bottom bar keeps Today • Students • More (UX §25) now that RUN has more items; `PlainButton` gains `type="submit"` for plain GET forms.
+- **Budget:** `/timetable` and `/timetable/holidays` 188.8 KB gz.
+- **Messages:** several plurals in one message (`plurals()` in `components/scheduling/plural.ts`, spec).
+- **Seeds:** the S5 holiday (Founders' Day) covers the sample; no new seed data.
+- **Tests:** E2E `timetable.spec.ts`:
+  - the week shows seeded classes → cancel a class → make-up;
+  - a Diwali-style holiday: preview → confirm cancels exactly the previewed count → remove brings them back;
+  - a teacher sees only their classes (every project, including phones);
+  - axe.
+
 ### S7 `p5/journey-e2e` — exit journey, flags, docs
 
 - **5.21 Exit E2E:** create batch with weekly schedule → week view → cancel one → teacher signs in and sees only their batches (desktop + phones).

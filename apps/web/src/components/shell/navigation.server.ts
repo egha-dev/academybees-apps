@@ -69,6 +69,17 @@ export async function navigationFor(
           } as const,
         ]
       : []),
+    // UX §8 order: Timetable, then Batches, then people.
+    ...(options.scheduling && can('timetable.read')
+      ? [
+          {
+            key: 'timetable',
+            label: t('timetable'),
+            href: '/timetable',
+            icon: 'timetable',
+          } as const,
+        ]
+      : []),
     ...(options.scheduling && can('batch.read')
       ? [
           {
@@ -116,6 +127,8 @@ export async function navigationFor(
         ]
       : []),
   ];
+  // UX §25 (Owner/Admin): Today • Students • … • More; the rest is under More.
+  const primary = run.find((i) => i.key === 'students') ?? run[0];
   return {
     groups: [
       { key: 'home', label: t('groups.home'), items: today },
@@ -123,7 +136,6 @@ export async function navigationFor(
       { key: 'academy', label: t('groups.academy'), items: academy },
       account,
     ],
-    // UX §25 Owner/Admin: Today • Students • Finance • More.
-    bottom: [...today, ...run.slice(0, 1), more],
+    bottom: [...today, ...(primary ? [primary] : []), more],
   };
 }

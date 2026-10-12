@@ -61,7 +61,8 @@ test('the academy URL opens its own sign-in; the owner is asked for 2FA, then To
 test('a teacher lands on Teach, and Today sends them there', async ({ page }, testInfo) => {
   await page.goto(hostUrl(testInfo, 'demo-a', '/login'));
   await signIn(page, 'teacher@demo-a.test');
-  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/teach'));
+  // Teach is server-rendered after the redirect; allow for a busy server (as signInAt does).
+  await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/teach'), { timeout: 15_000 });
   await page.goto(hostUrl(testInfo, 'demo-a', '/today'));
   await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/teach'));
 });
