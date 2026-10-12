@@ -199,3 +199,216 @@ export const TransferStudentSchema = z
     confirmOverCapacity: z.boolean().default(false),
   })
   .refine((t) => t.fromBatchId !== t.toBatchId, { message: 'same_batch', path: ['toBatchId'] });
+
+// ── Weekly pattern (C-113, C-121) ─────────────────────────────────────────────────────────
+
+/** `HH:MM`, 24-hour. */
+export const TimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+
+export const SlotInputSchema = z
+  .object({
+    weekday: WeekdaySchema,
+    start: TimeSchema,
+    end: TimeSchema,
+    /** Who teaches this slot; default: the batch's primary teacher. */
+    teacherId: z.uuid().nullable().optional(),
+  })
+  .refine((s) => s.end > s.start, { message: 'end_before_start', path: ['end'] });
+
+/** `PUT /batches/:id/schedule`: the full weekly pattern from a date (default today). */
+export const SaveScheduleSchema = z
+  .object({
+    from: CalendarDateSchema.optional(),
+    slots: z.array(SlotInputSchema).max(14),
+  })
+  .superRefine((v, ctx) => {
+    v.slots.forEach((a, i) =>
+      v.slots.forEach((b, j) => {
+        if (j > i && a.weekday === b.weekday && a.start < b.end && b.start < a.end)
+          ctx.addIssue({
+            code: 'custom',
+            message: 'overlapping_slots',
+            path: ['slots', j, 'start'],
+          });
+      }),
+    );
+  });
+
+export const WeeklySlotSchema = z.object({
+  id: z.uuid(),
+  weekday: WeekdaySchema,
+  start: z.string(),
+  end: z.string(),
+  teacherId: z.uuid().nullable(),
+  teacherName: z.string().nullable(),
+  effectiveFrom: z.string(),
+});
+
+// ── Class sessions ────────────────────────────────────────────────────────────────────────
+
+export const SESSION_STATUSES = ['SCHEDULED', 'CANCELLED', 'COMPLETED'] as const;
+export const SESSION_CANCEL_REASONS = ['TEACHER_UNAVAILABLE', 'HOLIDAY', 'OTHER'] as const;
+
+export const SessionSchema = z.object({
+  id: z.uuid(),
+  batchId: z.uuid(),
+  batchName: z.string(),
+  courseName: z.string(),
+  branchId: z.uuid(),
+  teacherId: z.uuid().nullable(),
+  teacherName: z.string().nullable(),
+  /** Academy-local date and times. */
+  date: z.string(),
+  start: z.string(),
+  end: z.string(),
+  startsAt: z.string(),
+  endsAt: z.string(),
+  status: z.enum(SESSION_STATUSES),
+  origin: z.enum(['GENERATED', 'MANUAL']),
+  cancelReason: z.enum(SESSION_CANCEL_REASONS).nullable(),
+  holidayName: z.string().nullable(),
+  makeupForSessionId: z.uuid().nullable(),
+  /** Changed by staff, so weekly-pattern edits leave it alone (C-113). */
+  changed: z.boolean(),
+  note: z.string().nullable(),
+  version: z.number().int(),
+});
+export type Session = z.infer<typeof SessionSchema>;
+
+/** Another class the same teacher has at an overlapping time (a warning, not a refusal). */
+export const DoubleBookingSchema = z.object({
+  sessionId: z.uuid(),
+  teacherName: z.string(),
+  date: z.string(),
+  start: z.string(),
+  end: z.string(),
+  otherBatchName: z.string(),
+});
+export const SessionResultSchema = z.object({
+  session: SessionSchema,
+  doubleBookings: z.array(DoubleBookingSchema),
+});
+
+export const ScheduleSchema = z.object({
+  slots: z.array(WeeklySlotSchema),
+  upcoming: z.array(SessionSchema),
+  doubleBookings: z.array(DoubleBookingSchema),
+  /** Students whose day plan includes a day the batch no longer meets (C-120): staff decide. */
+  plansOutside: z.array(
+    z.object({ enrolmentId: z.uuid(), studentName: z.string(), weekdays: z.array(WeekdaySchema) }),
+  ),
+});
+export type Schedule = z.infer<typeof ScheduleSchema>;
+
+export const HolidaySchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  startDate: z.string(),
+  endDate: z.string(),
+  kind: z.enum(['HOLIDAY', 'CLOSURE']),
+  branchId: z.uuid().nullable(),
+  removedAt: z.string().nullable(),
+  cancelledSessions: z.number().int(),
+});
+export type Holiday = z.infer<typeof HolidaySchema>;
+
+export const SessionsQuerySchema = z
+  .object({
+    from: CalendarDateSchema,
+    to: CalendarDateSchema,
+    batchId: z.uuid().optional(),
+    teacherId: z.uuid().optional(),
+    courseId: z.uuid().optional(),
+    branchId: z.uuid().optional(),
+  })
+  .refine((q) => q.to >= q.from, { message: 'to_before_from', path: ['to'] })
+  .refine((q) => (Date.parse(q.to) - Date.parse(q.from)) / 86_400_000 <= 31, {
+    message: 'range_too_long',
+    path: ['to'],
+  });
+export const SessionListSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  today: z.string(),
+  items: z.array(SessionSchema),
+  holidays: z.array(HolidaySchema),
+});
+
+const SessionTimes = { date: CalendarDateSchema, start: TimeSchema, end: TimeSchema };
+/** `POST /sessions`: an extra class, or a make-up for a cancelled one (C-115). */
+export const CreateSessionSchema = z
+  .object({
+    batchId: z.uuid(),
+    ...SessionTimes,
+    teacherId: z.uuid().nullable().optional(),
+    makeupForSessionId: z.uuid().optional(),
+    note: z.string().trim().max(500).optional(),
+  })
+  .refine((s) => s.end > s.start, { message: 'end_before_start', path: ['end'] });
+/** `PATCH /sessions/:id`: move it, change the teacher, add a note (sets "changed"). */
+export const UpdateSessionSchema = z
+  .object({
+    version: Version,
+    date: CalendarDateSchema.optional(),
+    start: TimeSchema.optional(),
+    end: TimeSchema.optional(),
+    teacherId: z.uuid().nullable().optional(),
+    note: z.string().trim().max(500).nullable().optional(),
+  })
+  .refine((s) => !s.start || !s.end || s.end > s.start, {
+    message: 'end_before_start',
+    path: ['end'],
+  });
+export const CancelSessionSchema = z.object({
+  version: Version,
+  reason: z.enum(['TEACHER_UNAVAILABLE', 'OTHER']),
+  note: z.string().trim().max(500).optional(),
+});
+export const RestoreSessionSchema = z.object({ version: Version });
+
+// ── Holidays (G-03, C-114, C-115) ─────────────────────────────────────────────────────────
+
+/** Most classes one holiday may cancel in one go. */
+export const HOLIDAY_MAX_SESSIONS = 2000;
+
+export const HolidayInputSchema = z
+  .object({
+    name: z.string().trim().min(1).max(120),
+    startDate: CalendarDateSchema,
+    endDate: CalendarDateSchema,
+    kind: z.enum(['HOLIDAY', 'CLOSURE']).default('HOLIDAY'),
+    /** Omit for every branch. */
+    branchId: z.uuid().nullable().optional(),
+  })
+  .refine((h) => h.endDate >= h.startDate, { message: 'ends_before_start', path: ['endDate'] })
+  .refine((h) => (Date.parse(h.endDate) - Date.parse(h.startDate)) / 86_400_000 <= 366, {
+    message: 'range_too_long',
+    path: ['endDate'],
+  });
+export const HolidayPreviewSchema = z.object({
+  days: z.array(
+    z.object({
+      date: z.string(),
+      sessions: z.array(
+        z.object({ id: z.uuid(), batchName: z.string(), start: z.string(), end: z.string() }),
+      ),
+      students: z.number().int(),
+    }),
+  ),
+  totals: z.object({
+    sessions: z.number().int(),
+    batches: z.number().int(),
+    students: z.number().int(),
+  }),
+});
+export const HolidayCreatedSchema = z.object({
+  holiday: HolidaySchema,
+  cancelled: z.number().int(),
+  /** Parent notices recorded (one per expected child), delivered from Phase 6 (C-114). */
+  notices: z.number().int(),
+});
+export const HolidayListSchema = z.object({ items: z.array(HolidaySchema) });
+export const HolidayListQuerySchema = z.object({
+  from: CalendarDateSchema.optional(),
+  includeRemoved: z.coerce.boolean().default(false),
+});

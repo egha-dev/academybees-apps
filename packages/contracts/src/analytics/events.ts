@@ -229,6 +229,44 @@ export const ANALYTICS_EVENTS = {
     description: 'A student moved to another batch on a date (G-27).',
     properties: z.strictObject({ dayPlan: z.enum(['all', 'some']) }),
   }),
+  'batch.schedule_saved': defineAnalyticsEvent({
+    name: 'batch.schedule_saved',
+    version: 1,
+    description: 'A batch weekly pattern was saved (C-113, C-121).',
+    properties: z.strictObject({
+      slots: z.number().int().min(0).max(14),
+      days: z.number().int().min(0).max(7),
+      fromToday: z.boolean(),
+    }),
+  }),
+  'session.added': defineAnalyticsEvent({
+    name: 'session.added',
+    version: 1,
+    description: 'An extra class or a make-up class was added (C-115).',
+    properties: z.strictObject({ kind: z.enum(['adhoc', 'makeup']) }),
+  }),
+  'session.rescheduled': defineAnalyticsEvent({
+    name: 'session.rescheduled',
+    version: 1,
+    description: 'One class was moved to another time or day.',
+    properties: z.strictObject({}),
+  }),
+  'session.cancelled': defineAnalyticsEvent({
+    name: 'session.cancelled',
+    version: 1,
+    description: 'One class was cancelled by staff.',
+    properties: z.strictObject({ reason: z.enum(['TEACHER_UNAVAILABLE', 'OTHER']) }),
+  }),
+  'holiday.created': defineAnalyticsEvent({
+    name: 'holiday.created',
+    version: 1,
+    description: 'A holiday or closure cancelled classes (G-03).',
+    properties: z.strictObject({
+      days: z.number().int().min(1).max(367),
+      sessions: z.number().int().min(0),
+      kind: z.enum(['HOLIDAY', 'CLOSURE']),
+    }),
+  }),
   'session.generated': defineAnalyticsEvent({
     name: 'session.generated',
     version: 1,

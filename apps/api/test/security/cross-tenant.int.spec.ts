@@ -112,6 +112,8 @@ describe('cross-tenant suite', () => {
         return a.people.batchId;
       case 'enrolment':
         return a.people.enrolmentId;
+      case 'session':
+        return a.people.sessionId;
       default:
         throw new Error(`unknown fixture ${name}`);
     }

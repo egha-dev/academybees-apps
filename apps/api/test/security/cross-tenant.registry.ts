@@ -538,6 +538,38 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
       skip: 'batches.int.spec.ts › another academy’s courses, batches and enrolments are 404',
     },
   })),
+  // Weekly patterns, sessions and holidays (Phase 5 S3). State-changing routes (and the sessions
+  // range, which needs dates) are covered with another academy's ids in schedule.int.spec.ts.
+  {
+    method: 'GET',
+    path: '/api/v1/batches/:id/schedule',
+    params: { id: 'batch' },
+    session: true,
+    capability: 'batch.read',
+  },
+  { method: 'GET', path: '/api/v1/holidays', session: true, capability: 'timetable.read' },
+  ...(
+    [
+      ['PUT', '/api/v1/batches/:id/schedule', 'batch', 'timetable.manage'],
+      ['GET', '/api/v1/sessions', 'session', 'timetable.read'],
+      ['POST', '/api/v1/sessions', 'session', 'session.manage'],
+      ['PATCH', '/api/v1/sessions/:id', 'session', 'session.manage'],
+      ['POST', '/api/v1/sessions/:id/cancel', 'session', 'session.manage'],
+      ['POST', '/api/v1/sessions/:id/restore', 'session', 'session.manage'],
+      ['POST', '/api/v1/holidays/preview', 'session', 'timetable.manage'],
+      ['POST', '/api/v1/holidays', 'session', 'timetable.manage'],
+      ['DELETE', '/api/v1/holidays/:id', 'session', 'timetable.manage'],
+    ] as const
+  ).map(([method, path, fixture, capability]) => ({
+    method,
+    path,
+    params: { id: fixture },
+    session: true,
+    capability,
+    spoof: {
+      skip: 'schedule.int.spec.ts › another academy’s schedule, sessions and holidays are 404',
+    },
+  })),
   // Student import (Phase 4 S5). The job routes are exercised end to end, including another
   // academy's attempts, in the dedicated test (needs storage and a job in flight).
   {
