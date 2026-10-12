@@ -31,7 +31,6 @@ export function experienceFor(path: string, me: MeResponse): Experience {
 export async function navigationFor(
   me: MeResponse,
   experience: Experience,
-  roleHomes: boolean,
 ): Promise<{ groups: ShellNavGroup[]; bottom: ShellNavItem[] }> {
   const t = await getTranslations('shell.nav');
   const can = (capability: string) =>
@@ -47,17 +46,15 @@ export async function navigationFor(
   };
 
   if (experience === 'teach') {
-    const home: ShellNavItem[] = roleHomes
-      ? [{ key: 'teach', label: t('home'), href: '/teach', icon: 'home' }]
-      : [];
+    const home: ShellNavItem[] = [{ key: 'teach', label: t('home'), href: '/teach', icon: 'home' }];
     return {
       groups: [{ key: 'home', label: t('groups.home'), items: home }, account],
       bottom: [...home, more],
     };
   }
-  const today: ShellNavItem[] = roleHomes
-    ? [{ key: 'today', label: t('today'), href: '/today', icon: 'today' }]
-    : [];
+  const today: ShellNavItem[] = [
+    { key: 'today', label: t('today'), href: '/today', icon: 'today' },
+  ];
   // RUN (UX §8): the people workspaces, phase by phase.
   const run: ShellNavItem[] = [
     ...(can('student.read')

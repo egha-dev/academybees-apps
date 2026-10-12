@@ -67,6 +67,7 @@ describe('lookupTenantContext cache (review M3)', () => {
                   displayName: 'Demo A',
                   timezone: 'Asia/Kolkata',
                   locale: 'en-IN',
+                  terminology: { batch: 'batch', course: 'course', teacher: 'teacher' },
                   branding: {
                     primaryColor: null,
                     secondaryColor: null,
@@ -109,6 +110,7 @@ describe('lookupTenantContext cache (review M3)', () => {
           displayName: 'Gurushethra',
           timezone: 'Asia/Kolkata',
           locale: 'en-IN',
+          terminology: { batch: 'batch', course: 'course', teacher: 'teacher' },
           branding: {
             primaryColor: null,
             secondaryColor: null,

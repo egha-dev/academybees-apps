@@ -98,5 +98,31 @@
     "required": "Required.",
     "offline": "You're offline. Changes need a connection.",
     "generic": "That didn't save. Try again; if it keeps failing, reload the page."
+  },
+  "terminology": {
+    "title": "Words your academy uses",
+    "body": "Every screen and message uses these words. Changes show within a minute.",
+    "batch": "A group that meets together",
+    "course": "What students learn",
+    "teacher": "Who teaches",
+    "options": {
+      "batch": {
+        "batch": "Batch",
+        "class": "Class",
+        "group": "Group"
+      },
+      "course": {
+        "course": "Course",
+        "program": "Program"
+      },
+      "teacher": {
+        "teacher": "Teacher",
+        "coach": "Coach",
+        "instructor": "Instructor",
+        "trainer": "Trainer"
+      }
+    },
+    "save": "Save words",
+    "saved": "Saved. Every screen now uses these words."
   }
 }

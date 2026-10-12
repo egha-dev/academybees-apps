@@ -285,6 +285,39 @@ describe('academy settings and branding', () => {
     );
   });
 
+  it('terminology: the academy’s own words reach every screen through the tenant context (C-118)', async () => {
+    const t = await createTenantFixture(urls.migrator);
+    const s = await signIn(t);
+    const before = await get(s, 'settings');
+    expect(before.body.terminology).toEqual({
+      batch: 'batch',
+      course: 'course',
+      teacher: 'teacher',
+    });
+    const res = await patch(s, 'terminology', {
+      version: before.body.version,
+      terminology: { batch: 'class', course: 'program', teacher: 'coach' },
+    });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.terminology).toEqual({ batch: 'class', course: 'program', teacher: 'coach' });
+    const context = await http().get('/api/v1/tenant/context').set('Host', s.host);
+    expect(context.body.terminology).toEqual({
+      batch: 'class',
+      course: 'program',
+      teacher: 'coach',
+    });
+    const stale = await patch(s, 'terminology', {
+      version: before.body.version,
+      terminology: { batch: 'group', course: 'course', teacher: 'teacher' },
+    });
+    expect(stale.body.error.code).toBe('VERSION_CONFLICT');
+    const invalid = await patch(s, 'terminology', {
+      version: res.body.version,
+      terminology: { batch: 'squad', course: 'course', teacher: 'teacher' },
+    });
+    expect(invalid.status).toBe(400);
+  });
+
   it('admins read; only branding managers change; academies are isolated', async () => {
     const t = await createTenantFixture(urls.migrator);
     const admin = await addMemberFixture(urls.migrator, t.id, {

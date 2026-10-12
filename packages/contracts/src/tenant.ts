@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { DEFAULT_TERMINOLOGY, TerminologySchema } from './academy-types.js';
+
 /** Academy lifecycle (C-11). */
 export const TenantStatusSchema = z.enum([
   'PENDING_APPROVAL',
@@ -24,6 +26,8 @@ export const TenantContextResponseSchema = z.discriminatedUnion('status', [
     displayName: z.string(),
     timezone: z.string(),
     locale: z.string(),
+    /** The academy's own words (ADR-029, C-118): Batch/Class/Group, Course/Program, Teacher/Coach… */
+    terminology: TerminologySchema.default(DEFAULT_TERMINOLOGY),
     branding: z.object({
       primaryColor: HexColor.nullable(),
       secondaryColor: HexColor.nullable(),

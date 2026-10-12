@@ -381,6 +381,37 @@ describe('weekly patterns, sessions and holidays', () => {
     ).toBe(400);
   });
 
+  it('Today: today’s classes in the academy’s day, and what needs attention', async () => {
+    const lonely = await batch('Nobody teaches', []);
+    await schedule(lonely.id, [slot(isoWeekday(addDays(today(), 2)), '20:00', '21:00')]);
+    const full = await send(owner, 'post', '/batches', {
+      name: 'Full on Mondays',
+      courseId: a.people.courseId,
+      capacity: 1,
+      teacherIds: [a.people.teacherId],
+    });
+    await schedule(full.body.id, [slot(1, '16:00', '17:00')]);
+    const kid = await send(owner, 'post', '/students', { fullName: 'Seat Taker' });
+    await send(owner, 'post', `/batches/${full.body.id}/enrolments`, { studentId: kid.body.id });
+    const res = await get(owner, '/today');
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.date).toBe(today());
+    expect((res.body.sessions as Session[]).every((s) => s.date === today())).toBe(true);
+    const attention = res.body.attention as {
+      batchesWithoutTeacher: { id: string }[];
+      batchesFull: { id: string; students: number; capacity: number }[];
+      sessionsWithoutTeacher: number;
+    };
+    expect(attention.batchesWithoutTeacher.map((b) => b.id)).toContain(lonely.id);
+    expect(attention.batchesFull).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: full.body.id, students: 1, capacity: 1 }),
+      ]),
+    );
+    expect(attention.sessionsWithoutTeacher).toBeGreaterThanOrEqual(1);
+    expect((res.body.recent as { batchId: string }[]).length).toBeGreaterThan(0);
+  });
+
   it('another academy’s schedule, sessions and holidays are 404', async () => {
     const other = await signIn(b, b.user.email);
     const batchId = a.people.batchId;

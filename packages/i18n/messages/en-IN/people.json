@@ -302,7 +302,11 @@
       "teacher_created": "Teacher added",
       "teacher_updated": "Details changed",
       "teacher_archived": "Archived",
-      "teacher_restored": "Restored"
+      "teacher_restored": "Restored",
+      "enrolment_started": "Joined {term, select, class {a class} group {a group} other {a batch}}",
+      "enrolment_days_changed": "Days changed in {term, select, class {a class} group {a group} other {a batch}}",
+      "enrolment_ended": "Left {term, select, class {a class} group {a group} other {a batch}}",
+      "student_transferred": "Moved to another {term, select, class {class} group {group} other {batch}}"
     }
   },
   "errors": {

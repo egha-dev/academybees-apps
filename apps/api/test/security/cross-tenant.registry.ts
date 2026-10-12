@@ -548,6 +548,15 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     capability: 'batch.read',
   },
   { method: 'GET', path: '/api/v1/holidays', session: true, capability: 'timetable.read' },
+  { method: 'GET', path: '/api/v1/today', session: true, capability: 'timetable.read' },
+  {
+    method: 'PATCH',
+    path: '/api/v1/academy/terminology',
+    session: true,
+    capability: 'academy.settings.manage',
+    body: { version: 1, terminology: { batch: 'class', course: 'course', teacher: 'coach' } },
+    spoof: { skip: 'academy-settings.int.spec.ts › terminology' },
+  },
   ...(
     [
       ['PUT', '/api/v1/batches/:id/schedule', 'batch', 'timetable.manage'],

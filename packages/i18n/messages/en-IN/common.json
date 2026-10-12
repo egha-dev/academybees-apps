@@ -27,5 +27,19 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System"
+  },
+  "terms": {
+    "batch": "{term, select, class {class} group {group} other {batch}}",
+    "batches": "{term, select, class {classes} group {groups} other {batches}}",
+    "Batch": "{term, select, class {Class} group {Group} other {Batch}}",
+    "Batches": "{term, select, class {Classes} group {Groups} other {Batches}}",
+    "course": "{term, select, program {program} other {course}}",
+    "courses": "{term, select, program {programs} other {courses}}",
+    "Course": "{term, select, program {Program} other {Course}}",
+    "Courses": "{term, select, program {Programs} other {Courses}}",
+    "teacher": "{term, select, coach {coach} instructor {instructor} trainer {trainer} other {teacher}}",
+    "teachers": "{term, select, coach {coaches} instructor {instructors} trainer {trainers} other {teachers}}",
+    "Teacher": "{term, select, coach {Coach} instructor {Instructor} trainer {Trainer} other {Teacher}}",
+    "Teachers": "{term, select, coach {Coaches} instructor {Instructors} trainer {Trainers} other {Teachers}}"
   }
 }

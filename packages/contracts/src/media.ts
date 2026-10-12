@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { TerminologySchema } from './academy-types.js';
+
 /**
  * Media purposes (C-93, C-97). Each purpose fixes its visibility and limits: only branding is
  * public (served from the public bucket's domain); everything else is private and read through
@@ -88,9 +90,16 @@ export const AcademySettingsSchema = z.object({
   address: z.string().nullable(),
   timezone: z.string(),
   currency: z.string(),
+  terminology: TerminologySchema,
   version: z.number().int(),
 });
 export type AcademySettings = z.infer<typeof AcademySettingsSchema>;
+
+/** `PATCH /academy/terminology` — the words the academy uses (ADR-029, C-118). */
+export const UpdateTerminologySchema = z.object({
+  version: z.number().int().min(1),
+  terminology: TerminologySchema,
+});
 
 /** `GET /academy/branding` — identity on every surface (UX v1.1 §6, §8; C-49). */
 export const AcademyBrandingSchema = z.object({

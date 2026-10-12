@@ -3,6 +3,7 @@ import {
   AcademySettingsSchema,
   ProfileStepSchema,
   UpdateBrandingSchema,
+  UpdateTerminologySchema,
 } from '@academybee/contracts';
 import { Body, Controller, Delete, Get, HttpCode, Patch, Put, Req } from '@nestjs/common';
 import type { Request } from 'express';
@@ -16,6 +17,7 @@ import { AcademyService } from './academy.service.js';
 class UpdateSettingsDto extends createZodDto(
   ProfileStepSchema.extend({ version: z.number().int() }),
 ) {}
+class UpdateTerminologyDto extends createZodDto(UpdateTerminologySchema) {}
 class UpdateBrandingDto extends createZodDto(UpdateBrandingSchema) {}
 
 /**
@@ -40,6 +42,13 @@ export class AcademyController {
   @ZodResponse(AcademySettingsSchema)
   updateSettings(@Body() body: UpdateSettingsDto) {
     return this.academy.updateSettings(body);
+  }
+
+  @Patch('terminology')
+  @Can('academy.settings.manage')
+  @ZodResponse(AcademySettingsSchema)
+  updateTerminology(@Body() body: UpdateTerminologyDto) {
+    return this.academy.updateTerminology(body);
   }
 
   @Get('branding')

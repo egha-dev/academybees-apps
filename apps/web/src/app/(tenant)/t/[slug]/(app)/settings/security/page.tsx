@@ -19,7 +19,6 @@ import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import type { SecurityErrorLabels } from '@/components/security/errors';
 import { MfaRuleLazy as MfaRule, SecurityButton } from '@/components/security/security-actions';
 import { apiServerGet } from '@/lib/api.server';
-import { roleHomesEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { homeFor } from '@/lib/session.server';
 
@@ -157,10 +156,9 @@ function Row({ children }: { children: ReactNode }) {
  * and refresh the page. Online only.
  */
 export default async function SecurityPage() {
-  const [{ me, academy }, { context }, roleHomes, t, roleT, auth, steps] = await Promise.all([
+  const [{ me, academy }, { context }, t, roleT, auth, steps] = await Promise.all([
     signedInMember(),
     hostContext(),
-    roleHomesEnabled(),
     getTranslations('auth.security'),
     getTranslations('auth.roles'),
     authLabels(),
@@ -278,7 +276,7 @@ export default async function SecurityPage() {
             <Text>{t('prompt.body')}</Text>
             <Stack direction="row" spacing={4} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
               {mfaButtons}
-              {roleHomes && <TextLink href={homeFor(me)}>{t('prompt.later')}</TextLink>}
+              <TextLink href={homeFor(me)}>{t('prompt.later')}</TextLink>
             </Stack>
           </Stack>
         </Box>

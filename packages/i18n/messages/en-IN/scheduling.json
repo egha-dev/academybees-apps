@@ -1,0 +1,78 @@
+{
+  "weekday": {
+    "d1": "Monday",
+    "d2": "Tuesday",
+    "d3": "Wednesday",
+    "d4": "Thursday",
+    "d5": "Friday",
+    "d6": "Saturday",
+    "d7": "Sunday"
+  },
+  "weekdayShort": {
+    "d1": "Mon",
+    "d2": "Tue",
+    "d3": "Wed",
+    "d4": "Thu",
+    "d5": "Fri",
+    "d6": "Sat",
+    "d7": "Sun"
+  },
+  "session": {
+    "status": {
+      "SCHEDULED": "Scheduled",
+      "CANCELLED": "Cancelled",
+      "COMPLETED": "Done"
+    },
+    "time": "{start}–{end}",
+    "noTeacher": "No {term, select, coach {coach} instructor {instructor} trainer {trainer} other {teacher}} yet",
+    "holiday": "Holiday: {name}",
+    "makeup": "Make-up class",
+    "extra": "Extra class"
+  },
+  "today": {
+    "metaTitle": "Today",
+    "title": "Today at {academy}",
+    "body": "{date}",
+    "welcome": "Welcome, {name}.",
+    "holidayToday": "{name}: no classes today.",
+    "classesTitle": "Today's {term, select, class {classes} group {groups} other {batches}}",
+    "classesEmpty": "Nothing meets today.",
+    "noBatchesTitle": "No {term, select, class {classes} group {groups} other {batches}} yet",
+    "noBatchesBody": "Set up your first {term, select, class {class} group {group} other {batch}} with its days and times; its classes then appear here every day.",
+    "attentionTitle": "Needs attention",
+    "allClear": "Nothing needs attention right now.",
+    "withoutTeacher": "{name} has no {term, select, coach {coach} instructor {instructor} trainer {trainer} other {teacher}}",
+    "full": "{name} is full on {day} ({students} of {capacity})",
+    "sessionsWithoutTeacher": "{count, plural, one {# class} other {# classes}} in the next 7 days {count, plural, one {has} other {have}} nobody to teach {count, plural, one {it} other {them}}",
+    "upcomingHoliday": "{name}: {dates}",
+    "holidayDates": "{start} to {end}",
+    "counts": "{students, plural, one {# student} other {# students}} in {batches, plural, one {# active {term, select, class {class} group {group} other {batch}}} other {# active {term, select, class {classes} group {groups} other {batches}}}}",
+    "recentTitle": "Recently",
+    "recent": {
+      "batch_created": "{name} was set up",
+      "batch_updated": "{name} was changed",
+      "batch_archived": "{name} was archived",
+      "batch_teachers_changed": "{name}: who teaches changed",
+      "enrolment_started": "A student joined {name}",
+      "enrolment_days_changed": "A student's days changed in {name}",
+      "enrolment_ended": "A student left {name}",
+      "student_transferred": "A student moved in or out of {name}"
+    },
+    "by": "by {name}"
+  },
+  "teach": {
+    "metaTitle": "Home",
+    "title": "Hello, {name}",
+    "body": "Your classes at {academy}.",
+    "todayTitle": "Today",
+    "weekTitle": "Next 7 days",
+    "nothingToday": "No classes today.",
+    "nothingThisWeek": "No classes in the next 7 days.",
+    "batchesTitle": "My {term, select, class {classes} group {groups} other {batches}}",
+    "noBatchesBody": "When the academy adds you to a {term, select, class {class} group {group} other {batch}}, it appears here.",
+    "students": "{count, plural, one {# student} other {# students}}",
+    "days": "{days}",
+    "takeAttendance": "Take attendance",
+    "attendanceSoon": "Attendance arrives with the next update."
+  }
+}

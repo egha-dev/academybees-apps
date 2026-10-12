@@ -19,9 +19,9 @@ export type FeatureFlagDefinition = {
 };
 
 export const FEATURE_FLAGS = {
-  'p2-role-homes': {
+  'p5-scheduling': {
     description:
-      'Signed-in landing pages at /today (Manage) and /teach (Teacher) until their real homes ship (Phase 5/6) — remove then.',
+      'Phase 5 screens while they are built: Owner Today v1 and Teacher home v1 content, Batches, Batch Workspace, Timetable and Holidays (C-117) — remove when the phase closes.',
     owner: 'PO',
     expiresOn: '2027-03-31',
     defaults: { local: true, ci: true, staging: true, production: false },

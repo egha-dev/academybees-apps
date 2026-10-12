@@ -26,7 +26,7 @@ export async function flagEnabled(key: FeatureFlagKey, host: string): Promise<bo
   }
 }
 
-/** `p2-role-homes` for the current request's academy (C-68): the signed-in landings. */
-export const roleHomesEnabled = cache(async (): Promise<boolean> =>
-  flagEnabled('p2-role-homes', (await headers()).get('host') ?? ''),
+/** `p5-scheduling` for the current request's academy: Phase 5 screens while they are built. */
+export const schedulingEnabled = cache(async (): Promise<boolean> =>
+  flagEnabled('p5-scheduling', (await headers()).get('host') ?? ''),
 );
