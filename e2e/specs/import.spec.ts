@@ -97,6 +97,12 @@ test('the synthetic pilot register imports cleanly from CSV, and the Excel copy 
   // Problems in words: a short mobile, an impossible date, a missing name, the same child twice.
   await expect(page.getByText(/Not a mobile number/).first()).toBeVisible();
   await expectNoA11yViolations(page);
+  // Locally, `pnpm db:seed:perf` fills demo-b with 50,000 students, past the trial limit: the
+  // wizard then (correctly) refuses to import. CI's fresh database always has room.
+  test.skip(
+    await page.getByText(/Your plan has room for/).isVisible(),
+    'demo-b is over its student limit (perf seed); reseed a fresh database to run this',
+  );
   if (await fresh.isVisible()) {
     await page.getByRole('button', { name: `Import ${fixture.EXPECTED.valid} students` }).click();
     await expect(page.getByText(`${fixture.EXPECTED.valid} students were added.`)).toBeVisible({

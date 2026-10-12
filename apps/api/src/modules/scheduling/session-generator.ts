@@ -71,8 +71,28 @@ export async function generateSessions(
     { from: today, days: SESSION_WINDOW_DAYS, timeZone: tenant.timezone, now },
   );
   if (!planned.length) return 0;
+  // A class staff kept from an earlier pattern (moved, cancelled) wins over a new slot at an
+  // overlapping time on the same day: no second class appears after a pattern change (C-113).
+  const kept = await db.classSession.findMany({
+    where: {
+      batchId: { in: [...new Set(planned.map((p) => p.batchId))] },
+      sessionDate: { gte: from, lt: until },
+    },
+    select: { batchId: true, scheduleRuleId: true, startsAt: true, endsAt: true },
+  });
+  const fresh = planned.filter(
+    (p) =>
+      !kept.some(
+        (k) =>
+          k.batchId === p.batchId &&
+          k.scheduleRuleId !== p.ruleId &&
+          k.startsAt < p.endsAt &&
+          p.startsAt < k.endsAt,
+      ),
+  );
+  if (!fresh.length) return 0;
   const created = await db.classSession.createMany({
-    data: planned.map((s) => ({
+    data: fresh.map((s) => ({
       id: newId(),
       tenantId: input.tenantId,
       branchId: s.branchId,

@@ -183,6 +183,28 @@ Each slice: branch `p5/<slice>` from the latest `main` → PR with the DoD check
   - teacher sees only assigned sessions;
   - registry.
 
+*As built (S3):*
+- **Weekly pattern** (`GET/PUT /batches/:id/schedule`, C-113, C-121):
+  - slots with a day, a time and an optional teacher (default: the primary teacher); 0–14 slots; overlapping slots in a batch refused;
+  - saving **from a date** (default today, never the past) ends current rules the day before, deletes only their untouched classes from that date, creates the new rules and generates immediately;
+  - the response has the pattern in effect, the next 12 classes, double-booking warnings, and **day plans that include a day the batch no longer meets** (flagged, never rewritten).
+- **Generator refinement:** a class staff kept from an earlier pattern (moved or cancelled) wins over a new slot at an overlapping time on the same day, so no second class appears.
+- **Sessions** (`/sessions`):
+  - range list up to 31 days (scope-aware, with holidays);
+  - extra and make-up classes (a make-up needs a cancelled class of the same batch);
+  - reschedule/teacher/note; cancel with reason / restore. Restore is refused for holiday cancellations: removing the holiday restores those.
+  - Every staff change sets "changed"; classes that have started are locked.
+  - Double bookings for the same teacher are warnings in every response.
+- **Holidays** (`/holidays`, G-03, C-114, C-115):
+  - preview by day (classes, students expected per day plan);
+  - create cancels exactly the scheduled future classes in range (branch-aware), records **one notice per expected child** and audits; at most 2,000 classes;
+  - `DELETE` removes a holiday that isn't over: future classes reinstated, notices voided, missing dates generated; the row is kept.
+  - Holiday cancellations don't set "changed", so removal returns them to ordinary classes.
+- **Analytics:** `batch.schedule_saved`, `session.added`, `session.rescheduled`, `session.cancelled`, `holiday.created` (no PII).
+- **Tests:**
+  - `schedule.int.spec.ts` (6): 2/3/7-day patterns and times per day; a change from a date keeps the moved class with no duplicate and flags a Friday-only plan; extra/make-up/cancel/restore, double booking, started class locked; teacher sees only their classes and ranges are capped; Diwali preview → cancel → notice for the every-day child only → job doesn't refill → restore refused → removal reinstates and voids; another academy's ids are 404.
+  - Cross-tenant registry: 11 routes. API integration: 1,190.
+
 ### S4 `p5/terminology-today` — `useTerm`, Owner Today v1, Teacher home v1 (flag `p5-scheduling` for new bits)
 
 - **5.12 Terminology (C-118):**

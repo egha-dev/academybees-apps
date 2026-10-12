@@ -126,7 +126,7 @@ pnpm perf:budget         # route JS budget (< 200 KB gz, G-24) — after build
 pnpm perf:lighthouse     # Lighthouse CI: LCP/CLS/a11y budgets — after build
 pnpm i18n:check | pnpm flags:check
 pnpm platform:create-admin --email you@example.com   # console admin + set-password link (C-66)
-pnpm db:seed:perf && pnpm perf:search                # 50K students in demo-a, search p95 (C-105, local only)
+pnpm db:seed:perf && pnpm perf:search                # 50K students in demo-b, search p95 (C-105, local only; puts demo-b past its trial limit, so the import E2E skips there)
 pnpm hub:join-request --academy demo-a --email parent@demo-a.test --child "Aarav Sharma"  # join request via the real hub API (C-107; local/staging)
 pnpm --filter @academybee/marketing dev  # academybees.com on :3100 (build → out/, preview serves out/)
 ```
