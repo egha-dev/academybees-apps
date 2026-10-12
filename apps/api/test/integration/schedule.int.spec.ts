@@ -21,7 +21,7 @@ import type { Job } from 'bullmq';
 import { Redis } from 'ioredis';
 import pg from 'pg';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, inject, it, vi } from 'vitest';
 
 import { SessionGenerationProcessor } from '../../src/modules/scheduling/generation.processor.js';
 import type { SessionGenerationJob } from '../../src/modules/scheduling/generation.queue.js';
@@ -410,6 +410,27 @@ describe('weekly patterns, sessions and holidays', () => {
     );
     expect(attention.sessionsWithoutTeacher).toBeGreaterThanOrEqual(1);
     expect((res.body.recent as { batchId: string }[]).length).toBeGreaterThan(0);
+  });
+
+  it('"today" is the academy’s date, not the server’s: at 19:00 UTC India is already tomorrow (C-119)', async () => {
+    // Freeze only Date: sign in and read under the frozen clock, so tokens stay valid.
+    const utcDay = new Date().toISOString().slice(0, 10);
+    const frozen = new Date(`${utcDay}T19:00:00Z`);
+    const indiaDay = addDays(utcDay, 1);
+    vi.useFakeTimers({ toFake: ['Date'], now: frozen });
+    try {
+      expect(localDate(new Date(), 'Asia/Kolkata')).toBe(indiaDay);
+      const late = await signIn(a, a.user.email);
+      const res = await get(late, '/today');
+      expect(res.status, JSON.stringify(res.body)).toBe(200);
+      expect(res.body.date).toBe(indiaDay);
+      expect((res.body.sessions as Session[]).every((x) => x.date === indiaDay)).toBe(true);
+      const list = await get(late, `/sessions?from=${indiaDay}&to=${indiaDay}`);
+      expect(list.status).toBe(200);
+      expect(list.body.today).toBe(indiaDay);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('another academy’s schedule, sessions and holidays are 404', async () => {

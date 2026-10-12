@@ -62,7 +62,8 @@ test('the week shows real classes; cancel one and add a make-up', async ({ page 
   await sheet.getByRole('button', { name: 'Cancel this class' }).click();
   await expect(page.getByText('Class cancelled')).toBeVisible();
   const card = page.getByRole('link', { name: new RegExp(`Tabla ${tag}`) });
-  await expect(card).toContainText('Cancelled');
+  // The timetable re-renders on the server after the sheet closes; allow for a busy server.
+  await expect(card).toContainText('Cancelled', { timeout: 15_000 });
 
   await card.click();
   await expect(sheet).toBeVisible({ timeout: 20_000 });

@@ -687,7 +687,8 @@ Phase 2 is **not** started.
 | S4 | `p5/terminology-today` | 5.12 `useTerm` + Settings terminology (C-118), 5.13 Owner Today v1, 5.14 Teacher home v1 (C-117), 5.15 remove `p2-role-homes` (flag `p5-scheduling` added) | ✅ #82 |
 | S5 | `p5/batches-ui` | 5.16 Batches list, 5.17 Batch Workspace, 5.18 Courses | ✅ #83 |
 | S6 | `p5/timetable-ui` | 5.19 Timetable Day/Week/Teacher, 5.20 Holidays with impact preview | ✅ #84 |
-| S7 | `p5/journey-e2e` | 5.21 exit E2E, 5.22 flag removal + docs | 🟨 PR |
+| S7 | `p5/journey-e2e` | 5.21 exit E2E, 5.22 flag removal + docs | ✅ #85 |
+| Gate | `p5/gate-fixes` | P5-3: frozen-clock "today" integration test (C-119); E2E waits hardened | 🟨 PR |
 
 
 **Scope**
@@ -704,6 +705,19 @@ Phase 2 is **not** started.
 **Tests.** Holiday over existing sessions cancels exactly those sessions and generation never recreates them; transfer keeps past attendance on old batch. Session generation idempotency & regeneration rules; enrolment history (student leaves batch → past sessions still show them, future don't); teacher sees only assigned batches/students; timezone correctness of "today" for tenant timezone vs server UTC; cancelled session excluded from generation re-runs.
 
 **Exit gate.** Common gate + E2E: create batch with weekly schedule → sessions appear in timetable week view → cancel one → teacher login sees only their batches.
+
+**Gate (P5-3, 2026-10-12, `main` = `5f4016c`; staging release `5f4016c`).**
+- **Exit E2E:** `scheduling-journey.spec.ts` passes on desktop Chromium, Android Chromium and iPhone WebKit.
+- **Common gate (local):**
+  - lint, typecheck, unit, `db:drift`, `i18n:check`, `flags:check` (only `p1-hub-placeholder` left) and `perf:budget` (Phase 5 pages 185.0–188.9 KB gz) pass;
+  - integration: API 1,208 tests in 27 files, database 355, worker 9;
+  - E2E: 376 passed. The failures were 5 iPhone WebKit timeouts in the Phase 2 auth/team specs, which pass on a rerun, and one race in the journey spec, fixed in the gate PR.
+- **CI:** green on every Phase 5 PR and on `main`.
+- **Gaps found and fixed (gate PR):**
+  - the promised frozen-clock "today" integration test (19:00 UTC = next day in India) was missing and is now added;
+  - two E2E waits are hardened (a cancel re-render; the editor's backdrop covering "Set days and times").
+- **Local environment notes:** one API integration run hung on a Docker port-forward that refused connections, and another stalled while E2E ran alongside it. Run alone, the suite passes in 6.3 min.
+- **Staging:** seeds are local/CI only, so acceptance on staging starts by creating batches (the exit journey itself).
 
 ---
 

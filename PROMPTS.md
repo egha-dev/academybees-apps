@@ -456,7 +456,7 @@ claude
 ```
 Then type `/clear`, and press **Shift+Tab** until **plan mode** is on. (No branch needed: Claude creates short slice branches itself.)
 
-### P5-1 · Kickoff  *(plan mode)*  ☐
+### P5-1 · Kickoff  *(plan mode)*  ☑ 2026-10-11 — slice plan `docs/plans/phase-5.md`
 ```text
 We are starting Phase 5 — Courses + Batches + Timetable.
 
@@ -482,7 +482,7 @@ Inspect the current code, then produce a plan for THIS PHASE ONLY — no code ye
 
 Read the plan. If you want changes, say so in plain words. When happy, switch plan mode **off** (Shift+Tab) and run P5-2.
 
-### P5-2 · Build  ☐
+### P5-2 · Build  ☑ 2026-10-12 — S1–S7 (#79–#85)
 ```text
 Plan approved. First tag the current main as phase-5-start and push the tag. Then, in the first slice, update docs/IMPLEMENTATION_PLAN.md: mark Phase 5 — Courses + Batches + Timetable 🟨 and add the task list (grouped into slices) under the phase.
 Work slice by slice (CLAUDE.md §16, ADR-041): create branch p5/<slice-name> from the latest main; implement task by task — after each task run lint, typecheck and the relevant tests, fix failures, and commit with a Conventional Commit message; then push, open a PR (Conventional Commit title, DoD checklist from the template), enable auto-merge (squash), wait until it merges, pull main, and start the next slice. If CI fails, fix it on the same branch. Hide unfinished user-visible work behind a release flag so main stays deployable.
@@ -493,7 +493,7 @@ Only stop to ask me about decisions of the kind listed in CLAUDE.md §2. Otherwi
 
 If Claude stops before finishing, use **H1 Continue**. If the session gets long, use **H2 Handover** → `/clear` → **H3 Resume**.
 
-### P5-3 · Gate  ☐
+### P5-3 · Gate  ☑ 2026-10-12 — all pass after the gate-fix PR; staging `5f4016c`
 ```text
 Pull the latest main. Run the Phase 5 — Courses + Batches + Timetable exit gate and the Common Phase Gate (docs/IMPLEMENTATION_PLAN.md §2) for everything merged since the tag phase-5-start.
 Execute: pnpm lint, pnpm typecheck, pnpm test, pnpm test:integration, pnpm build, pnpm e2e.
