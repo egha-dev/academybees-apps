@@ -1,4 +1,8 @@
-import { type TenantContextResponse, TenantContextResponseSchema } from '@academybee/contracts';
+import {
+  type TenantContextResponse,
+  TenantContextResponseSchema,
+  readTerminology,
+} from '@academybee/contracts';
 import type { TenantBoundClient } from '@academybee/database';
 import { Controller, Get, Inject } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
@@ -54,6 +58,7 @@ export class TenantContextController {
           },
         },
         name: true,
+        settings: { select: { terminology: true } },
       },
     });
     if (!tenant) throw new DomainError('NOT_FOUND', 'academy row not visible');
@@ -66,6 +71,7 @@ export class TenantContextController {
       displayName,
       timezone: tenant.timezone,
       locale: tenant.locale,
+      terminology: readTerminology(tenant.settings?.terminology),
       branding: {
         primaryColor: hexOrNull(tenant.branding?.primaryColor),
         secondaryColor: hexOrNull(tenant.branding?.secondaryColor),

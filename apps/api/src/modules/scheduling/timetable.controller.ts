@@ -13,6 +13,7 @@ import {
   SessionListSchema,
   SessionResultSchema,
   SessionsQuerySchema,
+  TodaySchema,
   UpdateSessionSchema,
 } from '@academybee/contracts';
 import {
@@ -35,6 +36,7 @@ import { createZodDto, ZodResponse } from '../../core/validation/zod-dto.js';
 import { HolidaysService } from './holidays.service.js';
 import { ScheduleService } from './schedule.service.js';
 import { SessionsService } from './sessions.service.js';
+import { TodayService } from './today.service.js';
 
 class SaveScheduleDto extends createZodDto(SaveScheduleSchema) {}
 class SessionsQueryDto extends createZodDto(SessionsQuerySchema) {}
@@ -146,5 +148,18 @@ export class HolidaysController {
   @ZodResponse(HolidaySchema)
   remove(@Param('id', Id) id: string) {
     return this.holidays.remove(id);
+  }
+}
+
+/** Owner Today v1 (UX §11.1): today's classes, attention items, recent changes. */
+@Controller({ path: 'today', version: '1' })
+export class TodayController {
+  constructor(private readonly today: TodayService) {}
+
+  @Get()
+  @Can('timetable.read')
+  @ZodResponse(TodaySchema)
+  get() {
+    return this.today.today();
   }
 }

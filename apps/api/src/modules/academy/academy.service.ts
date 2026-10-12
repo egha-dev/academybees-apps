@@ -10,6 +10,8 @@ import {
   ProfileStepSchema,
   sniffImage,
   type UpdateBranding,
+  readTerminology,
+  type Terminology,
 } from '@academybee/contracts';
 import type { TenantBoundClient } from '@academybee/database';
 import { normalizeRootDomain, tenantHost } from '@academybee/tenant';
@@ -61,7 +63,9 @@ export class AcademyService {
       this.db.tenant.findFirst({
         select: { name: true, academyType: true, timezone: true, currency: true },
       }),
-      this.db.tenantSettings.findFirst({ select: { contact: true, version: true } }),
+      this.db.tenantSettings.findFirst({
+        select: { contact: true, terminology: true, version: true },
+      }),
     ]);
     if (!tenant || !settings) throw new DomainError('NOT_FOUND', 'academy');
     const contact = (settings.contact ?? {}) as Record<string, unknown>;
@@ -73,8 +77,37 @@ export class AcademyService {
       address: str(contact.address),
       timezone: tenant.timezone,
       currency: tenant.currency,
+      terminology: readTerminology(settings.terminology),
       version: settings.version,
     };
+  }
+
+  /** The words the academy uses (ADR-029, C-118): every screen and message follows them. */
+  async updateTerminology(input: {
+    version: number;
+    terminology: Terminology;
+  }): Promise<AcademySettings> {
+    const tenantId = this.tenantId();
+    const before = await this.settings();
+    await this.db.$transaction(async (tx) => {
+      const updated = await tx.tenantSettings.updateMany({
+        where: { version: input.version },
+        data: { terminology: input.terminology, version: { increment: 1 } },
+      });
+      if (updated.count !== 1) throw new DomainError('VERSION_CONFLICT');
+      await this.audit.record(
+        {
+          action: 'academy.terminology_changed',
+          entityType: 'Tenant',
+          entityId: tenantId,
+          before: { ...before.terminology },
+          after: { ...input.terminology },
+        },
+        tx,
+      );
+    });
+    await this.resolver.invalidateTenant(tenantId);
+    return this.settings();
   }
 
   async updateSettings(

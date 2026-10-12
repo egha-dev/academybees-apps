@@ -8,7 +8,9 @@ import {
   BatchScheduleController,
   HolidaysController,
   SessionsController,
+  TodayController,
 } from './timetable.controller.js';
+import { TodayService } from './today.service.js';
 import { CoursesService } from './courses.service.js';
 import { SessionGenerationProcessor } from './generation.processor.js';
 import { SessionGenerationQueue } from './generation.queue.js';
@@ -27,6 +29,7 @@ import { SchedulingService } from './scheduling.service.js';
     BatchScheduleController,
     SessionsController,
     HolidaysController,
+    TodayController,
   ],
   providers: [
     SchedulingService,
@@ -35,6 +38,7 @@ import { SchedulingService } from './scheduling.service.js';
     SessionsService,
     ScheduleService,
     HolidaysService,
+    TodayService,
     SessionGenerationQueue,
     SessionGenerationProcessor,
   ],

@@ -412,3 +412,40 @@ export const HolidayListQuerySchema = z.object({
   from: CalendarDateSchema.optional(),
   includeRemoved: z.coerce.boolean().default(false),
 });
+
+// ── Owner Today v1 (UX §11.1, C-117) ──────────────────────────────────────────────────────
+
+const BatchRef = z.object({ id: z.uuid(), name: z.string() });
+export const TodaySchema = z.object({
+  /** Academy-local date and weekday (C-119). */
+  date: z.string(),
+  weekday: WeekdaySchema,
+  sessions: z.array(SessionSchema),
+  /** A holiday today (whole academy or a branch). */
+  holiday: z.object({ name: z.string() }).nullable(),
+  attention: z.object({
+    batchesWithoutTeacher: z.array(BatchRef),
+    batchesFull: z.array(
+      BatchRef.extend({
+        weekday: WeekdaySchema,
+        students: z.number().int(),
+        capacity: z.number().int(),
+      }),
+    ),
+    /** Classes in the next 7 days with nobody to teach them. */
+    sessionsWithoutTeacher: z.number().int(),
+    upcomingHolidays: z.array(HolidaySchema),
+  }),
+  counts: z.object({ batches: z.number().int(), students: z.number().int() }),
+  recent: z.array(
+    z.object({
+      id: z.uuid(),
+      type: z.string(),
+      at: z.string(),
+      batchId: z.uuid(),
+      batchName: z.string(),
+      actorName: z.string().nullable(),
+    }),
+  ),
+});
+export type Today = z.infer<typeof TodaySchema>;
