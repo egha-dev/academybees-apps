@@ -146,8 +146,20 @@ function StatusLine() {
   const status = useSyncStatus(engine.queue, connectivity);
   const now = useNow();
   const o = labels.offline;
-  const waiting = status.counts.pending + status.counts.processing;
-  const unsynced = waiting + status.attention;
+  // Counted in records (marks), as people think of them: one saved roll call of 25 students
+  // is 25 records waiting, not one (UX §12.1). The queue's own counts decide the state.
+  const records = useLive(async () => {
+    const rows = await engine.db.attendance
+      .where('syncState')
+      .anyOf('pending', 'conflict', 'failed')
+      .toArray();
+    return {
+      waiting: rows.filter((r) => r.syncState === 'pending').length,
+      unsynced: rows.length,
+    };
+  }, [engine]);
+  const waiting = records?.waiting ?? status.counts.pending + status.counts.processing;
+  const unsynced = Math.max(records?.unsynced ?? 0, waiting + status.attention);
   useEffect(() => {
     setSignOutGuard({ unsynced, release: () => engine.stop() });
   }, [unsynced, engine]);
