@@ -14,10 +14,13 @@ import type { Experience } from './navigation.server';
  */
 export async function AccountPanel({
   name,
+  userId,
   experience,
   experiences,
 }: {
   name: string;
+  /** Whose offline data sign-out deletes (ARCHITECTURE §11.7). */
+  userId?: string;
   experience: Experience;
   experiences: readonly string[];
 }) {
@@ -48,7 +51,11 @@ export async function AccountPanel({
           {other === 'teach' ? t('switchToTeach') : t('switchToManage')}
         </Box>
       )}
-      <SignOutButton labels={{ ...signOut, signOut: t('signOut') }} variant="ghost" />
+      <SignOutButton
+        labels={{ ...signOut, signOut: t('signOut') }}
+        userId={userId}
+        variant="ghost"
+      />
     </Stack>
   );
 }

@@ -44,8 +44,9 @@ const ICONS: Record<ShellIcon, ReactNode> = {
   timetable: <CalendarIcon />,
 };
 
+// The teacher's Home (`/teach`) is active only on itself: its screens have their own items.
 const isActive = (pathname: string, href: string) =>
-  pathname === href || pathname.startsWith(`${href}/`);
+  pathname === href || (href !== '/teach' && pathname.startsWith(`${href}/`));
 
 /**
  * The signed-in academy shell (plan 2.17, UX §7–8, §25): academy identity, navigation for the

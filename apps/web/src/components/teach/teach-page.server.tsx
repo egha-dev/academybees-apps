@@ -1,0 +1,47 @@
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { getMessages, getTranslations } from 'next-intl/server';
+
+import { signOutLabels } from '@/components/auth/labels.server';
+import { holds, signedInMember } from '@/components/shell/signed-in.server';
+import { teacherPwaEnabled } from '@/lib/flags.server';
+import { academyTimeZone, hostContext } from '@/lib/host-context.server';
+
+import type { TeachView } from './teach-app';
+import { TeachAppLazy } from './teach-lazy';
+
+/** Page title for a Teacher PWA screen. */
+export async function teachMetadata(view: Exclude<TeachView, 'today'>): Promise<Metadata> {
+  const t = await getTranslations('teach.metaTitle');
+  return { title: t(view) };
+}
+
+/**
+ * A Teacher PWA screen (C-124): the server renders only the shell and labels — no student data —
+ * so the page can be cached and opened offline; the screen reads this device's copy.
+ */
+export async function TeachScreen({ view }: { view: TeachView }) {
+  const [{ me }, enabled, { context }, messages, signOut] = await Promise.all([
+    signedInMember({ experience: 'teach' }),
+    teacherPwaEnabled(),
+    hostContext(),
+    getMessages(),
+    signOutLabels(),
+  ]);
+  if (!enabled) notFound();
+  return (
+    <TeachAppLazy
+      view={view}
+      userId={me.user.id}
+      name={me.user.name}
+      timeZone={academyTimeZone(context) ?? 'Asia/Kolkata'}
+      canEditPast={holds(me, 'attendance.edit_past')}
+      labels={{
+        teach: messages.teach,
+        offline: messages.offline,
+        signOut,
+        switchHref: me.academy.experiences.includes('manage') ? '/today' : null,
+      }}
+    />
+  );
+}

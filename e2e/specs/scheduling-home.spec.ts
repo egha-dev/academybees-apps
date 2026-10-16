@@ -31,7 +31,8 @@ test('Teacher home: today, the next 7 days and their own batches, attendance exp
   test.setTimeout(90_000);
   await signInAt(page, testInfo, 'demo-a', 'teacher@demo-a.test');
   await page.goto(hostUrl(testInfo, 'demo-a', '/teach'));
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Hello, /);
+  // The Teacher PWA downloads the teacher's classes first (C-124).
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Hello, /, { timeout: 30_000 });
   await expect(page.getByRole('heading', { name: 'Next 7 days' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'My batches' })).toBeVisible();
   await expectNoA11yViolations(page);

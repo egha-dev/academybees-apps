@@ -12,6 +12,7 @@ import { AccountPanel } from '@/components/shell/account-panel';
 import { AcademyShell } from '@/components/shell/academy-shell';
 import { PaletteTrigger } from '@/components/palette/palette-trigger';
 import { GlobalAdd } from '@/components/shell/global-add';
+import { teacherPwaEnabled } from '@/lib/flags.server';
 import { experienceFor, navigationFor } from '@/components/shell/navigation.server';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { apiServerGet } from '@/lib/api.server';
@@ -74,13 +75,14 @@ export default async function SignedInLayout({ children }: { children: ReactNode
     redirect(`/legal?next=${encodeURIComponent(path)}`);
 
   const experience = experienceFor(path, me);
-  const [guard, terminology, quickT] = await Promise.all([
+  const [guard, terminology, quickT, teacherPwa] = await Promise.all([
     sessionGuardLabels(),
     academyTerms(),
     getTranslations('people.palette.quick'),
+    teacherPwaEnabled(),
   ]);
   const terms = await termsFor(terminology);
-  const nav = await navigationFor(me, experience, { terms: terminology });
+  const nav = await navigationFor(me, experience, { terms: terminology, teacherPwa });
   const caps = me.academy.capabilities as Record<string, string | undefined>;
   const messages = await getMessages();
   return (
@@ -138,6 +140,7 @@ export default async function SignedInLayout({ children }: { children: ReactNode
       }
       sidebarFooter={
         <AccountPanel
+          userId={me.user.id}
           name={me.user.name}
           experience={experience}
           experiences={me.academy.experiences}

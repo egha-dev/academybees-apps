@@ -32,7 +32,7 @@ export async function navigationFor(
   me: MeResponse,
   experience: Experience,
   /** The academy's words (C-118). */
-  options: { terms?: Terminology } = {},
+  options: { terms?: Terminology; teacherPwa?: boolean } = {},
 ): Promise<{ groups: ShellNavGroup[]; bottom: ShellNavItem[] }> {
   const t = await getTranslations('shell.nav');
   const can = (capability: string) =>
@@ -49,6 +49,19 @@ export async function navigationFor(
 
   if (experience === 'teach') {
     const home: ShellNavItem[] = [{ key: 'teach', label: t('home'), href: '/teach', icon: 'home' }];
+    if (options.teacherPwa) {
+      // Teacher PWA (UX §14, C-06, C-124): Home • Classes • Students • More; Learning comes in
+      // Phase 9. Every link is a plain page load, so the cached screens open offline.
+      const work: ShellNavItem[] = [
+        { key: 'teach-classes', label: t('classes'), href: '/teach/classes', icon: 'timetable' },
+        { key: 'teach-students', label: t('students'), href: '/teach/students', icon: 'students' },
+      ];
+      const teachMore: ShellNavItem = { ...more, href: '/teach/more' };
+      return {
+        groups: [{ key: 'home', label: t('groups.home'), items: [...home, ...work] }, account],
+        bottom: [...home, ...work, teachMore],
+      };
+    }
     return {
       groups: [{ key: 'home', label: t('groups.home'), items: home }, account],
       bottom: [...home, more],

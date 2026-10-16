@@ -150,7 +150,7 @@ export async function inviteLabels(academy: string) {
 }
 
 /** `unsynced` pluralises the logout-guard text (0 until the Teacher PWA queue, Phase 6). */
-export async function signOutLabels(unsynced = 0) {
+export async function signOutLabels() {
   const [t, offline] = await Promise.all([getTranslations('auth'), getTranslations('offline')]);
   return {
     signOut: t('home.signOut'),
@@ -158,7 +158,8 @@ export async function signOutLabels(unsynced = 0) {
     failed: t('home.signOutFailed'),
     guard: {
       title: offline('logoutGuard.title'),
-      body: offline('logoutGuard.body', { count: unsynced }),
+      // ICU with {count}: the button fills it with the live unsynced count.
+      body: offline.raw('logoutGuard.body') as string,
       stay: offline('logoutGuard.stay'),
       signOut: offline('logoutGuard.signOut'),
     },

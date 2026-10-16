@@ -11,6 +11,7 @@ import onboarding from '../messages/en-IN/onboarding.json' with { type: 'json' }
 import people from '../messages/en-IN/people.json' with { type: 'json' };
 import scheduling from '../messages/en-IN/scheduling.json' with { type: 'json' };
 import shell from '../messages/en-IN/shell.json' with { type: 'json' };
+import teach from '../messages/en-IN/teach.json' with { type: 'json' };
 import team from '../messages/en-IN/team.json' with { type: 'json' };
 import tenant from '../messages/en-IN/tenant.json' with { type: 'json' };
 
@@ -34,6 +35,7 @@ export const EN_IN_MESSAGES = {
   onboarding,
   people,
   scheduling,
+  teach,
 };
 
 export type Messages = typeof EN_IN_MESSAGES;
@@ -56,4 +58,5 @@ export const NAMESPACE_FILES: Record<Namespace, string> = {
   onboarding: 'onboarding.json',
   people: 'people.json',
   scheduling: 'scheduling.json',
+  teach: 'teach.json',
 };
