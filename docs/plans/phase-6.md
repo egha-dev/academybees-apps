@@ -254,6 +254,20 @@ Each slice: branch `p6/<slice>` from the latest `main` → PR with the DoD check
 - **6.15** `two-device-conflict.spec.ts`: two contexts edit the same student differently with one offline → conflict surfaced in the Sync Center → resolved → the server holds the chosen value.
 - **6.16** Logout guard with pending ops; revocation wipes local data.
 
+*As built (S5):*
+- **`e2e/specs/offline-attendance.spec.ts`:**
+  1. **25 marks offline** (desktop + Android Chromium), on a **persistent browser profile**, so close and reopen keeps the service worker, its caches, IndexedDB and cookies like an installed app:
+     - online once (download; screens cached; one reload under the worker's control);
+     - offline → Mark all present + 3 absent → Save → "Saved on this device — 25 records waiting to sync";
+     - **reload offline** → marks and pending count still there; **close and reopen offline** → same; the academy still has nothing;
+     - online with the **first push's answer dropped** (`route.fetch()` then abort: the server applied it) → the retry gets `DUPLICATE` → "All changes synced";
+     - the academy has 22 present and 3 absent, **one ledger row** for the class, **3 pending absence intents**.
+  2. **Two devices** (Chromium): the teacher marks absent offline; the admin marks late online → back online: "1 item needs attention", the server still says late → Sync → "Keep Arjun Admin's: Late" offered, keep mine → synced → the server says absent.
+  3. **Sign-out guard** (all three projects): pushes fail → "2 records waiting" → More → Sign out → "Changes haven't synced / 2 records haven't synced" → Stay keeps the session → Sign out and lose them → `/login` and no `ab_*` IndexedDB left.
+- **Wording fix:** the status line and the sign-out guard count **records** (marks), not queued ops: one roll call of 25 is "25 records waiting to sync" (UX §12.1).
+- **Shared helpers:** `e2e/support/classes.ts` (admin's own browser, a class for the demo teacher later today, the academy's roll call) and `inAcademy()` in `e2e/support/db.ts` (read checks under an academy's RLS context).
+- **Revocation wipe** stays covered by `client.spec.ts` (wipe on `MEMBERSHIP_REVOKED`) and `sync.int.spec.ts` (the server's answer). An E2E would have to disable the shared demo teacher mid-suite.
+
 ### S6 `p6/manage-attendance` — owner and admin views
 
 - **6.17 Owner Today:** attendance completion today; "Attendance not taken" list (G-16), replacing the Phase 5 placeholder.
