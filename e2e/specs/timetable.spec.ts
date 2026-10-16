@@ -47,9 +47,10 @@ test('the week shows real classes; cancel one and add a make-up', async ({ page 
   const day = istDate(2);
   await batchMeetingOn(page, testInfo, `Tabla ${tag}`, day);
 
-  await page.goto(hostUrl(testInfo, 'demo-a', '/timetable'));
+  // Next week: this week's earlier days are past, and past classes are never generated.
+  await page.goto(hostUrl(testInfo, 'demo-a', `/timetable?view=week&date=${istDate(7)}`));
   await expect(page.getByRole('heading', { level: 1, name: 'Timetable' })).toBeVisible();
-  // The seeded Mon–Fri batch meets on at least five days of any week.
+  // The seeded Mon–Fri batch meets on five days of every full week.
   await expect(page.getByRole('link', { name: /Board Prep Mon–Fri/ }).first()).toBeVisible();
   await expectNoA11yViolations(page);
 
@@ -129,7 +130,8 @@ test('a holiday previews what it cancels, then cancels exactly that; removing it
 test('phones get a timeline; a teacher sees only their classes', async ({ page }, testInfo) => {
   test.setTimeout(90_000);
   await signInAt(page, testInfo, 'demo-a', 'teacher@demo-a.test');
-  await page.goto(hostUrl(testInfo, 'demo-a', '/timetable'));
+  // Next week, so Tue/Thu classes exist whatever day the run is on.
+  await page.goto(hostUrl(testInfo, 'demo-a', `/timetable?view=week&date=${istDate(7)}`));
   await expect(page.getByRole('heading', { level: 1, name: 'Timetable' })).toBeVisible();
   await expect(page.getByRole('link', { name: /Spoken English Tue\/Thu/ }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: /Board Prep Mon–Fri/ })).toHaveCount(0);
