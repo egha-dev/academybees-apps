@@ -1,6 +1,6 @@
 # P5-1 · Phase 5 — Courses + Batches + Timetable: plan
 
-> **Approved by the PO on 2026-10-11** (`phase-5-start` = `8e50d25`), after a PO review of real scheduling patterns. Decisions C-112…C-122 recorded in DECISIONS.md.
+> **Approved by the PO on 2026-10-11** (`phase-5-start` = `8e50d25`), after a PO review of real scheduling patterns. Decisions C-112…C-123 recorded in DECISIONS.md. **Phase 5 ✅ 2026-10-16** (tag `phase-5`); exit notes in IMPLEMENTATION_PLAN.
 
 ## Context
 
