@@ -111,7 +111,7 @@ export class AuthGuard implements CanActivate {
     if (audience === 'TENANT' && resolved?.kind === 'tenant') {
       const membership = await this.memberships.load(resolved.tenant.id, claims.sub);
       if (membership?.status !== 'ACTIVE')
-        return new DomainError('UNAUTHENTICATED', 'membership inactive');
+        return new DomainError('MEMBERSHIP_REVOKED', 'membership inactive');
       this.cls.set('membership', membership);
     }
     if (audience === 'CONSOLE') {

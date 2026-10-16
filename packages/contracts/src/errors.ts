@@ -12,6 +12,8 @@ export const ErrorCode = {
   INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
   SESSION_EXPIRED: 'SESSION_EXPIRED',
   TENANT_MISMATCH: 'TENANT_MISMATCH',
+  /** The user's access to this academy was disabled: clients wipe local data (ARCHITECTURE §11.7). */
+  MEMBERSHIP_REVOKED: 'MEMBERSHIP_REVOKED',
   TENANT_UNAVAILABLE: 'TENANT_UNAVAILABLE',
   FORBIDDEN: 'FORBIDDEN',
   /** Also used for out-of-scope records, so existence never leaks. */
@@ -39,6 +41,8 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   INVALID_CREDENTIALS: 401,
   SESSION_EXPIRED: 401,
   TENANT_MISMATCH: 401,
+  // 401 like other sign-in states, so web pages sign the user out as before.
+  MEMBERSHIP_REVOKED: 401,
   TENANT_UNAVAILABLE: 403,
   FORBIDDEN: 403,
   NOT_FOUND: 404,

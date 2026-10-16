@@ -94,6 +94,22 @@ export class BatchesService {
     return batch;
   }
 
+  /** Active batches in the caller's scope, for a device's offline working set (Phase 6). */
+  async workingSet() {
+    const rows = await this.db.batch.findMany({
+      where: { AND: [{ status: 'ACTIVE' }, this.scope('batch.read')] },
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+      take: 1000,
+      select: { id: true, name: true, status: true, course: { select: { name: true } } },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      courseName: r.course.name,
+      status: r.status,
+    }));
+  }
+
   async list(query: BatchListQuery): Promise<CursorPage<BatchListItem>> {
     const after = query.cursor ? decodeCursor(query.cursor, CursorKeys) : undefined;
     if (after === null) throw new DomainError('VALIDATION_FAILED', 'bad cursor');

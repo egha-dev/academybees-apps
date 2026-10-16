@@ -72,6 +72,49 @@ export class EnrolmentsService {
       }));
   }
 
+  /**
+   * A device's offline working set (Phase 6): enrolments of these batches still open on `from`,
+   * and their students' basic profile only (no contacts, no health notes; PRD v2.1 §18.8),
+   * within the caller's student scope.
+   */
+  async workingSet(batchIds: readonly string[], from: string) {
+    if (!batchIds.length) return { enrolments: [], students: [] };
+    const rows = await this.db.batchEnrolment.findMany({
+      where: {
+        batchId: { in: [...batchIds] },
+        OR: [{ endedOn: null }, { endedOn: { gte: at(from) } }],
+        student: this.studentScope('student.read'),
+      },
+      orderBy: [{ id: 'asc' }],
+      take: 20_000,
+      select: {
+        id: true,
+        batchId: true,
+        studentId: true,
+        startedOn: true,
+        endedOn: true,
+        weekdays: true,
+        student: { select: { fullName: true, admissionNo: true, status: true } },
+      },
+    });
+    const students = new Map<
+      string,
+      { id: string; fullName: string; admissionNo: string | null; status: string }
+    >();
+    for (const r of rows) students.set(r.studentId, { id: r.studentId, ...r.student });
+    return {
+      enrolments: rows.map((r) => ({
+        id: r.id,
+        batchId: r.batchId,
+        studentId: r.studentId,
+        startedOn: r.startedOn.toISOString().slice(0, 10),
+        endedOn: r.endedOn ? r.endedOn.toISOString().slice(0, 10) : null,
+        weekdays: r.weekdays,
+      })),
+      students: [...students.values()],
+    };
+  }
+
   /** Enrolments of some batches overlapping a date range, for expected counts per class. */
   async between(
     db: Pick<TransactionClient, 'batchEnrolment'>,
