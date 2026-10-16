@@ -79,6 +79,35 @@ Each slice: branch `p6/<slice>` from the latest `main` → PR with the DoD check
   - unit: the ADR-017 truth table and windows;
   - integration: duplicate PUT → one row; 50 concurrent PUTs → one row per student; unassigned teacher → 404; cancelled session refused; edit after 48 h refused for a teacher, allowed with `edit_past`; intents once, voided on correction; cross-tenant → 404; perf smoke (60 students < 300 ms p95 locally).
 
+*As built (S1):*
+- **Schema** (migration `20261016120000_attendance_sync`, `070-attendance-sync.sql`):
+  - `attendance`: versioned, unique per class and student; DELETE revoked;
+  - `attendance_change` and `sync_operation`: append-only (UPDATE/DELETE revoked);
+  - `notification`: in-app, unique dedupe key; DELETE revoked;
+  - intents gain `ATTENDANCE_ABSENT` / `ATTENDANCE_LATE` and `session_id`, with a CHECK that an intent names its subject;
+  - fixture rows in every new table.
+- **`modules/attendance`:**
+  - pure rules in `domain/rules.ts`: the ADR-017 truth table, windows (C-130), percentages; unit spec of 9 tests;
+  - `AttendanceService`:
+    - the roll call (expected students per C-120, plus anyone marked earlier);
+    - `markSession` / `markSessionIn(tx)`: atomic (C-126); locks the class row so saves to one class run in turn; set-based writes; history only when the status changes; class completed (C-129); intents and voiding (C-128);
+    - `update` (same rule from the seen version);
+    - student months, batch range, day overview.
+  - It reads classes and rosters through scheduling's `SessionsService.forAttendance/markCompleted` and people's `EnrolmentsService.expectedOn/between` (C-122).
+- **REST** (cross-tenant registry updated):
+  - `GET`/`PUT /sessions/:id/attendance` (a conflict is a 409 naming `marks.<studentId>`);
+  - `PATCH /attendance/:id`;
+  - `GET /students/:id/attendance?months=`;
+  - `GET /batches/:id/attendance?from&to`;
+  - `GET /attendance/overview?date=`.
+- **Percentages:** Present and Late are attended; Leave is left out.
+- **Tests:** `attendance.int.spec.ts` (8 tests):
+  - the roll call end to end; exactly once (replay + 50 concurrent);
+  - the conflict rule incl. PATCH; scope by role and roll;
+  - locks (cancelled, not yet, 48 h); history and percentages;
+  - perf smoke (**60 students p95 178 ms locally**, was 569 ms before set-based writes); cross-tenant.
+- **Test fix:** `sessions.int.spec.ts` counts generated classes only (the fixture's past one-off class is manual).
+
 ### S2 `p6/sync-api` — push, pull, bootstrap
 
 - **6.5 `modules/sync`:**

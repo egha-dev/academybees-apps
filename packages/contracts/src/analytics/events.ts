@@ -251,6 +251,17 @@ export const ANALYTICS_EVENTS = {
     description: 'One class was moved to another time or day.',
     properties: z.strictObject({}),
   }),
+  'attendance.marked': defineAnalyticsEvent({
+    name: 'attendance.marked',
+    version: 1,
+    description: 'A roll call was saved or corrected (Phase 6). Counts only.',
+    properties: z.strictObject({
+      students: z.number().int().min(0).max(500),
+      exceptions: z.number().int().min(0).max(500),
+      changed: z.number().int().min(0).max(500),
+      source: z.enum(['online', 'sync']),
+    }),
+  }),
   'session.cancelled': defineAnalyticsEvent({
     name: 'session.cancelled',
     version: 1,

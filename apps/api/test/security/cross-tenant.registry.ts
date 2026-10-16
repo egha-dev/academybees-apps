@@ -579,6 +579,42 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
       skip: 'schedule.int.spec.ts › another academy’s schedule, sessions and holidays are 404',
     },
   })),
+  // Attendance (Phase 6 S1). Reads probe another academy's class and student directly; writes
+  // and the date-ranged reads are covered with another academy's ids in attendance.int.spec.ts.
+  {
+    method: 'GET',
+    path: '/api/v1/sessions/:id/attendance',
+    params: { id: 'session' },
+    session: true,
+    capability: 'attendance.read',
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/students/:id/attendance',
+    params: { id: 'student' },
+    session: true,
+    capability: 'attendance.read',
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/attendance/overview',
+    session: true,
+    capability: 'attendance.read',
+  },
+  ...(
+    [
+      ['PUT', '/api/v1/sessions/:id/attendance', 'session', 'attendance.mark'],
+      ['PATCH', '/api/v1/attendance/:id', 'session', 'attendance.mark'],
+      ['GET', '/api/v1/batches/:id/attendance', 'batch', 'attendance.read'],
+    ] as const
+  ).map(([method, path, fixture, capability]) => ({
+    method,
+    path,
+    params: { id: fixture },
+    session: true,
+    capability,
+    spoof: { skip: 'attendance.int.spec.ts › another academy’s classes and marks are 404' },
+  })),
   // Student import (Phase 4 S5). The job routes are exercised end to end, including another
   // academy's attempts, in the dedicated test (needs storage and a job in flight).
   {

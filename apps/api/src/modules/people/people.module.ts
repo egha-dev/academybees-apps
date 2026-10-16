@@ -75,6 +75,6 @@ import { TeachersService } from './teachers.service.js';
     CustomFieldsService,
     EnrolmentsService,
   ],
-  exports: [PeopleService, StudentsService, ParentsService, CustomFieldsService],
+  exports: [PeopleService, StudentsService, ParentsService, CustomFieldsService, EnrolmentsService],
 })
 export class PeopleModule {}

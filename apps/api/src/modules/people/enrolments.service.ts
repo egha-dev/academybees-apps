@@ -1,4 +1,4 @@
-import { addDays, CAPACITY_ISSUE, type Enrolment, newId } from '@academybee/contracts';
+import { addDays, CAPACITY_ISSUE, type Enrolment, isoWeekday, newId } from '@academybee/contracts';
 import type { Prisma, TenantBoundClient, TransactionClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
@@ -36,6 +36,75 @@ export class EnrolmentsService {
   }
 
   /** Students in the batch on a date (default today), with their day plans. */
+  /**
+   * Students expected at a batch's class on `date` (C-120): enrolled that day and the weekday is in
+   * their day plan. Used by attendance for the roll call (C-122: people owns enrolments).
+   */
+  async expectedOn(
+    db: Pick<TransactionClient, 'batchEnrolment'>,
+    batchId: string,
+    date: string,
+  ): Promise<{ studentId: string; fullName: string; admissionNo: string | null }[]> {
+    const rows = await db.batchEnrolment.findMany({
+      where: {
+        batchId,
+        startedOn: { lte: at(date) },
+        OR: [{ endedOn: null }, { endedOn: { gte: at(date) } }],
+      },
+      orderBy: [{ student: { fullName: 'asc' } }, { id: 'asc' }],
+      take: 2000,
+      select: {
+        studentId: true,
+        weekdays: true,
+        student: { select: { fullName: true, admissionNo: true } },
+      },
+    });
+    const weekday = isoWeekday(date);
+    const seen = new Set<string>();
+    return rows
+      .filter(
+        (r) => attends(r.weekdays, weekday) && !seen.has(r.studentId) && seen.add(r.studentId),
+      )
+      .map((r) => ({
+        studentId: r.studentId,
+        fullName: r.student.fullName,
+        admissionNo: r.student.admissionNo,
+      }));
+  }
+
+  /** Enrolments of some batches overlapping a date range, for expected counts per class. */
+  async between(
+    db: Pick<TransactionClient, 'batchEnrolment'>,
+    batchIds: readonly string[],
+    from: string,
+    to: string,
+  ): Promise<
+    {
+      batchId: string;
+      studentId: string;
+      startedOn: string;
+      endedOn: string | null;
+      weekdays: number[];
+    }[]
+  > {
+    if (!batchIds.length) return [];
+    const rows = await db.batchEnrolment.findMany({
+      where: {
+        batchId: { in: [...batchIds] },
+        startedOn: { lte: at(to) },
+        OR: [{ endedOn: null }, { endedOn: { gte: at(from) } }],
+      },
+      select: { batchId: true, studentId: true, startedOn: true, endedOn: true, weekdays: true },
+    });
+    return rows.map((r) => ({
+      batchId: r.batchId,
+      studentId: r.studentId,
+      startedOn: r.startedOn.toISOString().slice(0, 10),
+      endedOn: r.endedOn ? r.endedOn.toISOString().slice(0, 10) : null,
+      weekdays: r.weekdays,
+    }));
+  }
+
   async roster(batchId: string, on?: string) {
     await this.batches.find(this.db, batchId, 'batch.read');
     const date = on ?? (await this.batches.today());
