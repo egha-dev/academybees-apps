@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-16 · Current phase: **Phase 6 — Attendance + Offline Sync (⬜ not started)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`) · Phase 4 ✅ 2026-10-11 (tag `phase-4`) · Phase 5 ✅ 2026-10-16 (tag `phase-5`)
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-16 · Current phase: **Phase 6 — Attendance + Offline Sync (🟨 in progress since 2026-10-16)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`) · Phase 4 ✅ 2026-10-11 (tag `phase-4`) · Phase 5 ✅ 2026-10-16 (tag `phase-5`)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -17,7 +17,7 @@
 | 3 | Academy Provisioning + Onboarding | ✅ 2026-10-09 | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, C-85…C-98, ADR-028/034 |
 | 4 | Students + Parents + Teachers | ✅ 2026-10-11 | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
 | 5 | Courses + Batches + Timetable | ✅ 2026-10-16 | Owner Today v1; terminology; holidays (G-03); transfer (G-27) | ADR-024/029/037 |
-| 6 | Attendance + Offline Sync | ⬜ | Teacher PWA core; outbox → in-app notifications; teacher nudge (G-16) | ADR-016/017, C-04, C-06 |
+| 6 | Attendance + Offline Sync | 🟨 | Teacher PWA core; outbox → in-app notifications; teacher nudge (G-16) | ADR-016/017, C-04, C-06 |
 | 7 | Finance | ⬜ | Onboarding fee step; fee-reminder intents (in-app); **all payment methods enabled without a gateway (G-30)**; gateway-ready provider layer + simulator (G-01); fee rules (G-04); opening balances (G-02); share receipts (G-18) | ADR-010/018/033/038, C-08, C-18, C-19, C-24, C-26 |
 | **7P** | **Pilot Readiness Pack** | ⬜ | Parent Core **as the multi-academy Family Hub** (from 11, G-31); help & support (G-10); consent live (G-06); activation dashboard (G-09); demo academy (G-13); pilot runbook (G-29) | C-21, C-23 |
 | 8 | CRM | ⬜ | Public enquiry form; academy public page (G-19) | C-10, C-12 |
@@ -792,6 +792,21 @@ Phase 2 is **not** started.
 
 **Goal.** A teacher can take attendance in seconds, online or offline, and it reaches the server exactly once. This is AcademyBee's differentiator.
 **Refs.** PRD v2 §7–13, §18, v3 §10–11, v2.1 §18.6, §18.8; UX §12, §14, §24, §29; ARCHITECTURE §11; ADR-016, ADR-017.
+**Status.** 🟨 started 2026-10-16 (`phase-6-start` = `8cbe035`). Approved slice plan: [`docs/plans/phase-6.md`](plans/phase-6.md) (decisions C-124…C-131).
+
+**Slices (each = one PR, ADR-041)**
+
+| Slice | Branch | Tasks | State |
+| --- | --- | --- | --- |
+| S1 | `p6/attendance-core` | 6.1 plan + decisions, 6.2 migration (Attendance, history, SyncOperation, Notification, intent kinds), 6.3 attendance domain (ADR-017, C-126, C-130), 6.4 REST | 🟨 PR |
+| S2 | `p6/sync-api` | 6.5 push + op registry + ordering, 6.6 bootstrap/pull + tombstones, 6.7 metrics | ⬜ |
+| S3 | `p6/sync-client` | 6.8 Dexie v2 + repositories (C-125), 6.9 bootstrap/pull client, op builders, runner wiring, conflict resolve, wipe | ⬜ |
+| S4 | `p6/teacher-pwa` | 6.10 SW teacher shells (C-124), 6.11 shell + nav, 6.12 Today/Classes/Attendance/Students/Sync/More, 6.13 states + budgets (flag `p6-teacher-pwa`) | ⬜ |
+| S5 | `p6/offline-e2e` | 6.14 offline suite, 6.15 two-device conflict, 6.16 logout guard + revocation | ⬜ |
+| S6 | `p6/manage-attendance` | 6.17 Owner Today, 6.18 overview + Batch/Student 360 tabs, 6.19 seeds | ⬜ |
+| S7 | `p6/notifications` | 6.20 notification centre, 6.21 G-16 nudge, 6.22 Phase 5 review lows L1–L5 | ⬜ |
+| S8 | `p6/journey-e2e` | 6.23 exit E2E, 6.24 flag removal + docs | ⬜ |
+
 
 **Scope**
 - DB: `Attendance` (+ `version`, denormalised `batchId`, `sessionDate`, `branchId`), `SyncOperation`, `AttendanceDailySummary`, `StudentMonthlyAttendance`; session status transitions (Scheduled → Started → Completed).
