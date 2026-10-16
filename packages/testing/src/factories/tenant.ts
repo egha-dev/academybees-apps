@@ -322,6 +322,38 @@ async function insertPeopleAndScheduling(
      VALUES ($1, $2, 'SESSION_CANCELLED_HOLIDAY', $3, $4, 'VOID', now())`,
     [newId(), t.id, f.studentId, holidayId],
   );
+  // A past one-off class with a roll call, its history, a sync op and a read notification
+  // (Phase 6): rows in every tenant table, away from today's schedule.
+  const pastSessionId = newId();
+  const attendanceId = newId();
+  await q(
+    `INSERT INTO class_session (id, tenant_id, branch_id, batch_id, session_date, starts_at, ends_at,
+       origin, status, updated_at)
+     VALUES ($1, $2, $3, $4, DATE '2020-01-13', TIMESTAMPTZ '2020-01-13 11:30Z',
+             TIMESTAMPTZ '2020-01-13 12:30Z', 'MANUAL', 'COMPLETED', now())`,
+    [pastSessionId, t.id, branchId, f.batchId],
+  );
+  await q(
+    `INSERT INTO attendance (id, tenant_id, branch_id, batch_id, session_id, student_id, session_date,
+       status, marked_by_id, marked_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, DATE '2020-01-13', 'PRESENT', $7, now(), now())`,
+    [attendanceId, t.id, branchId, f.batchId, pastSessionId, f.studentId, membershipId],
+  );
+  await q(
+    `INSERT INTO attendance_change (id, tenant_id, attendance_id, to_status, changed_by_id)
+     VALUES ($1, $2, $3, 'PRESENT', $4)`,
+    [newId(), t.id, attendanceId, membershipId],
+  );
+  await q(
+    `INSERT INTO sync_operation (tenant_id, op_id, membership_id, type, entity_key, status, result)
+     VALUES ($1, $2, $3, 'attendance.markSession', $4, 'APPLIED', '{}')`,
+    [t.id, newId(), membershipId, `session:${pastSessionId}`],
+  );
+  await q(
+    `INSERT INTO notification (id, tenant_id, recipient_id, kind, dedupe_key, read_at)
+     VALUES ($1, $2, $3, 'ATTENDANCE_NOT_TAKEN', $4, now())`,
+    [newId(), t.id, membershipId, `fixture:${pastSessionId}`],
+  );
   // An earlier (replaced) logo: every tenant table has fixture rows (media_file, C-97).
   const mediaId = newId();
   await q(

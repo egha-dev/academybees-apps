@@ -28,7 +28,7 @@ describe('session generation job', () => {
   const sessions = async (tenantId: string) =>
     (
       await su.query<{ session_date: string; status: string; modified_at: Date | null }>(
-        `SELECT session_date::text AS session_date, status, modified_at FROM class_session WHERE tenant_id = $1 ORDER BY session_date`,
+        `SELECT session_date::text AS session_date, status, modified_at FROM class_session WHERE tenant_id = $1 AND origin = 'GENERATED' ORDER BY session_date`,
         [tenantId],
       )
     ).rows;

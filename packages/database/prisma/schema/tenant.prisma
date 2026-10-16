@@ -88,6 +88,7 @@ model Tenant {
   joinRequests  JoinRequest[]
   holidays      Holiday[]
   intents       NotificationIntent[]
+  attendance    Attendance[]
 
   @@map("tenant")
 }
@@ -164,11 +165,12 @@ model Branch {
   createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  students Student[]
-  teachers Teacher[]
-  batches  Batch[]
-  sessions ClassSession[]
-  holidays Holiday[]
+  students   Student[]
+  teachers   Teacher[]
+  batches    Batch[]
+  sessions   ClassSession[]
+  holidays   Holiday[]
+  attendance Attendance[]
 
   @@unique([tenantId, id])
   @@unique([tenantId], map: "branch_one_default", where: raw("is_default"))

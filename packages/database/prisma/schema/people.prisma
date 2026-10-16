@@ -68,6 +68,7 @@ model Student {
   consents   ConsentRecord[]
   enrolments BatchEnrolment[]
   intents    NotificationIntent[]
+  attendance Attendance[]
 
   @@unique([tenantId, admissionNo])
   @@unique([tenantId, id])

@@ -75,8 +75,12 @@ model Membership {
   createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  roles    MembershipRole[]
-  teachers Teacher[]
+  roles             MembershipRole[]
+  teachers          Teacher[]
+  attendanceMarked  Attendance[]       @relation("AttendanceMarkedBy")
+  attendanceChanges AttendanceChange[] @relation("AttendanceChangedBy")
+  syncOperations    SyncOperation[]
+  notifications     Notification[]
 
   @@unique([tenantId, userId])
   @@unique([tenantId, id])

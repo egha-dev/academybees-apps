@@ -27,6 +27,7 @@ import { TenantModule } from './core/tenant/tenant.module.js';
 import { ZodResponseInterceptor } from './core/validation/zod-response.interceptor.js';
 import { ZodValidationPipe } from './core/validation/zod-validation.pipe.js';
 import { AcademyModule } from './modules/academy/academy.module.js';
+import { AttendanceModule } from './modules/attendance/index.js';
 import { LegalModule } from './modules/legal/legal.module.js';
 import { OnboardingModule } from './modules/onboarding/onboarding.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
@@ -65,6 +66,7 @@ export class AppModule {
         LegalModule,
         OnboardingModule,
         AcademyModule,
+        AttendanceModule,
         // Platform (console).
         PlatformModule,
         ...(config.APP_ENV === 'production' ? [] : [DocsModule]),

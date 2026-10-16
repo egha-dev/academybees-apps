@@ -92,8 +92,35 @@ export class SessionsService {
     private readonly analytics: AnalyticsService,
   ) {}
 
-  scope(capability: 'timetable.read' | 'session.manage'): Prisma.ClassSessionWhereInput {
+  scope(
+    capability: 'timetable.read' | 'session.manage' | 'attendance.read' | 'attendance.mark',
+  ): Prisma.ClassSessionWhereInput {
     return scopedWhere(this.cls, capability, sessionPolicy);
+  }
+
+  /**
+   * One class for attendance, within the caller's scope for `capability` (C-122: the attendance
+   * module reads classes through this service). Out of scope is not found.
+   */
+  async forAttendance(
+    db: Pick<TransactionClient, 'classSession'>,
+    id: string,
+    capability: 'attendance.read' | 'attendance.mark',
+  ) {
+    const row = await db.classSession.findFirst({
+      where: { AND: [{ id }, this.scope(capability)] },
+      select: { ...SESSION_SELECT, tenantId: true },
+    });
+    if (!row) throw new DomainError('NOT_FOUND', 'session');
+    return row;
+  }
+
+  /** The first roll call completes a scheduled class (C-129). */
+  async markCompleted(tx: Pick<TransactionClient, 'classSession'>, id: string) {
+    await tx.classSession.updateMany({
+      where: { id, status: 'SCHEDULED' },
+      data: { status: 'COMPLETED' },
+    });
   }
 
   async zone(db: Pick<TransactionClient, 'tenant'> = this.db) {

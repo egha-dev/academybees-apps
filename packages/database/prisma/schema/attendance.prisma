@@ -1,0 +1,113 @@
+// Attendance and offline sync (Phase 6; ADR-016, ADR-017, ARCHITECTURE §11).
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  LEAVE
+
+  @@map("attendance_status")
+}
+
+/// One roll-call mark per class and student (ADR-017). `version` drives the conflict rule; the
+/// batch, branch and date are copied from the class so history and percentages need no joins.
+model Attendance {
+  id          String           @id @db.Uuid
+  tenantId    String           @map("tenant_id") @db.Uuid
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branchId    String           @map("branch_id") @db.Uuid
+  branch      Branch           @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  batchId     String           @map("batch_id") @db.Uuid
+  batch       Batch            @relation(fields: [tenantId, batchId], references: [tenantId, id], onDelete: Restrict)
+  sessionId   String           @map("session_id") @db.Uuid
+  session     ClassSession     @relation(fields: [tenantId, sessionId], references: [tenantId, id], onDelete: Restrict)
+  studentId   String           @map("student_id") @db.Uuid
+  student     Student          @relation(fields: [tenantId, studentId], references: [tenantId, id], onDelete: Restrict)
+  sessionDate DateTime         @map("session_date") @db.Date
+  status      AttendanceStatus
+  note        String?          @db.VarChar(500)
+  /// Who set the current value (ADR-017: a stale edit by the same person applies).
+  markedById  String           @map("marked_by_id") @db.Uuid
+  markedBy    Membership       @relation("AttendanceMarkedBy", fields: [tenantId, markedById], references: [tenantId, id], onDelete: Restrict)
+  markedAt    DateTime         @map("marked_at") @db.Timestamptz(3)
+  version     Int              @default(1)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  changes AttendanceChange[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, sessionId, studentId])
+  @@index([tenantId, studentId, sessionDate])
+  @@index([tenantId, batchId, sessionDate])
+  @@index([tenantId, updatedAt, id])
+  @@map("attendance")
+}
+
+/// Append-only history of every mark (who, when, from → to, and the sync op if queued).
+model AttendanceChange {
+  id           String            @id @db.Uuid
+  tenantId     String            @map("tenant_id") @db.Uuid
+  attendanceId String            @map("attendance_id") @db.Uuid
+  attendance   Attendance        @relation(fields: [tenantId, attendanceId], references: [tenantId, id], onDelete: Restrict)
+  fromStatus   AttendanceStatus? @map("from_status")
+  toStatus     AttendanceStatus  @map("to_status")
+  changedById  String            @map("changed_by_id") @db.Uuid
+  changedBy    Membership        @relation("AttendanceChangedBy", fields: [tenantId, changedById], references: [tenantId, id], onDelete: Restrict)
+  opId         String?           @map("op_id") @db.Uuid
+  changedAt    DateTime          @default(now()) @map("changed_at") @db.Timestamptz(3)
+
+  @@index([tenantId, attendanceId, changedAt])
+  @@map("attendance_change")
+}
+
+enum SyncOperationStatus {
+  APPLIED
+  REJECTED
+  CONFLICT
+
+  @@map("sync_operation_status")
+}
+
+/// The sync op ledger (ADR-016): one row per client `opId`, so a retried op returns its first
+/// result (`DUPLICATE`) instead of applying twice. Append-only.
+model SyncOperation {
+  tenantId     String              @map("tenant_id") @db.Uuid
+  opId         String              @map("op_id") @db.Uuid
+  membershipId String              @map("membership_id") @db.Uuid
+  membership   Membership          @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Restrict)
+  type         String              @db.VarChar(50)
+  entityKey    String              @map("entity_key") @db.VarChar(200)
+  status       SyncOperationStatus
+  result       Json
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@id([tenantId, opId])
+  @@index([tenantId, membershipId, createdAt])
+  @@map("sync_operation")
+}
+
+enum NotificationKind {
+  ATTENDANCE_NOT_TAKEN
+
+  @@map("notification_kind")
+}
+
+/// In-app notification for one staff member (C-04, C-128). Text comes from the catalogue by
+/// `kind` with `params`; `dedupeKey` makes job retries safe.
+model Notification {
+  id          String           @id @db.Uuid
+  tenantId    String           @map("tenant_id") @db.Uuid
+  recipientId String           @map("recipient_id") @db.Uuid
+  recipient   Membership       @relation(fields: [tenantId, recipientId], references: [tenantId, id], onDelete: Restrict)
+  kind        NotificationKind
+  params      Json             @default("{}")
+  link        String?          @db.VarChar(300)
+  dedupeKey   String           @map("dedupe_key") @db.VarChar(200)
+  readAt      DateTime?        @map("read_at") @db.Timestamptz(3)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([tenantId, dedupeKey])
+  @@index([tenantId, recipientId, createdAt])
+  @@map("notification")
+}

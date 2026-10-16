@@ -71,6 +71,7 @@ model Batch {
   enrolments BatchEnrolment[]
   rules      ScheduleRule[]
   sessions   ClassSession[]
+  attendance Attendance[]
 
   @@unique([tenantId, id])
   @@index([tenantId, branchId, status])
@@ -191,6 +192,8 @@ model ClassSession {
   makeupForSessionId String?              @map("makeup_for_session_id") @db.Uuid
   makeupFor          ClassSession?        @relation("SessionMakeup", fields: [tenantId, makeupForSessionId], references: [tenantId, id], onDelete: Restrict)
   makeups            ClassSession[]       @relation("SessionMakeup")
+  attendance         Attendance[]
+  intents            NotificationIntent[]
   /// The holiday that cancelled it (C-115).
   holidayId          String?              @map("holiday_id") @db.Uuid
   holiday            Holiday?             @relation(fields: [tenantId, holidayId], references: [tenantId, id], onDelete: Restrict)
@@ -244,6 +247,8 @@ model Holiday {
 
 enum NotificationIntentKind {
   SESSION_CANCELLED_HOLIDAY
+  ATTENDANCE_ABSENT
+  ATTENDANCE_LATE
 
   @@map("notification_intent_kind")
 }
@@ -267,6 +272,9 @@ model NotificationIntent {
   student   Student                  @relation(fields: [tenantId, studentId], references: [tenantId, id], onDelete: Restrict)
   holidayId String?                  @map("holiday_id") @db.Uuid
   holiday   Holiday?                 @relation(fields: [tenantId, holidayId], references: [tenantId, id], onDelete: Restrict)
+  /// The class an attendance intent is about (C-128).
+  sessionId String?                  @map("session_id") @db.Uuid
+  session   ClassSession?            @relation(fields: [tenantId, sessionId], references: [tenantId, id], onDelete: Restrict)
   /// Dates and batch names for the message; no contact details.
   payload   Json                     @default("{}")
   status    NotificationIntentStatus @default(PENDING)
@@ -274,6 +282,7 @@ model NotificationIntent {
   updatedAt DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@unique([tenantId, kind, holidayId, studentId])
+  @@unique([tenantId, kind, sessionId, studentId])
   @@index([tenantId, status, createdAt])
   @@map("notification_intent")
 }
