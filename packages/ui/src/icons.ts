@@ -33,3 +33,4 @@ export { default as LinkIcon } from '@mui/icons-material/LinkRounded';
 export { default as SettingsIcon } from '@mui/icons-material/SettingsRounded';
 export { default as PaletteIcon } from '@mui/icons-material/PaletteRounded';
 export { default as TeacherIcon } from '@mui/icons-material/CoPresentRounded';
+export { default as NotificationsIcon } from '@mui/icons-material/NotificationsRounded';

@@ -145,7 +145,7 @@ export class BatchesController {
   @Can('batch.manage')
   @ZodResponse(BatchSchema)
   setTeachers(@Param('id', Id) id: string, @Body() body: SetTeachersDto) {
-    return this.batches.setTeachers(id, body.teachers);
+    return this.batches.setTeachers(id, body.teachers, body.version);
   }
 
   @Get(':id/activity')

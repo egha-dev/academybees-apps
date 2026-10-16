@@ -59,6 +59,9 @@ export class SessionGenerationProcessor implements OnApplicationBootstrap, OnApp
     return this.context.run(tenantId, async () => {
       this.cls.set('actor', { type: 'SYSTEM' });
       return this.db.$transaction(async (tx) => {
+        // Jobs re-check state (CLAUDE §9): an academy paused or closed since it was queued is skipped.
+        const tenant = await tx.tenant.findFirst({ select: { status: true } });
+        if (tenant?.status !== 'ACTIVE' && tenant?.status !== 'SETUP') return 0;
         const count = await generateSessions(tx, { tenantId });
         if (count > 0)
           await this.analytics.track(tx, 'session.generated', { source: reason, count });

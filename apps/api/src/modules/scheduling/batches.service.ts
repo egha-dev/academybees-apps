@@ -382,9 +382,16 @@ export class BatchesService {
   async setTeachers(
     id: string,
     teachers: { teacherId: string; isPrimary: boolean }[],
+    version: number,
   ): Promise<Batch> {
     await this.db.$transaction(async (tx) => {
       const batch = await this.find(tx, id, 'batch.manage');
+      // Optimistic concurrency (Phase 5 review L1): two editors can't silently overwrite.
+      const bumped = await tx.batch.updateMany({
+        where: { id, version },
+        data: { version: { increment: 1 } },
+      });
+      if (bumped.count !== 1) throw new DomainError('VERSION_CONFLICT');
       await tx.batchTeacher.deleteMany({ where: { batchId: id } });
       const primary = teachers.findIndex((t) => t.isPrimary);
       await this.writeTeachers(

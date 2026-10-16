@@ -503,9 +503,12 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     params: { id: 'batch' },
     session: true,
     capability: 'batch.manage',
-    // Fixture values fill only top-level body fields; an empty list is a valid full replace.
-    body: { teachers: [] },
-    spoof: 'status',
+    // Fixture values fill only top-level body fields; an empty list is a valid full replace. Each
+    // call bumps the version, so spoofed repeats are covered in batches.int.spec.ts instead.
+    body: { version: 1, teachers: [] },
+    spoof: {
+      skip: 'batches.int.spec.ts › another academy’s courses, batches and enrolments are 404',
+    },
   },
   {
     method: 'GET',
@@ -639,6 +642,16 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
       skip: 'sync.int.spec.ts › beacon accepts queue health; another academy’s class is rejected as not found',
     },
   })),
+  // Notifications (Phase 6 S7): each member's own; another academy's are never listed.
+  { method: 'GET', path: '/api/v1/notifications', session: true },
+  { method: 'GET', path: '/api/v1/notifications/unread', session: true },
+  {
+    method: 'POST',
+    path: '/api/v1/notifications/read',
+    session: true,
+    body: { all: true },
+    spoof: 'status',
+  },
   // Student import (Phase 4 S5). The job routes are exercised end to end, including another
   // academy's attempts, in the dedicated test (needs storage and a job in flight).
   {
