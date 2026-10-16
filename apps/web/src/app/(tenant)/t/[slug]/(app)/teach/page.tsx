@@ -9,7 +9,9 @@ import { getTranslations } from 'next-intl/server';
 import { SessionList } from '@/components/scheduling/session-list.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
+import { TeachScreen } from '@/components/teach/teach-page.server';
 import { apiServerGet } from '@/lib/api.server';
+import { teacherPwaEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { academyTerms } from '@/lib/terms.server';
 
@@ -26,6 +28,8 @@ export async function generateMetadata(): Promise<Metadata> {
  * Teacher PWA in Phase 6; its button shows why it isn't there yet.
  */
 export default async function TeachPage() {
+  // Phase 6: the Teacher PWA replaces this page while its flag is on (C-124).
+  if (await teacherPwaEnabled()) return <TeachScreen view="today" />;
   const [{ me, academy }, { context }, terms, t, sched] = await Promise.all([
     signedInMember({ experience: 'teach' }),
     hostContext(),

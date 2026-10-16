@@ -134,8 +134,13 @@ test('a teacher sees only their batches, read-only', async ({ page }, testInfo) 
   await signInAt(page, testInfo, 'demo-a', 'teacher@demo-a.test');
   await page.goto(hostUrl(testInfo, 'demo-a', '/teach'));
   const mine = page.getByRole('heading', { name: 'My batches' }).locator('..');
-  await expect(page.getByRole('link', { name: 'Spoken English Tue/Thu' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Grade 8 — Evening' })).toBeVisible();
+  // The Teacher PWA downloads the teacher's classes first (C-124).
+  await expect(page.getByRole('link', { name: 'Spoken English Tue/Thu', exact: true })).toBeVisible(
+    {
+      timeout: 30_000,
+    },
+  );
+  await expect(page.getByRole('link', { name: 'Grade 8 — Evening', exact: true })).toBeVisible();
   await expect(mine.getByText('Board Prep Mon–Fri')).toHaveCount(0);
   await page.goto(hostUrl(testInfo, 'demo-a', `/batches/${SPOKEN_ENGLISH}`));
   await expect(

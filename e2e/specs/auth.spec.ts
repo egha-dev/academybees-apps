@@ -254,7 +254,10 @@ test('a teacher of two academies signs in to each one separately', async ({ page
   // Both sessions now live side by side; each host shows its own academy.
   await page.goto(hostUrl(testInfo, 'demo-a', '/teach'));
   await expect(page).toHaveURL(hostUrl(testInfo, 'demo-a', '/teach'));
-  await expect(page.getByRole('main').getByText('Your classes at Demo A Academy.')).toBeVisible();
+  // The Teacher PWA shows the academy once its classes are on the device (C-124).
+  await expect(page.getByRole('main').getByText('Your classes at Demo A Academy.')).toBeVisible({
+    timeout: 30_000,
+  });
 
   // Signing out of demo-a leaves demo-b signed in.
   await signOut(page, testInfo, 'demo-a');

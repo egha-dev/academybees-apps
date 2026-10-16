@@ -220,6 +220,30 @@ Each slice: branch `p6/<slice>` from the latest `main` → PR with the DoD check
 - **6.13** Loading, empty, error and offline states; budgets: Dexie and the engine load as a lazy chunk after first paint.
 - **Tests:** E2E online flow on all three projects; axe; budgets.
 
+*As built (S4):*
+- **Flag `p6-teacher-pwa`:** PO; on in local/ci/staging, off in production; expires 2027-06-30.
+- **Navigation:** with it on, the teacher's nav is Home · Classes · Students · More (`/teach/more`). Home is active only on `/teach`.
+- **Pages:** `/teach`, `/teach/classes`, `/teach/attendance?session=`, `/teach/students`, `/teach/sync` and `/teach/more` render only the shell and labels on the server (`TeachScreen`). The screens run in **one lazy chunk** (`components/teach/teach-app.tsx`: Dexie, the engine, the views). The pages stay at **182.9–186.2 KB gz**.
+- **Engine** (`components/teach/engine.ts`): one per page; device id in localStorage; CSRF from the cookie. On a 401 it refreshes the session quietly and resumes; only if that fails does it ask for sign-in, with nothing lost. Revocation goes back to `/login`. After bootstrap the screens are cached (`warmShells`).
+- **Service worker:** `/teach…` navigations are NetworkFirst (3 s) into `ab-teach-shell`, matched ignoring the query; other navigations are unchanged (C-124).
+- **Screens:**
+  - **Today:** greeting; the next class with Take attendance; today; next 7 days; "My batches" linking to the online read-only Batch Workspace.
+  - **Classes:** today, coming up, last 7 days, with "Attendance not taken", "Taken" and "Cancelled".
+  - **Attendance:**
+    - the roll by day plan, plus anyone marked earlier; counts;
+    - **Mark all present**; 48 px Present/Absent/Late/Leave toggles (`aria-pressed`, text letters plus full names for screen readers);
+    - per-row pending, conflict or failed; locks (cancelled, not yet, more than 7 days for teachers);
+    - Save → "Saved on this device. It syncs automatically."
+  - **Students:** search, batches, recent marks.
+  - **Sync Center:** last sync; a storage warning if not persisted; Sync now; needs attention (failed with reason → Try again / Discard with confirm; conflicts → keep mine / theirs per student → Save choices); waiting; synced recently.
+  - **More:** Sync, Security, switch to Manage, sign-out.
+- **Status line:** on every teacher screen: `OfflineBanner` + `SyncIndicator` with UX §12.1 wording, and a link to Sync when something needs attention.
+- **Sign-out:** `SignOutButton` reads the live unsynced count from `lib/unsynced` (the guard dialog defaults to Stay). After the server ends the session it deletes `ab_<userId>` and the shell cache (`deleteLocalData`), from any page's sign-out (the account panel passes `userId`).
+- **Errors:** `MEMBERSHIP_REVOKED` gets a message.
+- **Tests:**
+  - E2E `teacher-pwa.spec.ts` (all three projects): a class later today → Today shows it, "All changes synced" → Mark all present + one absent → Save → synced → the academy has 2 present, 1 absent → Sync, Students, Classes ("Taken"); axe on Today and Attendance.
+  - Older specs on `/teach` wait for the first download and use exact link names.
+
 ### S5 `p6/offline-e2e` — the offline suite
 
 - **6.14** `e2e/specs/offline-attendance.spec.ts` (Chromium projects):

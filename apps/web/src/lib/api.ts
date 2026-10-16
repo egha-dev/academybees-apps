@@ -20,7 +20,7 @@ export type ApiResult<T> = { ok: true; status: number; data: T } | { ok: false; 
 export const SESSION_LOST_EVENT = 'ab:session-lost';
 const CSRF_COOKIES = ['__Host-ab_csrf', 'ab_csrf'];
 
-function csrfToken(): string | undefined {
+export function csrfToken(): string | undefined {
   for (const part of document.cookie.split(';')) {
     const [name, ...rest] = part.trim().split('=');
     if (name && CSRF_COOKIES.includes(name)) return decodeURIComponent(rest.join('='));

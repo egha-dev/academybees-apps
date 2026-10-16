@@ -16,6 +16,7 @@
   "dependencies": {
     "@academybee/contracts": "workspace:*",
     "@academybee/i18n": "workspace:*",
+    "@academybee/sync": "workspace:*",
     "@academybee/tenant": "workspace:*",
     "@academybee/ui": "workspace:*",
     "@fontsource-variable/inter": "catalog:",
@@ -24,6 +25,7 @@
     "@serwist/window": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-virtual": "catalog:",
+    "dexie": "catalog:",
     "esbuild": "catalog:",
     "next": "catalog:",
     "next-intl": "catalog:",

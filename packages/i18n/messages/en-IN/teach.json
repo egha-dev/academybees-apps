@@ -1,0 +1,121 @@
+{
+  "metaTitle": {
+    "classes": "Classes",
+    "attendance": "Attendance",
+    "students": "Students",
+    "sync": "Sync",
+    "more": "More"
+  },
+  "greeting": "Hello, {name}",
+  "loading": "Getting your classes ready…",
+  "firstSyncOffline": "Connect to the internet once to download your classes. After that they open offline.",
+  "signInAgain": "Sign in again to keep syncing. Nothing you saved is lost.",
+  "signIn": "Sign in",
+  "today": {
+    "title": "Today",
+    "next": "Next class",
+    "none": "No classes today.",
+    "takeAttendance": "Take attendance",
+    "openRoll": "See attendance",
+    "holiday": "Holiday: {name}",
+    "week": "Next 7 days",
+    "batches": "My batches",
+    "noBatches": "You don't teach a batch yet."
+  },
+  "classes": {
+    "title": "Classes",
+    "body": "Your classes from last week to the next two weeks. They open offline.",
+    "today": "Today",
+    "upcoming": "Coming up",
+    "past": "Last 7 days",
+    "empty": "No classes here.",
+    "notTaken": "Attendance not taken",
+    "taken": "Taken",
+    "cancelled": "Cancelled",
+    "students": "{count, plural, one {# student} other {# students}}"
+  },
+  "status": {
+    "PRESENT": "Present",
+    "ABSENT": "Absent",
+    "LATE": "Late",
+    "LEAVE": "Leave"
+  },
+  "short": {
+    "PRESENT": "P",
+    "ABSENT": "A",
+    "LATE": "L",
+    "LEAVE": "Lv"
+  },
+  "attendance": {
+    "title": "{batch}",
+    "when": "{date}, {start}–{end}",
+    "markAll": "Mark all present",
+    "save": "Save attendance",
+    "saving": "Saving…",
+    "savedLocal": "Saved on this device. It syncs automatically.",
+    "unsaved": "{count, plural, one {# change not saved yet} other {# changes not saved yet}}",
+    "counts": "{present} present · {absent} absent · {late} late · {leave} leave · {unmarked} not marked",
+    "notFound": "This class isn't on this device. Open Classes to refresh, or check the link.",
+    "cancelled": "This class was cancelled, so there's no attendance to take.",
+    "notYet": "Attendance opens on the day of the class.",
+    "closed": "This roll call is closed for changes. Ask the owner or an admin to correct it.",
+    "noStudents": "No students are expected at this class.",
+    "notExpected": "Not on the roll that day",
+    "pending": "Waiting to sync",
+    "conflict": "Someone else changed this — choose in Sync",
+    "failed": "Not saved — see Sync",
+    "statusFor": "Attendance for {name}",
+    "back": "All classes"
+  },
+  "students": {
+    "title": "Students",
+    "body": "Students in your batches. Their recent attendance is on this device.",
+    "search": "Find a student",
+    "empty": "No students here yet.",
+    "noMatch": "No students match.",
+    "recent": "Recent attendance",
+    "noMarks": "No attendance on this device yet."
+  },
+  "sync": {
+    "title": "Sync",
+    "body": "Everything saved on this device and whether it has reached the academy.",
+    "syncNow": "Sync now",
+    "lastSync": "Last synced {time}",
+    "never": "Not synced yet",
+    "storage": "This device may clear saved data when space runs low. Keep the app installed and sync often.",
+    "pendingTitle": "Waiting to sync",
+    "attentionTitle": "Needs your attention",
+    "doneTitle": "Synced recently",
+    "nothing": "Nothing waiting. All changes synced.",
+    "item": "Attendance · {batch} · {date}",
+    "itemUnknown": "Attendance for a class no longer on this device",
+    "students": "{count, plural, one {# student} other {# students}}",
+    "retry": "Try again",
+    "discard": "Discard",
+    "discardTitle": "Discard this change?",
+    "discardBody": "It won't reach the academy. This can't be undone.",
+    "keep": "Keep it",
+    "conflictTitle": "Someone else changed attendance",
+    "conflictBody": "Choose what to keep for each student.",
+    "mine": "Keep mine: {status}",
+    "theirs": "Keep {name}'s: {status}",
+    "theirsUnknown": "Keep theirs: {status}",
+    "resolve": "Save choices",
+    "reasons": {
+      "window_closed": "The roll call is closed for changes.",
+      "cancelled": "The class was cancelled.",
+      "not_found": "You no longer teach this class.",
+      "not_yet": "The class hasn't happened yet.",
+      "not_on_roll": "A student is no longer on the roll.",
+      "other": "The academy couldn't accept this change."
+    }
+  },
+  "more": {
+    "title": "More",
+    "signedInAs": "Signed in as {name}",
+    "switch": "Switch to managing the academy",
+    "security": "Security",
+    "sync": "Sync"
+  },
+  "academy": "Your classes at {academy}."
+}

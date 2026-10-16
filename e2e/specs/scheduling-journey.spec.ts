@@ -68,7 +68,11 @@ test('batch with a weekly schedule → week view → cancel one → teacher sees
   await signOut(page, testInfo);
   await signInAt(page, testInfo, 'demo-a', 'teacher@demo-a.test');
   await page.goto(hostUrl(testInfo, 'demo-a', '/teach'));
-  await expect(page.getByRole('link', { name: 'Spoken English Tue/Thu' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Spoken English Tue/Thu', exact: true })).toBeVisible(
+    {
+      timeout: 30_000,
+    },
+  );
   await expect(page.getByText(name)).toHaveCount(0);
   await page.goto(hostUrl(testInfo, 'demo-a', `/timetable?view=week&date=${nextWeek}`));
   await expect(page.getByRole('link', { name: /Spoken English Tue\/Thu/ }).first()).toBeVisible();

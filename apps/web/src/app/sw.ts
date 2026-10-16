@@ -3,6 +3,7 @@
 import {
   CacheFirst,
   ExpirationPlugin,
+  NetworkFirst,
   NetworkOnly,
   type PrecacheEntry,
   Serwist,
@@ -25,7 +26,9 @@ const DAY = 24 * 60 * 60;
  * - precaches the app shell and the /offline page;
  * - caches static assets, fonts and icons only;
  * - NEVER caches /api/* (personal data lives in IndexedDB under app control, not Cache Storage);
- * - navigations go to the network and fall back to /offline;
+ * - navigations go to the network and fall back to /offline, except the Teacher PWA's screens
+ *   (`/teach…`, C-124): network first (3 s), then the copy cached when last opened. Those pages
+ *   carry no student data (it lives in IndexedDB), and the cache is wiped on sign-out;
  * - a new version waits until the user chooses "Update now" (no surprise reloads).
  */
 const serwist = new Serwist({
@@ -52,6 +55,19 @@ const serwist = new Serwist({
     {
       matcher: ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith('/icons/'),
       handler: new StaleWhileRevalidate({ cacheName: 'ab-icons' }),
+    },
+    {
+      matcher: ({ request, url, sameOrigin }) =>
+        request.mode === 'navigate' &&
+        sameOrigin &&
+        (url.pathname === '/teach' || url.pathname.startsWith('/teach/')),
+      handler: new NetworkFirst({
+        cacheName: 'ab-teach-shell',
+        networkTimeoutSeconds: 3,
+        // One cached screen serves every `?session=` (the data comes from the device).
+        matchOptions: { ignoreSearch: true },
+        plugins: [new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 30 * DAY })],
+      }),
     },
     { matcher: ({ request }) => request.mode === 'navigate', handler: new NetworkOnly() },
   ],

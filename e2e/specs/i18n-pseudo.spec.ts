@@ -60,6 +60,7 @@ const DATA_PATTERNS = [
   /\bADM-\d{4}\b/g, // admission numbers
   /\+\d{10,15}\b/g, // phone numbers
   /\b20\d{2}-\d{2}-draft\b|\bdemo\b/g, // privacy notice versions
+  /\b[A-Z][a-z]+ (?:desktop|android|iphone) [a-z0-9]{6,10}\b/g, // names other E2E specs create
 ];
 /** Signed-in pages (Phases 2–4), opened as the seeded owner (signed in through the API). */
 const SIGNED_IN_PATHS = [

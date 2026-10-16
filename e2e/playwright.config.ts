@@ -120,7 +120,8 @@ export default defineConfig({
     {
       name: 'iphone-webkit',
       use: { ...devices['iPhone 14'] },
-      testIgnore: /i18n-pseudo|flag\.spec|pwa\.spec/,
+      // Only the install/service-worker spec (pwa.spec.ts); the Teacher PWA's flows run here too.
+      testIgnore: /i18n-pseudo|flag\.spec|(?:^|\/)pwa\.spec/,
     },
     {
       name: 'pseudo-accented',

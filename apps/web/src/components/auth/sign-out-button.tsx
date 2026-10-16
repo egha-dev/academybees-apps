@@ -3,9 +3,11 @@
 import { PlainButton } from '@academybee/ui/components/plain-button';
 import { Box } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useState, useSyncExternalStore } from 'react';
 
+import { plural } from '@/components/scheduling/plural';
 import { api } from '@/lib/api';
+import { deleteLocalData, signOutGuard, subscribeSignOutGuard } from '@/lib/unsynced';
 import { useOnline } from '@/lib/use-online';
 
 // Shown only with unsynced offline work; loaded on demand (route JS budget, C-68).
@@ -23,19 +25,26 @@ export type SignOutLabels = {
 };
 
 /**
- * Sign out of this device. With unsynced offline work it asks first, defaulting to staying
- * signed in (ARCHITECTURE §11.6). `unsynced` comes from `useLogoutGuard` once the Teacher PWA
- * keeps a sync queue (Phase 6); `guard.body` is already pluralised for it on the server.
+ * Sign out of this device. With unsynced offline work (the Teacher PWA's queue, published via
+ * `lib/unsynced`) it asks first, defaulting to staying signed in (ARCHITECTURE §11.6). After the
+ * server ends the session, this user's offline data and cached screens are deleted (§11.7).
+ * `guard.body` is an ICU message with `{count}` filled here.
  */
 export function SignOutButton({
   labels,
-  unsynced = 0,
+  userId,
   variant = 'secondary',
 }: {
   labels: SignOutLabels;
-  unsynced?: number;
+  /** Whose offline data to delete after signing out. */
+  userId?: string | undefined;
   variant?: 'secondary' | 'ghost';
 }) {
+  const unsynced = useSyncExternalStore(
+    subscribeSignOutGuard,
+    () => signOutGuard().unsynced,
+    () => 0,
+  );
   const online = useOnline();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -54,6 +63,7 @@ export function SignOutButton({
       setFailed(true);
       return;
     }
+    if (userId) await deleteLocalData(userId);
     // A full page load, not a client navigation: nothing of the session stays in memory.
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign('/login');
@@ -81,7 +91,7 @@ export function SignOutButton({
           <ConfirmDialog
             open
             title={labels.guard.title}
-            body={labels.guard.body}
+            body={plural(labels.guard.body, unsynced)}
             cancelLabel={labels.guard.stay}
             confirmLabel={labels.guard.signOut}
             tone="danger"
