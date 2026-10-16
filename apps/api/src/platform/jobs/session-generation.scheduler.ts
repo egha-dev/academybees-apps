@@ -13,12 +13,16 @@ import { AuditService } from '../../core/audit/audit.service.js';
 import { API_CONFIG } from '../../core/config/config.module.js';
 import type { ApiConfig } from '../../core/config/config.schema.js';
 import { bullConnection } from '../../core/redis/bull-connection.js';
+import { AttendanceNudgeQueue } from '../../modules/notifications/index.js';
 import { SessionGenerationQueue } from '../../modules/scheduling/index.js';
 import { PlatformDb } from '../platform-db.js';
 
 /** Platform jobs queue (C-112): cross-academy work that only lists academies, never their data. */
 export const PLATFORM_JOBS_QUEUE = 'platform-jobs';
 export const DAILY_SESSIONS_JOB = 'daily-sessions';
+/** Every 10 minutes: teachers reminded 30 minutes after a class without a roll call (G-16). */
+export const ATTENDANCE_NUDGES_JOB = 'attendance-nudges';
+const NUDGE_EVERY_MS = 10 * 60_000;
 /** 02:00 in India, when no class is running. */
 const DAILY_PATTERN = { pattern: '0 2 * * *', tz: 'Asia/Kolkata' } as const;
 
@@ -38,6 +42,7 @@ export class SessionGenerationScheduler implements OnApplicationBootstrap, OnApp
     @Inject(API_CONFIG) private readonly config: ApiConfig,
     private readonly platform: PlatformDb,
     private readonly generation: SessionGenerationQueue,
+    private readonly nudges: AttendanceNudgeQueue,
     private readonly audit: AuditService,
   ) {}
 
@@ -49,11 +54,20 @@ export class SessionGenerationScheduler implements OnApplicationBootstrap, OnApp
       name: DAILY_SESSIONS_JOB,
       opts: { removeOnComplete: { count: 30 }, removeOnFail: { count: 30 } },
     });
+    await this.queue.upsertJobScheduler(
+      ATTENDANCE_NUDGES_JOB,
+      { every: NUDGE_EVERY_MS },
+      {
+        name: ATTENDANCE_NUDGES_JOB,
+        opts: { removeOnComplete: { count: 30 }, removeOnFail: { count: 30 } },
+      },
+    );
     this.worker = new Worker(
       PLATFORM_JOBS_QUEUE,
       async (job) => {
         if (job.name === DAILY_SESSIONS_JOB) return this.queueAll('daily');
         if (job.name === 'manual-sessions') return this.queueAll('manual', true);
+        if (job.name === ATTENDANCE_NUDGES_JOB) return this.queueNudges();
         throw new Error(`Unknown platform job: ${job.name}`);
       },
       { connection: this.connection, concurrency: 1 },
@@ -90,6 +104,30 @@ export class SessionGenerationScheduler implements OnApplicationBootstrap, OnApp
       metadata: { academies: academies.length, reason },
     });
     this.logger.log({ academies: academies.length, reason }, 'Session generation queued');
+    return academies.length;
+  }
+
+  /** Queue the attendance nudge check for every active academy (one job per 10-minute slot). */
+  async queueNudges(now = new Date()): Promise<number> {
+    let db;
+    try {
+      db = this.platform.db;
+    } catch {
+      return 0;
+    }
+    const academies = await db.tenant.findMany({
+      where: { status: 'ACTIVE' },
+      select: { id: true },
+    });
+    const slot = String(Math.floor(now.getTime() / NUDGE_EVERY_MS));
+    for (const a of academies) await this.nudges.add({ tenantId: a.id }, slot);
+    await this.audit.record({
+      tenantId: null,
+      action: 'platform.attendance_nudges_queued',
+      entityType: 'Platform',
+      entityId: 'attendance-nudges',
+      metadata: { academies: academies.length },
+    });
     return academies.length;
   }
 

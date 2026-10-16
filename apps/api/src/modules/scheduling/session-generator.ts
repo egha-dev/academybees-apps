@@ -3,7 +3,7 @@ import type { Prisma, TransactionClient } from '@academybee/database';
 
 import { plannedSessions, SESSION_WINDOW_DAYS } from './domain/generate.js';
 
-type Db = Pick<TransactionClient, 'scheduleRule' | 'holiday' | 'classSession' | 'tenant'>;
+type Db = Pick<TransactionClient, 'scheduleRule' | 'holiday' | 'classSession' | 'tenant' | 'batch'>;
 
 const day = (d: Date | null): string | null => (d ? d.toISOString().slice(0, 10) : null);
 
@@ -23,6 +23,11 @@ export async function generateSessions(
     select: { timezone: true },
   });
   if (!tenant) return 0;
+  // An academy-wide run (the nightly job) holds the batches' rows for its transaction, so a
+  // weekly-pattern save — which updates its batch row first — runs before or after it, never in
+  // between (Phase 5 review L2). A save already holds its own batch.
+  if (!input.batchIds)
+    await db.batch.updateMany({ where: { status: 'ACTIVE' }, data: { updatedAt: new Date() } });
   const today = localDate(now, tenant.timezone);
   const from = new Date(`${today}T00:00:00Z`);
   const until = new Date(from.getTime() + SESSION_WINDOW_DAYS * 86_400_000);

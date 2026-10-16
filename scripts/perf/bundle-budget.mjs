@@ -42,6 +42,7 @@ const BUDGETS = [
   { route: '/batches/[id]', page: `${ACADEMY}/(app)/batches/[id]`, kb: 200 },
   { route: '/settings/courses', page: `${ACADEMY}/(app)/settings/courses`, kb: 200 },
   { route: '/attendance', page: `${ACADEMY}/(app)/attendance`, kb: 200 },
+  { route: '/notifications', page: `${ACADEMY}/(app)/notifications`, kb: 200 },
   { route: '/attendance/take', page: `${ACADEMY}/(app)/attendance/take`, kb: 200 },
   { route: '/timetable', page: `${ACADEMY}/(app)/timetable`, kb: 200 },
   { route: '/teach/classes', page: `${ACADEMY}/(app)/teach/classes`, kb: 200 },

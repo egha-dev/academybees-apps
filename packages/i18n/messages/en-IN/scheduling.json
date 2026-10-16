@@ -56,7 +56,8 @@
       "enrolment_started": "A student joined {name}",
       "enrolment_days_changed": "A student's days changed in {name}",
       "enrolment_ended": "A student left {name}",
-      "student_transferred": "A student moved in or out of {name}"
+      "student_transferred": "A student moved in or out of {name}",
+      "batch_class_changed": "{name}: a class was cancelled, moved or added"
     },
     "by": "by {name}"
   },
@@ -170,7 +171,8 @@
         "enrolment_started": "A student joined",
         "enrolment_days_changed": "A student's days changed",
         "enrolment_ended": "A student left",
-        "student_transferred": "A student moved in or out"
+        "student_transferred": "A student moved in or out",
+        "batch_class_changed": "A class was cancelled, moved or added"
       }
     }
   },
@@ -400,6 +402,7 @@
     "permission": {
       "title": "Holidays aren't part of your role",
       "body": "Ask the owner of {academy}."
-    }
+    },
+    "previewChanged": "The classes on these days changed since you looked. Check again before adding the holiday."
   }
 }

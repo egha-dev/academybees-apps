@@ -803,8 +803,8 @@ Phase 2 is **not** started.
 | S3 | `p6/sync-client` | 6.8 Dexie v2 + repositories (C-125), 6.9 bootstrap/pull client, op builders, runner wiring, conflict resolve, wipe | ✅ #91 |
 | S4 | `p6/teacher-pwa` | 6.10 SW teacher shells (C-124), 6.11 shell + nav, 6.12 Today/Classes/Attendance/Students/Sync/More, 6.13 states + budgets (flag `p6-teacher-pwa`) | ✅ #92 |
 | S5 | `p6/offline-e2e` | 6.14 offline suite, 6.15 two-device conflict, 6.16 logout guard + revocation | ✅ #93 |
-| S6 | `p6/manage-attendance` | 6.17 Owner Today, 6.18 overview + Batch/Student 360 tabs, 6.19 seeds | 🟨 PR |
-| S7 | `p6/notifications` | 6.20 notification centre, 6.21 G-16 nudge, 6.22 Phase 5 review lows L1–L5 | ⬜ |
+| S6 | `p6/manage-attendance` | 6.17 Owner Today, 6.18 overview + Batch/Student 360 tabs, 6.19 seeds | ✅ #94 |
+| S7 | `p6/notifications` | 6.20 notification centre, 6.21 G-16 nudge, 6.22 Phase 5 review lows L1–L5 | 🟨 PR |
 | S8 | `p6/journey-e2e` | 6.23 exit E2E, 6.24 flag removal + docs | ⬜ |
 
 

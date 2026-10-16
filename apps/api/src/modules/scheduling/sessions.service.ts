@@ -115,6 +115,47 @@ export class SessionsService {
     return row;
   }
 
+  /**
+   * Classes that ended in a window and still have no roll call (G-16 nudges, Owner Today), with
+   * who should be reminded: the class's teacher, or the batch's primary teacher.
+   */
+  async endedWithoutRollCall(
+    db: Pick<TransactionClient, 'classSession'>,
+    window: { endedAfter: Date; endedBefore: Date },
+  ) {
+    const rows = await db.classSession.findMany({
+      where: {
+        status: 'SCHEDULED',
+        endsAt: { gt: window.endedAfter, lte: window.endedBefore },
+        attendance: { none: {} },
+        batch: { status: 'ACTIVE' },
+      },
+      take: 1000,
+      select: {
+        id: true,
+        startsAt: true,
+        tenantId: true,
+        teacher: { select: { membershipId: true } },
+        batch: {
+          select: {
+            name: true,
+            teachers: {
+              where: { isPrimary: true },
+              select: { teacher: { select: { membershipId: true } } },
+            },
+          },
+        },
+      },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      tenantId: r.tenantId,
+      startsAt: r.startsAt,
+      batchName: r.batch.name,
+      remind: r.teacher?.membershipId ?? r.batch.teachers[0]?.teacher.membershipId ?? null,
+    }));
+  }
+
   /** The first roll call completes a scheduled class (C-129). */
   async markCompleted(tx: Pick<TransactionClient, 'classSession'>, id: string) {
     await tx.classSession.updateMany({
@@ -247,6 +288,11 @@ export class SessionsService {
       await this.analytics.track(tx, 'session.added', {
         kind: input.makeupForSessionId ? 'makeup' : 'adhoc',
       });
+      await this.recordClass(
+        tx,
+        { tenantId: batch.tenantId, batchId: batch.id, sessionDate: at(input.date) },
+        input.makeupForSessionId ? 'makeup' : 'extra',
+      );
     });
     return this.result(id, timeZone);
   }
@@ -298,7 +344,10 @@ export class SessionsService {
         },
       });
       if (updated.count !== 1) throw new DomainError('VERSION_CONFLICT');
-      if (moved) await this.analytics.track(tx, 'session.rescheduled', {});
+      if (moved) {
+        await this.analytics.track(tx, 'session.rescheduled', {});
+        await this.recordClass(tx, { ...row, sessionDate: at(date) }, 'moved');
+      }
     });
     return this.result(id, timeZone);
   }
@@ -328,6 +377,7 @@ export class SessionsService {
       });
       if (updated.count !== 1) throw new DomainError('VERSION_CONFLICT');
       await this.analytics.track(tx, 'session.cancelled', { reason: input.reason });
+      await this.recordClass(tx, row, 'cancelled');
     });
     return this.result(id, timeZone);
   }
@@ -355,6 +405,7 @@ export class SessionsService {
         },
       });
       if (updated.count !== 1) throw new DomainError('VERSION_CONFLICT');
+      await this.recordClass(tx, row, 'restored');
     });
     return this.result(id, timeZone);
   }
@@ -438,6 +489,8 @@ export class SessionsService {
         sessionDate: true,
         startsAt: true,
         endsAt: true,
+        tenantId: true,
+        batchId: true,
       },
     });
     if (!row) throw new DomainError('NOT_FOUND', 'session');
@@ -482,6 +535,21 @@ export class SessionsService {
   }
 
   /** Activity on the batch timeline for schedule changes. */
+  /** A one-off change to a class shows in its batch's activity (Phase 5 review L4). */
+  private async recordClass(
+    tx: TransactionClient,
+    row: { tenantId: string; batchId: string; sessionDate: Date },
+    change: 'cancelled' | 'moved' | 'restored' | 'makeup' | 'extra',
+  ) {
+    await this.activity.record(tx, {
+      tenantId: row.tenantId,
+      entityType: 'BATCH',
+      entityId: row.batchId,
+      type: 'batch.class_changed',
+      data: { change, date: row.sessionDate.toISOString().slice(0, 10) },
+    });
+  }
+
   async recordBatch(
     tx: TransactionClient,
     tenantId: string,

@@ -160,5 +160,19 @@
     "todayTitle": "Attendance today",
     "todayTotals": "{taken} of {total} roll calls taken",
     "notTaken": "Attendance not taken: {batch} at {start}"
+  },
+  "notifications": {
+    "metaTitle": "Notifications",
+    "title": "Notifications",
+    "body": "Reminders for you at {academy}.",
+    "bell": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
+    "empty": "Nothing here. Reminders appear when something needs you.",
+    "markAll": "Mark all as read",
+    "marked": "All marked as read",
+    "unread": "New",
+    "open": "Open",
+    "kinds": {
+      "ATTENDANCE_NOT_TAKEN": "Attendance not taken for {batch} at {start} on {date}"
+    }
   }
 }

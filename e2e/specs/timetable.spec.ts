@@ -102,12 +102,20 @@ test('a holiday previews what it cancels, then cancels exactly that; removing it
   await expect(sheet.getByRole('heading', { name: `Diwali ${tag} cancels` })).toBeVisible();
   await expect(sheet.getByText(/\d+ classes? in \d+ batch/)).toBeVisible();
   await expect(sheet.getByText('Parents get a notice when notifications arrive')).toBeVisible();
-  // Nothing has changed yet.
+  // Nothing has changed yet. Confirm cancels exactly what the preview showed; if parallel tests
+  // add classes on that day in between, the academy says so and we look again (C-115).
   const confirm = sheet.getByRole('button', { name: /^Add holiday and cancel \d+ class/ });
-  const planned = Number(/(\d+)/.exec((await confirm.textContent()) ?? '')![1]);
+  let planned = 0;
+  await expect(async () => {
+    if (!(await confirm.isVisible()))
+      await sheet.getByRole('button', { name: 'See which classes it cancels' }).click();
+    planned = Number(/(\d+)/.exec((await confirm.textContent({ timeout: 5_000 })) ?? '')![1]);
+    await confirm.click();
+    await expect(page.getByText(new RegExp(`Diwali ${tag} added; ${planned} class`))).toBeVisible({
+      timeout: 5_000,
+    });
+  }).toPass({ timeout: 60_000 });
   expect(planned).toBeGreaterThanOrEqual(1);
-  await confirm.click();
-  await expect(page.getByText(new RegExp(`Diwali ${tag} added; ${planned} class`))).toBeVisible();
 
   await page.goto(hostUrl(testInfo, 'demo-a', `/timetable?view=day&date=${day}`));
   await expect(page.getByText(`Diwali ${tag}`).first()).toBeVisible();

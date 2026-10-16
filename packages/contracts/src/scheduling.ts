@@ -139,6 +139,8 @@ export const UpdateBatchSchema = z
   .refine(datesInOrder, { message: 'ends_before_start', path: ['endsOn'] });
 /** `PUT /batches/:id/teachers`: the full list; the first primary one leads (default: first). */
 export const SetBatchTeachersSchema = z.object({
+  /** The batch version the user edited from: a concurrent change is a conflict, not lost. */
+  version: Version,
   teachers: z
     .array(z.object({ teacherId: z.uuid(), isPrimary: z.boolean().default(false) }))
     .max(10),
@@ -379,6 +381,11 @@ export const HolidayInputSchema = z
     kind: z.enum(['HOLIDAY', 'CLOSURE']).default('HOLIDAY'),
     /** Omit for every branch. */
     branchId: z.uuid().nullable().optional(),
+    /**
+     * The classes the preview showed (C-115: "cancels exactly those"). If what the holiday would
+     * cancel has changed since, the confirm is refused (409) so the user can look again.
+     */
+    previewedSessionIds: z.array(z.uuid()).max(2000).optional(),
   })
   .refine((h) => h.endDate >= h.startDate, { message: 'ends_before_start', path: ['endDate'] })
   .refine((h) => (Date.parse(h.endDate) - Date.parse(h.startDate)) / 86_400_000 <= 366, {
