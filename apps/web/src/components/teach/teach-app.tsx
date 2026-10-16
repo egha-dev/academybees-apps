@@ -42,6 +42,8 @@ export type TeachProps = {
   timeZone: string;
   /** Owners and admins may correct roll calls after the window (C-130). */
   canEditPast: boolean;
+  /** Where the attendance screen's back link goes (Manage: the attendance overview). */
+  backHref?: string;
   labels: TeachLabels;
 };
 

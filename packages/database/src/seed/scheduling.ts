@@ -1,3 +1,5 @@
+import { addDays, isoWeekday, zonedInstant } from '@academybee/contracts';
+
 import type { PrismaClient } from '../generated/prisma/client.js';
 import { DEV_TENANTS } from './tenants.js';
 
@@ -161,7 +163,8 @@ export async function seedDevScheduling(
               tenantId: a.id,
               batchId: id(b.n),
               studentId: studentId(index),
-              startedOn: today,
+              // Joined a month ago, so the seeded past classes (attendance) have them on the roll.
+              startedOn: new Date(today.getTime() - 30 * 86_400_000),
               weekdays,
             },
           });
@@ -180,4 +183,97 @@ export async function seedDevScheduling(
     });
   });
   return BATCHES.length;
+}
+
+const pastId = (n: number) => `01a10000-0000-7000-8000-0000005d${String(n).padStart(4, '0')}`;
+/** One id per (batch, days back, slot, student): its own range, so no two marks collide. */
+const markId = (n: number) => `01a10000-0000-7000-8000-00005e${String(n).padStart(6, '0')}`;
+
+/**
+ * Two weeks of past classes with roll calls in demo-a (Phase 6), so attendance percentages,
+ * Student 360 and the Batch Workspace have something to show. The classes are one-off
+ * (MANUAL) completed classes, marked by the batch's teacher: mostly present, a few absent, late
+ * or on leave, the same on every run. Idempotent (fixed ids, upserts).
+ */
+export async function seedDevAttendance(
+  db: PrismaClient,
+  studentId: (i: number) => string,
+): Promise<number> {
+  const a = DEV_TENANTS.find((t) => t.slug === 'demo-a');
+  if (!a) throw new Error('demo-a missing');
+  const timeZone = 'Asia/Kolkata';
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date());
+  let marks = 0;
+  await db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT set_config('app.tenant_id', ${a.id}, true)`;
+    const owner = await tx.membership.findFirst({
+      where: { tenantId: a.id },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
+    if (!owner) return;
+    for (const b of BATCHES) {
+      const teacher = b.teacher
+        ? await tx.teacher.findUnique({ where: { id: b.teacher }, select: { membershipId: true } })
+        : null;
+      const markedById = teacher?.membershipId ?? owner.id;
+      for (let back = 14; back >= 1; back--) {
+        const date = addDays(today, -back);
+        const weekday = isoWeekday(date);
+        for (const [slot, [day, start, end]] of b.slots.entries()) {
+          if (day !== weekday) continue;
+          const sessionId = pastId(b.n * 1000 + back * 10 + slot);
+          const sessionDate = new Date(`${date}T00:00:00Z`);
+          await tx.classSession.upsert({
+            where: { id: sessionId },
+            create: {
+              id: sessionId,
+              tenantId: a.id,
+              branchId: a.branchId,
+              batchId: id(b.n),
+              teacherId: b.teacher,
+              sessionDate,
+              startsAt: zonedInstant(date, minutes(start), timeZone),
+              endsAt: zonedInstant(date, minutes(end), timeZone),
+              origin: 'MANUAL',
+              status: 'COMPLETED',
+            },
+            update: {},
+          });
+          for (const [index, plan] of b.students) {
+            if (plan.length && !plan.includes(weekday)) continue;
+            // Deterministic spread: ~1 in 9 absent, 1 in 15 late, 1 in 25 on leave.
+            const k = (index * 7 + back * 13 + slot * 5) % 225;
+            const status =
+              k % 9 === 0 ? 'ABSENT' : k % 15 === 1 ? 'LATE' : k % 25 === 2 ? 'LEAVE' : 'PRESENT';
+            const at = zonedInstant(date, minutes(end), timeZone);
+            await tx.attendance.upsert({
+              where: {
+                tenantId_sessionId_studentId: {
+                  tenantId: a.id,
+                  sessionId,
+                  studentId: studentId(index),
+                },
+              },
+              create: {
+                id: markId(b.n * 100_000 + back * 1000 + slot * 100 + index),
+                tenantId: a.id,
+                branchId: a.branchId,
+                batchId: id(b.n),
+                sessionId,
+                studentId: studentId(index),
+                sessionDate,
+                status,
+                markedById,
+                markedAt: at,
+              },
+              update: {},
+            });
+            marks += 1;
+          }
+        }
+      }
+    }
+  });
+  return marks;
 }

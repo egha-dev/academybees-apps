@@ -1,5 +1,7 @@
 import {
   ActivityPageSchema,
+  addDays,
+  BatchAttendanceSchema,
   BatchSchema,
   CourseSchema,
   localDate,
@@ -11,6 +13,7 @@ import { formatDate } from '@academybee/i18n';
 import { Card, StatusBadge } from '@academybee/ui/components/display';
 import { EmptyState } from '@academybee/ui/components/feedback';
 import { Box, Stack } from '@academybee/ui/components/layout';
+import { PlainButton } from '@academybee/ui/components/plain-button';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
 import { getMessages, getTranslations } from 'next-intl/server';
@@ -21,12 +24,14 @@ import {
   EnrolStudentLazy,
   PatternEditorLazy,
 } from '@/components/scheduling/batches-lazy';
+import { SessionRows } from '@/components/attendance/session-rows.server';
 import { plural } from '@/components/scheduling/plural';
 import { fill } from '@/lib/fill';
 import { SessionList } from '@/components/scheduling/session-list.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
+import { teacherPwaEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { academyTerms, withWords, wordsOf } from '@/lib/terms.server';
 
@@ -42,7 +47,7 @@ export async function generateMetadata({
   return { title: res?.ok ? BatchSchema.parse(await res.json()).name : undefined };
 }
 
-const TABS = ['students', 'schedule', 'activity'] as const;
+const TABS = ['students', 'schedule', 'attendance', 'activity'] as const;
 type Tab = (typeof TABS)[number];
 
 /**
@@ -57,7 +62,7 @@ export default async function BatchPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string; edit?: string }>;
 }) {
-  const [{ me }, { id }, query, { context }, terms, t, sched, messages] = await Promise.all([
+  const [{ me }, { id }, query, { context }, terms, t, sched, messages, pwa] = await Promise.all([
     signedInMember(),
     params,
     searchParams,
@@ -66,8 +71,12 @@ export default async function BatchPage({
     getTranslations('scheduling.batch'),
     getTranslations('scheduling'),
     getMessages(),
+    teacherPwaEnabled(),
   ]);
   const words = wordsOf(terms);
+  // Phase 6 (flag p6-teacher-pwa): the Attendance tab and a live Take attendance.
+  const attendanceOn = pwa && holds(me, 'attendance.read');
+  const tabs = TABS.filter((k) => k !== 'attendance' || attendanceOn);
   const res = /^[0-9a-f-]{36}$/i.test(id) ? await apiServerGet(`/batches/${id}`) : undefined;
   if (!res?.ok) {
     if (res && res.status !== 404) throw new Error(`batch ${res.status}`);
@@ -83,7 +92,7 @@ export default async function BatchPage({
     );
   }
   const batch = BatchSchema.parse(await res.json());
-  const tab: Tab = TABS.includes(query.tab as Tab) ? (query.tab as Tab) : 'students';
+  const tab: Tab = tabs.includes(query.tab as Tab) ? (query.tab as Tab) : 'students';
   const timeZone = academyTimeZone(context) ?? 'Asia/Kolkata';
   const today = localDate(new Date(), timeZone);
   const canManage = holds(me, 'batch.manage');
@@ -168,31 +177,37 @@ export default async function BatchPage({
         </Box>
       )}
       <Stack direction="row" sx={{ gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-        <Stack spacing={0.5}>
-          <Box
-            component="button"
-            type="button"
-            disabled
-            aria-describedby="batch-attendance-soon"
-            sx={{
-              minBlockSize: 48,
-              paddingInline: 4,
-              font: 'inherit',
-              fontWeight: 600,
-              border: '1px solid',
-              borderColor: 'ab.border',
-              borderRadius: 2,
-              bgcolor: 'ab.surfaceRaised',
-              color: 'ab.textSecondary',
-              cursor: 'not-allowed',
-            }}
-          >
+        {attendanceOn ? (
+          <PlainButton variant="primary" href={`/batches/${batch.id}?tab=attendance`}>
             {t('takeAttendance')}
-          </Box>
-          <Text id="batch-attendance-soon" variant="meta" tone="secondary">
-            {t('attendanceSoon')}
-          </Text>
-        </Stack>
+          </PlainButton>
+        ) : (
+          <Stack spacing={0.5}>
+            <Box
+              component="button"
+              type="button"
+              disabled
+              aria-describedby="batch-attendance-soon"
+              sx={{
+                minBlockSize: 48,
+                paddingInline: 4,
+                font: 'inherit',
+                fontWeight: 600,
+                border: '1px solid',
+                borderColor: 'ab.border',
+                borderRadius: 2,
+                bgcolor: 'ab.surfaceRaised',
+                color: 'ab.textSecondary',
+                cursor: 'not-allowed',
+              }}
+            >
+              {t('takeAttendance')}
+            </Box>
+            <Text id="batch-attendance-soon" variant="meta" tone="secondary">
+              {t('attendanceSoon')}
+            </Text>
+          </Stack>
+        )}
         {canManage && (
           <BatchActionsLazy
             batch={batch}
@@ -211,7 +226,7 @@ export default async function BatchPage({
           component="ul"
           sx={{ display: 'flex', gap: 2, margin: 0, padding: 0, flexWrap: 'wrap' }}
         >
-          {TABS.map((key) => (
+          {tabs.map((key) => (
             <Box component="li" key={key} sx={{ listStyle: 'none' }}>
               <Box
                 component="a"
@@ -276,6 +291,14 @@ export default async function BatchPage({
             close: common.close,
             errors,
           }}
+        />
+      )}
+      {tab === 'attendance' && (
+        <AttendanceTab
+          batchId={batch.id}
+          batchName={batch.name}
+          today={today}
+          canMark={holds(me, 'attendance.mark')}
         />
       )}
       {tab === 'activity' && <ActivityTab batchId={batch.id} timeZone={timeZone} />}
@@ -512,6 +535,59 @@ async function ActivityTab({ batchId, timeZone }: { batchId: string; timeZone: s
           </Text>
         </li>
       ))}
+    </Stack>
+  );
+}
+
+/** The batch's classes in the last 4 weeks with their roll calls (Phase 6). */
+async function AttendanceTab({
+  batchId,
+  batchName,
+  today,
+  canMark,
+}: {
+  batchId: string;
+  batchName: string;
+  today: string;
+  canMark: boolean;
+}) {
+  const [res, t] = await Promise.all([
+    apiServerGet(`/batches/${batchId}/attendance?from=${addDays(today, -27)}&to=${today}`),
+    getTranslations('teach.staff'),
+  ]);
+  if (!res.ok) throw new Error(`batch attendance ${res.status}`);
+  const data = BatchAttendanceSchema.parse(await res.json());
+  const sessions = [...data.sessions].reverse();
+  return (
+    <Stack spacing={3}>
+      <Text tone="secondary">{t('batchBody')}</Text>
+      <Text>
+        {data.percent === null ? t('batchNoPercent') : t('batchPercent', { percent: data.percent })}
+      </Text>
+      {sessions.length === 0 ? (
+        <Text tone="secondary">{t('empty')}</Text>
+      ) : (
+        <SessionRows
+          rows={sessions.map((s) => {
+            const marked = s.counts.PRESENT + s.counts.ABSENT + s.counts.LATE + s.counts.LEAVE;
+            return {
+              sessionId: s.sessionId,
+              title: batchName,
+              when: `${formatDate(s.date, { style: 'medium' })} · ${s.start}`,
+              state:
+                s.status === 'CANCELLED'
+                  ? 'cancelled'
+                  : marked > 0 || s.status === 'COMPLETED'
+                    ? 'taken'
+                    : s.date < today
+                      ? 'due'
+                      : 'later',
+              counts: s.counts,
+              markable: canMark && s.date >= addDays(today, -7),
+            };
+          })}
+        />
+      )}
     </Stack>
   );
 }

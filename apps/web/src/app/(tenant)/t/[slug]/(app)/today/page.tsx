@@ -1,8 +1,9 @@
-import { TodaySchema } from '@academybee/contracts';
+import { AttendanceOverviewSchema, TodaySchema } from '@academybee/contracts';
 import { formatDate } from '@academybee/i18n';
 import { Card } from '@academybee/ui/components/display';
 import { EmptyState } from '@academybee/ui/components/feedback';
 import { Box, Stack } from '@academybee/ui/components/layout';
+import { PlainButton } from '@academybee/ui/components/plain-button';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
@@ -11,6 +12,7 @@ import { SessionList } from '@/components/scheduling/session-list.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
+import { teacherPwaEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { academyTerms } from '@/lib/terms.server';
 
@@ -38,9 +40,19 @@ export default async function TodayPage() {
   const welcome = t('welcome', { name: me.user.name });
   if (!holds(me, 'timetable.read'))
     return <PageHeader title={t('title', { academy })} body={welcome} />;
-  const res = await apiServerGet('/today');
+  // Phase 6 (flag p6-teacher-pwa, G-16): today's roll calls and the ones not taken.
+  const attendanceOn = (await teacherPwaEnabled()) && holds(me, 'attendance.read');
+  const [res, overviewRes, staffT] = await Promise.all([
+    apiServerGet('/today'),
+    attendanceOn ? apiServerGet('/attendance/overview') : Promise.resolve(undefined),
+    getTranslations('teach.staff'),
+  ]);
   if (!res.ok) throw new Error(`today ${res.status}`);
   const today = TodaySchema.parse(await res.json());
+  const overview = overviewRes?.ok
+    ? AttendanceOverviewSchema.parse(await overviewRes.json())
+    : undefined;
+  const canMark = holds(me, 'attendance.mark');
   const date = formatDate(today.date, { style: 'full', ...(timeZone ? { timeZone } : {}) });
   const dates = (start: string, end: string) =>
     start === end
@@ -51,6 +63,13 @@ export default async function TodayPage() {
         });
   const { attention } = today;
   const items = [
+    ...(overview?.sessions ?? [])
+      .filter((s) => s.state === 'due')
+      .map((s) => ({
+        key: `a-${s.sessionId}`,
+        href: canMark ? `/attendance/take?session=${s.sessionId}` : '/attendance',
+        text: staffT('notTaken', { batch: s.batchName, start: s.start }),
+      })),
     ...attention.batchesWithoutTeacher.map((b) => ({
       key: `t-${b.id}`,
       href: `/batches/${b.id}`,
@@ -122,6 +141,21 @@ export default async function TodayPage() {
             )}
           </Card>
           <Stack spacing={4}>
+            {overview && overview.sessions.length > 0 && (
+              <Card title={staffT('todayTitle')}>
+                <Stack spacing={2} sx={{ alignItems: 'flex-start' }}>
+                  <Text>
+                    {staffT('todayTotals', {
+                      taken: overview.totals.taken,
+                      total: overview.totals.taken + overview.totals.due + overview.totals.later,
+                    })}
+                  </Text>
+                  <PlainButton variant="secondary" href="/attendance">
+                    {staffT('title')}
+                  </PlainButton>
+                </Stack>
+              </Card>
+            )}
             <Card title={t('attentionTitle')}>
               {items.length === 0 ? (
                 <Text tone="secondary">{t('allClear')}</Text>

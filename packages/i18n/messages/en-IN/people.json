@@ -113,7 +113,8 @@
     "tabs": {
       "label": "Student sections",
       "overview": "Overview",
-      "activity": "Activity"
+      "activity": "Activity",
+      "attendance": "Attendance"
     },
     "admission": "Admission number {number}",
     "since": "Joined {date}",

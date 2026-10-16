@@ -3,6 +3,7 @@ import {
   ConsentHistorySchema,
   CustomFieldListSchema,
   type Student,
+  StudentAttendanceSchema,
   StudentSchema,
 } from '@academybee/contracts';
 import { formatDate } from '@academybee/i18n';
@@ -25,6 +26,7 @@ import type { PeopleErrorLabels } from '@/components/people/errors';
 import { STATUS_TONE } from '@/components/people/status';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
+import { teacherPwaEnabled } from '@/lib/flags.server';
 import { academyTerms } from '@/lib/terms.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 
@@ -79,14 +81,17 @@ export default async function StudentPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string; cursor?: string }>;
 }) {
-  const [{ me, academy }, { id }, query, { context }, t, messages] = await Promise.all([
+  const [{ me, academy }, { id }, query, { context }, t, messages, pwa] = await Promise.all([
     signedInMember({ experience: 'manage' }),
     params,
     searchParams,
     hostContext(),
     getTranslations('people'),
     getMessages(),
+    teacherPwaEnabled(),
   ]);
+  // Phase 6 (flag p6-teacher-pwa): the Attendance tab.
+  const attendanceOn = pwa && holds(me, 'attendance.read');
   if (!holds(me, 'student.read'))
     return (
       <PermissionState
@@ -107,7 +112,12 @@ export default async function StudentPage({
   const student: Student = StudentSchema.parse(await res.json());
   const timeZone = academyTimeZone(context);
   const date = (v: string) => formatDate(v, { ...(timeZone ? { timeZone } : {}) });
-  const tab = query.tab === 'activity' ? 'activity' : 'overview';
+  const tab =
+    query.tab === 'activity'
+      ? 'activity'
+      : query.tab === 'attendance' && attendanceOn
+        ? 'attendance'
+        : 'overview';
   const archived = student.archivedAt !== null;
   const restoreOpen =
     student.restorableUntil !== null &&
@@ -217,14 +227,17 @@ export default async function StudentPage({
         sx={{ borderBlockEnd: '1px solid', borderColor: 'ab.border' }}
       >
         <Box component="ul" sx={{ display: 'flex', gap: 2, margin: 0, padding: 0 }}>
-          {(['overview', 'activity'] as const).map((key) => (
+          {(attendanceOn
+            ? (['overview', 'attendance', 'activity'] as const)
+            : (['overview', 'activity'] as const)
+          ).map((key) => (
             <Box component="li" key={key} sx={{ listStyle: 'none' }}>
               <Box
                 component="a"
                 href={
                   key === 'overview'
                     ? `/students/${student.id}`
-                    : `/students/${student.id}?tab=activity`
+                    : `/students/${student.id}?tab=${key}`
                 }
                 aria-current={tab === key ? 'page' : undefined}
                 sx={{
@@ -246,7 +259,9 @@ export default async function StudentPage({
         </Box>
       </Box>
 
-      {tab === 'activity' ? (
+      {tab === 'attendance' ? (
+        <AttendanceTab studentId={student.id} />
+      ) : tab === 'activity' ? (
         <Activity studentId={student.id} cursor={query.cursor} date={date} />
       ) : (
         <Overview
@@ -551,6 +566,86 @@ async function Activity({
           {t('activity.loadMore')}
         </Box>
       )}
+    </Stack>
+  );
+}
+
+const ATTENDANCE_TONE = {
+  PRESENT: 'success',
+  ABSENT: 'danger',
+  LATE: 'warning',
+  LEAVE: 'info',
+} as const;
+
+/** Monthly percentages and recent classes (Phase 6; Present and Late count, Leave doesn't). */
+async function AttendanceTab({ studentId }: { studentId: string }) {
+  const [res, t, teachT] = await Promise.all([
+    apiServerGet(`/students/${studentId}/attendance?months=6`),
+    getTranslations('teach.staff'),
+    getTranslations('teach.status'),
+  ]);
+  if (!res.ok) throw new Error(`student attendance ${res.status}`);
+  const data = StudentAttendanceSchema.parse(await res.json());
+  const monthName = (m: string) =>
+    new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+      new Date(`${m}-01T00:00:00Z`),
+    );
+  const percent = (p: number) =>
+    new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 1 }).format(
+      p / 100,
+    );
+  return (
+    <Stack spacing={4}>
+      <Stack spacing={2} component="section" aria-labelledby="student-att-months">
+        <Text variant="section" as="h2" id="student-att-months">
+          {t('studentMonths')}
+        </Text>
+        <Stack component="ul" spacing={1} sx={{ margin: 0, paddingInlineStart: 4 }}>
+          {data.months.map((m) => (
+            <li key={m.month}>
+              <Text>
+                {m.percent === null
+                  ? t('monthNone', { month: monthName(m.month) })
+                  : t('month', { month: monthName(m.month), percent: percent(m.percent) })}
+              </Text>
+              {m.percent !== null && (
+                <Text variant="meta" tone="secondary">
+                  {t('monthDetail', {
+                    present: m.present,
+                    absent: m.absent,
+                    late: m.late,
+                    leave: m.leave,
+                  })}
+                </Text>
+              )}
+            </li>
+          ))}
+        </Stack>
+      </Stack>
+      <Stack spacing={2} component="section" aria-labelledby="student-att-recent">
+        <Text variant="section" as="h2" id="student-att-recent">
+          {t('studentRecent')}
+        </Text>
+        {data.items.length === 0 ? (
+          <Text tone="secondary">{t('studentNone')}</Text>
+        ) : (
+          <Stack component="ul" spacing={1} sx={{ margin: 0, padding: 0, listStyle: 'none' }}>
+            {data.items.slice(0, 20).map((i) => (
+              <Box
+                component="li"
+                key={i.id}
+                sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}
+              >
+                <Text as="span">{formatDate(i.date, { style: 'medium' })}</Text>
+                <Text as="span" tone="secondary">
+                  {i.batchName}
+                </Text>
+                <StatusBadge tone={ATTENDANCE_TONE[i.status]} label={teachT(i.status)} />
+              </Box>
+            ))}
+          </Stack>
+        )}
+      </Stack>
     </Stack>
   );
 }

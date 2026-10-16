@@ -117,5 +117,48 @@
     "security": "Security",
     "sync": "Sync"
   },
-  "academy": "Your classes at {academy}."
+  "academy": "Your classes at {academy}.",
+  "staff": {
+    "metaTitle": "Attendance",
+    "title": "Attendance",
+    "body": "Every class's roll call on {date} at {academy}.",
+    "permission": {
+      "title": "Attendance isn't part of your role",
+      "body": "Ask the owner of {academy}."
+    },
+    "date": "Day",
+    "show": "Show",
+    "prev": "Previous day",
+    "next": "Next day",
+    "today": "Today",
+    "empty": "No classes on this day.",
+    "totals": "{taken, plural, =0 {No roll calls taken} one {# roll call taken} other {# roll calls taken}} · {due, plural, =0 {none due} one {# not taken} other {# not taken}} · {later} later",
+    "states": {
+      "taken": "Taken",
+      "due": "Not taken",
+      "later": "Later today",
+      "cancelled": "Cancelled"
+    },
+    "counts": "{present} present · {absent} absent · {late} late · {leave} leave · {unmarked} not marked",
+    "take": "Take attendance",
+    "edit": "Edit attendance",
+    "view": "View",
+    "olderNote": "Roll calls older than 7 days are shown here; corrections to them come in a later update.",
+    "takeMeta": "Take attendance",
+    "back": "All attendance",
+    "batchTab": "Attendance",
+    "batchBody": "Classes in the last 4 weeks and how many came.",
+    "batchPercent": "Attendance over these 4 weeks: {percent}%",
+    "batchNoPercent": "No roll calls yet in these 4 weeks.",
+    "studentTab": "Attendance",
+    "studentMonths": "By month",
+    "studentRecent": "Recent classes",
+    "studentNone": "No attendance yet.",
+    "month": "{month}: {percent}",
+    "monthNone": "{month}: no classes",
+    "monthDetail": "{present} present · {absent} absent · {late} late · {leave} leave",
+    "todayTitle": "Attendance today",
+    "todayTotals": "{taken} of {total} roll calls taken",
+    "notTaken": "Attendance not taken: {batch} at {start}"
+  }
 }

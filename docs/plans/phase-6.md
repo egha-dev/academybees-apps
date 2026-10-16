@@ -278,6 +278,25 @@ Each slice: branch `p6/<slice>` from the latest `main` → PR with the DoD check
 - **6.19 Seeds (local/ci):** two weeks of demo attendance in demo-a for percentages.
 - **Tests:** E2E owner takes attendance from the Batch Workspace; the percentages show; axe.
 
+*As built (S6):*
+- **Owner Today** (flag on, `attendance.read`):
+  - an **Attendance today** card ("N of M roll calls taken" → `/attendance`);
+  - each class that ended without a roll call is an attention item, **"Attendance not taken: <batch> at <time>"** (G-16), linking to take it (or to the overview without `attendance.mark`).
+- **`/attendance`:** the day's classes with **Taken / Not taken / Later today / Cancelled** (text + icon) and counts. Previous / Today / Next day. **Take / Edit** for markers within the last 7 days (C-132). RUN nav item "Attendance" (`attendance.read`).
+- **`/attendance/take?session=`:** the **Teacher PWA's attendance screen and queue** in the Manage experience (C-131; `TeachScreen` gains `experience` and `backHref`).
+- **Batch Workspace:**
+  - Take attendance is now live (→ the **Attendance** tab);
+  - the tab shows classes of the last 4 weeks with state and counts, and the 4-week percentage.
+- **Student 360:** an **Attendance** tab with the last 6 months (percentage, then present/absent/late/leave) and recent classes.
+- **Seeds (local/CI):**
+  - seeded enrolments start 30 days back;
+  - **two weeks of past completed classes with roll calls** for the five demo batches (deterministic: mostly present, some absent, late or on leave); `seedDevAttendance`.
+- **Budgets:** `/attendance` 186.0, `/attendance/take` 183.1, `/today` 186.0, `/batches/[id]` 189.7, `/students/[id]` 190.0 KB gz.
+- **Tests:**
+  - E2E `staff-attendance.spec.ts` (all three projects): a class that ended today → Today's "Attendance not taken" → take it (Mark all present → Save → synced; the academy has 2 present) → overview "Taken" → Batch Workspace 100% → Student 360 months; axe on each. Plus the seeded Board Prep batch shows its percentage;
+  - seed test updated;
+  - `writeInAcademy()` E2E helper for set-up the API refuses.
+
 ### S7 `p6/notifications` — in-app notifications and teacher nudges
 
 - **6.20 Notification centre:** bell with unread count in the Manage and Teacher shells, `/notifications` list, mark as read; online read plus a Dexie cache for teachers.
