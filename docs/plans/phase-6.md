@@ -174,6 +174,32 @@ Each slice: branch `p6/<slice>` from the latest `main` → PR with the DoD check
   - `wipe()` (Dexie DB + SW shell cache) on logout and revocation.
 - **Tests (fake-indexeddb):** migration from v1 with the queue kept; ordering per entity key; backoff; restart recovery (processing → pending); conflict resolve; wipe.
 
+*As built (S3):*
+- **Dexie v2** (C-125), upgraded from v1 with the queue kept:
+  - `batches`, `students`, `enrolments`, `sessions`, `notifications`;
+  - `attendance`, keyed by **`<sessionId>:<studentId>`** (a mark saved offline has no server id yet). Each row carries `serverVersion` (the base for the next op), `syncState` (`synced | pending | conflict | failed`), the `opId` that carries the shown value, and the other person's value on a conflict.
+- **`SyncClient`** (`packages/sync/src/client.ts`):
+  - **Transport** to `/sync/push` with the CSRF header. Failures are classified: network, server, rate limited, or sign-in needed. `MEMBERSHIP_REVOKED` wipes local data.
+  - **`pull()`:** bootstrap first, then pull since the watermark.
+  - **`applySnapshot()`:** replaces the working set whole; never overwrites a value still waiting to be sent, only refreshes its server id and version.
+  - **`markSession()`:** shows marks at once as pending and queues one op with each student's base version.
+  - **`onResult()`:** applied → server version, synced; conflict → per-student `conflictServer`; rejected → failed with the code. A newer local change for the same student stays pending.
+  - **`resolveConflict()`:** per student, "keep mine" resends on their version and "theirs" takes it; the old op is discarded only then.
+  - `requestPersistence()`.
+- **`LocalData`:** classes by date, the roll for a class (day plans, C-120; plus anyone marked earlier), assigned students, a student's marks.
+- **`SyncEngine`:** wires the DB, queue, client, runner and connectivity. It pulls on start, back online, tab visible and after a push; `beacon()` sends counts.
+- **Runner:** gains `onResult`.
+- **Wipe:** `wipeLocalData` also deletes the `ab-teach-shell` cache (C-124).
+- **Tests:** `client.spec.ts` (9) and `engine.spec.ts` (1):
+  - the v1 → v2 upgrade keeps queued ops;
+  - bootstrap then pull since the watermark;
+  - day-plan roll; pending marks with bases;
+  - a pull never overwrites unsent values;
+  - applied, rejected and conflict results; per-student conflict resolution;
+  - transport classification and CSRF; revocation wipe; offline pull;
+  - runner → client hand-off; engine triggers and beacon.
+  - Package total 39.
+
 ### S4 `p6/teacher-pwa` — Teacher PWA shell and screens (flag `p6-teacher-pwa`)
 
 - **6.10 Service worker (C-124):**

@@ -135,6 +135,10 @@ export const SyncSessionSchema = z.object({
   teacherName: z.string().nullable(),
   holidayName: z.string().nullable(),
 });
+export type SyncBatch = z.infer<typeof SyncBatchSchema>;
+export type SyncEnrolment = z.infer<typeof SyncEnrolmentSchema>;
+export type SyncStudent = z.infer<typeof SyncStudentSchema>;
+export type SyncSession = z.infer<typeof SyncSessionSchema>;
 export const SyncAttendanceSchema = z.object({
   id: z.uuid(),
   sessionId: z.uuid(),
@@ -145,6 +149,8 @@ export const SyncAttendanceSchema = z.object({
   markedAt: z.string(),
   updatedAt: z.string(),
 });
+
+export type SyncAttendance = z.infer<typeof SyncAttendanceSchema>;
 
 /**
  * `GET /sync/bootstrap` and `GET /sync/pull?since=`: the whole small working set (batches,

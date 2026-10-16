@@ -799,8 +799,8 @@ Phase 2 is **not** started.
 | Slice | Branch | Tasks | State |
 | --- | --- | --- | --- |
 | S1 | `p6/attendance-core` | 6.1 plan + decisions, 6.2 migration (Attendance, history, SyncOperation, Notification, intent kinds), 6.3 attendance domain (ADR-017, C-126, C-130), 6.4 REST | ✅ #89 |
-| S2 | `p6/sync-api` | 6.5 push + op registry + ordering, 6.6 bootstrap/pull + tombstones, 6.7 metrics | 🟨 PR |
-| S3 | `p6/sync-client` | 6.8 Dexie v2 + repositories (C-125), 6.9 bootstrap/pull client, op builders, runner wiring, conflict resolve, wipe | ⬜ |
+| S2 | `p6/sync-api` | 6.5 push + op registry + ordering, 6.6 bootstrap/pull + tombstones, 6.7 metrics | ✅ #90 |
+| S3 | `p6/sync-client` | 6.8 Dexie v2 + repositories (C-125), 6.9 bootstrap/pull client, op builders, runner wiring, conflict resolve, wipe | 🟨 PR |
 | S4 | `p6/teacher-pwa` | 6.10 SW teacher shells (C-124), 6.11 shell + nav, 6.12 Today/Classes/Attendance/Students/Sync/More, 6.13 states + budgets (flag `p6-teacher-pwa`) | ⬜ |
 | S5 | `p6/offline-e2e` | 6.14 offline suite, 6.15 two-device conflict, 6.16 logout guard + revocation | ⬜ |
 | S6 | `p6/manage-attendance` | 6.17 Owner Today, 6.18 overview + Batch/Student 360 tabs, 6.19 seeds | ⬜ |

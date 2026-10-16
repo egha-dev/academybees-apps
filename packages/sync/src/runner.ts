@@ -1,4 +1,4 @@
-import type { SyncOp, SyncPushResponse } from '@academybee/contracts';
+import type { SyncOp, SyncOpResult, SyncPushResponse } from '@academybee/contracts';
 
 import type { ConnectivityMonitor } from './connectivity.js';
 import type { SyncQueue } from './queue.js';
@@ -55,6 +55,8 @@ export type RunnerOptions = {
   batchSize?: number;
   /** Called when the server needs the user to sign in again; ops stay queued. */
   onAuthRequired?: () => void;
+  /** Called with each definitive result after the queue has recorded it (local rows follow). */
+  onResult?: (result: SyncOpResult) => Promise<void>;
   /** Called after each run so UI can refresh (in addition to Dexie live queries). */
   onRunComplete?: (outcome: RunOutcome) => void;
   debounceMs?: number;
@@ -193,6 +195,7 @@ export class SyncRunner {
         if (!opIds.includes(result.opId)) continue;
         answered.add(result.opId);
         await queue.applyResult(result);
+        await this.options.onResult?.(result);
       }
       // Anything the server didn't answer stays queued and is retried — never assumed done.
       const unanswered = opIds.filter((id) => !answered.has(id));
