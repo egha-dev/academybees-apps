@@ -198,6 +198,7 @@ export class SessionsService {
             { path: 'makeupForSessionId', issue: 'not_cancelled' },
           ]);
       }
+      if (input.teacherId) await this.activeTeacher(tx, input.teacherId);
       const teacherId =
         input.teacherId !== undefined ? input.teacherId : await this.primaryTeacher(tx, batch.id);
       await tx.classSession.create({
@@ -242,6 +243,7 @@ export class SessionsService {
         throw new DomainError('INVALID_STATE_TRANSITION', `session ${row.status}`, [
           { path: 'status', issue: row.status.toLowerCase() },
         ]);
+      if (input.teacherId) await this.activeTeacher(tx, input.teacherId);
       const date = input.date ?? row.sessionDate.toISOString().slice(0, 10);
       const start = input.start ?? localTime(row.startsAt, timeZone);
       const end = input.end ?? localTime(row.endsAt, timeZone);
@@ -432,6 +434,15 @@ export class SessionsService {
     });
     if (!batch) throw new DomainError('NOT_FOUND', 'batch');
     return batch;
+  }
+
+  /** A class's teacher is a current teacher of this academy (review M3): else not found. */
+  private async activeTeacher(tx: TransactionClient, teacherId: string) {
+    const found = await tx.teacher.findFirst({
+      where: { id: teacherId, status: 'ACTIVE' },
+      select: { id: true },
+    });
+    if (!found) throw new DomainError('NOT_FOUND', 'teacher');
   }
 
   private async primaryTeacher(tx: TransactionClient, batchId: string): Promise<string | null> {

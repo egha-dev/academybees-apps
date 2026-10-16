@@ -9,8 +9,9 @@ const day = (d: Date | null): string | null => (d ? d.toISOString().slice(0, 10)
 
 /**
  * Materialise the next 28 days of classes for some or all of an academy's batches (ADR-024,
- * C-112). Inserts only missing (rule, date) rows: cancelled, moved and manual sessions are never
- * touched (C-113). Runs inside the caller's transaction and tenant context. Returns rows created.
+ * C-112). Inserts only missing (rule, slot date) rows: cancelled, moved and manual sessions are
+ * never touched (C-113), and a class moved to another day keeps its slot date, so its original
+ * day stays free (review H2). Runs inside the caller's transaction and tenant context. Returns rows created.
  */
 export async function generateSessions(
   db: Db,
@@ -100,6 +101,7 @@ export async function generateSessions(
       scheduleRuleId: s.ruleId,
       teacherId: s.teacherId,
       sessionDate: new Date(`${s.date}T00:00:00Z`),
+      slotDate: new Date(`${s.date}T00:00:00Z`),
       startsAt: s.startsAt,
       endsAt: s.endsAt,
       origin: 'GENERATED' as const,

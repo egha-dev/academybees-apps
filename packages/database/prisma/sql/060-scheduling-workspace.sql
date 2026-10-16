@@ -32,3 +32,9 @@ ALTER TABLE class_session DROP CONSTRAINT IF EXISTS class_session_makeup;
 ALTER TABLE class_session ADD CONSTRAINT class_session_makeup CHECK (
   makeup_for_session_id IS NULL OR (origin = 'MANUAL' AND makeup_for_session_id <> id)
 );
+
+-- A generated class remembers its weekly slot's date (review H2); manual classes have none.
+ALTER TABLE class_session DROP CONSTRAINT IF EXISTS class_session_slot;
+ALTER TABLE class_session ADD CONSTRAINT class_session_slot CHECK (
+  (origin = 'GENERATED') = (slot_date IS NOT NULL)
+);

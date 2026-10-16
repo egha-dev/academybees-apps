@@ -83,26 +83,40 @@ export class ScheduleService {
         const found = await tx.teacher.count({ where: { id: { in: explicit }, status: 'ACTIVE' } });
         if (found !== explicit.length) throw new DomainError('NOT_FOUND', 'teacher');
       }
+      // One save at a time per batch: the version bump locks the batch row until commit, so two
+      // concurrent saves can't both add a rule set and double the classes (review H1).
+      await tx.batch.update({ where: { id: batchId }, data: { version: { increment: 1 } } });
       const current = await tx.scheduleRule.findMany({
         where: { batchId, OR: [{ effectiveTo: null }, { effectiveTo: { gte: at(from) } }] },
-        select: { id: true },
+        select: { id: true, effectiveFrom: true },
       });
-      const ids = current.map((r) => r.id);
-      if (ids.length) {
+      // Rules that started before `from` end the day before; rules starting on or after it (a save
+      // earlier today, a future-dated change) are replaced outright (review H1).
+      const ending = current.filter((r) => day(r.effectiveFrom) < from).map((r) => r.id);
+      const replaced = current.filter((r) => day(r.effectiveFrom) >= from).map((r) => r.id);
+      if (ending.length)
         await tx.scheduleRule.updateMany({
-          where: { id: { in: ids } },
+          where: { id: { in: ending } },
           data: { effectiveTo: at(addDays(from, -1)), version: { increment: 1 } },
         });
+      if (current.length)
         // Only untouched classes go (C-113): changed, cancelled and manual ones stay.
         await tx.classSession.deleteMany({
           where: {
-            scheduleRuleId: { in: ids },
+            scheduleRuleId: { in: current.map((r) => r.id) },
             sessionDate: { gte: at(from) },
             status: 'SCHEDULED',
             origin: 'GENERATED',
             modifiedAt: null,
           },
         });
+      if (replaced.length) {
+        // Classes staff kept from a replaced rule stay as one-off classes, then the rule goes.
+        await tx.classSession.updateMany({
+          where: { scheduleRuleId: { in: replaced } },
+          data: { scheduleRuleId: null, slotDate: null, origin: 'MANUAL' },
+        });
+        await tx.scheduleRule.deleteMany({ where: { id: { in: replaced } } });
       }
       if (input.slots.length)
         await tx.scheduleRule.createMany({

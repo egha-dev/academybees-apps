@@ -108,6 +108,9 @@ export function mapError(error: unknown): MappedError {
       );
     }
     if (error.code === 'P2025') return withCode('NOT_FOUND');
+    // A foreign key to a row the caller's academy doesn't have (composite tenant keys): another
+    // academy's id in a body. Not found, never a 500 (Phase 5 review M3).
+    if (error.code === 'P2003') return withCode('NOT_FOUND');
     // Invalid value for a column (e.g. a malformed UUID in a path). Bodies are validated by Zod
     // first, so this is an identifier the client made up: not found, never a 500 (ADR-013).
     if (error.code === 'P2007') return withCode('NOT_FOUND');
