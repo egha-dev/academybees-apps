@@ -82,7 +82,17 @@ export async function navigationFor(
           } as const,
         ]
       : []),
-    // UX §8 order: Timetable, then Batches, then people.
+    // UX §8 order: Attendance, Timetable, then Batches, then people.
+    ...(options.teacherPwa && can('attendance.read')
+      ? [
+          {
+            key: 'attendance',
+            label: t('attendance'),
+            href: '/attendance',
+            icon: 'attendance',
+          } as const,
+        ]
+      : []),
     ...(can('timetable.read')
       ? [
           {

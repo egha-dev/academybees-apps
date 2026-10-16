@@ -2,6 +2,7 @@
 
 import {
   CalendarIcon,
+  CheckCircleIcon,
   ClassIcon,
   HomeIcon,
   LockIcon,
@@ -27,7 +28,8 @@ export type ShellIcon =
   | 'students'
   | 'teachers'
   | 'batches'
-  | 'timetable';
+  | 'timetable'
+  | 'attendance';
 export type ShellNavItem = { key: string; label: string; href: string; icon: ShellIcon };
 export type ShellNavGroup = { key: string; label: string; items: ShellNavItem[] };
 
@@ -42,6 +44,7 @@ const ICONS: Record<ShellIcon, ReactNode> = {
   teachers: <TeacherIcon />,
   batches: <ClassIcon />,
   timetable: <CalendarIcon />,
+  attendance: <CheckCircleIcon />,
 };
 
 // The teacher's Home (`/teach`) is active only on itself: its screens have their own items.

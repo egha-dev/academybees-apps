@@ -39,3 +39,30 @@ export async function inAcademy<T>(
     }
   });
 }
+
+/**
+ * Write in an academy under its RLS context (E2E set-up the API refuses on purpose, such as a
+ * class that already happened today). Committed.
+ */
+export async function writeInAcademy(
+  slug: string,
+  sql: string,
+  params: unknown[] = [],
+): Promise<void> {
+  await asMigrator(async (db) => {
+    await db.query('BEGIN');
+    try {
+      await db.query(`SELECT set_config('app.lookup_host', $1, true)`, [slug]);
+      const { rows } = await db.query<{ tenant_id: string }>(
+        `SELECT tenant_id FROM tenant_domain WHERE hostname = $1`,
+        [slug],
+      );
+      await db.query(`SELECT set_config('app.tenant_id', $1, true)`, [rows[0]!.tenant_id]);
+      await db.query(sql, [rows[0]!.tenant_id, ...params]);
+      await db.query('COMMIT');
+    } catch (error) {
+      await db.query('ROLLBACK');
+      throw error;
+    }
+  });
+}

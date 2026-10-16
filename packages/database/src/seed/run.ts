@@ -4,7 +4,7 @@ import { requireEnv } from '../cli/env.js';
 import { syncFeatureFlagDefinitions } from './flags.js';
 import { assertSeedAllowed, SeedNotAllowedError } from './guard.js';
 import { extraId, seedDevPeople } from './people.js';
-import { seedDevScheduling } from './scheduling.js';
+import { seedDevAttendance, seedDevScheduling } from './scheduling.js';
 import { seedDevTenants } from './tenants.js';
 import { seedDevUsers } from './users.js';
 
@@ -25,8 +25,9 @@ try {
   const users = await seedDevUsers(db);
   const students = await seedDevPeople(db);
   const batches = await seedDevScheduling(db, (i) => extraId('a', i));
+  const marks = await seedDevAttendance(db, (i) => extraId('a', i));
   console.warn(
-    `Seeded: ${flags} feature flag definition(s), ${tenants} demo academies, ${users} demo users, ${students} demo students, ${batches} demo timetable batches.`,
+    `Seeded: ${flags} feature flag definition(s), ${tenants} demo academies, ${users} demo users, ${students} demo students, ${batches} demo timetable batches, ${marks} demo attendance marks.`,
   );
 } finally {
   await db.$disconnect();

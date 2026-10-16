@@ -45,7 +45,8 @@
     "teachers": "Teachers",
     "joinRequests": "Join requests",
     "batches": "{term, select, class {Classes} group {Groups} other {Batches}}",
-    "timetable": "Timetable"
+    "timetable": "Timetable",
+    "attendance": "Attendance"
   },
   "account": {
     "signedInAs": "Signed in as {name}",

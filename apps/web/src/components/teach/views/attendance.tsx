@@ -27,7 +27,7 @@ const TONES: Record<AttendanceStatus, string> = {
  * queues it for the academy (C-126, C-131) — the same online or offline.
  */
 export function AttendanceView() {
-  const { engine, labels, today, time, day, canEditPast } = useTeach();
+  const { engine, labels, today, time, day, canEditPast, backHref = '/teach/classes' } = useTeach();
   const t = labels.teach;
   const a = t.attendance;
   const [sessionId] = useState(
@@ -60,7 +60,7 @@ export function AttendanceView() {
       <Stack spacing={3}>
         <InlineAlert tone="info">{a.notFound}</InlineAlert>
         <Box>
-          <PlainButton variant="secondary" href="/teach/classes">
+          <PlainButton variant="secondary" href={backHref}>
             {a.back}
           </PlainButton>
         </Box>
@@ -239,7 +239,7 @@ export function AttendanceView() {
         </>
       )}
       <Box>
-        <PlainButton variant="ghost" href="/teach/classes">
+        <PlainButton variant="ghost" href={backHref}>
           {a.back}
         </PlainButton>
       </Box>

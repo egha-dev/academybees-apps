@@ -20,9 +20,18 @@ export async function teachMetadata(view: Exclude<TeachView, 'today'>): Promise<
  * A Teacher PWA screen (C-124): the server renders only the shell and labels — no student data —
  * so the page can be cached and opened offline; the screen reads this device's copy.
  */
-export async function TeachScreen({ view }: { view: TeachView }) {
+export async function TeachScreen({
+  view,
+  experience = 'teach',
+  backHref,
+}: {
+  view: TeachView;
+  /** Owners and admins take attendance in the Manage experience with the same screen (C-131). */
+  experience?: 'teach' | 'manage';
+  backHref?: string;
+}) {
   const [{ me, academy }, enabled, { context }, messages, signOut] = await Promise.all([
-    signedInMember({ experience: 'teach' }),
+    signedInMember({ experience }),
     teacherPwaEnabled(),
     hostContext(),
     getMessages(),
@@ -37,6 +46,7 @@ export async function TeachScreen({ view }: { view: TeachView }) {
       academy={academy}
       timeZone={academyTimeZone(context) ?? 'Asia/Kolkata'}
       canEditPast={holds(me, 'attendance.edit_past')}
+      {...(backHref ? { backHref } : {})}
       labels={{
         teach: messages.teach,
         offline: messages.offline,

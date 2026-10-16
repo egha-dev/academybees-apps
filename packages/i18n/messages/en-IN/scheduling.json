@@ -128,7 +128,8 @@
       "label": "Sections",
       "students": "Students",
       "schedule": "Days and times",
-      "activity": "Activity"
+      "activity": "Activity",
+      "attendance": "Attendance"
     },
     "load": "{day}: {students}",
     "loadOf": "{day}: {students} of {capacity}",

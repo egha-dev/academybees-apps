@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 import {
   type Browser,
   type BrowserContext,
@@ -102,4 +104,12 @@ export async function rollCall(admin: Admin, sessionId: string) {
     counts: Record<string, number>;
     students: { studentId: string; attendance: { status: string } | null }[];
   };
+}
+
+/** A UUIDv7, as the API expects for ids (rows inserted directly by a test). */
+export function uuidv7(): string {
+  const ts = Date.now().toString(16).padStart(12, '0');
+  const r = randomBytes(10).toString('hex');
+  const variant = ((parseInt(r[3]!, 16) & 0x3) | 0x8).toString(16);
+  return `${ts.slice(0, 8)}-${ts.slice(8, 12)}-7${r.slice(0, 3)}-${variant}${r.slice(4, 7)}-${r.slice(7, 19)}`;
 }
