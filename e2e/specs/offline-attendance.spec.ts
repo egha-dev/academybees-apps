@@ -98,7 +98,9 @@ test('25 marks offline survive a reload and a restart, then sync exactly once', 
 
     // Offline: Mark all present, three absent, save.
     await device.setOffline(true);
-    await expect(page.getByRole('status').filter({ hasText: "You're offline" })).toBeVisible();
+    await expect(
+      page.getByText("You're offline. Attendance will sync automatically when you're back online."),
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Mark all present' }).click();
     for (const s of students.slice(0, 3))
       await page
@@ -137,7 +139,9 @@ test('25 marks offline survive a reload and a restart, then sync exactly once', 
       await route.continue();
     });
     await device.setOffline(false);
-    await expect(page.getByText('All changes synced')).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByText('All changes synced', { exact: true })).toBeVisible({
+      timeout: 120_000,
+    });
     expect(lost).toBe(true);
 
     const roll = await rollCall(admin, sessionId);
@@ -209,7 +213,9 @@ test('two devices: a conflict is shown and resolved, never overwritten silently'
     await expect(page.getByText("Keep Arjun Admin's: Late")).toBeVisible();
     await page.getByLabel('Keep mine: Absent').check();
     await page.getByRole('button', { name: 'Save choices' }).click();
-    await expect(page.getByText('All changes synced')).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByText('All changes synced', { exact: true })).toBeVisible({
+      timeout: 60_000,
+    });
     expect((await rollCall(admin, sessionId)).counts).toMatchObject({ ABSENT: 1, LATE: 0 });
   } finally {
     await admin.context.close();

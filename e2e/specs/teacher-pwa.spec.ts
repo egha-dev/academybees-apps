@@ -37,7 +37,9 @@ test('the teacher takes attendance on the Teacher PWA; it reaches the academy on
   });
   const classLink = page.getByRole('link', { name: new RegExp(`Kathak ${tag}`) });
   await expect(classLink.first()).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText('All changes synced')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('All changes synced', { exact: true })).toBeVisible({
+    timeout: 30_000,
+  });
   await expectNoA11yViolations(page);
 
   // Take attendance: Mark all present, then one absent, then save.
@@ -59,7 +61,9 @@ test('the teacher takes attendance on the Teacher PWA; it reaches the academy on
   await expectNoA11yViolations(page);
   await page.getByRole('button', { name: 'Save attendance' }).click();
   await expect(page.getByText('Saved on this device. It syncs automatically.')).toBeVisible();
-  await expect(page.getByText('All changes synced')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('All changes synced', { exact: true })).toBeVisible({
+    timeout: 30_000,
+  });
 
   // The academy has it once: 2 present, 1 absent.
   expect((await rollCall(admin, sessionId)).counts).toMatchObject({

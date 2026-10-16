@@ -67,8 +67,10 @@ export async function adminCall(
 }
 
 /**
- * Through the API: a batch the demo teacher teaches, `count` enrolled students, and a class later
- * today — the test's own data, so the seed and the weekday don't matter.
+ * Through the API: a batch the demo teacher teaches, `count` of demo-a's seeded students enrolled
+ * in it, and a class later today — the test's own batch and class, so the seed's timetable and
+ * the weekday don't matter. Students are reused, never created: demo-a is on a trial plan with a
+ * student limit, and enrolments don't count towards it.
  */
 export async function classForDemoTeacher(admin: Admin, name: string, count: number) {
   const batch = (await adminCall(admin, 'post', '/batches', {
@@ -76,13 +78,13 @@ export async function classForDemoTeacher(admin: Admin, name: string, count: num
     courseId: DEMO_COURSE,
     teacherIds: [DEMO_TEACHER],
   })) as { id: string };
-  const students: { id: string; name: string }[] = [];
-  for (let i = 0; i < count; i++) {
-    const fullName = `Pupil ${String(i + 1).padStart(2, '0')} ${name.split(' ').slice(1).join(' ')}`;
-    const student = (await adminCall(admin, 'post', '/students', { fullName })) as { id: string };
-    await adminCall(admin, 'post', `/batches/${batch.id}/enrolments`, { studentId: student.id });
-    students.push({ id: student.id, name: fullName });
-  }
+  const page = (await adminCall(admin, 'get', '/students?status=ACTIVE&limit=100')) as {
+    items: { id: string; fullName: string }[];
+  };
+  expect(page.items.length, 'seeded students in demo-a').toBeGreaterThanOrEqual(count);
+  const students = page.items.slice(0, count).map((x) => ({ id: x.id, name: x.fullName }));
+  for (const s of students)
+    await adminCall(admin, 'post', `/batches/${batch.id}/enrolments`, { studentId: s.id });
   const now = istNow();
   const start = Math.min(now.minutes + 30, 23 * 60);
   const made = (await adminCall(admin, 'post', '/sessions', {
