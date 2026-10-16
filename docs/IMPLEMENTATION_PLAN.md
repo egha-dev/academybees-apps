@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-11 · Current phase: **Phase 5 — Courses + Batches + Timetable (🟨 in progress since 2026-10-11)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`) · Phase 4 ✅ 2026-10-11 (tag `phase-4`)
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-16 · Current phase: **Phase 6 — Attendance + Offline Sync (⬜ not started)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`) · Phase 4 ✅ 2026-10-11 (tag `phase-4`) · Phase 5 ✅ 2026-10-16 (tag `phase-5`)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -16,7 +16,7 @@
 | 2 | Authentication + RBAC | ✅ 2026-10-07 | Transactional email; Super Admin CLI bootstrap; optional 2FA + devices (G-11); `HUB` session audience for parents/students (G-31) | ADR-006/007/008/039, C-02, C-04, C-25, C-27 |
 | 3 | Academy Provisioning + Onboarding | ✅ 2026-10-09 | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, C-85…C-98, ADR-028/034 |
 | 4 | Students + Parents + Teachers | ✅ 2026-10-11 | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
-| 5 | Courses + Batches + Timetable | 🟨 | Owner Today v1; terminology; holidays (G-03); transfer (G-27) | ADR-024/029/037 |
+| 5 | Courses + Batches + Timetable | ✅ 2026-10-16 | Owner Today v1; terminology; holidays (G-03); transfer (G-27) | ADR-024/029/037 |
 | 6 | Attendance + Offline Sync | ⬜ | Teacher PWA core; outbox → in-app notifications; teacher nudge (G-16) | ADR-016/017, C-04, C-06 |
 | 7 | Finance | ⬜ | Onboarding fee step; fee-reminder intents (in-app); **all payment methods enabled without a gateway (G-30)**; gateway-ready provider layer + simulator (G-01); fee rules (G-04); opening balances (G-02); share receipts (G-18) | ADR-010/018/033/038, C-08, C-18, C-19, C-24, C-26 |
 | **7P** | **Pilot Readiness Pack** | ⬜ | Parent Core **as the multi-academy Family Hub** (from 11, G-31); help & support (G-10); consent live (G-06); activation dashboard (G-09); demo academy (G-13); pilot runbook (G-29) | C-21, C-23 |
@@ -675,7 +675,7 @@ Phase 2 is **not** started.
 
 **Goal.** Every teacher has a reliable daily schedule made of concrete class sessions.
 **Refs.** PRD v2 §17, v3 §9 (time-aware membership, recurring sessions), UX §11.5–11.6; ADR-024, ADR-029.
-**Status.** 🟨 started 2026-10-11 (`phase-5-start` = `8e50d25`). Approved slice plan: [`docs/plans/phase-5.md`](plans/phase-5.md) (decisions C-112…C-122; scheduling patterns reviewed by the PO: 2/3/5/7-day batches, different times per day, student day plans).
+**Status.** ✅ 2026-10-16 — PO acceptance recorded below (started 2026-10-11, `phase-5-start` = `8e50d25`; closed with tag `phase-5`). Approved slice plan: [`docs/plans/phase-5.md`](plans/phase-5.md) (decisions C-112…C-122; scheduling patterns reviewed by the PO: 2/3/5/7-day batches, different times per day, student day plans).
 
 **Slices (each = one PR, ADR-041)**
 
@@ -689,7 +689,8 @@ Phase 2 is **not** started.
 | S6 | `p5/timetable-ui` | 5.19 Timetable Day/Week/Teacher, 5.20 Holidays with impact preview | ✅ #84 |
 | S7 | `p5/journey-e2e` | 5.21 exit E2E, 5.22 flag removal + docs | ✅ #85 |
 | Gate | `p5/gate-fixes` | P5-3: frozen-clock "today" integration test (C-119); E2E waits hardened | ✅ #86 |
-| Review | `p5/review-fixes` | P5-4: H1, H2, M1–M3 (C-123) | 🟨 PR |
+| Review | `p5/review-fixes` | P5-4: H1, H2, M1–M3 (C-123) | ✅ #87 |
+| Close | `p5/close` | P5-5: exit notes, tag `phase-5` | 🟨 PR |
 
 
 **Scope**
@@ -706,6 +707,62 @@ Phase 2 is **not** started.
 **Tests.** Holiday over existing sessions cancels exactly those sessions and generation never recreates them; transfer keeps past attendance on old batch. Session generation idempotency & regeneration rules; enrolment history (student leaves batch → past sessions still show them, future don't); teacher sees only assigned batches/students; timezone correctness of "today" for tenant timezone vs server UTC; cancelled session excluded from generation re-runs.
 
 **Exit gate.** Common gate + E2E: create batch with weekly schedule → sessions appear in timetable week view → cancel one → teacher login sees only their batches.
+
+
+**Exit notes (2026-10-16 — Phase 5 ✅)**
+
+*PO acceptance.* **Accepted by the Product Owner on 2026-10-16** ("close Phase 5"), after the gate (P5-3) and the independent review (P5-4) fixes were on staging (`f34c18c`).
+
+*Delivered.*
+- **Scheduling core** (ADR-024, C-112, C-113):
+  - one generator that fills 28 days; inserts only missing (rule, slot date) rows; skips holidays; never touches cancelled, moved or manual classes;
+  - a nightly platform fan-out at 02:00 IST, plus a run on API start; per-academy jobs run in the API (C-112);
+  - `pnpm scheduling:generate`.
+- **Weekly patterns** (C-121): 2/3/5/7-day presets, a different time per day, effective dates ("starting from"), a teacher per slot, and double-booking warnings.
+- **Batches and enrolments** (G-27, C-120, C-122):
+  - courses and levels; batches with teachers; per-weekday capacity;
+  - student day plans ("2 of 5 days");
+  - change days or move to another batch from a date, keeping history; leaving with the status change.
+- **Timetable** (UX §11.6, C-116):
+  - Day, Week and By-teacher views: a CSS grid on desktop, a timeline on phones;
+  - a class sheet to cancel, bring back, move, change the teacher or add a make-up;
+  - teachers see only their own classes.
+- **Holidays** (G-03, C-114, C-115): a preview, then a confirm that cancels exactly those classes. One `NotificationIntent` per expected child is stored, not sent (delivery from Phase 6). Removing a future holiday brings back the classes that are still valid.
+- **Homes:** Owner Today v1 (today's classes, attention items, recent changes) and Teacher home v1 (C-117); `p2-role-homes` removed.
+- **Terminology** (C-118): "Words your academy uses" (batch/class/group, course/program, teacher/coach…) across Phase 3–5 screens and the navigation (`termsFor`, `useTerm`, `withWords`).
+- **Seeds (local/CI):** five demo batches covering the real patterns, plus a holiday.
+
+*Pinned toolchain.* Unchanged (no new dependencies).
+
+*Deviations, each recorded before or while coding.* C-112…C-123. The main ones:
+- **C-112:** generation runs in the API, not the worker.
+- **C-114:** `NotificationIntent` was pulled forward, storage only.
+- **C-116:** no drag-to-reschedule; moves happen in the class sheet.
+- **C-117:** Teacher home v1 is read-only until the Teacher PWA.
+- **C-123:** review fixes; lows deferred.
+- **Routes:** holidays live at `/timetable/holidays` (not `/settings/calendar`) and courses at `/settings/courses` (not `/courses`).
+- **Not built:** no `holidays.int.spec.ts`; holidays are covered in `schedule.int.spec.ts`.
+
+*Known limitations.*
+- **The pilot's real weekly timetable and holiday list (A10) are still needed**, as is the pilot register (C-111). Staging has no seeded batches; acceptance creates them.
+- **Deferred review lows (C-123):**
+  - to Phase 6: L1 (teacher-set version check), L2 (nightly job vs pattern save), L3 (confirm uses the previewed set), L4 (class changes in activity), L5 (same-day day-plan check);
+  - later: L6 (list/range separators via `Intl`), L7 (a malformed `?date=` shows the error page), L8 (session list cap).
+- **Later phases:**
+  - Take Attendance, notice delivery and the `/teach/*` routes come in Phase 6;
+  - fee consequences of transfers, status changes and day plans come in Phase 7;
+  - the parent schedule view comes in 7P/11;
+  - flexible class packs come in Phase 7; fortnightly schedules, rooms and drag-to-reschedule are backlog.
+- **Route budget:** Phase 5 pages are 185.0–188.9 KB of 200 KB.
+
+*Release flags (ADR-041).*
+- `p5-scheduling` (added in S4) was **removed in S7**, and `p2-role-homes` was removed in S4.
+- Still defined: `p1-hub-placeholder` (PO, remove 7P, expires 2027-06-30).
+
+*Process notes.*
+- **Dates in E2E:** tests that look at the timetable use next week, because past classes are never generated on a fresh database (found on a Friday CI run).
+- **Local environment:** Docker port forwarding for test containers can fail on WSL, and another project's Postgres may hold port 5432. Run integration suites on their own, and rely on CI for E2E when ports are taken.
+- **Merging:** never `gh pr merge --auto` (C-43).
 
 **Gate (P5-3, 2026-10-12, `main` = `5f4016c`; staging release `5f4016c`).**
 - **Exit E2E:** `scheduling-journey.spec.ts` passes on desktop Chromium, Android Chromium and iPhone WebKit.

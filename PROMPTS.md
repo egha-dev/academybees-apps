@@ -502,7 +502,7 @@ Fix anything that fails in a new slice (branch + PR + auto-merge) and re-run. Co
 Finally give me the exact staging and local URLs, demo logins and steps for my acceptance checklist in docs/EXECUTION_GUIDE.md Part F for this phase.
 ```
 
-### P5-4 · Independent review  ☐
+### P5-4 · Independent review  ☑ 2026-10-16 — H1, H2, M1–M3 fixed (#87); lows in C-123
 ```text
 Use a subagent that has NOT seen this conversation to review the full diff `git diff phase-5-start..main` (everything this phase merged).
 It must check: tenant isolation (every query scoped, RLS on new tables, cross-tenant tests added), authorization (capability + scope on every endpoint, no IDOR), financial rules (CLAUDE.md §12, incl. nothing reported becomes CONFIRMED without verification), offline rules (§11), secrets and personal data in logs/analytics, error leakage, missing loading/empty/error/permission states, hard-coded UI strings, and missing tests.
@@ -513,7 +513,7 @@ Report findings ranked by severity with file and line. Then fix every critical a
 
 Open `docs/EXECUTION_GUIDE.md` → Part F → Phase 5 — Courses + Batches + Timetable and click through every item yourself on **staging** (on a real phone where it says so). For each problem, use **H4 Fix a problem**. Move on only when every box is ticked.
 
-### P5-5 · Close  ☐
+### P5-5 · Close  ☑ 2026-10-16 — tag `phase-5`
 ```text
 I have accepted Phase 5 — Courses + Batches + Timetable. In a final slice (branch + PR + auto-merge): update docs/IMPLEMENTATION_PLAN.md — mark it ✅ and fill in its Exit notes (what was delivered, pinned versions if changed, deviations, known limitations, release flags still off with owner and removal date, PO acceptance date today); update ARCHITECTURE.md / DECISIONS.md if anything changed. After it merges, tag main as phase-5 and push the tag (milestone only — it does not deploy).
 If production exists (from Phase 7P on): prepare a production release — merge the release-please PR so it creates the next v* tag with plain-language release notes — and tell me when the production deployment is waiting for my approval in GitHub → Actions.
