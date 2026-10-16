@@ -53,10 +53,15 @@ test('a class not taken shows on Today; the admin takes it; the views show it', 
     });
     await page.getByRole('button', { name: 'Mark all present' }).click();
     await page.getByRole('button', { name: 'Save attendance' }).click();
+    await expect(page.getByText('Saved on this device. It syncs automatically.')).toBeVisible();
+    // Then the queue sends it: the academy has it (the status line may still say "synced" from
+    // before the save for a moment, so ask the server).
+    await expect
+      .poll(async () => (await rollCall(admin, ended)).counts, { timeout: 30_000 })
+      .toMatchObject({ PRESENT: 2, unmarked: 0 });
     await expect(page.getByText('All changes synced', { exact: true }).first()).toBeVisible({
       timeout: 30_000,
     });
-    expect((await rollCall(admin, ended)).counts).toMatchObject({ PRESENT: 2, unmarked: 0 });
 
     // The overview: taken.
     await page.goto(hostUrl(testInfo, 'demo-a', '/attendance'));
