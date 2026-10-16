@@ -433,6 +433,122 @@ describe('weekly patterns, sessions and holidays', () => {
     }
   });
 
+  it('saving a weekly pattern again the same day replaces it without doubling classes (review H1)', async () => {
+    const twice = await batch('Saved twice');
+    await schedule(
+      twice.id,
+      [1, 3, 5].map((d) => slot(d, '18:00', '19:00')),
+    );
+    const again = await schedule(
+      twice.id,
+      [2, 4].map((d) => slot(d, '17:00', '18:00')),
+    );
+    expect(again.slots.map((x) => x.weekday)).toEqual([2, 4]);
+    let rows = await sessionsOf(twice.id);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => [2, 4].includes(isoWeekday(r.d)) && r.start === '17:00')).toBe(true);
+    // A future-dated change, then a save from an earlier date: both earlier sets are replaced.
+    await schedule(twice.id, [slot(6, '09:00', '10:00')], addDays(today(), 7));
+    await schedule(twice.id, [slot(1, '18:00', '19:00')]);
+    rows = await sessionsOf(twice.id);
+    expect(rows.every((r) => isoWeekday(r.d) === 1)).toBe(true);
+    // Two saves at once: one class per day, never two.
+    await Promise.all([
+      schedule(twice.id, [slot(3, '18:00', '19:00')]),
+      schedule(twice.id, [slot(3, '18:00', '19:00')]),
+    ]);
+    rows = (await sessionsOf(twice.id)).filter((r) => r.status === 'SCHEDULED');
+    expect(rows.every((r) => isoWeekday(r.d) === 3)).toBe(true);
+    expect(new Set(rows.map((r) => r.d)).size).toBe(rows.length);
+  });
+
+  it('a class moved to another day is not recreated on its original day (review H2)', async () => {
+    const moves = await batch('Moves');
+    await schedule(moves.id, [slot(3, '18:00', '19:00')]);
+    const wed = next(3, 3);
+    const thu = addDays(wed, 1);
+    const listed = await get(owner, `/sessions?from=${wed}&to=${wed}&batchId=${moves.id}`);
+    const session = listed.body.items[0] as Session;
+    const moved = await send(owner, 'patch', `/sessions/${session.id}`, {
+      version: session.version,
+      date: thu,
+    });
+    expect(moved.status, JSON.stringify(moved.body)).toBe(200);
+    await app
+      .get(SessionGenerationProcessor)
+      .process({ data: { tenantId: a.id, reason: 'manual' } } as Job<SessionGenerationJob>);
+    const rows = await sessionsOf(moves.id);
+    expect(rows.filter((r) => r.d === wed)).toHaveLength(0);
+    expect(rows.filter((r) => r.d === thu)).toHaveLength(1);
+  });
+
+  it('removing a holiday brings back only classes the pattern still has (review M1)', async () => {
+    const changed = await batch('Fridays, then Tuesdays', []);
+    await schedule(changed.id, [slot(5, '18:00', '19:00')]);
+    const fri = next(5, 8);
+    const holiday = await send(owner, 'post', '/holidays', {
+      name: 'Founders',
+      startDate: fri,
+      endDate: fri,
+    });
+    expect(holiday.status, JSON.stringify(holiday.body)).toBe(201);
+    await schedule(changed.id, [slot(2, '18:00', '19:00')], addDays(today(), 1));
+    const removed = await send(owner, 'delete', `/holidays/${holiday.body.holiday.id}`);
+    expect(removed.status, JSON.stringify(removed.body)).toBe(200);
+    const rows = await sessionsOf(changed.id);
+    expect(rows.filter((r) => r.d === fri)).toHaveLength(0);
+    expect(rows.filter((r) => r.d > today()).every((r) => isoWeekday(r.d) === 2)).toBe(true);
+  });
+
+  it('archiving a batch clears its future classes; restoring brings them back (review M2)', async () => {
+    const archived = await batch('Archive me');
+    await schedule(archived.id, [slot(1, '18:00', '19:00')]);
+    const upcoming = () =>
+      sessionsOf(archived.id).then((rows) =>
+        rows.filter((r) => r.d > today() && r.status === 'SCHEDULED'),
+      );
+    expect((await upcoming()).length).toBeGreaterThan(0);
+    const current = await get(owner, `/batches/${archived.id}`);
+    const off = await send(owner, 'patch', `/batches/${archived.id}`, {
+      version: current.body.version,
+      status: 'ARCHIVED',
+    });
+    expect(off.status, JSON.stringify(off.body)).toBe(200);
+    expect(await upcoming()).toHaveLength(0);
+    const on = await send(owner, 'patch', `/batches/${archived.id}`, {
+      version: off.body.version,
+      status: 'ACTIVE',
+    });
+    expect(on.status, JSON.stringify(on.body)).toBe(200);
+    expect((await upcoming()).length).toBeGreaterThan(0);
+  });
+
+  it('a class or slot teacher must be a current teacher of this academy (review M3)', async () => {
+    const checked = await batch('Teacher check');
+    await schedule(checked.id, [slot(2, '18:00', '19:00')]);
+    const tue = next(2, 3);
+    const listed = await get(owner, `/sessions?from=${tue}&to=${tue}&batchId=${checked.id}`);
+    const session = listed.body.items[0] as Session;
+    const foreign = b.people.teacherId;
+    const moved = await send(owner, 'patch', `/sessions/${session.id}`, {
+      version: session.version,
+      teacherId: foreign,
+    });
+    expect(moved.status, JSON.stringify(moved.body)).toBe(404);
+    const extra = await send(owner, 'post', '/sessions', {
+      batchId: checked.id,
+      date: tue,
+      start: '20:00',
+      end: '21:00',
+      teacherId: foreign,
+    });
+    expect(extra.status, JSON.stringify(extra.body)).toBe(404);
+    const pattern = await send(owner, 'put', `/batches/${checked.id}/schedule`, {
+      slots: [{ ...slot(4, '18:00', '19:00'), teacherId: foreign }],
+    });
+    expect(pattern.status, JSON.stringify(pattern.body)).toBe(404);
+  });
+
   it('another academy’s schedule, sessions and holidays are 404', async () => {
     const other = await signIn(b, b.user.email);
     const batchId = a.people.batchId;

@@ -53,7 +53,8 @@ test('add a teacher with subjects, edit, archive and restore', async ({ page }, 
   await page.getByRole('button', { name: 'Restore' }).click();
   await expect(page.getByText(/^Archived\. Restore/)).toHaveCount(0);
   await page.getByRole('link', { name: 'Activity' }).click();
-  await expect(page.getByText('Teacher added')).toBeVisible();
+  // In the timeline, not the toast from adding the teacher (it may still be showing).
+  await expect(page.getByRole('main').getByText('Teacher added')).toBeVisible();
 });
 
 test('Ctrl+K finds a student by part of a name and opens Student 360', async ({

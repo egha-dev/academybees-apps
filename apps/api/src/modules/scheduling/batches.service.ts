@@ -21,6 +21,7 @@ import { DomainError } from '../../core/errors/domain-error.js';
 import { scopeFor, scopedWhere } from '../../core/rbac/scope.js';
 import { batchLoads } from './batch-load.js';
 import { batchPolicy } from './scheduling.policy.js';
+import { generateSessions } from './session-generator.js';
 
 const CursorKeys = z.object({ n: z.string(), id: z.uuid() });
 const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
@@ -301,6 +302,11 @@ export class BatchesService {
         },
       });
       if (updated.count !== 1) throw new DomainError('VERSION_CONFLICT');
+      if (input.status !== undefined || input.startsOn !== undefined || input.endsOn !== undefined)
+        await this.fitSessions(tx, batch.tenantId, id, input.status === 'ARCHIVED', {
+          startsOn,
+          endsOn,
+        });
       await this.activity.record(tx, {
         tenantId: batch.tenantId,
         entityType: 'BATCH',
@@ -314,6 +320,47 @@ export class BatchesService {
       });
     });
     return this.get(id);
+  }
+
+  /**
+   * Keep a batch's future classes inside its life (review M2): archiving, or dates that no longer
+   * cover a class, delete the untouched ones and cancel those staff changed; restoring or widening
+   * the dates generates what is missing. Classes that have started are history and stay.
+   */
+  private async fitSessions(
+    tx: TransactionClient,
+    tenantId: string,
+    batchId: string,
+    archived: boolean,
+    dates: { startsOn: string | null; endsOn: string | null },
+  ) {
+    const outside: Prisma.ClassSessionWhereInput[] = [
+      ...(dates.endsOn ? [{ sessionDate: { gt: new Date(`${dates.endsOn}T00:00:00Z`) } }] : []),
+      ...(dates.startsOn ? [{ sessionDate: { lt: new Date(`${dates.startsOn}T00:00:00Z`) } }] : []),
+    ];
+    if (archived || outside.length) {
+      const future: Prisma.ClassSessionWhereInput = {
+        batchId,
+        startsAt: { gt: new Date() },
+        status: 'SCHEDULED',
+        ...(archived ? {} : { OR: outside }),
+      };
+      await tx.classSession.deleteMany({
+        where: { AND: [future, { origin: 'GENERATED', modifiedAt: null }] },
+      });
+      const now = new Date();
+      await tx.classSession.updateMany({
+        where: future,
+        data: {
+          status: 'CANCELLED',
+          cancelReason: 'OTHER',
+          cancelledAt: now,
+          modifiedAt: now,
+          version: { increment: 1 },
+        },
+      });
+    }
+    if (!archived) await generateSessions(tx, { tenantId, batchIds: [batchId] });
   }
 
   async setTeachers(

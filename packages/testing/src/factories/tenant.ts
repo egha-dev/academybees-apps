@@ -286,8 +286,8 @@ async function insertPeopleAndScheduling(
   );
   await q(
     `INSERT INTO class_session (id, tenant_id, branch_id, batch_id, schedule_rule_id, teacher_id,
-       session_date, starts_at, ends_at, origin, updated_at)
-     SELECT $1, $2, $3, $4, $5, $6, d,
+       session_date, slot_date, starts_at, ends_at, origin, updated_at)
+     SELECT $1, $2, $3, $4, $5, $6, d, d,
             (d + time '17:00') AT TIME ZONE 'Asia/Kolkata', (d + time '18:00') AT TIME ZONE 'Asia/Kolkata',
             'GENERATED', now()
        FROM (SELECT CURRENT_DATE + ((8 - extract(isodow FROM CURRENT_DATE)::int) % 7) AS d) next_monday`,

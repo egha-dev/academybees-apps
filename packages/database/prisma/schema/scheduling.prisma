@@ -174,6 +174,9 @@ model ClassSession {
   teacherId          String?              @map("teacher_id") @db.Uuid
   teacher            Teacher?             @relation(fields: [tenantId, teacherId], references: [tenantId, id], onDelete: Restrict)
   sessionDate        DateTime             @map("session_date") @db.Date
+  /// The weekly slot's own date for generated classes; stays put when staff move the class, so
+  /// generation never recreates it on the original day (review H2). Null for manual classes.
+  slotDate           DateTime?            @map("slot_date") @db.Date
   startsAt           DateTime             @map("starts_at") @db.Timestamptz(3)
   endsAt             DateTime             @map("ends_at") @db.Timestamptz(3)
   origin             SessionOrigin
@@ -197,7 +200,7 @@ model ClassSession {
   updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@unique([tenantId, id])
-  @@unique([tenantId, scheduleRuleId, sessionDate])
+  @@unique([tenantId, scheduleRuleId, slotDate])
   @@index([tenantId, sessionDate])
   @@index([tenantId, batchId, sessionDate])
   @@index([tenantId, teacherId, sessionDate])

@@ -128,17 +128,20 @@ describe('people and scheduling schema', () => {
     ).rejects.toThrow(/class_session_origin/);
   });
 
-  it('a generated session is unique per rule and date (re-running generation is safe)', async () => {
-    await expect(
+  it('a generated session is unique per rule and slot date (re-running generation is safe)', async () => {
+    const copy = (slot: string) =>
       su.query(
         `INSERT INTO class_session (id, tenant_id, branch_id, batch_id, schedule_rule_id, session_date,
-           starts_at, ends_at, origin, updated_at)
-         SELECT $1, tenant_id, branch_id, batch_id, schedule_rule_id, session_date, starts_at, ends_at,
-                'GENERATED', now()
+           slot_date, starts_at, ends_at, origin, updated_at)
+         SELECT $1, tenant_id, branch_id, batch_id, schedule_rule_id, session_date + 1, ${slot},
+                starts_at + interval '1 day', ends_at + interval '1 day', 'GENERATED', now()
            FROM class_session WHERE id = $2`,
         [newId(), a.people.sessionId],
-      ),
-    ).rejects.toThrow(/unique/);
+      );
+    // Same weekly slot, even on another day (a moved class keeps its slot date, review H2).
+    await expect(copy('slot_date')).rejects.toThrow(/unique/);
+    // A generated class always has its slot date.
+    await expect(copy('NULL')).rejects.toThrow(/class_session_slot/);
   });
 
   it('parent contact details are well-formed', async () => {

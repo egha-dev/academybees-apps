@@ -208,15 +208,47 @@ export class HolidaysService {
           { path: 'endDate', issue: 'past' },
         ]);
       await tx.holiday.update({ where: { id }, data: { removedAt: new Date() } });
-      const back = await tx.classSession.updateMany({
+      // Bring back only classes still valid on their day (review M1, C-115 "unless changed
+      // since"): the batch is active and still runs then, and a generated class's weekly slot
+      // is still in effect. The rest are deleted (or stay cancelled if a make-up points at them).
+      const cancelled = await tx.classSession.findMany({
         where: {
           holidayId: id,
           status: 'CANCELLED',
           cancelReason: 'HOLIDAY',
           startsAt: { gt: new Date() },
         },
+        select: {
+          id: true,
+          sessionDate: true,
+          slotDate: true,
+          origin: true,
+          batch: { select: { status: true, startsOn: true, endsOn: true } },
+          scheduleRule: { select: { effectiveFrom: true, effectiveTo: true } },
+          _count: { select: { makeups: true } },
+        },
+      });
+      const valid = (c: (typeof cancelled)[number]) => {
+        const date = day(c.sessionDate);
+        const slot = day(c.slotDate ?? c.sessionDate);
+        const { batch, scheduleRule: rule } = c;
+        if (batch.status !== 'ACTIVE') return false;
+        if (batch.startsOn && date < day(batch.startsOn)) return false;
+        if (batch.endsOn && date > day(batch.endsOn)) return false;
+        if (c.origin === 'MANUAL') return true;
+        return (
+          !!rule &&
+          day(rule.effectiveFrom) <= slot &&
+          (!rule.effectiveTo || day(rule.effectiveTo) >= slot)
+        );
+      };
+      const reinstate = cancelled.filter(valid).map((c) => c.id);
+      const stale = cancelled.filter((c) => !valid(c) && c._count.makeups === 0).map((c) => c.id);
+      const back = await tx.classSession.updateMany({
+        where: { id: { in: reinstate } },
         data: { status: 'SCHEDULED', cancelReason: null, cancelledAt: null, holidayId: null },
       });
+      if (stale.length) await tx.classSession.deleteMany({ where: { id: { in: stale } } });
       await tx.notificationIntent.updateMany({
         where: { holidayId: id, status: 'PENDING' },
         data: { status: 'VOID' },
@@ -228,7 +260,7 @@ export class HolidaysService {
           action: 'holiday.removed',
           entityType: 'Holiday',
           entityId: id,
-          metadata: { reinstated: back.count },
+          metadata: { reinstated: back.count, dropped: stale.length },
         },
         tx,
       );

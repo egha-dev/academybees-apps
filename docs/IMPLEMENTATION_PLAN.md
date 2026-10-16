@@ -688,7 +688,8 @@ Phase 2 is **not** started.
 | S5 | `p5/batches-ui` | 5.16 Batches list, 5.17 Batch Workspace, 5.18 Courses | ✅ #83 |
 | S6 | `p5/timetable-ui` | 5.19 Timetable Day/Week/Teacher, 5.20 Holidays with impact preview | ✅ #84 |
 | S7 | `p5/journey-e2e` | 5.21 exit E2E, 5.22 flag removal + docs | ✅ #85 |
-| Gate | `p5/gate-fixes` | P5-3: frozen-clock "today" integration test (C-119); E2E waits hardened | 🟨 PR |
+| Gate | `p5/gate-fixes` | P5-3: frozen-clock "today" integration test (C-119); E2E waits hardened | ✅ #86 |
+| Review | `p5/review-fixes` | P5-4: H1, H2, M1–M3 (C-123) | 🟨 PR |
 
 
 **Scope**
@@ -718,6 +719,15 @@ Phase 2 is **not** started.
   - two E2E waits are hardened (a cancel re-render; the editor's backdrop covering "Set days and times").
 - **Local environment notes:** one API integration run hung on a Docker port-forward that refused connections, and another stalled while E2E ran alongside it. Run alone, the suite passes in 6.3 min.
 - **Staging:** seeds are local/CI only, so acceptance on staging starts by creating batches (the exit journey itself).
+
+**Independent review (P5-4, 2026-10-16).** No critical findings.
+- **Fixed in the review PR (C-123):**
+  - H1: saving a pattern twice the same day returned a 500;
+  - H2: a moved class was recreated on its original day;
+  - M1: removing a holiday brought back classes no longer in the pattern;
+  - M2: an archived batch kept its future classes;
+  - M3: a class's teacher wasn't validated, and another academy's id gave a 500.
+- **Lows L1–L8:** deferred (C-123).
 
 ---
 
