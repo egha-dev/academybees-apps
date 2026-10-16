@@ -1,9 +1,7 @@
-import { randomUUID } from 'node:crypto';
-
 import { expect, test } from '@playwright/test';
 
 import { expectNoA11yViolations } from '../support/a11y.js';
-import { adminSession, classForDemoTeacher, istNow, rollCall } from '../support/classes.js';
+import { adminSession, classForDemoTeacher, istNow, rollCall, uuidv7 } from '../support/classes.js';
 import { writeInAcademy } from '../support/db.js';
 import { hostUrl, requireSeededAcademies } from '../support/hosts.js';
 
@@ -30,7 +28,7 @@ test('a class not taken shows on Today; the admin takes it; the views show it', 
   try {
     const { batchId, students } = await classForDemoTeacher(admin, `Yakshagana ${tag}`, 2);
     // A class early today that has already ended, with no roll call (the API refuses past times).
-    const ended = randomUUID();
+    const ended = uuidv7();
     await writeInAcademy(
       'demo-a',
       `INSERT INTO class_session (id, tenant_id, branch_id, batch_id, session_date, starts_at, ends_at,
@@ -73,13 +71,15 @@ test('a class not taken shows on Today; the admin takes it; the views show it', 
 
     // The Batch Workspace: the class and the percentage.
     await page.goto(hostUrl(testInfo, 'demo-a', `/batches/${batchId}?tab=attendance`));
-    await expect(page.getByText('Attendance over these 4 weeks: 100%')).toBeVisible();
+    await expect(
+      page.getByRole('main').getByText('Attendance over these 4 weeks: 100%'),
+    ).toBeVisible();
     await expectNoA11yViolations(page);
 
     // Student 360: this month.
     await page.goto(hostUrl(testInfo, 'demo-a', `/students/${students[0]!.id}?tab=attendance`));
     await expect(page.getByRole('heading', { name: 'By month' })).toBeVisible();
-    await expect(page.getByText(/%/).first()).toBeVisible();
+    await expect(page.getByRole('main').getByText(/%/).first()).toBeVisible();
     await expectNoA11yViolations(page);
   } finally {
     await admin.context.close();
@@ -93,7 +93,9 @@ test('the seed’s two weeks of attendance give a batch its percentage', async (
   const admin = await adminSession(browser, testInfo);
   try {
     await admin.page.goto(hostUrl(testInfo, 'demo-a', `/batches/${BOARD_PREP}?tab=attendance`));
-    await expect(admin.page.getByText(/Attendance over these 4 weeks: \d+(\.\d)?%/)).toBeVisible();
+    await expect(
+      admin.page.getByRole('main').getByText(/Attendance over these 4 weeks: \d+(\.\d)?%/),
+    ).toBeVisible();
     await expect(
       admin.page.getByRole('listitem').filter({ hasText: 'Taken' }).first(),
     ).toBeVisible();
