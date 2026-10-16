@@ -130,6 +130,36 @@ Each slice: branch `p6/<slice>` from the latest `main` → PR with the DoD check
   - blocked order; cross-tenant op → `TENANT_MISMATCH`;
   - pull watermark edges, tombstones, revocation; registry.
 
+*As built (S2):*
+- **`modules/sync`:**
+  - **Push (`POST /sync/push`):**
+    - each op runs in its own transaction with its `sync_operation` ledger row;
+    - a resent op returns its first result: `DUPLICATE` if it applied; a rejection or conflict repeats as stored, never "done";
+    - two concurrent resends race on the ledger key, and the loser rolls back and returns the stored result.
+  - **Op registry:** `attendance.markSession`, `attendance.update`. Each validates its payload and checks `entityKey` = `session:<id>`, then runs `AttendanceService.markSessionIn(tx)` with `source: 'sync'` (7-day acceptance, C-130).
+  - **Results:**
+    - `APPLIED` with `data.marks` (new versions);
+    - `CONFLICT` with `conflict.server` (per student);
+    - `REJECTED` with the error code and a stable issue key as the message (`not_found`, `cancelled`, `window_closed`, `invalid_payload`, `entity_key_mismatch`, `unsupported_op`).
+  - **Order:** after a rejection or conflict, later ops for that `entityKey` in the batch get **no answer** (the Phase 0 client retries unanswered ops and blocks the key itself). Transient errors leave the op unanswered too.
+- **Bootstrap and pull** (`GET /sync/bootstrap`, `GET /sync/pull?since=`):
+  - **Snapshot:** the caller's **whole small working set** every time: active batches in scope, enrolments open in the window, students' basic profile (id, name, admission no, status: no contacts or health), classes from today −7 to +14 days. Anything missing is gone (**removal by absence**, instead of per-row tombstones);
+  - **Attendance:** the last 30 days on bootstrap or after an old watermark (`attendanceComplete: true`); otherwise changes since the watermark (5 s skew);
+  - each owning module serves its part: `BatchesService.workingSet`, `EnrolmentsService.workingSet`, `SessionsService.list`, `AttendanceService.forSync` (C-122).
+- **Revocation:** an inactive membership now answers **`401 MEMBERSHIP_REVOKED`** (new error code; 401 keeps the web's sign-out behaviour; ARCHITECTURE §11.7 said 403), so devices can wipe local data.
+- **Metrics:**
+  - pino `metric: sync.push` (counts by result) and `sync.queue` (from `POST /sync/beacon`);
+  - analytics `sync.pushed` (counts only).
+- **Tests:** `sync.int.spec.ts` (7):
+  - resend → DUPLICATE, ledger row;
+  - **50 concurrent pushes → 1 APPLIED + 49 DUPLICATE, one set of rows and one intent**;
+  - rejections that repeat;
+  - per-class order after a conflict, then resolution;
+  - bootstrap scope (teacher sees only their batch; no phone numbers; the accountant is refused);
+  - pull delta, an old watermark, removal by absence, `MEMBERSHIP_REVOKED`;
+  - beacon; another academy's class.
+  - Cross-tenant registry: bootstrap probed (watermark volatile); push, pull and beacon covered in the spec.
+
 ### S3 `p6/sync-client` — Dexie v2 and the client engine (`packages/sync`)
 
 - **6.8 Dexie and repositories:**

@@ -4,6 +4,7 @@
   "INVALID_CREDENTIALS": "That email or password doesn't match our records. Check them and try again.",
   "SESSION_EXPIRED": "Your session has expired. Please sign in again.",
   "TENANT_MISMATCH": "Please sign in to this academy to continue.",
+  "MEMBERSHIP_REVOKED": "Your access to this academy has ended. Ask the academy if you think this is a mistake.",
   "TENANT_UNAVAILABLE": "This academy is not available right now.",
   "FORBIDDEN": "You don't have permission to do this.",
   "NOT_FOUND": "We couldn't find what you were looking for.",

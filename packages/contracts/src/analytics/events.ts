@@ -262,6 +262,18 @@ export const ANALYTICS_EVENTS = {
       source: z.enum(['online', 'sync']),
     }),
   }),
+  'sync.pushed': defineAnalyticsEvent({
+    name: 'sync.pushed',
+    version: 1,
+    description: 'A device pushed queued changes (ADR-016): results by outcome, counts only.',
+    properties: z.strictObject({
+      applied: z.number().int().min(0).max(100),
+      duplicate: z.number().int().min(0).max(100),
+      rejected: z.number().int().min(0).max(100),
+      conflict: z.number().int().min(0).max(100),
+      unanswered: z.number().int().min(0).max(100),
+    }),
+  }),
   'session.cancelled': defineAnalyticsEvent({
     name: 'session.cancelled',
     version: 1,

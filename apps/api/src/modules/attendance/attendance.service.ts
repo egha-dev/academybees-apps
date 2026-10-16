@@ -56,7 +56,13 @@ const emptyCounts = (): AttendanceCounts => ({
 
 export type MarkSource = { source: 'online' | 'sync'; opId?: string | undefined };
 export type MarkResult =
-  { status: 'APPLIED'; changed: number } | { status: 'CONFLICT'; conflicts: AttendanceConflict[] };
+  | {
+      status: 'APPLIED';
+      changed: number;
+      /** Each proposed student's mark after the save (new versions for the client). */
+      marks: { studentId: string; id: string; version: number }[];
+    }
+  | { status: 'CONFLICT'; conflicts: AttendanceConflict[] };
 
 /** Enrolments of one batch → is a student expected on `date` (C-120)? */
 type EnrolmentSpan = {
@@ -284,7 +290,11 @@ export class AttendanceService {
       changed,
       source: from.source,
     });
-    return { status: 'APPLIED', changed };
+    const saved = await tx.attendance.findMany({
+      where: { sessionId, studentId: { in: input.marks.map((m) => m.studentId) } },
+      select: { studentId: true, id: true, version: true },
+    });
+    return { status: 'APPLIED', changed, marks: saved };
   }
 
   /**
@@ -359,6 +369,38 @@ export class AttendanceService {
       { source: 'online' },
     );
     return { ...result, sessionId: row.sessionId };
+  }
+
+  /**
+   * Marks for the sync working set (ARCHITECTURE §11.3), within the caller's class scope: changes
+   * since `since` (minus 5 s for clock skew), or every mark from `fromDate` on.
+   */
+  async forSync(input: { since?: Date | undefined; fromDate: string }) {
+    const rows = await this.db.attendance.findMany({
+      where: {
+        session: this.sessions.scope('attendance.read'),
+        ...(input.since
+          ? { updatedAt: { gt: new Date(input.since.getTime() - 5_000) } }
+          : { sessionDate: { gte: at(input.fromDate) } }),
+      },
+      orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+      take: 20_000,
+      select: {
+        id: true,
+        sessionId: true,
+        studentId: true,
+        status: true,
+        note: true,
+        version: true,
+        markedAt: true,
+        updatedAt: true,
+      },
+    });
+    return rows.map((r) => ({
+      ...r,
+      markedAt: r.markedAt.toISOString(),
+      updatedAt: r.updatedAt.toISOString(),
+    }));
   }
 
   /** A student's monthly percentages and recent marks, within the caller's class scope. */

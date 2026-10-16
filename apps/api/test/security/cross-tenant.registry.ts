@@ -615,6 +615,30 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     capability,
     spoof: { skip: 'attendance.int.spec.ts › another academy’s classes and marks are 404' },
   })),
+  // Offline sync (Phase 6 S2). Bootstrap is probed directly; push (another academy's class →
+  // REJECTED NOT_FOUND), pull and the beacon are covered in sync.int.spec.ts.
+  {
+    method: 'GET',
+    path: '/api/v1/sync/bootstrap',
+    session: true,
+    capability: 'attendance.read',
+    volatile: ['watermark'],
+  },
+  ...(
+    [
+      ['POST', '/api/v1/sync/push', 'attendance.mark'],
+      ['GET', '/api/v1/sync/pull', 'attendance.read'],
+      ['POST', '/api/v1/sync/beacon', 'attendance.read'],
+    ] as const
+  ).map(([method, path, capability]) => ({
+    method,
+    path,
+    session: true,
+    capability,
+    spoof: {
+      skip: 'sync.int.spec.ts › beacon accepts queue health; another academy’s class is rejected as not found',
+    },
+  })),
   // Student import (Phase 4 S5). The job routes are exercised end to end, including another
   // academy's attempts, in the dedicated test (needs storage and a job in flight).
   {
