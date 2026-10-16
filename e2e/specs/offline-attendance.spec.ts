@@ -139,7 +139,7 @@ test('25 marks offline survive a reload and a restart, then sync exactly once', 
       await route.continue();
     });
     await device.setOffline(false);
-    await expect(page.getByText('All changes synced', { exact: true })).toBeVisible({
+    await expect(page.getByText('All changes synced', { exact: true }).first()).toBeVisible({
       timeout: 120_000,
     });
     expect(lost).toBe(true);
@@ -213,7 +213,7 @@ test('two devices: a conflict is shown and resolved, never overwritten silently'
     await expect(page.getByText("Keep Arjun Admin's: Late")).toBeVisible();
     await page.getByLabel('Keep mine: Absent').check();
     await page.getByRole('button', { name: 'Save choices' }).click();
-    await expect(page.getByText('All changes synced', { exact: true })).toBeVisible({
+    await expect(page.getByText('All changes synced', { exact: true }).first()).toBeVisible({
       timeout: 60_000,
     });
     await expect

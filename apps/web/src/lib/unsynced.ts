@@ -12,9 +12,13 @@ type Guard = {
 let guard: Guard = { unsynced: 0 };
 const listeners = new Set<() => void>();
 
-/** Set by the Teacher PWA while its sync engine runs (ARCHITECTURE §11.6 logout guard). */
-export function setSignOutGuard(next: Guard): void {
-  guard = next;
+/**
+ * Set by the Teacher PWA while its sync engine runs (ARCHITECTURE §11.6 logout guard). Merges:
+ * the engine registers `count` and `release` as soon as it exists; the status line keeps
+ * `unsynced` live.
+ */
+export function setSignOutGuard(next: Partial<Guard>): void {
+  guard = { ...guard, ...next };
   for (const listener of listeners) listener();
 }
 

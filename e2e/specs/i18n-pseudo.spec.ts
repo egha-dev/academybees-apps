@@ -23,6 +23,8 @@ const DATA_VALUES = [
   'Paused Karate Club',
   'Setup Music School',
   'Asha Owner',
+  // The seeded admin, named in activity lines ("by Arjun Admin") when other specs act as them.
+  'Arjun Admin',
   'owner@demo-a.test',
   // Student 360 of the seeded Aarav (Phase 4): people, classes and the custom field are data.
   'Aarav Sharma',

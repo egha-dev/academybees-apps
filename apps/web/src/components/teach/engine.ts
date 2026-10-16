@@ -66,6 +66,18 @@ export function engineFor(userId: string): SyncEngine {
     },
   });
   current = { userId, engine, listeners };
+  // Registered now, while rendering, not in an effect: a tap on Sign out right after the screen
+  // appears must already count this device's unsynced records (ARCHITECTURE §11.6).
+  setSignOutGuard({
+    count: async () => {
+      const [rows, counts] = await Promise.all([
+        engine.db.attendance.where('syncState').anyOf('pending', 'conflict', 'failed').count(),
+        engine.queue.counts(),
+      ]);
+      return Math.max(rows, counts.pending + counts.processing + counts.failed + counts.conflict);
+    },
+    release: () => engine.stop(),
+  });
   void startEngine(engine);
   return engine;
 }
