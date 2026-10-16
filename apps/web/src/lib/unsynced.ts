@@ -1,8 +1,10 @@
 // Plain module (no React, no Dexie): the shell's sign-out button reads it on every page.
 
 type Guard = {
-  /** Records on this device that haven't reached the server. */
+  /** Records on this device that haven't reached the server (live; may still be loading). */
   unsynced: number;
+  /** Count them now, from the database: sign-out asks this, never a value still loading. */
+  count?: () => Promise<number>;
   /** Close local connections before the data is deleted. */
   release?: () => void;
 };

@@ -216,7 +216,9 @@ test('two devices: a conflict is shown and resolved, never overwritten silently'
     await expect(page.getByText('All changes synced', { exact: true })).toBeVisible({
       timeout: 60_000,
     });
-    expect((await rollCall(admin, sessionId)).counts).toMatchObject({ ABSENT: 1, LATE: 0 });
+    await expect
+      .poll(async () => (await rollCall(admin, sessionId)).counts, { timeout: 30_000 })
+      .toMatchObject({ ABSENT: 1, LATE: 0 });
   } finally {
     await admin.context.close();
   }

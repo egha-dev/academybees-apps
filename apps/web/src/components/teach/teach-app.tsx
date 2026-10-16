@@ -161,7 +161,17 @@ function StatusLine() {
   const waiting = records?.waiting ?? status.counts.pending + status.counts.processing;
   const unsynced = Math.max(records?.unsynced ?? 0, waiting + status.attention);
   useEffect(() => {
-    setSignOutGuard({ unsynced, release: () => engine.stop() });
+    setSignOutGuard({
+      unsynced,
+      count: async () => {
+        const [rows, counts] = await Promise.all([
+          engine.db.attendance.where('syncState').anyOf('pending', 'conflict', 'failed').count(),
+          engine.queue.counts(),
+        ]);
+        return Math.max(rows, counts.pending + counts.processing + counts.failed + counts.conflict);
+      },
+      release: () => engine.stop(),
+    });
   }, [unsynced, engine]);
   const label =
     status.state === 'attention'

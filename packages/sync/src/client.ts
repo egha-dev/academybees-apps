@@ -327,8 +327,12 @@ export class SyncClient {
       });
       bases[m.studentId] = theirs ? theirs.version : m.baseVersion;
     }
+    // Queue the new op before dropping the old one, so the device never looks synced in between.
+    const next = resend.length
+      ? await this.markSession(payload.data.sessionId, resend, bases)
+      : null;
     await this.options.queue.discard(opId);
-    return resend.length ? this.markSession(payload.data.sessionId, resend, bases) : null;
+    return next;
   }
 
   /** The user's data stays only while signed in: ask the browser not to evict it. */

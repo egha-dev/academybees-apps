@@ -50,6 +50,18 @@ export function SignOutButton({
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
+  const [counted, setCounted] = useState(0);
+  /** Count unsynced records at the moment of the tap: the live count may still be loading. */
+  async function ask() {
+    const now =
+      (await signOutGuard()
+        .count?.()
+        .catch(() => unsynced)) ?? unsynced;
+    setCounted(now);
+    if (Math.max(now, unsynced) > 0) setConfirming(true);
+    else void signOut();
+  }
+
   async function signOut() {
     setBusy(true);
     setFailed(false);
@@ -75,7 +87,7 @@ export function SignOutButton({
         variant={variant}
         busy={busy && !confirming}
         disabled={!online}
-        onClick={() => (unsynced > 0 ? setConfirming(true) : void signOut())}
+        onClick={() => void ask()}
       >
         {labels.signOut}
       </PlainButton>
@@ -91,7 +103,7 @@ export function SignOutButton({
           <ConfirmDialog
             open
             title={labels.guard.title}
-            body={plural(labels.guard.body, unsynced)}
+            body={plural(labels.guard.body, Math.max(counted, unsynced))}
             cancelLabel={labels.guard.stay}
             confirmLabel={labels.guard.signOut}
             tone="danger"
