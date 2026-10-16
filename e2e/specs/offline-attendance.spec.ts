@@ -234,16 +234,24 @@ test('signing out with unsynced records asks first; signing out deletes this dev
   await ownClientIp(context);
   const tag = `${testInfo.project.name.split('-')[0]} ${Date.now().toString(36)}`;
   const admin = await adminSession(browser, testInfo);
-  const { sessionId } = await classForDemoTeacher(admin, `Garba ${tag}`, 2);
+  const { sessionId, students } = await classForDemoTeacher(admin, `Garba ${tag}`, 2);
   try {
     await signInAt(page, testInfo, 'demo-a', 'teacher@demo-a.test');
     await page.goto(hostUrl(testInfo, 'demo-a', `/teach/attendance?session=${sessionId}`));
     await expect(page.getByText(counts(0, 0, 2))).toBeVisible({ timeout: 30_000 });
-    // The academy can't be reached for syncing (online, but every push fails).
-    await context.route('**/api/v1/sync/push', (route) => route.abort('failed'));
-    await page.getByRole('button', { name: 'Mark all present' }).click();
+    // A record that can't sync until the teacher decides: an offline mark that conflicts with the
+    // admin's (no request interception needed, so this runs on every browser).
+    await context.setOffline(true);
+    await page
+      .getByRole('group', { name: `Attendance for ${students[0]!.name}` })
+      .getByRole('button', { name: 'Absent' })
+      .click();
     await page.getByRole('button', { name: 'Save attendance' }).click();
-    await expect(page.getByText('Saved on this device — 2 records waiting to sync')).toBeVisible();
+    await adminCall(admin, 'put', `/sessions/${sessionId}/attendance`, {
+      marks: [{ studentId: students[0]!.id, status: 'LATE' }],
+    });
+    await context.setOffline(false);
+    await expect(page.getByText('1 item needs attention')).toBeVisible({ timeout: 90_000 });
 
     await page.goto(hostUrl(testInfo, 'demo-a', '/teach/more'));
     await expect(page.getByRole('heading', { level: 1, name: 'More' })).toBeVisible({
@@ -252,7 +260,7 @@ test('signing out with unsynced records asks first; signing out deletes this dev
     await page.getByRole('main').getByRole('button', { name: 'Sign out' }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByText("Changes haven't synced")).toBeVisible();
-    await expect(dialog.getByText(/2 records haven't synced/)).toBeVisible();
+    await expect(dialog.getByText(/1 record hasn't synced/)).toBeVisible();
     await dialog.getByRole('button', { name: 'Stay signed in' }).click();
     await expect(page).toHaveURL(/\/teach\/more$/);
 
