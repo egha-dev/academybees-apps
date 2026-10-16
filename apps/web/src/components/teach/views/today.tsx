@@ -16,7 +16,7 @@ import { ClassRow, classState } from './class-row';
  * rest of today. Read from this device, so it opens offline.
  */
 export function TodayView() {
-  const { engine, labels, name, today, time, day } = useTeach();
+  const { engine, labels, name, academy, today, time, day } = useTeach();
   const now = useNow();
   const t = labels.teach;
   const date = today();
@@ -48,6 +48,7 @@ export function TodayView() {
         <Text variant="title" as="h1">
           {fill(t.greeting, { name })}
         </Text>
+        <Text tone="secondary">{fill(t.academy, { academy })}</Text>
         <Text tone="secondary">{day(date)}</Text>
       </Stack>
       {next && (

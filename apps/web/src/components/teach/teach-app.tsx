@@ -37,6 +37,8 @@ export type TeachProps = {
   view: TeachView;
   userId: string;
   name: string;
+  /** The academy's name: one teacher can teach at several. */
+  academy: string;
   timeZone: string;
   /** Owners and admins may correct roll calls after the window (C-130). */
   canEditPast: boolean;

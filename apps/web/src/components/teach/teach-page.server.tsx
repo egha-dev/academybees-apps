@@ -21,7 +21,7 @@ export async function teachMetadata(view: Exclude<TeachView, 'today'>): Promise<
  * so the page can be cached and opened offline; the screen reads this device's copy.
  */
 export async function TeachScreen({ view }: { view: TeachView }) {
-  const [{ me }, enabled, { context }, messages, signOut] = await Promise.all([
+  const [{ me, academy }, enabled, { context }, messages, signOut] = await Promise.all([
     signedInMember({ experience: 'teach' }),
     teacherPwaEnabled(),
     hostContext(),
@@ -34,6 +34,7 @@ export async function TeachScreen({ view }: { view: TeachView }) {
       view={view}
       userId={me.user.id}
       name={me.user.name}
+      academy={academy}
       timeZone={academyTimeZone(context) ?? 'Asia/Kolkata'}
       canEditPast={holds(me, 'attendance.edit_past')}
       labels={{

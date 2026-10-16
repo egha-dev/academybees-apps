@@ -116,5 +116,6 @@
     "switch": "Switch to managing the academy",
     "security": "Security",
     "sync": "Sync"
-  }
+  },
+  "academy": "Your classes at {academy}."
 }
