@@ -185,7 +185,7 @@ From PRD v3 §24, §33 and CLAUDE.md §13. A phase moves to ✅ only when all ap
 - **Phase 1:** remove `p0-flag-probe`; FK to `Tenant` + RLS on `feature_flag_override` (C-35) **and on `outbox_event`, `audit_log`, `idempotency_record`** (they carry `tenant_id` but have no policy yet); cross-tenant suite scaffold in `packages/testing`; real host routing replaces the `proxy.ts` stub; dynamic manifest; review **M4** (take the client IP from `X-Forwarded-For` once the proxy secret validates — audit IPs and the Phase 2 throttler depend on it) with an integration test of forwarded host + secret through the CLS middleware.
 - **Before the staging go-live (C-50):** review **M6** — staging `workflow_dispatch` only from `refs/heads/main`, `environment: staging` on deploy jobs with `STAGING_*` as environment secrets; **L5** production guard on `github.triggering_actor` + CI-green check for the tag SHA. `/api/docs` is public on staging (non-production only) — acceptable until then.
 - **Phase 2 (before any finance or provisioning endpoint uses `@Idempotent()`):** review **M1** stale IN_PROGRESS lease (today a crash or a failed `complete()` locks the key for 24 h — safe, but blocks retries); **M2** store the schema-filtered response, not the raw handler output (fix interceptor order); **M3** no extra audit row on an idempotent replay; **L2** log URLs without query strings, deep redaction paths; **L1** mask `Error` messages/stacks and drop Prisma `meta` in logs; **L4** unmapped 4xx statuses become 500 without being logged.
-- **Phase 6 (sync goes live):** review **M5** — validate the push response, `markRetry` on any post-transport error, transport timeout, tests for a malformed response and a throwing `applyResult`; **L8** run `recoverInterrupted()` inside the Web Lock.
+- **Phase 6 (sync goes live):** review **M5** — validate the push response, `markRetry` on any post-transport error, transport timeout, tests for a malformed response and a throwing `applyResult`; **L8** run `recoverInterrupted()` inside the Web Lock. *Done in Phase 6 S8 (C-133).*
 - **Phase 15 (or earlier when volume warrants):** **L6** purge expired idempotency records and dispatched outbox events; **L7** outbox relay backoff + dead-letter for poison rows. Small: **L3** PII guard also checks long numbers; **L9** token shadows in `pwa-prompts`/`theme-toggle`, `ConfirmDialog` focuses Cancel.
 - **Phase 15:** trim API/worker images (~730 MB: `@prisma/client`'s peer pulls the Prisma CLI, Studio and TypeScript into production deps); total blocking time ≈ 350 ms on simulated mobile (Lighthouse warning only); OpenTelemetry tracing.
 - **Watch:** the shell has ≈4 KB of route-JS headroom (React DOM + Next router ≈ 114 KB); teacher/hub screens in Phases 6–7P must import from `@academybee/ui/components/*` and lazy-load heavy UI.
@@ -804,8 +804,8 @@ Phase 2 is **not** started.
 | S4 | `p6/teacher-pwa` | 6.10 SW teacher shells (C-124), 6.11 shell + nav, 6.12 Today/Classes/Attendance/Students/Sync/More, 6.13 states + budgets (flag `p6-teacher-pwa`) | ✅ #92 |
 | S5 | `p6/offline-e2e` | 6.14 offline suite, 6.15 two-device conflict, 6.16 logout guard + revocation | ✅ #93 |
 | S6 | `p6/manage-attendance` | 6.17 Owner Today, 6.18 overview + Batch/Student 360 tabs, 6.19 seeds | ✅ #94 |
-| S7 | `p6/notifications` | 6.20 notification centre, 6.21 G-16 nudge, 6.22 Phase 5 review lows L1–L5 | 🟨 PR |
-| S8 | `p6/journey-e2e` | 6.23 exit E2E, 6.24 flag removal + docs | ⬜ |
+| S7 | `p6/notifications` | 6.20 notification centre, 6.21 G-16 nudge, 6.22 Phase 5 review lows L1–L5 | ✅ #95 |
+| S8 | `p6/journey-e2e` | 6.23 exit E2E, 6.24 flag removal + docs + real-phone checklist; Phase 0 review M5/L8 (sync runner) | 🟨 PR |
 
 
 **Scope**

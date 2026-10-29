@@ -128,6 +128,17 @@ Logos are stored in the local SeaweedFS (`pnpm infra:up`) and served from `http:
 - **Teacher:** `teacher@demo-a.test` sees only their own classes and batches, read-only.
 - **Generating classes:** classes are made 28 days ahead nightly and on API start; `pnpm scheduling:generate` makes them now.
 
+**Attendance and offline (Phase 6)** on `demo-a.localhost:3000`:
+- **Teacher** (`teacher@demo-a.test`) on `/teach` gets the **Teacher PWA**:
+  - Today (next class with Take attendance), Classes, Students, More, and the **Sync Center** (`/teach/sync`);
+  - Take attendance: Mark all present, then Absent / Late / Leave for the exceptions, then Save. The status line says whether the academy has it yet;
+  - after one visit online it works offline (try DevTools → Network → Offline, then reload): saves wait on the device and sync by themselves when the connection is back. Signing out with unsynced changes asks first.
+- **Owner or admin:**
+  - **Today** shows "N of M roll calls taken" and each class that ended without one;
+  - **Attendance** is the day's overview, with Take / Edit;
+  - the **Batch Workspace** and **Student 360** have Attendance tabs with percentages. The seed has two weeks of past roll calls;
+  - the **bell** lists notifications. A teacher is reminded 30 minutes after a class with no roll call (a job every 10 minutes).
+
 Academy hosts (`http://demo-a.localhost:3000`), the Family Hub (`app.localhost`) and the console (`console.localhost`) arrive with Phases 1–3.
 
 **Checks** (the same as CI): `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:integration` (Docker), `pnpm build`, `pnpm e2e` (builds, then Playwright), `pnpm perf:budget`, `pnpm perf:lighthouse`, `pnpm i18n:check`, `pnpm flags:check`.

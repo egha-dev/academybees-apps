@@ -742,6 +742,8 @@ db.version(1).stores({
 
 On sign-in the app requests `navigator.storage.persist()`; the Sync Center reports if persistence was denied.
 
+*As built (Phase 6, C-125):* `version(1)` (Phase 0) holds `meta`, `syncQueue`, `syncLog`; **`version(2)`** adds `batches`, `students`, `enrolments`, `sessions` (`date`, `batchId`, `status`), `notifications` (not yet filled: the list is online) and `attendance`. Attendance is keyed **`<sessionId>:<studentId>`** (a mark saved offline has no server id yet) and carries `serverVersion` (the base of the next op), `syncState` (`synced | pending | conflict | failed`), the `opId` that carries the shown value, and the other person's value on a conflict. Finance and learning tables come as later versions; a released version is never edited.
+
 ### 11.3 Sync operation contract (`packages/contracts/src/sync.ts`)
 
 ```ts
@@ -772,12 +774,28 @@ Ops sharing an `entityKey` are processed in order; if one is `CONFLICT`/`REJECTE
 
 **Pull** `GET /api/v1/sync/pull?scope=teacher&since=<watermark>` returns changed rows in the user's working set since the watermark (`updatedAt > since - 5s skew` + id tiebreak) plus tombstones (archived/ended enrolments, cancelled sessions). `bootstrap` returns the full working set: teacher = assigned batches, active enrolled students (basic profile only), sessions from today −7 to +14 days, attendance for the last 30 days of those sessions.
 
+*As built (Phase 6):*
+- **Ops:** `attendance.markSession` (a whole roll call, **atomic**, with a `baseVersion` per student, C-126) and `attendance.update`, registered in `modules/sync` and applied by `AttendanceService.markSessionIn(tx)` with the ledger row in the same transaction. Offline ops are accepted until 7 days after the class (C-130).
+- **Order:** there is no `BLOCKED` status. After a `CONFLICT`/`REJECTED`, later ops for that `entityKey` in the batch get **no answer**; the client retries unanswered ops and holds the key itself. A rejection or conflict repeats as stored when the op is resent.
+- **Snapshots:** bootstrap and pull both return the caller's **whole small working set** (scope from the member's roles, no `scope` parameter). Anything missing is gone (**removal by absence**, no tombstones). Attendance is the last 30 days on bootstrap or after an old watermark (`attendanceComplete`), otherwise changes since the watermark (5 s skew).
+- **Revocation** answers **`401 MEMBERSHIP_REVOKED`** (not 403): the device wipes its data.
+- `POST /sync/beacon` reports queue size and age; pino `metric: sync.push` / `sync.queue`.
+
 ### 11.4 Sync runner
 
 - Triggers: app start, `online` event, `visibilitychange` to visible, after enqueue (debounced 1 s), every 60 s while pending ops exist. **Does not rely on the Background Sync API** (not supported in Safari/iOS).
 - Retry: exponential backoff with jitter (2 s → 5 min cap) for network/5xx/`RATE_LIMITED`; `401` pauses the queue and prompts re-login without dropping ops; `REJECTED`/`CONFLICT` stop retrying and surface to the user.
 - A Web Lock (`navigator.locks`) ensures only one tab runs the runner.
 - On `APPLIED`, the local entity takes the server version; the queue item is marked `synced` and purged after 7 days (kept briefly for the Sync Center history).
+
+*As built (Phase 6):*
+- `SyncEngine` (`packages/sync/src/engine.ts`) wires the DB, queue, `SyncClient`, runner and connectivity. It pulls on start, back online, tab visible and after each push; the runner's `onResult` hands each result to the client, which updates the marks.
+- On a `401` the web refreshes the session quietly and resumes; only if that fails does it ask for sign-in, with nothing dropped.
+- **Hardening (C-133, Phase 0 review M5/L8):**
+  - push and pull time out after 30 s (a lost connection);
+  - a malformed or unreadable push answer is a server failure to retry;
+  - a failure while storing answers sends those ops again (`DUPLICATE`), never leaving them `processing`;
+  - ops left `processing` by a closed tab are recovered at the start of each pass **under the Web Lock**.
 
 ### 11.5 Conflict policy (ADR-017, PRD v3 §11)
 
@@ -796,12 +814,24 @@ Ops sharing an `entityKey` are processed in order; if one is `CONFLICT`/`REJECTE
 - Logout with pending ops: blocking dialog ("24 attendance records haven't synced. Stay signed in until they sync, or sign out and lose them"), default action = stay.
 - Online-only actions show a disabled state with the reason while offline.
 
+*As built (Phase 6):*
+- **Teacher PWA shells (C-124):** `/teach`, `/teach/classes`, `/teach/attendance?session=`, `/teach/students`, `/teach/sync` and `/teach/more` render only the shell and labels on the server; the screens read Dexie in one lazy chunk. The service worker serves `/teach…` navigations NetworkFirst (3 s) from the `ab-teach-shell` cache (matched ignoring the query), warmed after the first download, so they open offline after a reload or a restart.
+- **Owners and admins** take attendance with the same screen and queue at `/attendance/take`, and have their own Sync Center at **`/attendance/sync`**. They can't open `/teach/*` (C-131, C-133).
+- **Status line:** on every teacher screen. It counts **records** (marks), not ops: one roll call of 25 is "25 records waiting to sync". No Sync Center drawer was built.
+- **Logout guard:** counts at the moment of the tap, from the running engine, or straight from IndexedDB on pages without it (C-133).
+
 ### 11.7 Offline security
 
 - Cache only the role's working set (PRD v2.1 §18.8); no finance data for teachers unless `payment.record_cash` is granted; parents cache only linked children.
 - No passwords, refresh tokens or access tokens in IndexedDB/localStorage (cookies only).
 - On logout (after the pending-op guard) and on membership revocation detected at pull (`403 MEMBERSHIP_REVOKED`), the Dexie DB and SW data caches are deleted.
 - The service worker never caches `/api/*` responses containing personal data in Cache Storage; data lives in Dexie under app control. The SW caches the app shell, static assets, fonts and tenant branding.
+
+*As built (Phase 6):*
+- Revocation is **`401 MEMBERSHIP_REVOKED`**, from push or pull.
+- Sign-out and revocation delete `ab_<userId>` and the `ab-teach-shell` cache.
+- The working set carries students' basic profile only: no contacts, no health notes.
+- The teacher shells hold no student data: their HTML is the same for every teacher of the academy.
 
 ---
 
@@ -895,6 +925,11 @@ domain event → NotificationIntent (type, tenant, subjects, data, dedupeKey)
 ```
 
 `dedupeKey` (e.g. `attendance.absent:{sessionId}:{studentId}`) guarantees no duplicate sends on retry. Channels: in-app (Ph 6), email (Ph 2 transactional, Ph 10 general), web push, SMS (DLT-registered templates, India), WhatsApp Cloud API (approved templates, opt-in) (Ph 10). Provider adapters are swappable (PRD v3 risk table: WhatsApp dependency).
+
+*As built (Phase 6):*
+- **Parent intents (C-128):** `ATTENDANCE_ABSENT` / `ATTENDANCE_LATE` `NotificationIntent`s are written **inside the attendance transaction**, one per (kind, class, student). They exist only if the roll call committed. A correction to Present before delivery **voids** the pending intent. They are stored, not sent: delivery is 7P (hub, in-app) and Phase 10 (channels). There is no `attendance` queue; summaries are computed on read (C-127).
+- **Staff in-app notifications:** `Notification` rows (recipient membership, kind, params, link, `readAt`, unique dedupe key); `GET /notifications`, `/notifications/unread`, `POST /notifications/read`; the bell and `/notifications` in both experiences.
+- **G-16 nudge:** the API's platform scheduler runs `attendance-nudges` every 10 minutes (audited) and queues one per-academy job (`AttendanceNudgeProcessor`, in the API as C-112), which re-checks the academy is ACTIVE. It notifies the class's teacher once per class (`attendance-not-taken:<session>`) for classes that ended 30 min to 24 h ago with no roll call.
 
 ---
 
