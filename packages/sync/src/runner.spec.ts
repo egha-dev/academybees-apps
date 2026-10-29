@@ -100,6 +100,60 @@ describe('SyncRunner', () => {
     expect(transport).not.toHaveBeenCalled();
   });
 
+  it('sends an op again when storing its answer fails, never leaving it processing', async () => {
+    const { queue } = createTestQueue();
+    const a = await queue.enqueue(markSession('A'));
+    const transport = vi.fn(applyAll);
+    const onResult = vi.fn().mockRejectedValueOnce(new Error('disk full'));
+    const runner = new SyncRunner({ queue, transport, onResult, locks: createLocalLocks() });
+    expect(await runner.run()).toBe('retry_scheduled');
+    expect(await queue.get(a)).toMatchObject({
+      status: 'pending',
+      attempts: 1,
+      lastError: { code: 'INTERNAL' },
+    });
+    await queue.retryNow(a);
+    expect(await runner.run()).toBe('done');
+    expect(onResult).toHaveBeenCalledTimes(2);
+    expect((await queue.get(a))?.status).toBe('synced');
+  });
+
+  it('retries a malformed push response as a server failure', async () => {
+    const { queue } = createTestQueue();
+    const a = await queue.enqueue(markSession('A'));
+    const transport = vi.fn().mockRejectedValue(new SyncTransportError('server', 'malformed'));
+    expect(await new SyncRunner({ queue, transport, locks: createLocalLocks() }).run()).toBe(
+      'retry_scheduled',
+    );
+    expect(await queue.get(a)).toMatchObject({ status: 'pending', attempts: 1 });
+  });
+
+  it('recovers ops left processing only under the lock, never from a tab still sending', async () => {
+    const { queue } = createTestQueue();
+    const a = await queue.enqueue(markSession('A'));
+    const locks = createLocalLocks();
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const sending = new SyncRunner({
+      queue,
+      transport: async (ops) => {
+        await gate;
+        return applyAll(ops);
+      },
+      locks,
+    });
+    const first = sending.run();
+    await vi.waitFor(async () => expect((await queue.get(a))?.status).toBe('processing'));
+    // Another tab opens: it must not put the op back while the first tab is sending it.
+    const opened = new SyncRunner({ queue, transport: applyAll, locks, intervalMs: 60_000 });
+    await opened.start();
+    expect((await queue.get(a))?.status).toBe('processing');
+    release();
+    expect(await first).toBe('done');
+    expect(await queue.get(a)).toMatchObject({ status: 'synced', attempts: 0 });
+    opened.stop();
+  });
+
   it('recovers interrupted ops on start', async () => {
     const { queue } = createTestQueue();
     const a = await queue.enqueue(markSession('A'));

@@ -81,8 +81,7 @@ export class SyncRunner {
     this.locks = options.locks ?? nav?.locks ?? createLocalLocks();
   }
 
-  async start(): Promise<void> {
-    await this.options.queue.recoverInterrupted();
+  start(): Promise<void> {
     this.unsubscribe = this.options.connectivity?.subscribe((state) => {
       if (state === 'online') void this.run();
     });
@@ -94,6 +93,7 @@ export class SyncRunner {
       });
     }, this.options.intervalMs ?? 60_000);
     void this.run();
+    return Promise.resolve();
   }
 
   stop(): void {
@@ -139,6 +139,10 @@ export class SyncRunner {
     const { queue, transport, connectivity } = this.options;
     if (this.paused) return 'paused_auth';
     if (connectivity && connectivity.current === 'offline') return 'skipped_offline';
+    // Only the lock holder marks ops "processing", and its last pass has ended: anything still
+    // processing was left by a closed tab or app. Recovering here, under the lock, never takes
+    // ops from a tab that is sending them.
+    await queue.recoverInterrupted();
 
     for (;;) {
       const batch = await queue.nextBatch(this.options.batchSize ?? 100);
@@ -191,11 +195,21 @@ export class SyncRunner {
       }
 
       const answered = new Set<string>();
-      for (const result of response.results) {
-        if (!opIds.includes(result.opId)) continue;
-        answered.add(result.opId);
-        await queue.applyResult(result);
-        await this.options.onResult?.(result);
+      try {
+        for (const result of response.results) {
+          if (!opIds.includes(result.opId)) continue;
+          await queue.applyResult(result);
+          await this.options.onResult?.(result);
+          answered.add(result.opId);
+        }
+      } catch (error) {
+        // Storing an answer failed: send those ops again; the server answers DUPLICATE with the
+        // same result, so nothing is applied twice and nothing is left "processing".
+        await queue.markRetry(
+          opIds.filter((id) => !answered.has(id)),
+          { code: 'INTERNAL', message: error instanceof Error ? error.message : String(error) },
+        );
+        return 'retry_scheduled';
       }
       // Anything the server didn't answer stays queued and is retried — never assumed done.
       const unanswered = opIds.filter((id) => !answered.has(id));

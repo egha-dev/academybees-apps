@@ -259,6 +259,19 @@ describe('SyncClient', () => {
     expect(ok.fetch.mock.calls[0]![1]?.headers).toMatchObject({ 'x-csrf-token': 'csrf-1' });
   });
 
+  it('a malformed or hung push counts as a failure to retry', async () => {
+    const bad = setup(() => Promise.resolve(json(200, { results: [{ opId: 1 }] })));
+    await expect(bad.client.transport([])).rejects.toMatchObject({ kind: 'server' });
+    const { db, queue } = createTestQueue();
+    const hung: FetchLike = (_url, init) =>
+      new Promise((_resolve, reject) =>
+        init?.signal?.addEventListener('abort', () => reject(new Error('aborted'))),
+      );
+    const client = new SyncClient({ db, queue, fetch: hung, timeoutMs: 20 });
+    await expect(client.transport([])).rejects.toMatchObject({ kind: 'network' });
+    expect(await client.pull()).toBe('offline');
+  });
+
   it('revoked access wipes this device’s data', async () => {
     const { client, db, onRevoked } = setup(() =>
       Promise.resolve(json(401, { error: { code: 'MEMBERSHIP_REVOKED' } })),
