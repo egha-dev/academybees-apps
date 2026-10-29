@@ -28,6 +28,8 @@ export type SyncClientOptions = {
   csrf?: () => string | undefined;
   /** Access ended (`MEMBERSHIP_REVOKED`): local data has been wiped; send the user away. */
   onRevoked?: () => void;
+  /** A request that hasn't answered by then counts as a lost connection (default 30 s). */
+  timeoutMs?: number;
   now?: () => number;
 };
 
@@ -48,11 +50,13 @@ export class SyncClient {
   private readonly apiBase: string;
   private readonly fetch: FetchLike;
   private readonly now: () => number;
+  private readonly timeoutMs: number;
 
   constructor(private readonly options: SyncClientOptions) {
     this.apiBase = options.apiBase ?? '/api/v1';
     this.fetch = options.fetch ?? ((input, init) => globalThis.fetch(input, init));
     this.now = options.now ?? Date.now;
+    this.timeoutMs = options.timeoutMs ?? 30_000;
   }
 
   private get db() {
@@ -68,6 +72,7 @@ export class SyncClient {
         credentials: 'same-origin',
         headers: { 'content-type': 'application/json', ...this.csrfHeader() },
         body: JSON.stringify({ ops }),
+        signal: AbortSignal.timeout(this.timeoutMs),
       });
     } catch (error) {
       throw new SyncTransportError('network', error instanceof Error ? error.message : 'network');
@@ -78,7 +83,16 @@ export class SyncClient {
     }
     if (res.status === 429) throw new SyncTransportError('rate_limited');
     if (!res.ok) throw new SyncTransportError('server', `HTTP ${res.status}`);
-    return SyncPushResponseSchema.parse(await res.json());
+    // An answer that isn't a valid push response is a server failure: the ops are retried.
+    let body: unknown;
+    try {
+      body = await res.json();
+    } catch {
+      throw new SyncTransportError('server', 'unreadable response');
+    }
+    const parsed = SyncPushResponseSchema.safeParse(body);
+    if (!parsed.success) throw new SyncTransportError('server', 'malformed response');
+    return parsed.data;
   };
 
   private csrfHeader(): Record<string, string> {
@@ -114,7 +128,10 @@ export class SyncClient {
       : `${this.apiBase}/sync/bootstrap`;
     let res: Response;
     try {
-      res = await this.fetch(path, { credentials: 'same-origin' });
+      res = await this.fetch(path, {
+        credentials: 'same-origin',
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
     } catch {
       return 'offline';
     }

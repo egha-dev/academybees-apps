@@ -2,9 +2,6 @@ import 'server-only';
 
 import type { FeatureFlagKey } from '@academybee/contracts';
 
-import { headers } from 'next/headers';
-import { cache } from 'react';
-
 import { serverEnv } from './env';
 import { type FlagsResponse, isFlagOn } from './flags';
 
@@ -26,8 +23,3 @@ export async function flagEnabled(key: FeatureFlagKey, host: string): Promise<bo
     return false;
   }
 }
-
-/** `p6-teacher-pwa` for the current request's academy: Phase 6 screens while they are built. */
-export const teacherPwaEnabled = cache(async (): Promise<boolean> =>
-  flagEnabled('p6-teacher-pwa', (await headers()).get('host') ?? ''),
-);

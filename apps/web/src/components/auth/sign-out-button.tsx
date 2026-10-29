@@ -7,7 +7,12 @@ import { lazy, Suspense, useState, useSyncExternalStore } from 'react';
 
 import { plural } from '@/components/scheduling/plural';
 import { api } from '@/lib/api';
-import { deleteLocalData, signOutGuard, subscribeSignOutGuard } from '@/lib/unsynced';
+import {
+  countUnsynced,
+  deleteLocalData,
+  signOutGuard,
+  subscribeSignOutGuard,
+} from '@/lib/unsynced';
 import { useOnline } from '@/lib/use-online';
 
 // Shown only with unsynced offline work; loaded on demand (route JS budget, C-68).
@@ -51,12 +56,13 @@ export function SignOutButton({
   const [failed, setFailed] = useState(false);
 
   const [counted, setCounted] = useState(0);
-  /** Count unsynced records at the moment of the tap: the live count may still be loading. */
+  /**
+   * Count unsynced records at the moment of the tap: the live count may still be loading, and on
+   * a page without the sync engine there is none, so read the device's database directly.
+   */
   async function ask() {
-    const now =
-      (await signOutGuard()
-        .count?.()
-        .catch(() => unsynced)) ?? unsynced;
+    const count = signOutGuard().count ?? (userId ? () => countUnsynced(userId) : undefined);
+    const now = (await count?.().catch(() => unsynced)) ?? unsynced;
     setCounted(now);
     if (Math.max(now, unsynced) > 0) setConfirming(true);
     else void signOut();

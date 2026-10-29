@@ -13,7 +13,6 @@ import { AcademyShell } from '@/components/shell/academy-shell';
 import { PaletteTrigger } from '@/components/palette/palette-trigger';
 import { GlobalAdd } from '@/components/shell/global-add';
 import { NotificationsBell } from '@/components/notifications/bell';
-import { teacherPwaEnabled } from '@/lib/flags.server';
 import { experienceFor, navigationFor } from '@/components/shell/navigation.server';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { apiServerGet } from '@/lib/api.server';
@@ -76,18 +75,17 @@ export default async function SignedInLayout({ children }: { children: ReactNode
     redirect(`/legal?next=${encodeURIComponent(path)}`);
 
   const experience = experienceFor(path, me);
-  const [guard, terminology, quickT, teacherPwa, bellT] = await Promise.all([
+  const [guard, terminology, quickT, bellT] = await Promise.all([
     sessionGuardLabels(),
     academyTerms(),
     getTranslations('people.palette.quick'),
-    teacherPwaEnabled(),
     getTranslations('teach.notifications'),
   ]);
-  // Phase 6 (flag p6-teacher-pwa): the bell with my unread count (C-04).
-  const unreadRes = teacherPwa ? await apiServerGet('/notifications/unread') : undefined;
-  const unread = unreadRes?.ok ? ((await unreadRes.json()) as { count: number }).count : 0;
+  // Phase 6: the bell with my unread count (C-04).
+  const unreadRes = await apiServerGet('/notifications/unread');
+  const unread = unreadRes.ok ? ((await unreadRes.json()) as { count: number }).count : 0;
   const terms = await termsFor(terminology);
-  const nav = await navigationFor(me, experience, { terms: terminology, teacherPwa });
+  const nav = await navigationFor(me, experience, { terms: terminology });
   const caps = me.academy.capabilities as Record<string, string | undefined>;
   const messages = await getMessages();
   return (
@@ -140,9 +138,7 @@ export default async function SignedInLayout({ children }: { children: ReactNode
               />
             </>
           )}
-          {teacherPwa && (
-            <NotificationsBell count={unread} label={bellT('bell', { count: unread })} />
-          )}
+          <NotificationsBell count={unread} label={bellT('bell', { count: unread })} />
           <ThemeToggle compact />
         </>
       }

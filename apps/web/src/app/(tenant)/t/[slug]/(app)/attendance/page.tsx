@@ -5,14 +5,12 @@ import { Box, Stack } from '@academybee/ui/components/layout';
 import { PlainButton } from '@academybee/ui/components/plain-button';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { SessionRows } from '@/components/attendance/session-rows.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { teacherPwaEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { homeFor } from '@/lib/session.server';
 
@@ -34,15 +32,13 @@ export default async function AttendancePage({
 }: {
   searchParams: Promise<{ date?: string }>;
 }) {
-  const [{ me, academy }, enabled, params, { context }, t, shellT] = await Promise.all([
+  const [{ me, academy }, params, { context }, t, shellT] = await Promise.all([
     signedInMember({ experience: 'manage' }),
-    teacherPwaEnabled(),
     searchParams,
     hostContext(),
     getTranslations('teach.staff'),
     getTranslations('shell.permission'),
   ]);
-  if (!enabled) notFound();
   if (!holds(me, 'attendance.read'))
     return (
       <PermissionState

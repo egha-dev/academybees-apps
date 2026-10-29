@@ -1,10 +1,8 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getMessages, getTranslations } from 'next-intl/server';
 
 import { signOutLabels } from '@/components/auth/labels.server';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
-import { teacherPwaEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 
 import type { TeachView } from './teach-app';
@@ -24,20 +22,20 @@ export async function TeachScreen({
   view,
   experience = 'teach',
   backHref,
+  syncHref,
 }: {
   view: TeachView;
   /** Owners and admins take attendance in the Manage experience with the same screen (C-131). */
   experience?: 'teach' | 'manage';
   backHref?: string;
+  syncHref?: string;
 }) {
-  const [{ me, academy }, enabled, { context }, messages, signOut] = await Promise.all([
+  const [{ me, academy }, { context }, messages, signOut] = await Promise.all([
     signedInMember({ experience }),
-    teacherPwaEnabled(),
     hostContext(),
     getMessages(),
     signOutLabels(),
   ]);
-  if (!enabled) notFound();
   return (
     <TeachAppLazy
       view={view}
@@ -47,6 +45,7 @@ export async function TeachScreen({
       timeZone={academyTimeZone(context) ?? 'Asia/Kolkata'}
       canEditPast={holds(me, 'attendance.edit_past')}
       {...(backHref ? { backHref } : {})}
+      {...(syncHref ? { syncHref } : {})}
       labels={{
         teach: messages.teach,
         offline: messages.offline,

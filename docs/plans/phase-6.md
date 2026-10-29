@@ -40,7 +40,7 @@
 
 Also recorded:
 - **No new dependencies:** Dexie and Serwist are already pinned.
-- **Release flag `p6-teacher-pwa`** (on in local/ci/staging, off in production) covers the new teacher and attendance screens until S8; the server-rendered Teacher home v1 stays the fallback while it's off.
+- **Release flag `p6-teacher-pwa`** (on in local/ci/staging, off in production) covers the new teacher and attendance screens until S8; the server-rendered Teacher home v1 stays the fallback while it's off. *(Removed in S8, C-133.)*
 - **Offline E2E runs on the Chromium projects** (desktop, Android). WebKit runs the online flows; iOS offline is proven on your real iPhone (Playwright's WebKit service-worker support is limited).
 
 ## Slices and tasks
@@ -339,6 +339,33 @@ Each slice: branch `p6/<slice>` from the latest `main` → PR with the DoD check
   - remove `p6-teacher-pwa`;
   - ARCHITECTURE as-built (§11, §13); CLAUDE.md §3 and §8; README tour;
   - a real-phone checklist for you (Android Chrome, iOS Safari installed PWA, airplane mode).
+
+*As built (S8):*
+- **Flag `p6-teacher-pwa` removed** (C-133):
+  - `/teach` is the Teacher PWA's Today; Teacher home v1 and its catalogue keys are gone;
+  - the teacher's nav is always Home · Classes · Students · More;
+  - attendance tabs, `/attendance`, `/attendance/take`, the bell and `/notifications` follow `attendance.read` or sign-in only;
+  - the Batch Workspace's disabled "Take attendance — arrives with the next update" is gone: the button shows to holders of `attendance.read`.
+- **Exit journey** `e2e/specs/attendance-journey.spec.ts` (all three projects):
+  - the admin sets up a class for the demo teacher;
+  - the teacher opens **Teacher Today**, taps the class, Mark all present + one late → Save → synced; the academy has 3 present and 1 late;
+  - **Chromium (desktop, Android):** offline, one correction to absent → Save → "1 record waiting to sync" → **reload offline** keeps it → online → synced by itself; the academy has 2 present, 1 absent, 1 late, and **one pending intent each** for the absence and the late arrival (C-128);
+  - **iPhone (WebKit):** the online path (offline on a real iPhone, below);
+  - the admin's `/attendance` shows the class **Taken**.
+  - `readyForOffline` and `counts` moved to `e2e/support/offline.ts` (shared with the offline suite).
+- **Sync runner hardening (Phase 0 review M5/L8, C-133):**
+  - push and pull time out after 30 s;
+  - a malformed or unreadable push answer is retried as a server failure;
+  - a failure while storing answers sends the ops again (`DUPLICATE`) instead of leaving them `processing`;
+  - recovery of ops left `processing` runs at the start of each pass **under the Web Lock**.
+  - Tests: 4 new (runner 3, client 1); package total 43.
+- **Two gaps found while wrapping up, fixed (C-133):**
+  - **Sign-out without the engine:** on a page where the Teacher PWA's engine isn't running, sign-out saw 0 unsynced records and deleted the device's data without asking. `countUnsynced(userId)` in `lib/unsynced.ts` now reads the unsent marks and queued ops straight from IndexedDB, and never creates a database by asking. Unit `unsynced.spec.ts` (2).
+  - **A Sync Center for owners and admins:** `/teach/*` sends Manage-only members home, so the status line's Sync link on `/attendance/take` went nowhere useful. **`/attendance/sync`** shows the same Sync Center in Manage (`syncHref`); the journey visits it.
+- **Docs:**
+  - ARCHITECTURE §11 and §13 as built;
+  - CLAUDE.md §3 and §8; README tour;
+  - **real-phone checklist** [`docs/runbooks/phase-6-real-phones.md`](../runbooks/phase-6-real-phones.md).
 
 | Slice | Branch | Tasks | Release flag |
 | --- | --- | --- | --- |

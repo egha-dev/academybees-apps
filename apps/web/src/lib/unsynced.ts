@@ -31,6 +31,54 @@ export function signOutGuard(): Guard {
   return guard;
 }
 
+/** Unsent marks and queued ops, as `packages/sync` stores them (Dexie v2, C-125). */
+const UNSYNCED = {
+  attendance: { index: 'syncState', keys: ['pending', 'conflict', 'failed'] },
+  syncQueue: { index: 'status', keys: ['pending', 'processing', 'failed', 'conflict'] },
+} as const;
+
+/**
+ * Count this user's unsynced records straight from IndexedDB, for pages where the Teacher PWA's
+ * engine isn't running (a Manage page, a read-only Batch Workspace): sign-out must still ask
+ * before deleting them. A database that doesn't exist is never created by asking.
+ */
+export async function countUnsynced(userId: string): Promise<number> {
+  const db = await new Promise<IDBDatabase | null>((resolve) => {
+    try {
+      const req = indexedDB.open(`ab_${userId}`);
+      req.onupgradeneeded = () => req.transaction?.abort(); // nothing stored on this device
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = req.onblocked = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+  if (!db) return 0;
+  try {
+    const counts = await Promise.all(
+      Object.entries(UNSYNCED).map(async ([store, { index, keys }]) => {
+        if (!db.objectStoreNames.contains(store)) return 0;
+        const source = db.transaction(store, 'readonly').objectStore(store).index(index);
+        const each = await Promise.all(
+          keys.map(
+            (key) =>
+              new Promise<number>((resolve, reject) => {
+                const req = source.count(key);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error ?? new Error('count failed'));
+              }),
+          ),
+        );
+        return each.reduce((a, b) => a + b, 0);
+      }),
+    );
+    // Records as people think of them (marks), never fewer than the ops waiting.
+    return Math.max(...counts);
+  } finally {
+    db.close();
+  }
+}
+
 /** Service worker caches holding signed-in app shells (C-124). */
 const SHELL_CACHES = ['ab-teach-shell'];
 
