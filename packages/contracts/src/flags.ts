@@ -19,13 +19,6 @@ export type FeatureFlagDefinition = {
 };
 
 export const FEATURE_FLAGS = {
-  'p6-teacher-pwa': {
-    description:
-      'Phase 6 screens while they are built: the Teacher PWA (Today, Classes, Attendance, Students, Sync Center, More) and the attendance views for staff (C-124, C-131) — remove when the phase closes.',
-    owner: 'PO',
-    expiresOn: '2027-06-30',
-    defaults: { local: true, ci: true, staging: true, production: false },
-  },
   'p1-hub-placeholder': {
     description:
       'Family Hub placeholder on app. (G-31) until Parent Core ships in Phase 7P — remove then. Off: app. redirects to the marketing site.',

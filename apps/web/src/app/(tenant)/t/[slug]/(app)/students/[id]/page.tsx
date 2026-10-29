@@ -26,7 +26,6 @@ import type { PeopleErrorLabels } from '@/components/people/errors';
 import { STATUS_TONE } from '@/components/people/status';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { teacherPwaEnabled } from '@/lib/flags.server';
 import { academyTerms } from '@/lib/terms.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 
@@ -81,17 +80,16 @@ export default async function StudentPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string; cursor?: string }>;
 }) {
-  const [{ me, academy }, { id }, query, { context }, t, messages, pwa] = await Promise.all([
+  const [{ me, academy }, { id }, query, { context }, t, messages] = await Promise.all([
     signedInMember({ experience: 'manage' }),
     params,
     searchParams,
     hostContext(),
     getTranslations('people'),
     getMessages(),
-    teacherPwaEnabled(),
   ]);
-  // Phase 6 (flag p6-teacher-pwa): the Attendance tab.
-  const attendanceOn = pwa && holds(me, 'attendance.read');
+  // Phase 6: the Attendance tab.
+  const attendanceOn = holds(me, 'attendance.read');
   if (!holds(me, 'student.read'))
     return (
       <PermissionState

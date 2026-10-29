@@ -31,7 +31,6 @@ import { SessionList } from '@/components/scheduling/session-list.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { teacherPwaEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { academyTerms, withWords, wordsOf } from '@/lib/terms.server';
 
@@ -62,7 +61,7 @@ export default async function BatchPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string; edit?: string }>;
 }) {
-  const [{ me }, { id }, query, { context }, terms, t, sched, messages, pwa] = await Promise.all([
+  const [{ me }, { id }, query, { context }, terms, t, sched, messages] = await Promise.all([
     signedInMember(),
     params,
     searchParams,
@@ -71,11 +70,10 @@ export default async function BatchPage({
     getTranslations('scheduling.batch'),
     getTranslations('scheduling'),
     getMessages(),
-    teacherPwaEnabled(),
   ]);
   const words = wordsOf(terms);
-  // Phase 6 (flag p6-teacher-pwa): the Attendance tab and a live Take attendance.
-  const attendanceOn = pwa && holds(me, 'attendance.read');
+  // Phase 6: the Attendance tab and a live Take attendance.
+  const attendanceOn = holds(me, 'attendance.read');
   const tabs = TABS.filter((k) => k !== 'attendance' || attendanceOn);
   const res = /^[0-9a-f-]{36}$/i.test(id) ? await apiServerGet(`/batches/${id}`) : undefined;
   if (!res?.ok) {
@@ -177,36 +175,10 @@ export default async function BatchPage({
         </Box>
       )}
       <Stack direction="row" sx={{ gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-        {attendanceOn ? (
+        {attendanceOn && (
           <PlainButton variant="primary" href={`/batches/${batch.id}?tab=attendance`}>
             {t('takeAttendance')}
           </PlainButton>
-        ) : (
-          <Stack spacing={0.5}>
-            <Box
-              component="button"
-              type="button"
-              disabled
-              aria-describedby="batch-attendance-soon"
-              sx={{
-                minBlockSize: 48,
-                paddingInline: 4,
-                font: 'inherit',
-                fontWeight: 600,
-                border: '1px solid',
-                borderColor: 'ab.border',
-                borderRadius: 2,
-                bgcolor: 'ab.surfaceRaised',
-                color: 'ab.textSecondary',
-                cursor: 'not-allowed',
-              }}
-            >
-              {t('takeAttendance')}
-            </Box>
-            <Text id="batch-attendance-soon" variant="meta" tone="secondary">
-              {t('attendanceSoon')}
-            </Text>
-          </Stack>
         )}
         {canManage && (
           <BatchActionsLazy

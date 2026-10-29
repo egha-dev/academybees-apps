@@ -12,7 +12,6 @@ import { SessionList } from '@/components/scheduling/session-list.server';
 import { PageHeader } from '@/components/shell/page-header';
 import { holds, signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { teacherPwaEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 import { academyTerms } from '@/lib/terms.server';
 
@@ -40,8 +39,8 @@ export default async function TodayPage() {
   const welcome = t('welcome', { name: me.user.name });
   if (!holds(me, 'timetable.read'))
     return <PageHeader title={t('title', { academy })} body={welcome} />;
-  // Phase 6 (flag p6-teacher-pwa, G-16): today's roll calls and the ones not taken.
-  const attendanceOn = (await teacherPwaEnabled()) && holds(me, 'attendance.read');
+  // Phase 6 (G-16): today's roll calls and the ones not taken.
+  const attendanceOn = holds(me, 'attendance.read');
   const [res, overviewRes, staffT] = await Promise.all([
     apiServerGet('/today'),
     attendanceOn ? apiServerGet('/attendance/overview') : Promise.resolve(undefined),

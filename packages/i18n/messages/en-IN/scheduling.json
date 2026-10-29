@@ -62,19 +62,7 @@
     "by": "by {name}"
   },
   "teach": {
-    "metaTitle": "Home",
-    "title": "Hello, {name}",
-    "body": "Your classes at {academy}.",
-    "todayTitle": "Today",
-    "weekTitle": "Next 7 days",
-    "nothingToday": "No classes today.",
-    "nothingThisWeek": "No classes in the next 7 days.",
-    "batchesTitle": "My {term, select, class {classes} group {groups} other {batches}}",
-    "noBatchesBody": "When the academy adds you to a {term, select, class {class} group {group} other {batch}}, it appears here.",
-    "students": "{count, plural, one {# student} other {# students}}",
-    "days": "{days}",
-    "takeAttendance": "Take attendance",
-    "attendanceSoon": "Attendance arrives with the next update."
+    "metaTitle": "Home"
   },
   "batches": {
     "metaTitle": "{term, select, class {Classes} group {Groups} other {Batches}}",
@@ -123,7 +111,6 @@
     "from": "From {start}",
     "until": "Until {end}",
     "takeAttendance": "Take attendance",
-    "attendanceSoon": "Attendance arrives with the next update.",
     "edit": "Edit",
     "tabs": {
       "label": "Sections",

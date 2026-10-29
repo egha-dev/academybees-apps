@@ -4,14 +4,12 @@ import { StatusBadge } from '@academybee/ui/components/display';
 import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { MarkAllRead } from '@/components/notifications/mark-all-read';
 import { PageHeader } from '@/components/shell/page-header';
 import { signedInMember } from '@/components/shell/signed-in.server';
 import { apiServerGet } from '@/lib/api.server';
-import { teacherPwaEnabled } from '@/lib/flags.server';
 import { academyTimeZone, hostContext } from '@/lib/host-context.server';
 
 export const dynamic = 'force-dynamic';
@@ -23,13 +21,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /** My notifications at this academy (C-04): newest first, unread marked "New". */
 export default async function NotificationsPage() {
-  const [{ academy }, enabled, { context }, t] = await Promise.all([
+  const [{ academy }, { context }, t] = await Promise.all([
     signedInMember(),
-    teacherPwaEnabled(),
     hostContext(),
     getTranslations('teach.notifications'),
   ]);
-  if (!enabled) notFound();
   const res = await apiServerGet('/notifications?limit=50');
   if (!res.ok) throw new Error(`notifications ${res.status}`);
   const page = NotificationPageSchema.parse(await res.json());
