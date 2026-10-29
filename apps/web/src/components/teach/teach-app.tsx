@@ -44,6 +44,8 @@ export type TeachProps = {
   canEditPast: boolean;
   /** Where the attendance screen's back link goes (Manage: the attendance overview). */
   backHref?: string;
+  /** The Sync Center of this experience (Manage-only members can't open `/teach/*`). */
+  syncHref?: string;
   labels: TeachLabels;
 };
 
@@ -143,7 +145,7 @@ function FirstSync() {
 
 /** Offline banner and the sync indicator (UX §12.1), plus the sign-out guard's live count. */
 function StatusLine() {
-  const { engine, labels } = useTeach();
+  const { engine, labels, syncHref = '/teach/sync' } = useTeach();
   const connectivity = useConnectivity(engine.connectivity);
   const status = useSyncStatus(engine.queue, connectivity);
   const now = useNow();
@@ -206,7 +208,7 @@ function StatusLine() {
           {...(detail ? { detail } : {})}
         />
         {status.attention > 0 && (
-          <PlainButton variant="ghost" href="/teach/sync">
+          <PlainButton variant="ghost" href={syncHref}>
             {labels.teach.more.sync}
           </PlainButton>
         )}

@@ -22,11 +22,13 @@ export async function TeachScreen({
   view,
   experience = 'teach',
   backHref,
+  syncHref,
 }: {
   view: TeachView;
   /** Owners and admins take attendance in the Manage experience with the same screen (C-131). */
   experience?: 'teach' | 'manage';
   backHref?: string;
+  syncHref?: string;
 }) {
   const [{ me, academy }, { context }, messages, signOut] = await Promise.all([
     signedInMember({ experience }),
@@ -43,6 +45,7 @@ export async function TeachScreen({
       timeZone={academyTimeZone(context) ?? 'Asia/Kolkata'}
       canEditPast={holds(me, 'attendance.edit_past')}
       {...(backHref ? { backHref } : {})}
+      {...(syncHref ? { syncHref } : {})}
       labels={{
         teach: messages.teach,
         offline: messages.offline,

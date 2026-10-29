@@ -111,6 +111,12 @@ test('teacher takes attendance online and offline; the academy sees it once', as
     await expect(admin.page.getByRole('listitem').filter({ hasText: batch }).first()).toContainText(
       'Taken',
     );
+    // Owners and admins have a Sync Center of their own: `/teach/*` is the teachers' (C-133).
+    await admin.page.goto(hostUrl(testInfo, 'demo-a', '/attendance/sync'));
+    await expect(admin.page.getByRole('heading', { level: 1, name: 'Sync' })).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(admin.page).toHaveURL(/\/attendance\/sync$/);
   } finally {
     await admin.context.close();
   }

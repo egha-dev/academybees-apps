@@ -15,5 +15,12 @@ export async function generateMetadata(): Promise<Metadata> {
  * one code path, online or offline.
  */
 export default function TakeAttendancePage() {
-  return <TeachScreen view="attendance" experience="manage" backHref="/attendance" />;
+  return (
+    <TeachScreen
+      view="attendance"
+      experience="manage"
+      backHref="/attendance"
+      syncHref="/attendance/sync"
+    />
+  );
 }
