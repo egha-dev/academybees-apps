@@ -312,6 +312,26 @@ Each slice: branch `p6/<slice>` from the latest `main` → PR with the DoD check
   - one test each for the lows;
   - E2E: bell shows the nudge.
 
+*As built (S7):*
+- **`modules/notifications`:**
+  - **API:** `GET /notifications` (mine, keyset on id), `GET /notifications/unread`, `POST /notifications/read` (`ids` or `all`), all `@SignedIn()`; each member sees only their own; cross-tenant registry entries.
+  - **Nudge (G-16):** `NotificationsService.nudge` finds classes that ended 30 min to 24 h ago, still SCHEDULED, with no roll call, in an active batch (`SessionsService.endedWithoutRollCall`). It reminds the class's teacher, or the batch's primary teacher: one `ATTENDANCE_NOT_TAKEN` notification per class (dedupe key `attendance-not-taken:<session>`), linking to `/teach/attendance?session=`.
+  - **Scheduling:** the platform scheduler adds an **every-10-minute** job (`attendance-nudges`, audited). It queues one per-academy job per 10-minute slot, run in the API (`AttendanceNudgeProcessor`), which re-checks the academy is ACTIVE.
+- **Web** (flag on):
+  - a **bell** in the top bar (both experiences): the unread count as a number and in its accessible name;
+  - **`/notifications`**: newest first, "New" on unread, Mark all as read;
+  - the text comes from the catalogue by kind.
+  - A Dexie cache of notifications for teachers was **not** built: the list is online, and the nudge's purpose (attendance) works offline.
+- **Phase 5 review lows (C-123), fixed:**
+  - **L1:** `PUT /batches/:id/teachers` takes `version` (409 when stale; the web passes the version from its PATCH);
+  - **L2:** an academy-wide generation run locks the academy's active batch rows first, so a weekly-pattern save can't interleave; the processor skips academies no longer ACTIVE/SETUP;
+  - **L3:** holiday confirm sends `previewedSessionIds`; if the set changed since the preview it's refused, `409 preview_changed` ("Check again"), and the sheet offers the preview again. The Phase 5 holiday E2E re-previews when parallel tests add classes;
+  - **L4:** extra, make-up, moved, cancelled and restored classes record `batch.class_changed` in batch activity (Today's recent list too);
+  - **L5:** a same-day day-plan correction gets the "day not in the batch schedule" check (shared `assertDaysInSchedule`).
+- **Tests:**
+  - integration `notifications.int.spec.ts` (6): nudge once, not too soon, not when taken or cancelled, only the teacher; unread / mark read, other academy isolated; L1, L3, L4, L5;
+  - E2E `notifications.spec.ts` (all projects): bell → list → "New" → Mark all as read; axe.
+
 ### S8 `p6/journey-e2e` — exit journey, flags, docs
 
 - **6.23 Exit E2E:** the teacher journey online and offline on desktop and Android; the online path on iPhone.

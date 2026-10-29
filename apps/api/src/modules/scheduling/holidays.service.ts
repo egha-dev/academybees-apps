@@ -28,6 +28,8 @@ type HolidayInput = {
   endDate: string;
   kind: 'HOLIDAY' | 'CLOSURE';
   branchId?: string | null | undefined;
+  /** On confirm: the classes the preview showed (C-115). */
+  previewedSessionIds?: string[] | undefined;
 };
 
 const HOLIDAY_SELECT = {
@@ -121,6 +123,13 @@ export class HolidaysService {
           throw new DomainError('VALIDATION_FAILED', 'too many classes', [
             { path: 'endDate', issue: 'too_many_sessions' },
           ]);
+        if (input.previewedSessionIds) {
+          const seen = new Set(input.previewedSessionIds);
+          if (seen.size !== affected.length || affected.some((s) => !seen.has(s.id)))
+            throw new DomainError('CONFLICT', 'classes changed since the preview', [
+              { path: 'previewedSessionIds', issue: 'preview_changed' },
+            ]);
+        }
         await tx.holiday.create({
           data: {
             id,

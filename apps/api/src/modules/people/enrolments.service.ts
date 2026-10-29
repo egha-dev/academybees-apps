@@ -243,6 +243,24 @@ export class EnrolmentsService {
   }
 
   /** Change a student's days from a date (C-120): end the current enrolment, start a new one. */
+  /** A day plan may only name days the batch meets (C-120); an empty plan means every day. */
+  private async assertDaysInSchedule(
+    tx: TransactionClient,
+    batchId: string,
+    on: string,
+    weekdays: number[],
+  ) {
+    const loads = await batchLoads(tx, [batchId], on);
+    const meets = loads.get(batchId)!.weekdays;
+    const outside = weekdays.filter((w) => meets.length > 0 && !meets.includes(w));
+    if (outside.length)
+      throw new DomainError(
+        'VALIDATION_FAILED',
+        'day not in the batch schedule',
+        outside.map((w) => ({ path: `weekday.${w}`, issue: 'not_in_schedule' })),
+      );
+  }
+
   async changeDays(
     enrolmentId: string,
     input: { from: string; weekdays: number[]; confirmOverCapacity: boolean },
@@ -251,7 +269,9 @@ export class EnrolmentsService {
       const current = await this.openEnrolment(tx, enrolmentId);
       const batch = await this.batches.find(tx, current.batchId, 'batch.enrol');
       if (input.from <= day(current.startedOn)!) {
-        // Starting the same day it began: just correct the plan (nothing has happened yet).
+        // Starting the same day it began: just correct the plan (nothing has happened yet) —
+        // with the same checks as a new enrolment (Phase 5 review L5).
+        await this.assertDaysInSchedule(tx, batch.id, input.from, input.weekdays);
         await this.assertCapacity(
           tx,
           batch.id,
@@ -385,15 +405,7 @@ export class EnrolmentsService {
       throw new DomainError('CONFLICT', 'already in this batch', [
         { path: 'studentId', issue: 'already_enrolled' },
       ]);
-    const loads = await batchLoads(tx, [input.batchId], input.startedOn);
-    const meets = loads.get(input.batchId)!.weekdays;
-    const outside = input.weekdays.filter((w) => meets.length > 0 && !meets.includes(w));
-    if (outside.length)
-      throw new DomainError(
-        'VALIDATION_FAILED',
-        'day not in the batch schedule',
-        outside.map((w) => ({ path: `weekday.${w}`, issue: 'not_in_schedule' })),
-      );
+    await this.assertDaysInSchedule(tx, input.batchId, input.startedOn, input.weekdays);
     await this.assertCapacity(
       tx,
       input.batchId,

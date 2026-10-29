@@ -271,6 +271,7 @@ export function BatchActions({
       const t = await api<Batch>(`/batches/${batch.id}/teachers`, {
         method: 'PUT',
         body: {
+          version: res.data.version,
           teachers: draft.teacherIds.map((teacherId, i) => ({ teacherId, isPrimary: i === 0 })),
         },
       });

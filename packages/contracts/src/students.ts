@@ -389,6 +389,7 @@ export const ACTIVITY_TYPES = [
   'batch.updated',
   'batch.archived',
   'batch.teachers_changed',
+  'batch.class_changed',
   'enrolment.started',
   'enrolment.days_changed',
   'enrolment.ended',

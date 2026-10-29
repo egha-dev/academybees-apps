@@ -56,12 +56,16 @@ export function AddHolidaySheet({ today, labels }: { today: string; labels: Labe
   });
   function fail(e: Parameters<typeof peopleErrorMessage>[0]) {
     const issue = e.details?.[0]?.issue;
+    // The classes changed since the preview: show the preview button again to look afresh.
+    if (issue === 'preview_changed') setPreview(undefined);
     setError(
       issue === 'too_many_sessions'
         ? h.tooMany
-        : issue === 'in_past'
-          ? h.inPast
-          : peopleErrorMessage(e, labels.errors),
+        : issue === 'preview_changed'
+          ? h.previewChanged
+          : issue === 'in_past'
+            ? h.inPast
+            : peopleErrorMessage(e, labels.errors),
     );
   }
   function close() {
@@ -95,7 +99,11 @@ export function AddHolidaySheet({ today, labels }: { today: string; labels: Labe
     const res = await api<{ cancelled: number }>('/holidays', {
       method: 'POST',
       headers: { 'Idempotency-Key': key },
-      body: body(),
+      // Exactly the classes the preview showed (C-115); a change since is refused, not guessed.
+      body: {
+        ...body(),
+        previewedSessionIds: (preview?.days ?? []).flatMap((d) => d.sessions.map((x) => x.id)),
+      },
     });
     setBusy(false);
     if (!res.ok) return fail(res.error);
