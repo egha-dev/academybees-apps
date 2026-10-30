@@ -1,5 +1,5 @@
 // Part of the Teacher PWA's lazy chunk.
-import { addDays, ATTENDANCE_STATUSES, type AttendanceStatus } from '@academybee/contracts';
+import { ATTENDANCE_STATUSES, type AttendanceStatus } from '@academybee/contracts';
 import type { RollEntry } from '@academybee/sync';
 import { Button } from '@academybee/ui/components/actions';
 import { InlineAlert } from '@academybee/ui/components/alert';
@@ -12,7 +12,10 @@ import { plural, plurals } from '@/components/scheduling/plural';
 import { fill } from '@/lib/fill';
 
 import { useTeach } from '../teach-app';
-import { useLive } from '../use-live';
+import { useLive, useNow } from '../use-live';
+
+/** C-130: teachers change a roll call until 48 h after the class ends. */
+const TEACHER_EDIT_MS = 48 * 3_600_000;
 
 const TONES: Record<AttendanceStatus, string> = {
   PRESENT: 'ab.status.success',
@@ -42,6 +45,7 @@ export function AttendanceView() {
     }),
     [engine, sessionId],
   );
+  const now = useNow();
   const [draft, setDraft] = useState<Record<string, AttendanceStatus>>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -68,13 +72,14 @@ export function AttendanceView() {
     );
 
   const date = today();
-  // The server decides (C-130); this mirrors it so nobody marks a class the server will refuse.
+  // The server decides (C-130); this mirrors it so nobody marks a class the server will refuse:
+  // a change made now must be within 48 h of the class's end (it may sync up to 7 days later).
   const lock =
     cls.status === 'CANCELLED'
       ? a.cancelled
       : cls.date > date
         ? a.notYet
-        : !canEditPast && date > addDays(cls.date, 7)
+        : !canEditPast && now > Date.parse(cls.endsAt) + TEACHER_EDIT_MS
           ? a.closed
           : null;
   const value = (r: RollEntry) => draft[r.student.id] ?? marks[r.student.id];

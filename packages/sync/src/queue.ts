@@ -16,6 +16,8 @@ export type EnqueueInput = {
   payload: unknown;
   baseVersion?: number;
   schemaVersion?: number;
+  /** When the user made the change, if earlier than now (a resend after a conflict, C-130). */
+  clientCreatedAt?: string;
 };
 
 export type QueueCounts = {
@@ -62,7 +64,7 @@ export class SyncQueue {
       entityKey: input.entityKey,
       payload: input.payload,
       ...(input.baseVersion !== undefined ? { baseVersion: input.baseVersion } : {}),
-      clientCreatedAt: new Date(this.now()).toISOString(),
+      clientCreatedAt: input.clientCreatedAt ?? new Date(this.now()).toISOString(),
       deviceId: this.options.deviceId,
       schemaVersion: input.schemaVersion ?? 1,
     });

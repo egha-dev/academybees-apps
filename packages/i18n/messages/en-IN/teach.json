@@ -173,6 +173,7 @@
     "open": "Open",
     "kinds": {
       "ATTENDANCE_NOT_TAKEN": "Attendance not taken for {batch} at {start} on {date}"
-    }
+    },
+    "loadFailed": "We couldn't load your notifications. Check your connection, then reload the page."
   }
 }

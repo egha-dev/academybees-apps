@@ -20,9 +20,10 @@ import type { INestApplication } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import pg from 'pg';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, inject, it, vi } from 'vitest';
 
 import { MembershipService } from '../../src/core/auth/membership.service.js';
+import { SyncService } from '../../src/modules/sync/sync.service.js';
 import { createTestApp } from '../support/test-app.js';
 
 /**
@@ -289,6 +290,48 @@ describe('sync', () => {
     ]);
     const [ok] = await push(teacher, [resolved]);
     expect(ok?.status).toBe('APPLIED');
+  });
+
+  it('a transient failure holds later ops for that class too (review P6-4 H1)', async () => {
+    const cls = await classOn(taught, today(), '19:00', '20:00');
+    const absent = markOp(cls, [{ studentId: students[0], status: 'ABSENT' }]);
+    const corrected = markOp(cls, [{ studentId: students[0], status: 'PRESENT' }]);
+    const service = app.get<SyncService, { one: (op: SyncOp) => unknown }>(SyncService);
+    const real = service.one.bind(service);
+    // The first op fails the way a lock timeout would: unanswered, nothing written.
+    const spy = vi
+      .spyOn(service, 'one')
+      .mockImplementation((op: SyncOp) =>
+        op.opId === absent.opId ? Promise.resolve(null) : real(op),
+      );
+    try {
+      expect(await push(teacher, [absent, corrected])).toEqual([]);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(await attendanceRows(cls)).toHaveLength(0);
+    // Retried in order: the correction lands last and stands.
+    const results = await push(teacher, [absent, corrected]);
+    expect(results.map((r) => r.status)).toEqual(['APPLIED', 'APPLIED']);
+    const [row] = await attendanceRows(cls);
+    expect(row).toMatchObject({ student_id: students[0], status: 'PRESENT' });
+    // Another member sending the same op id gets no one else's result (L6).
+    const [taken] = await push(owner, [corrected]);
+    expect(taken).toMatchObject({ status: 'REJECTED', error: { message: 'op_id_taken' } });
+  });
+
+  it('the 48 h edit window holds for queued changes; changes made in time sync for 7 days (H2)', async () => {
+    const old = await classOn(taught, addDays(today(), -5), '10:00', '11:00');
+    const now = markOp(old, [{ studentId: students[0], status: 'ABSENT' }]);
+    const [late] = await push(teacher, [now]);
+    expect(late).toMatchObject({ status: 'REJECTED', error: { message: 'window_closed' } });
+    // Made offline the day of the class, synced five days later: accepted.
+    const madeThen = {
+      ...markOp(old, [{ studentId: students[1], status: 'ABSENT' }]),
+      clientCreatedAt: new Date(Date.now() - 5 * 86_400_000 + 3_600_000).toISOString(),
+    };
+    const [inTime] = await push(teacher, [madeThen]);
+    expect(inTime?.status).toBe('APPLIED');
   });
 
   it('bootstrap: the teacher’s own working set, basic profiles only; the accountant can’t', async () => {

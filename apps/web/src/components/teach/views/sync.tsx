@@ -178,8 +178,7 @@ export function SyncView() {
         onConfirm={() => {
           const opId = discarding!;
           setDiscarding(null);
-          void engine.queue.discard(opId);
-          void engine.db.attendance.where('opId').equals(opId).delete();
+          void engine.client.discardChange(opId).then(() => engine.pull());
         }}
       />
     </Stack>
@@ -217,7 +216,9 @@ function AttentionItem({
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               <PlainButton
                 variant="secondary"
-                onClick={() => void engine.queue.retryNow(item.opId).then(() => engine.schedule())}
+                onClick={() =>
+                  void engine.client.retryRefused(item.opId).then(() => engine.schedule())
+                }
               >
                 {s.retry}
               </PlainButton>

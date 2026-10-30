@@ -11,7 +11,7 @@ import {
   type SessionAttendance,
 } from '@academybee/contracts';
 import type { Prisma, TenantBoundClient, TransactionClient } from '@academybee/database';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
 import { AnalyticsService } from '../../core/analytics/analytics.service.js';
@@ -54,7 +54,12 @@ const emptyCounts = (): AttendanceCounts => ({
   unmarked: 0,
 });
 
-export type MarkSource = { source: 'online' | 'sync'; opId?: string | undefined };
+export type MarkSource = {
+  source: 'online' | 'sync';
+  opId?: string | undefined;
+  /** When the device made a queued change (C-130); defaults to now. */
+  madeAt?: Date | undefined;
+};
 export type MarkResult =
   | {
       status: 'APPLIED';
@@ -89,8 +94,13 @@ function expectedIds(spans: readonly EnrolmentSpan[], date: string): Set<string>
  * from 7P) and the class completed on its first roll call. The REST API and the sync queue both
  * come through `markSession`.
  */
+/** The most marks one snapshot carries (a month of a large academy's roll calls). */
+const SYNC_ATTENDANCE_CAP = 20_000;
+
 @Injectable()
 export class AttendanceService {
+  private readonly logger = new Logger(AttendanceService.name);
+
   constructor(
     @Inject(TENANT_DB) private readonly db: TenantBoundClient,
     private readonly cls: ClsService<RequestContext>,
@@ -189,21 +199,19 @@ export class AttendanceService {
     const { timeZone, today } = await this.sessions.zone(tx);
     const session = await this.sessions.forAttendance(tx, sessionId, 'attendance.mark');
     const date = day(session.sessionDate);
+    // One roll call at a time per class: the class row stays locked until commit, so concurrent
+    // saves (two devices, retries) run one after the other, and the status is read under the
+    // lock, so a class cancelled meanwhile is refused (review P6-4 M1).
+    const status = await this.sessions.lockForRollCall(tx, sessionId);
     const lock = lockFor(
-      { status: session.status, date, endsAt: session.endsAt },
+      { status, date, endsAt: session.endsAt },
       { now: new Date(), today, timeZone },
-      { source: from.source, canEditPast: this.canEditPast() },
+      { source: from.source, canEditPast: this.canEditPast(), madeAt: from.madeAt },
     );
     if (lock)
       throw new DomainError('INVALID_STATE_TRANSITION', `attendance ${lock}`, [
         { path: 'session', issue: lock },
       ]);
-    // One roll call at a time per class: updating the class row locks it until commit, so
-    // concurrent saves (two devices, retries) run one after the other.
-    await tx.classSession.updateMany({
-      where: { id: sessionId },
-      data: { updatedAt: new Date() },
-    });
     const [expected, existing] = await Promise.all([
       this.enrolments.expectedOn(tx, session.batchId, date),
       tx.attendance.findMany({ where: { sessionId }, select: MARK_SELECT }),
@@ -383,8 +391,10 @@ export class AttendanceService {
           ? { updatedAt: { gt: new Date(input.since.getTime() - 5_000) } }
           : { sessionDate: { gte: at(input.fromDate) } }),
       },
-      orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
-      take: 20_000,
+      // Newest first: if the cap is ever reached, the oldest days are the ones left out (and it
+      // is logged, never silent). Paging the snapshot comes with larger academies (P6-4 M4).
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      take: SYNC_ATTENDANCE_CAP,
       select: {
         id: true,
         sessionId: true,
@@ -396,6 +406,11 @@ export class AttendanceService {
         updatedAt: true,
       },
     });
+    if (rows.length === SYNC_ATTENDANCE_CAP)
+      this.logger.warn(
+        { metric: 'sync.cap_reached', table: 'attendance', cap: SYNC_ATTENDANCE_CAP },
+        'Sync snapshot truncated',
+      );
     return rows.map((r) => ({
       ...r,
       markedAt: r.markedAt.toISOString(),

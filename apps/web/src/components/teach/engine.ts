@@ -92,18 +92,28 @@ async function startEngine(engine: SyncEngine) {
   void engine.beacon();
 }
 
-/** Cache the teacher screens so they open offline next time (C-124). */
+const SHELLS = [
+  '/teach',
+  '/teach/classes',
+  '/teach/attendance',
+  '/teach/students',
+  '/teach/sync',
+  '/teach/more',
+];
+
+/**
+ * Cache the teacher screens so they open offline next time (C-124). Only real screens: a page
+ * that redirected (to sign-in, or a Manage member's home) is never stored as one (P6-4 M6).
+ */
 export async function warmShells(): Promise<void> {
   try {
     const cache = await caches.open('ab-teach-shell');
-    await cache.addAll([
-      '/teach',
-      '/teach/classes',
-      '/teach/attendance',
-      '/teach/students',
-      '/teach/sync',
-      '/teach/more',
-    ]);
+    await Promise.all(
+      SHELLS.map(async (path) => {
+        const res = await fetch(path, { credentials: 'same-origin' });
+        if (res.ok && !res.redirected) await cache.put(path, res);
+      }),
+    );
   } catch {
     // Offline or no Cache Storage: the screens are cached as they are opened instead.
   }

@@ -28,10 +28,13 @@ export type SessionGuardLabels = {
 export function SessionGuard({
   labels,
   identifier,
+  userId,
   expired = false,
 }: {
   labels: SessionGuardLabels;
   identifier: string;
+  /** Whose offline data "Sign out instead" deletes (after asking about unsynced work). */
+  userId?: string | undefined;
   expired?: boolean;
 }) {
   const router = useRouter();
@@ -54,6 +57,7 @@ export function SessionGuard({
       <SessionLostDialog
         labels={labels}
         identifier={identifier}
+        userId={userId}
         onSignedIn={() => {
           setLost(false);
           router.refresh();

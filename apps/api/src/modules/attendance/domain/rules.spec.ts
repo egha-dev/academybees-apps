@@ -58,11 +58,24 @@ describe('windows (C-130)', () => {
   it('offline changes are accepted until the end of the 7th day after the class date', () => {
     // End of 2026-10-12 IST = 2026-10-12T18:30Z.
     expect(editableUntil(session, 'sync', tz).toISOString()).toBe('2026-10-12T18:30:00.000Z');
-    const synced = { source: 'sync' as const, canEditPast: false };
+    // Made offline within the 48 h, synced days later: accepted until the 7th day ends.
+    const synced = {
+      source: 'sync' as const,
+      canEditPast: false,
+      madeAt: new Date('2026-10-06T09:00:00Z'),
+    };
     expect(lockFor(session, at('2026-10-12T18:00:00Z', '2026-10-12'), synced)).toBeNull();
     expect(lockFor(session, at('2026-10-12T19:00:00Z', '2026-10-13'), synced)).toBe(
       'window_closed',
     );
+  });
+  it('a queued change made after the 48 h is refused, even when it arrives at once (H2)', () => {
+    const late = { source: 'sync' as const, canEditPast: false };
+    // Made (and sent) on day 5: the device was online, so the 48 h window applies.
+    expect(lockFor(session, at('2026-10-10T09:00:00Z', '2026-10-10'), late)).toBe('window_closed');
+    // A device clock in the future never counts as later than the server received it.
+    const future = { ...late, madeAt: new Date('2030-01-01T00:00:00Z') };
+    expect(lockFor(session, at('2026-10-06T09:00:00Z', '2026-10-06'), future)).toBeNull();
   });
   it('edit_past lifts the window; cancelled and future classes stay locked', () => {
     const owner = { source: 'online' as const, canEditPast: true };

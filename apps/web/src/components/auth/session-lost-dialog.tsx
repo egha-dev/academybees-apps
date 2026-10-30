@@ -10,10 +10,12 @@ import { SignOutButton } from './sign-out-button';
 export default function SessionLostDialog({
   labels,
   identifier,
+  userId,
   onSignedIn,
 }: {
   labels: SessionGuardLabels;
   identifier: string;
+  userId?: string | undefined;
   onSignedIn: () => void;
 }) {
   return (
@@ -22,6 +24,7 @@ export default function SessionLostDialog({
       <SignOutButton
         labels={{ ...labels.signOut, signOut: labels.signOutInstead }}
         variant="ghost"
+        userId={userId}
       />
     </FormDialog>
   );

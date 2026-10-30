@@ -201,6 +201,56 @@ describe('SyncClient', () => {
     });
   });
 
+  it('Try again sends a refused roll call as a new op, keeping when it was made (P6-4 M2)', async () => {
+    const { client, queue, db } = setup();
+    await client.applySnapshot(snapshot());
+    const bad = await client.markSession(SESSION, [{ studentId: S2, status: 'ABSENT' }]);
+    const refused: SyncOpResult = {
+      opId: bad,
+      status: 'REJECTED',
+      error: { code: 'NOT_FOUND', message: 'not_found' },
+    };
+    await queue.applyResult(refused);
+    await client.onResult(refused);
+    const madeAt = (await queue.get(bad))!.clientCreatedAt;
+    const next = await client.retryRefused(bad);
+    expect(next).not.toBe(bad);
+    expect(await queue.get(bad)).toBeUndefined();
+    expect(await queue.get(next)).toMatchObject({ status: 'pending', clientCreatedAt: madeAt });
+    expect(await db.attendance.get(attendanceKey(SESSION, S2))).toMatchObject({
+      status: 'ABSENT',
+      syncState: 'pending',
+      opId: next,
+    });
+  });
+
+  it('Discard drops the change; a mark the academy held comes back with the next pull (M3)', async () => {
+    const { client, queue, db } = setup();
+    const serverId = newId();
+    await client.applySnapshot(
+      snapshot({
+        attendance: [
+          {
+            id: serverId,
+            sessionId: SESSION,
+            studentId: S1,
+            status: 'PRESENT',
+            note: null,
+            version: 2,
+            markedAt: '2026-10-21T12:40:00.000Z',
+            updatedAt: '2026-10-21T12:40:00.000Z',
+          },
+        ],
+      }),
+    );
+    const op = await client.markSession(SESSION, [{ studentId: S1, status: 'ABSENT' }]);
+    await client.discardChange(op);
+    expect(await queue.get(op)).toBeUndefined();
+    expect(await db.attendance.get(attendanceKey(SESSION, S1))).toBeUndefined();
+    // No watermark: the next pull is a full download, which brings back PRESENT.
+    expect(await client.watermark()).toBeNull();
+  });
+
   it('a conflict is resolved per student: keep mine resends on their version, theirs takes it', async () => {
     const { client, queue, db } = setup();
     await client.applySnapshot(snapshot());
