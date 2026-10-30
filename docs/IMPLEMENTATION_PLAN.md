@@ -840,7 +840,7 @@ Phase 2 is **not** started.
   - the `main` run for S8 started at 22:46 IST and **skipped 80 tests**, the offline suite and the exit journey among them: they needed a class "later today". The helper now makes an earlier class near midnight, and `teacher-pwa` uses that path every run;
   - the planned analytics `sync.conflict_resolved` and a notification event were missing; now emitted, with tests;
   - the real-phone runbook now follows Part F (25 students, 30 seconds, the 30-minute nudge).
-- **Staging:** `health/live` reports release `192fcf4`; database and Redis are up; the Phase 6 service worker and routes are served. **But the last two "Deploy staging" runs failed with "Invalid RAILWAY_TOKEN"** after migrating: the services were deployed another way. The token needs renewing before the next merge deploys by itself (PO, `staging-variables.md` §G).
+- **Staging:** `health/live` reports release `192fcf4`; database and Redis are up; the Phase 6 service worker and routes are served. **But the last two "Deploy staging" runs failed with "Invalid RAILWAY_TOKEN"** after migrating, yet staging serves `192fcf4`: the workflow did not deploy it, and how it got there is unverified (a manual deploy or a Railway GitHub link?). The token needs renewing before the next merge deploys by itself (PO, `staging-variables.md` §G).
 - **Open for the PO:**
   - the real-phone test (`docs/runbooks/phase-6-real-phones.md`);
   - Part F's "an absent student creates a notification (visible to the owner now)": absence and late notices are **stored** for parents (C-128) but **not shown to staff** anywhere, which matches this plan's scope ("stored; parents see them from 7P"). Your call: accept as stored, or add a staff view.
