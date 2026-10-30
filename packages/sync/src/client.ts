@@ -207,6 +207,8 @@ export class SyncClient {
     sessionId: string,
     marks: MarkInput[],
     bases: Record<string, number | undefined> = {},
+    /** A resend keeps when the user first made the change (C-130's 48 h window). */
+    madeAt?: string,
   ): Promise<string> {
     const db = this.db;
     return db.transaction('rw', [db.attendance, db.syncQueue, db.syncLog], async () => {
@@ -226,6 +228,7 @@ export class SyncClient {
         entityKey: `session:${sessionId}`,
         payload: { sessionId, marks: payloadMarks },
         schemaVersion: SYNC_SCHEMA_VERSION,
+        ...(madeAt ? { clientCreatedAt: madeAt } : {}),
       });
       await db.attendance.bulkPut(
         marks.map((m, i) => ({
@@ -323,6 +326,13 @@ export class SyncClient {
     for (const m of payload.data.marks) {
       const theirs = server.get(m.studentId);
       if (theirs && (choices[m.studentId] ?? 'mine') === 'theirs') {
+        const key = attendanceKey(payload.data.sessionId, m.studentId);
+        const now = await db.attendance.get(key);
+        if (now && now.opId && now.opId !== opId) {
+          // A newer change of this device rides on a later op: keep it, on their version.
+          await db.attendance.update(key, { id: theirs.id, serverVersion: theirs.version });
+          continue;
+        }
         await db.attendance.put({
           key: attendanceKey(payload.data.sessionId, m.studentId),
           id: theirs.id,
@@ -346,11 +356,45 @@ export class SyncClient {
     }
     // Queue the new op before dropping the old one, so the device never looks synced in between.
     const next = resend.length
-      ? await this.markSession(payload.data.sessionId, resend, bases)
+      ? await this.markSession(payload.data.sessionId, resend, bases, item.clientCreatedAt)
       : null;
     await this.options.queue.discard(opId);
     await this.countResolved(choices, [...server.keys()]);
     return next;
+  }
+
+  /**
+   * Try a refused roll call again (Sync Center → Try again, review P6-4 M2): the server keeps
+   * its answer for an op id, so the marks go as a new op on the latest versions — keeping when
+   * the user made them (C-130) — and the old one is dropped only once the new one is queued.
+   */
+  async retryRefused(opId: string): Promise<string> {
+    const item = await this.db.syncQueue.get(opId);
+    const payload = MarkSessionOpSchema.safeParse(item?.payload);
+    if (!item || item.status !== 'failed' || !payload.success) throw new Error('not refused');
+    const marks: MarkInput[] = payload.data.marks.map((m) => ({
+      studentId: m.studentId,
+      status: m.status,
+      ...(m.note !== undefined ? { note: m.note } : {}),
+    }));
+    const next = await this.markSession(payload.data.sessionId, marks, {}, item.clientCreatedAt);
+    await this.options.queue.discard(opId);
+    return next;
+  }
+
+  /**
+   * Discard a change after the user confirmed (review P6-4 M3): the queued op and the marks it
+   * carries go, and if the academy held marks for those students the next pull downloads the
+   * whole working set again, so its values come back instead of showing "not marked".
+   */
+  async discardChange(opId: string): Promise<void> {
+    const db = this.db;
+    await db.transaction('rw', [db.attendance, db.syncQueue, db.syncLog, db.meta], async () => {
+      await this.options.queue.discard(opId);
+      const rows = await db.attendance.where('opId').equals(opId).toArray();
+      await db.attendance.bulkDelete(rows.map((r) => r.key));
+      if (rows.some((r) => r.id)) await db.meta.delete('watermark');
+    });
   }
 
   /** Tally conflict choices for the next beacon (analytics, counts only). */

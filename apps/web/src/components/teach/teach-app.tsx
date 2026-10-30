@@ -44,6 +44,8 @@ export type TeachProps = {
   canEditPast: boolean;
   /** Where the attendance screen's back link goes (Manage: the attendance overview). */
   backHref?: string;
+  /** Where the screen runs: the Teacher PWA, or Manage (owners and admins, C-131). */
+  experience?: 'teach' | 'manage';
   /** The Sync Center of this experience (Manage-only members can't open `/teach/*`). */
   syncHref?: string;
   labels: TeachLabels;
@@ -77,9 +79,12 @@ export function TeachApp(props: TeachProps) {
   const [, setTick] = useState(0);
   useEffect(() => onEngineChange(() => setTick((n) => n + 1)), []);
   const ready = useLive(() => engine.local.ready(), [engine]);
+  // Teachers' screens only: owners and admins on the Manage attendance screen can't open
+  // `/teach/*` (C-133, review P6-4 M6).
+  const teach = props.experience !== 'manage';
   useEffect(() => {
-    if (ready) void warmShells();
-  }, [ready]);
+    if (ready && teach) void warmShells();
+  }, [ready, teach]);
   const ctx: Ctx = {
     ...props,
     engine,

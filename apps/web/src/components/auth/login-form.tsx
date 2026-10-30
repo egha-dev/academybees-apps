@@ -8,6 +8,7 @@ import { Stack } from '@academybee/ui/components/layout';
 import { type FormEvent, useState } from 'react';
 
 import { api } from '@/lib/api';
+import { clearShellCaches } from '@/lib/unsynced';
 import { useHydrated } from '@/lib/use-hydrated';
 import { useOnline } from '@/lib/use-online';
 
@@ -83,6 +84,9 @@ export function LoginForm({
       setError(labels.errors.generic);
       return;
     }
+    // Anyone may be signing in (not the same user confirming a lost session): cached teacher
+    // screens of whoever used this device before must go (review P6-4 M7).
+    if (data && !(onSignedIn && defaultIdentifier)) await clearShellCaches();
     if (data && 'mfa' in data) {
       setBusy(false);
       if (onMfa) onMfa(data.mfa);

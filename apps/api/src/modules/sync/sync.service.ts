@@ -46,6 +46,17 @@ const ATTENDANCE_DAYS = 30;
  * later ones for that entity in the batch get no answer and stay queued on the device. Pull and
  * bootstrap send the caller's small working set whole, plus attendance changes.
  */
+
+/**
+ * When the device says the change was made (C-130, review P6-4 H2): its clock is a claim, so it
+ * never counts as later than the server received it; the 7-day cap on arrival still holds.
+ */
+function madeAt(op: SyncOp): Date {
+  const claimed = new Date(op.clientCreatedAt);
+  const now = new Date();
+  return Number.isNaN(claimed.getTime()) || claimed > now ? now : claimed;
+}
+
 @Injectable()
 export class SyncService {
   private readonly logger = new Logger(SyncService.name);
@@ -69,6 +80,7 @@ export class SyncService {
             await this.attendance.markSessionIn(tx, p.sessionId, p, {
               source: 'sync',
               opId: op.opId,
+              madeAt: madeAt(op),
             }),
           ),
       }),
@@ -81,7 +93,7 @@ export class SyncService {
               tx,
               p.sessionId,
               { marks: [p.mark] },
-              { source: 'sync', opId: op.opId },
+              { source: 'sync', opId: op.opId, madeAt: madeAt(op) },
             ),
           ),
       }),
@@ -101,7 +113,12 @@ export class SyncService {
     for (const op of ops) {
       if (held.has(op.entityKey)) continue; // unanswered: the device retries it later, in order
       const result = await this.one(op);
-      if (!result) continue; // a transient failure: unanswered, retried
+      if (!result) {
+        // A transient failure: unanswered and retried — and later ops for this class wait, so a
+        // correction never lands before the change it corrects (review P6-4 H1).
+        held.add(op.entityKey);
+        continue;
+      }
       results.push(result);
       if (result.status === 'REJECTED' || result.status === 'CONFLICT') held.add(op.entityKey);
     }
@@ -119,12 +136,19 @@ export class SyncService {
   }
 
   private async stored(opId: string): Promise<SyncOpResult | null> {
-    const { tenantId } = this.who();
+    const { tenantId, membershipId } = this.who();
     const row = await this.db.syncOperation.findUnique({
       where: { tenantId_opId: { tenantId, opId } },
-      select: { status: true, result: true },
+      select: { status: true, result: true, membershipId: true },
     });
     if (!row) return null;
+    // Someone else's op id: never their result (review P6-4 L6).
+    if (row.membershipId !== membershipId)
+      return {
+        opId,
+        status: 'REJECTED',
+        error: { code: 'VALIDATION_FAILED', message: 'op_id_taken' },
+      };
     const result = row.result as unknown as SyncOpResult;
     // A resent applied op is DUPLICATE (already done); a rejection or conflict repeats as is.
     return { ...result, opId, status: row.status === 'APPLIED' ? 'DUPLICATE' : row.status };

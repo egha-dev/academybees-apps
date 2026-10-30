@@ -1,5 +1,6 @@
 import { NotificationPageSchema } from '@academybee/contracts';
 import { formatDate, formatTime } from '@academybee/i18n';
+import { InlineAlert } from '@academybee/ui/components/alert';
 import { StatusBadge } from '@academybee/ui/components/display';
 import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
@@ -21,14 +22,27 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /** My notifications at this academy (C-04): newest first, unread marked "New". */
 export default async function NotificationsPage() {
-  const [{ academy }, { context }, t] = await Promise.all([
+  const [{ me, academy }, { context }, t] = await Promise.all([
     signedInMember(),
     hostContext(),
     getTranslations('teach.notifications'),
   ]);
   const res = await apiServerGet('/notifications?limit=50');
-  if (!res.ok) throw new Error(`notifications ${res.status}`);
+  if (!res.ok)
+    return (
+      <Stack spacing={4}>
+        <PageHeader title={t('title')} body={t('body', { academy })} />
+        <InlineAlert tone="danger">{t('loadFailed')}</InlineAlert>
+      </Stack>
+    );
   const page = NotificationPageSchema.parse(await res.json());
+  // Owners and admins who also teach take attendance in Manage: `/teach/*` is the teachers'
+  // experience (C-133, review P6-4 M5).
+  const teaches = me.academy.experiences.includes('teach');
+  const hrefOf = (link: string) =>
+    !teaches && link.startsWith('/teach/attendance?')
+      ? link.replace('/teach/attendance?', '/attendance/take?')
+      : link;
   const timeZone = academyTimeZone(context) ?? 'Asia/Kolkata';
   const unread = page.items.some((n) => !n.readAt);
   return (
@@ -73,7 +87,7 @@ export default async function NotificationsPage() {
                   {n.link ? (
                     <Box
                       component="a"
-                      href={n.link}
+                      href={hrefOf(n.link)}
                       sx={{ color: 'ab.textPrimary', fontWeight: 600 }}
                     >
                       {text}

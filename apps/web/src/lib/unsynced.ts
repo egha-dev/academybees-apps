@@ -83,6 +83,19 @@ export async function countUnsynced(userId: string): Promise<number> {
 const SHELL_CACHES = ['ab-teach-shell'];
 
 /**
+ * A new sign-in on this device: drop cached teacher screens, which carry the previous user's
+ * id, so they are never served offline to someone else (review P6-4 M7). The new user's own
+ * screens are cached again as they open them.
+ */
+export async function clearShellCaches(): Promise<void> {
+  try {
+    await Promise.all(SHELL_CACHES.map((name) => caches.delete(name)));
+  } catch {
+    // Cache Storage may be unavailable (private mode); nothing cached then.
+  }
+}
+
+/**
  * After signing out: delete this user's offline database and cached teacher screens
  * (ARCHITECTURE §11.7). No Dexie needed: the database is deleted by name.
  */

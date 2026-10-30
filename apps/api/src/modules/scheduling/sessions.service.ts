@@ -83,6 +83,14 @@ const at = (d: string) => new Date(`${d}T00:00:00Z`);
  * movable. Every change by staff sets `modifiedAt`, so weekly-pattern edits never overwrite it
  * (C-113). Times are academy-local in the API, stored as UTC instants (C-119).
  */
+
+/** Who a G-16 reminder can go to: the teacher's member account, if both are active. */
+const REMINDABLE = {
+  membershipId: true,
+  status: true,
+  membership: { select: { status: true } },
+} as const;
+
 @Injectable()
 export class SessionsService {
   constructor(
@@ -135,24 +143,28 @@ export class SessionsService {
         id: true,
         startsAt: true,
         tenantId: true,
-        teacher: { select: { membershipId: true } },
+        teacher: { select: REMINDABLE },
         batch: {
           select: {
             name: true,
-            teachers: {
-              where: { isPrimary: true },
-              select: { teacher: { select: { membershipId: true } } },
-            },
+            teachers: { where: { isPrimary: true }, select: { teacher: { select: REMINDABLE } } },
           },
         },
       },
     });
+    // Only an active teacher with an active membership is reminded (review P6-4 L5).
+    const who = (
+      t:
+        | { membershipId: string | null; status: string; membership: { status: string } | null }
+        | null
+        | undefined,
+    ) => (t && t.status === 'ACTIVE' && t.membership?.status === 'ACTIVE' ? t.membershipId : null);
     return rows.map((r) => ({
       id: r.id,
       tenantId: r.tenantId,
       startsAt: r.startsAt,
       batchName: r.batch.name,
-      remind: r.teacher?.membershipId ?? r.batch.teachers[0]?.teacher.membershipId ?? null,
+      remind: who(r.teacher) ?? who(r.batch.teachers[0]?.teacher),
     }));
   }
 
@@ -160,8 +172,20 @@ export class SessionsService {
   async markCompleted(tx: Pick<TransactionClient, 'classSession'>, id: string) {
     await tx.classSession.updateMany({
       where: { id, status: 'SCHEDULED' },
-      data: { status: 'COMPLETED' },
+      // A new version, so an edit made from the old one (cancel, move) is a conflict (P6-4 M1).
+      data: { status: 'COMPLETED', version: { increment: 1 } },
     });
+  }
+
+  /**
+   * Take the class row's lock for a roll call and return its status as of now: a cancel that
+   * committed meanwhile is seen, and one that comes later waits and then finds it completed.
+   */
+  async lockForRollCall(tx: Pick<TransactionClient, 'classSession'>, id: string) {
+    await tx.classSession.updateMany({ where: { id }, data: { updatedAt: new Date() } });
+    const row = await tx.classSession.findFirst({ where: { id }, select: { status: true } });
+    if (!row) throw new DomainError('NOT_FOUND', 'session');
+    return row.status;
   }
 
   async zone(db: Pick<TransactionClient, 'tenant'> = this.db) {
@@ -332,7 +356,7 @@ export class SessionsService {
           { path: 'date', issue: 'in_past' },
         ]);
       const updated = await tx.classSession.updateMany({
-        where: { id, version: input.version },
+        where: { id, version: input.version, status: row.status },
         data: {
           sessionDate: at(date),
           startsAt,
@@ -363,8 +387,9 @@ export class SessionsService {
         throw new DomainError('INVALID_STATE_TRANSITION', `session ${row.status}`, [
           { path: 'status', issue: row.status.toLowerCase() },
         ]);
+      // Status too: a roll call saved meanwhile completes the class, and that wins (P6-4 M1).
       const updated = await tx.classSession.updateMany({
-        where: { id, version: input.version },
+        where: { id, version: input.version, status: 'SCHEDULED' },
         data: {
           status: 'CANCELLED',
           cancelReason: input.reason,
@@ -394,7 +419,7 @@ export class SessionsService {
           { path: 'holiday', issue: 'remove_holiday' },
         ]);
       const updated = await tx.classSession.updateMany({
-        where: { id, version: input.version },
+        where: { id, version: input.version, status: 'CANCELLED' },
         data: {
           status: 'SCHEDULED',
           cancelReason: null,

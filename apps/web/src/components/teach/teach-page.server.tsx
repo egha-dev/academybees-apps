@@ -46,6 +46,7 @@ export async function TeachScreen({
       canEditPast={holds(me, 'attendance.edit_past')}
       {...(backHref ? { backHref } : {})}
       {...(syncHref ? { syncHref } : {})}
+      experience={experience}
       labels={{
         teach: messages.teach,
         offline: messages.offline,

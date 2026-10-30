@@ -776,7 +776,8 @@ Ops sharing an `entityKey` are processed in order; if one is `CONFLICT`/`REJECTE
 
 *As built (Phase 6):*
 - **Ops:** `attendance.markSession` (a whole roll call, **atomic**, with a `baseVersion` per student, C-126) and `attendance.update`, registered in `modules/sync` and applied by `AttendanceService.markSessionIn(tx)` with the ledger row in the same transaction. Offline ops are accepted until 7 days after the class (C-130).
-- **Order:** there is no `BLOCKED` status. After a `CONFLICT`/`REJECTED`, later ops for that `entityKey` in the batch get **no answer**; the client retries unanswered ops and holds the key itself. A rejection or conflict repeats as stored when the op is resent.
+- **Order:** there is no `BLOCKED` status. After a `CONFLICT`/`REJECTED` **or a transient failure**, later ops for that `entityKey` in the batch get **no answer**; the client retries unanswered ops and holds the key itself. A rejection or conflict repeats as stored when the op is resent (and Try again sends a new op, C-135). An op id already used by another member is refused (`op_id_taken`).
+- **Windows (C-130, C-135):** a queued change must be **made** within 48 h of the class's end (`clientCreatedAt`, never later than receipt) and **arrive** within 7 days of the class date. The roll call reads the class status under the class-row lock, so a cancel and a roll call never both win.
 - **Snapshots:** bootstrap and pull both return the caller's **whole small working set** (scope from the member's roles, no `scope` parameter). Anything missing is gone (**removal by absence**, no tombstones). Attendance is the last 30 days on bootstrap or after an old watermark (`attendanceComplete`), otherwise changes since the watermark (5 s skew).
 - **Revocation** answers **`401 MEMBERSHIP_REVOKED`** (not 403): the device wipes its data.
 - `POST /sync/beacon` reports queue size and age; pino `metric: sync.push` / `sync.queue`.

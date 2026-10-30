@@ -66,7 +66,15 @@ const serwist = new Serwist({
         networkTimeoutSeconds: 3,
         // One cached screen serves every `?session=` (the data comes from the device).
         matchOptions: { ignoreSearch: true },
-        plugins: [new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 30 * DAY })],
+        plugins: [
+          // Only the screens themselves: never a redirect (sign-in, another experience's home)
+          // or an error page (review P6-4 M6).
+          {
+            cacheWillUpdate: ({ response }) =>
+              Promise.resolve(response.ok && !response.redirected ? response : null),
+          },
+          new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 30 * DAY }),
+        ],
       }),
     },
     { matcher: ({ request }) => request.mode === 'navigate', handler: new NetworkOnly() },

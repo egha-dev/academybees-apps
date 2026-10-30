@@ -75,14 +75,14 @@ export default async function SignedInLayout({ children }: { children: ReactNode
     redirect(`/legal?next=${encodeURIComponent(path)}`);
 
   const experience = experienceFor(path, me);
-  const [guard, terminology, quickT, bellT] = await Promise.all([
+  // The bell's unread count (C-04) loads with the rest, not after it (review P6-4 L7).
+  const [guard, terminology, quickT, bellT, unreadRes] = await Promise.all([
     sessionGuardLabels(),
     academyTerms(),
     getTranslations('people.palette.quick'),
     getTranslations('teach.notifications'),
+    apiServerGet('/notifications/unread'),
   ]);
-  // Phase 6: the bell with my unread count (C-04).
-  const unreadRes = await apiServerGet('/notifications/unread');
   const unread = unreadRes.ok ? ((await unreadRes.json()) as { count: number }).count : 0;
   const terms = await termsFor(terminology);
   const nav = await navigationFor(me, experience, { terms: terminology });
@@ -152,7 +152,11 @@ export default async function SignedInLayout({ children }: { children: ReactNode
       }
     >
       <TermsProvider terms={terms}>{children}</TermsProvider>
-      <SessionGuard labels={guard} identifier={me.user.email ?? me.user.phone ?? ''} />
+      <SessionGuard
+        labels={guard}
+        identifier={me.user.email ?? me.user.phone ?? ''}
+        userId={me.user.id}
+      />
     </AcademyShell>
   );
 }

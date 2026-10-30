@@ -356,6 +356,38 @@ describe('attendance', () => {
     );
   });
 
+  it('a roll call and a cancel at the same moment: never a cancelled class with marks (P6-4 M1)', async () => {
+    for (let i = 0; i < 8; i++) {
+      const id = await classOn(taughtBatch, today(), '20:00', '21:00');
+      const { rows } = await su.query<{ version: number }>(
+        'SELECT version FROM class_session WHERE id = $1',
+        [id],
+      );
+      const [saved, cancelled] = await Promise.all([
+        send(owner, 'put', `/sessions/${id}/attendance`, marks('ABSENT')),
+        send(owner, 'post', `/sessions/${id}/cancel`, {
+          version: rows[0]!.version,
+          reason: 'OTHER',
+        }),
+      ]);
+      // Exactly one wins; the other is refused.
+      expect([saved.status, cancelled.status].filter((x) => x === 200 || x === 201)).toHaveLength(
+        1,
+      );
+      const { rows: after } = await su.query<{ status: string; marks: number; intents: number }>(
+        `SELECT s.status,
+                (SELECT count(*)::int FROM attendance WHERE session_id = s.id) AS marks,
+                (SELECT count(*)::int FROM notification_intent
+                  WHERE session_id = s.id AND status = 'PENDING') AS intents
+           FROM class_session s WHERE s.id = $1`,
+        [id],
+      );
+      if (after[0]!.status === 'CANCELLED')
+        expect(after[0]).toMatchObject({ marks: 0, intents: 0 });
+      else expect(after[0]!.status).toBe('COMPLETED');
+    }
+  });
+
   it('history and percentages: a student by month, a batch over a range, the day’s overview', async () => {
     const day1 = await classOn(otherBatch, addDays(today(), -2), '07:00', '08:00');
     const day2 = await classOn(otherBatch, addDays(today(), -1), '07:00', '08:00');

@@ -54,16 +54,25 @@ export function editableUntil(
   return offline > edit ? offline : edit;
 }
 
-/** Why the caller can't change this roll call now, or null (C-129, C-130). */
+/**
+ * Why the caller can't change this roll call now, or null (C-129, C-130). A queued change
+ * (`sync`) must have been **made** within the 48 h edit window (`madeAt`, the device's time,
+ * never later than now) and **arrive** within the 7-day offline window.
+ */
 export function lockFor(
   session: { status: string; date: string; endsAt: Date },
   at: { now: Date; today: string; timeZone: string },
-  options: { source: 'online' | 'sync'; canEditPast: boolean },
+  options: { source: 'online' | 'sync'; canEditPast: boolean; madeAt?: Date | undefined },
 ): AttendanceLock | null {
   if (session.status === 'CANCELLED') return 'cancelled';
   if (session.date > at.today) return 'not_yet';
   if (options.canEditPast) return null;
-  return at.now > editableUntil(session, options.source, at.timeZone) ? 'window_closed' : null;
+  const edit = editableUntil(session, 'online', at.timeZone);
+  if (options.source === 'online') return at.now > edit ? 'window_closed' : null;
+  const made = options.madeAt && options.madeAt < at.now ? options.madeAt : at.now;
+  return at.now > editableUntil(session, 'sync', at.timeZone) || made > edit
+    ? 'window_closed'
+    : null;
 }
 
 /** Present and Late count as attended; Leave is left out (an informed absence). */
