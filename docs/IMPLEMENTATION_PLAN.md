@@ -806,7 +806,8 @@ Phase 2 is **not** started.
 | S6 | `p6/manage-attendance` | 6.17 Owner Today, 6.18 overview + Batch/Student 360 tabs, 6.19 seeds | ✅ #94 |
 | S7 | `p6/notifications` | 6.20 notification centre, 6.21 G-16 nudge, 6.22 Phase 5 review lows L1–L5 | ✅ #95 |
 | S8 | `p6/journey-e2e` | 6.23 exit E2E, 6.24 flag removal + docs + real-phone checklist; Phase 0 review M5/L8 (sync runner) | ✅ #96 |
-| Gate | `p6/gate` | P6-3 fixes: E2E never skips near midnight, missing analytics events (C-134), runbook aligned with Part F | 🟨 PR |
+| Gate | `p6/gate` | P6-3 fixes: E2E never skips near midnight, missing analytics events (C-134), runbook aligned with Part F | ✅ #97 |
+| Review | `p6/review` | P6-4 fixes: H1, H2, M1–M3, M5–M7, L5–L7, L9; M4 partly (C-135) | 🟨 PR |
 
 
 **Scope**
@@ -844,6 +845,14 @@ Phase 2 is **not** started.
 - **Open for the PO:**
   - the real-phone test (`docs/runbooks/phase-6-real-phones.md`);
   - Part F's "an absent student creates a notification (visible to the owner now)": absence and late notices are **stored** for parents (C-128) but **not shown to staff** anywhere, which matches this plan's scope ("stored; parents see them from 7P"). Your call: accept as stored, or add a staff view.
+
+**Independent review (P6-4, 2026-10-30).** No critical findings.
+- **Fixed in the review PR (C-135):**
+  - H1: a transiently failed sync op didn't hold its class, so a later correction could be overwritten by the retried older op;
+  - H2: the 48 h teacher window was never enforced for saves from the app (all go through the queue); a queued change must now be made within 48 h and arrive within 7 days;
+  - M1: a roll call racing a cancel could leave a cancelled class with marks; M2: Try again could never succeed; M3: Discard lost the server's mark on the device; M5–M7: nudge links for Manage members, shell caching of redirects, shells of a previous user on a shared device;
+  - lows L5, L6, L7, L9; M4 partly (newest-first, a logged cap).
+- **Deferred** (C-135): M4 paging; L1, L2 → 7P; L3 setting; L4 → Phase 15; L8 → Phase L; L10, L11 backlog.
 
 ---
 
