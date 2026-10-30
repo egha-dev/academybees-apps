@@ -15,9 +15,9 @@ Use **staging** (`https://demo-a.staging.academybees.com`) once the S8 PR has de
 Staging has academies and users but no students or batches.
 
 1. Sign in at `https://demo-a.staging.academybees.com/login` as `hello+a-admin`.
-2. **Students** → add **5 students** (any names).
-3. **Batches** → new batch, e.g. "Phone test". Teacher: the `hello+teacher` teacher. Enrol the 5 students.
-4. Give the batch **a class later today**: a weekly pattern that includes today's weekday, or an extra class from **Timetable**. Check **Timetable → Day** shows it.
+2. **Students → Import** → download the template, fill in **25 students** (names are enough) and import it. Typing them in one by one with **Students → Add** works too.
+3. **Batches** → new batch, e.g. "Phone test". Teacher: the `hello+teacher` teacher. Enrol the 25 students.
+4. Give the batch **two classes today**: one in the next hour or two, and one that has **already ended**, to test the nudge in A12. Use **Timetable** → add an extra class, or a weekly pattern that includes today. Check **Timetable → Day** shows both.
 
 ## 2. Android (Chrome)
 
@@ -25,15 +25,16 @@ Staging has academies and users but no students or batches.
 | --- | --- | --- |
 | A1 | Open `https://demo-a.staging.academybees.com/login`, sign in as `hello+teacher` | Teacher **Today** opens: "Hello, …", the class is listed, and the status line says "All changes synced" |
 | A2 | Chrome menu → **Add to Home screen / Install app**. Open AcademyBee from the home screen | It opens full-screen on Today |
-| A3 | Tap the class → **Mark all present** → set one student to **Absent** → **Save attendance** | "Saved on this device. It syncs automatically." then "All changes synced" |
-| A4 | Laptop: **Attendance** (today) | The class shows **Taken**; 4 present, 1 absent |
+| A3 | **Time it:** tap the upcoming class → **Mark all present** → set **3 students** to Absent / Late / Leave → **Save attendance** | Under **30 seconds** for 25 students; "Saved on this device. It syncs automatically." then "All changes synced" |
+| A4 | Laptop: **Today** and **Attendance** | Today counts the roll call ("N of M roll calls taken"); Attendance shows the class **Taken** with 22 present and the 3 exceptions |
 | A5 | Phone: turn on **airplane mode**. In the app, go to Classes → the class | The offline banner shows: "You're offline. Attendance will sync automatically when you're back online." The roll call still shows |
 | A6 | Change a second student to **Late** → Save | "Saved on this device — 1 record waiting to sync" |
 | A7 | Still offline: **close the app fully** (swipe it away), then open it from the home screen and go to the class | The app opens. The Late mark is still there and still waiting |
-| A8 | Laptop: refresh Attendance | Still 4 present / 1 absent (nothing arrived yet) |
+| A8 | Laptop: refresh Attendance | Unchanged: nothing has arrived yet |
 | A9 | Phone: turn airplane mode **off**. Bring the app to the front | Within about a minute: "All changes synced" |
-| A10 | Laptop: refresh | 3 present, 1 absent, 1 late. Exactly one row per student; nothing doubled |
+| A10 | Laptop: refresh | The Late mark is there: one fewer present, one more late, and nothing doubled |
 | A11 | Phone: airplane mode on → mark one more change → Save → **More → Sign out** | A warning that 1 record hasn't synced; **Stay** is the default. Tap Stay, turn airplane mode off, and wait for "All changes synced" |
+| A12 | Leave the **already-ended** class unmarked. Check the teacher's bell 30–40 minutes after it ended (the job runs every 10 minutes) | The bell shows a reminder that attendance wasn't taken; tapping it opens that class. Owner **Today** lists it under "Attendance not taken" until someone takes it |
 
 ## 3. iPhone (Safari, installed)
 

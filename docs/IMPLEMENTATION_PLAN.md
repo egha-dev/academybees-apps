@@ -805,7 +805,8 @@ Phase 2 is **not** started.
 | S5 | `p6/offline-e2e` | 6.14 offline suite, 6.15 two-device conflict, 6.16 logout guard + revocation | ✅ #93 |
 | S6 | `p6/manage-attendance` | 6.17 Owner Today, 6.18 overview + Batch/Student 360 tabs, 6.19 seeds | ✅ #94 |
 | S7 | `p6/notifications` | 6.20 notification centre, 6.21 G-16 nudge, 6.22 Phase 5 review lows L1–L5 | ✅ #95 |
-| S8 | `p6/journey-e2e` | 6.23 exit E2E, 6.24 flag removal + docs + real-phone checklist; Phase 0 review M5/L8 (sync runner) | 🟨 PR |
+| S8 | `p6/journey-e2e` | 6.23 exit E2E, 6.24 flag removal + docs + real-phone checklist; Phase 0 review M5/L8 (sync runner) | ✅ #96 |
+| Gate | `p6/gate` | P6-3 fixes: E2E never skips near midnight, missing analytics events (C-134), runbook aligned with Part F | 🟨 PR |
 
 
 **Scope**
@@ -825,6 +826,24 @@ Phase 2 is **not** started.
 - Performance smoke: bulk write of a 60-student session < 300 ms p95 locally.
 
 **Exit gate.** Common gate incl. offline suite; real-phone test on Android Chrome and iOS Safari (installed PWA) with airplane mode; **M1 Academy Alpha**.
+
+**Gate (P6-3, 2026-10-30, `main` = `192fcf4`; staging serving `192fcf4`).**
+- **Exit E2E:** `attendance-journey.spec.ts` passes on desktop Chromium, Android Chromium and iPhone WebKit (PR #96 run). The Chromium runs include the offline correction, the reload, one sync, and one absent and one late intent.
+- **Offline suite** (`offline-attendance.spec.ts`, Chromium): 25 marks offline → reload → restart → a lost answer → `DUPLICATE` → one ledger row and 3 intents; two-device conflict resolved; sign-out guard (all three projects).
+- **Other Phase 6 E2E:** `teacher-pwa`, `staff-attendance` and `notifications` pass on all three projects; 389 passed in CI.
+- **Common gate (local):**
+  - lint, typecheck, unit, `i18n:check`, `flags:check` (only `p1-hub-placeholder`), `format:check` and `perf:budget` (Phase 6 pages 183.7–190.0 KB gz) pass;
+  - integration: API 1,324 tests in 30 files, database 387 (includes the drift check), worker 9.
+  - Local E2E can't run: another project's Postgres holds port 5432, so CI is the E2E evidence.
+- **CI:** green on every Phase 6 PR and on `main`.
+- **Gaps found and fixed (gate PR, C-134):**
+  - the `main` run for S8 started at 22:46 IST and **skipped 80 tests**, the offline suite and the exit journey among them: they needed a class "later today". The helper now makes an earlier class near midnight, and `teacher-pwa` uses that path every run;
+  - the planned analytics `sync.conflict_resolved` and a notification event were missing; now emitted, with tests;
+  - the real-phone runbook now follows Part F (25 students, 30 seconds, the 30-minute nudge).
+- **Staging:** `health/live` reports release `192fcf4`; database and Redis are up; the Phase 6 service worker and routes are served. **But the last two "Deploy staging" runs failed with "Invalid RAILWAY_TOKEN"** after migrating: the services were deployed another way. The token needs renewing before the next merge deploys by itself (PO, `staging-variables.md` §G).
+- **Open for the PO:**
+  - the real-phone test (`docs/runbooks/phase-6-real-phones.md`);
+  - Part F's "an absent student creates a notification (visible to the owner now)": absence and late notices are **stored** for parents (C-128) but **not shown to staff** anywhere, which matches this plan's scope ("stored; parents see them from 7P"). Your call: accept as stored, or add a staff view.
 
 ---
 
