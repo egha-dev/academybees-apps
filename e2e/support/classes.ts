@@ -105,7 +105,7 @@ export async function classForDemoTeacher(
       'demo-a',
       `INSERT INTO class_session (id, tenant_id, branch_id, batch_id, session_date, starts_at, ends_at,
          origin, updated_at)
-       SELECT $2, $1, b.branch_id, b.id, $4::date, $4::date AT TIME ZONE 'Asia/Kolkata',
+       SELECT $2, $1, b.branch_id, b.id, $4::date, ($4::date + time '00:00') AT TIME ZONE 'Asia/Kolkata',
               ($4::date + time '00:30') AT TIME ZONE 'Asia/Kolkata', 'MANUAL', now()
          FROM batch b WHERE b.id = $3`,
       [sessionId, batch.id, now.date],
