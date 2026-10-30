@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { adminSession, classForDemoTeacher, rollCall, tooLateToday } from '../support/classes.js';
+import { adminSession, classForDemoTeacher, rollCall } from '../support/classes.js';
 import { ownClientIp } from '../support/client-ip.js';
 import { inAcademy } from '../support/db.js';
 import { hostUrl, requireSeededAcademies } from '../support/hosts.js';
@@ -23,7 +23,6 @@ test('teacher takes attendance online and offline; the academy sees it once', as
   browser,
 }, testInfo) => {
   test.setTimeout(240_000);
-  test.skip(tooLateToday(), 'Too close to midnight in India for a class today');
   const offline = testInfo.project.name !== 'iphone-webkit';
   const tag = `${testInfo.project.name.split('-')[0]} ${Date.now().toString(36)}`;
   const batch = `Odissi ${tag}`;

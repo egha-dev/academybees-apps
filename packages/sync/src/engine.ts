@@ -116,8 +116,10 @@ export class SyncEngine {
       null,
     );
     const persisted = await (globalThis.navigator?.storage?.persisted?.() ?? Promise.resolve(null));
+    const resolved = await this.client.resolvedSinceBeacon();
+    const anyResolved = resolved.mine + resolved.theirs > 0;
     try {
-      await (this.options.fetch ?? globalThis.fetch)(
+      const res = await (this.options.fetch ?? globalThis.fetch)(
         `${this.options.apiBase ?? '/api/v1'}/sync/beacon`,
         {
           method: 'POST',
@@ -132,9 +134,12 @@ export class SyncEngine {
             conflicts: items.filter((i) => i.status === 'conflict').length,
             oldestPendingAgeSec: oldest === null ? null : Math.round((Date.now() - oldest) / 1000),
             storagePersisted: persisted,
+            ...(anyResolved ? { resolved } : {}),
           }),
         },
       );
+      // Reported: start counting again (a choice made meanwhile waits for the next beacon).
+      if (res.ok && anyResolved) await this.db.meta.delete('resolved');
     } catch {
       // Metrics only: never let a failed beacon disturb the user.
     }

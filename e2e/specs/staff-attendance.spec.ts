@@ -18,10 +18,7 @@ test('a class not taken shows on Today; the admin takes it; the views show it', 
   browser,
 }, testInfo) => {
   test.setTimeout(180_000);
-  test.skip(
-    istNow().minutes < 60 || istNow().minutes > 22 * 60 + 50,
-    'Needs a class that has ended today',
-  );
+  test.skip(istNow().minutes < 60, 'Needs a class that has ended today');
   const tag = `${testInfo.project.name.split('-')[0]} ${Date.now().toString(36)}`;
   const admin = await adminSession(browser, testInfo);
   const { page } = admin;

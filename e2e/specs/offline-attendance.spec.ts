@@ -4,13 +4,7 @@ import { join } from 'node:path';
 
 import { type BrowserContext, chromium, expect, test, type TestInfo } from '@playwright/test';
 
-import {
-  adminCall,
-  adminSession,
-  classForDemoTeacher,
-  rollCall,
-  tooLateToday,
-} from '../support/classes.js';
+import { adminCall, adminSession, classForDemoTeacher, rollCall } from '../support/classes.js';
 import { ownClientIp } from '../support/client-ip.js';
 import { inAcademy } from '../support/db.js';
 import { hostUrl, requireSeededAcademies } from '../support/hosts.js';
@@ -45,7 +39,6 @@ test('25 marks offline survive a reload and a restart, then sync exactly once', 
   browser,
 }, testInfo) => {
   test.skip(testInfo.project.name === 'iphone-webkit', 'Service workers: Chromium only');
-  test.skip(tooLateToday(), 'Too close to midnight in India for a class today');
   test.setTimeout(300_000);
   const tag = `${testInfo.project.name.split('-')[0]} ${Date.now().toString(36)}`;
   const admin = await adminSession(browser, testInfo);
@@ -138,7 +131,6 @@ test('two devices: a conflict is shown and resolved, never overwritten silently'
   browser,
 }, testInfo) => {
   test.skip(testInfo.project.name === 'iphone-webkit', 'Offline emulation: Chromium only');
-  test.skip(tooLateToday(), 'Too close to midnight in India for a class today');
   test.setTimeout(180_000);
   await ownClientIp(context);
   const tag = `${testInfo.project.name.split('-')[0]} ${Date.now().toString(36)}`;
@@ -195,7 +187,6 @@ test('signing out with unsynced records asks first; signing out deletes this dev
   context,
   browser,
 }, testInfo) => {
-  test.skip(tooLateToday(), 'Too close to midnight in India for a class today');
   test.setTimeout(180_000);
   await ownClientIp(context);
   const tag = `${testInfo.project.name.split('-')[0]} ${Date.now().toString(36)}`;

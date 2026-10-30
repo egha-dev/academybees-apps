@@ -349,7 +349,25 @@ export class SyncClient {
       ? await this.markSession(payload.data.sessionId, resend, bases)
       : null;
     await this.options.queue.discard(opId);
+    await this.countResolved(choices, [...server.keys()]);
     return next;
+  }
+
+  /** Tally conflict choices for the next beacon (analytics, counts only). */
+  private async countResolved(choices: Record<string, ConflictChoice>, students: string[]) {
+    const theirs = students.filter((id) => choices[id] === 'theirs').length;
+    const prev = await this.resolvedSinceBeacon();
+    await this.db.meta.put({
+      key: 'resolved',
+      value: { mine: prev.mine + students.length - theirs, theirs: prev.theirs + theirs },
+    });
+  }
+
+  /** Conflict choices not yet reported by a beacon. */
+  async resolvedSinceBeacon(): Promise<{ mine: number; theirs: number }> {
+    const value = (await this.db.meta.get('resolved'))?.value as
+      { mine: number; theirs: number } | undefined;
+    return value ?? { mine: 0, theirs: 0 };
   }
 
   /** The user's data stays only while signed in: ask the browser not to evict it. */

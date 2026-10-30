@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { expectNoA11yViolations } from '../support/a11y.js';
-import { adminSession, classForDemoTeacher, rollCall, tooLateToday } from '../support/classes.js';
+import { adminSession, classForDemoTeacher, rollCall } from '../support/classes.js';
 import { ownClientIp } from '../support/client-ip.js';
 import { hostUrl, requireSeededAcademies } from '../support/hosts.js';
 import { signInAt } from '../support/session.js';
@@ -9,7 +9,7 @@ import { signInAt } from '../support/session.js';
 /**
  * Teacher PWA, online (Phase 6 S4; UX §12, §14; C-124, C-126): the teacher's classes come from
  * this device's copy; Take attendance → Mark all present → one exception → Save → synced once.
- * Each run makes its own batch, students and a class later today, so the seed and the day of
+ * Each run makes its own batch, students and a class today, so the seed and the day of
  * the week don't matter.
  */
 test.beforeAll(requireSeededAcademies);
@@ -20,12 +20,12 @@ test('the teacher takes attendance on the Teacher PWA; it reaches the academy on
   browser,
 }, testInfo) => {
   test.setTimeout(180_000);
-  test.skip(tooLateToday(), 'Too close to midnight in India for a class today');
   const tag = `${testInfo.project.name.split('-')[0]} ${Date.now().toString(36)}`;
 
   // The admin prepares the class in their own browser.
   const admin = await adminSession(browser, testInfo);
-  const made = await classForDemoTeacher(admin, `Kathak ${tag}`, 3);
+  // A class earlier today: the set-up used near midnight, exercised here on every run.
+  const made = await classForDemoTeacher(admin, `Kathak ${tag}`, 3, { earlier: true });
   const sessionId = made.sessionId;
   const names = made.students.map((x) => x.name);
 

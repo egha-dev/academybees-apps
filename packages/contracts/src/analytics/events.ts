@@ -274,6 +274,25 @@ export const ANALYTICS_EVENTS = {
       unanswered: z.number().int().min(0).max(100),
     }),
   }),
+  'sync.conflict_resolved': defineAnalyticsEvent({
+    name: 'sync.conflict_resolved',
+    version: 1,
+    description:
+      'A device resolved attendance conflicts (ADR-017, C-126): student choices, counts only.',
+    properties: z.strictObject({
+      mine: z.number().int().min(0).max(10_000),
+      theirs: z.number().int().min(0).max(10_000),
+    }),
+  }),
+  'notification.read': defineAnalyticsEvent({
+    name: 'notification.read',
+    version: 1,
+    description: 'A member marked in-app notifications read (C-04). Counts only.',
+    properties: z.strictObject({
+      count: z.number().int().min(0).max(10_000),
+      all: z.boolean(),
+    }),
+  }),
   'session.cancelled': defineAnalyticsEvent({
     name: 'session.cancelled',
     version: 1,

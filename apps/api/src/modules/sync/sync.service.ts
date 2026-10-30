@@ -242,13 +242,19 @@ export class SyncService {
   }
 
   /** A device's queue health (metrics only). */
-  beacon(input: {
+  async beacon(input: {
     pending: number;
     failed: number;
     conflicts: number;
     oldestPendingAgeSec: number | null;
     storagePersisted: boolean | null;
+    resolved?: { mine: number; theirs: number } | undefined;
   }) {
-    this.logger.log({ metric: 'sync.queue', ...input }, 'Sync queue beacon');
+    const { resolved, ...queue } = input;
+    this.logger.log({ metric: 'sync.queue', ...queue }, 'Sync queue beacon');
+    if (resolved && resolved.mine + resolved.theirs > 0)
+      await this.db.$transaction((tx) =>
+        this.analytics.track(tx, 'sync.conflict_resolved', resolved),
+      );
   }
 }
