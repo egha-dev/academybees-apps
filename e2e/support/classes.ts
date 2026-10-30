@@ -9,6 +9,7 @@ import {
 } from '@playwright/test';
 
 import { ownClientIp } from './client-ip.js';
+import { writeInAcademy } from './db.js';
 import { hostUrl } from './hosts.js';
 import { signInAt } from './session.js';
 
@@ -36,8 +37,11 @@ export function istNow() {
 const hhmm = (m: number) =>
   `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
-/** No class can be made "later today" in the last minutes of the day in India. */
-export const tooLateToday = () => istNow().minutes > 22 * 60 + 50;
+/**
+ * No class can be made "later today" in the last minutes of the day in India: then the class is
+ * made earlier today instead (see `classForDemoTeacher`), so no spec has to skip.
+ */
+const tooLateToday = () => istNow().minutes > 22 * 60 + 50;
 
 export type Admin = { context: BrowserContext; page: Page; testInfo: TestInfo };
 
@@ -74,7 +78,12 @@ export async function adminCall(
  * the weekday don't matter. Students are reused, never created: demo-a is on a trial plan with a
  * student limit, and enrolments don't count towards it.
  */
-export async function classForDemoTeacher(admin: Admin, name: string, count: number) {
+export async function classForDemoTeacher(
+  admin: Admin,
+  name: string,
+  count: number,
+  options: { earlier?: boolean } = {},
+) {
   const batch = (await adminCall(admin, 'post', '/batches', {
     name,
     courseId: DEMO_COURSE,
@@ -88,12 +97,27 @@ export async function classForDemoTeacher(admin: Admin, name: string, count: num
   for (const s of students)
     await adminCall(admin, 'post', `/batches/${batch.id}/enrolments`, { studentId: s.id });
   const now = istNow();
-  const start = Math.min(now.minutes + 30, 23 * 60);
+  if (options.earlier || tooLateToday()) {
+    // Near midnight: a class at 00:00–00:30 today (the API refuses past times on purpose). A
+    // teacher can still mark it for 48 hours, and the device keeps today's classes.
+    const sessionId = uuidv7();
+    await writeInAcademy(
+      'demo-a',
+      `INSERT INTO class_session (id, tenant_id, branch_id, batch_id, session_date, starts_at, ends_at,
+         origin, updated_at)
+       SELECT $2, $1, b.branch_id, b.id, $4::date, $4::date AT TIME ZONE 'Asia/Kolkata',
+              ($4::date + time '00:30') AT TIME ZONE 'Asia/Kolkata', 'MANUAL', now()
+         FROM batch b WHERE b.id = $3`,
+      [sessionId, batch.id, now.date],
+    );
+    return { batchId: batch.id, sessionId, students };
+  }
+  const start = now.minutes + 30;
   const made = (await adminCall(admin, 'post', '/sessions', {
     batchId: batch.id,
     date: now.date,
     start: hhmm(start),
-    end: hhmm(Math.min(start + 30, 23 * 60 + 59)),
+    end: hhmm(start + 30),
   })) as { session: { id: string } };
   return { batchId: batch.id, sessionId: made.session.id, students };
 }
