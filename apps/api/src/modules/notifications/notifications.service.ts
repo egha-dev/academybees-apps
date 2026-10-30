@@ -8,6 +8,7 @@ import type { Prisma, TenantBoundClient, TransactionClient } from '@academybee/d
 import { Inject, Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
+import { AnalyticsService } from '../../core/analytics/analytics.service.js';
 import type { RequestContext } from '../../core/context/request-context.js';
 import { TENANT_DB } from '../../core/database/database.module.js';
 import { DomainError } from '../../core/errors/domain-error.js';
@@ -42,6 +43,7 @@ export class NotificationsService {
     @Inject(TENANT_DB) private readonly db: TenantBoundClient,
     private readonly cls: ClsService<RequestContext>,
     private readonly sessions: SessionsService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   private me(): string {
@@ -74,15 +76,19 @@ export class NotificationsService {
   }
 
   async markRead(input: { ids?: string[] | undefined; all?: true | undefined }) {
-    const updated = await this.db.notification.updateMany({
-      where: {
-        recipientId: this.me(),
-        readAt: null,
-        ...(input.ids ? { id: { in: input.ids } } : {}),
-      },
-      data: { readAt: new Date() },
+    const me = this.me();
+    return this.db.$transaction(async (tx) => {
+      const updated = await tx.notification.updateMany({
+        where: { recipientId: me, readAt: null, ...(input.ids ? { id: { in: input.ids } } : {}) },
+        data: { readAt: new Date() },
+      });
+      if (updated.count > 0)
+        await this.analytics.track(tx, 'notification.read', {
+          count: updated.count,
+          all: input.all === true,
+        });
+      return { count: updated.count };
     });
-    return { count: updated.count };
   }
 
   /**

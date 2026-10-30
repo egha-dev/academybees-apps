@@ -242,6 +242,8 @@ describe('SyncClient', () => {
       syncState: 'synced',
       serverVersion: 5,
     });
+    // Counted for the next beacon (analytics): one kept, one taken.
+    expect(await client.resolvedSinceBeacon()).toEqual({ mine: 1, theirs: 1 });
   });
 
   it('the transport classifies failures and sends the CSRF token', async () => {

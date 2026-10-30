@@ -372,8 +372,17 @@ describe('sync', () => {
       conflicts: 1,
       oldestPendingAgeSec: 120,
       storagePersisted: true,
+      resolved: { mine: 2, theirs: 1 },
     });
     expect(beacon.status).toBe(204);
+    // Conflict choices become a counts-only analytics event (G-09).
+    const { rows: events } = await su.query<{ properties: Record<string, unknown> }>(
+      `SELECT payload->'properties' AS properties FROM outbox_event
+        WHERE type = 'analytics.event' AND tenant_id = $1
+          AND payload->>'name' = 'sync.conflict_resolved'`,
+      [a.id],
+    );
+    expect(events.map((e) => e.properties)).toEqual([{ mine: 2, theirs: 1 }]);
     const theirs = b.people.sessionId;
     const results = await push(owner, [
       markOp(theirs, [{ studentId: b.people.studentId, status: 'PRESENT' }]),

@@ -60,6 +60,14 @@ describe('SyncEngine', () => {
       oldestPendingAgeSec: null,
       storagePersisted: null,
     });
+
+    // Conflict choices since the last beacon ride on the next one, then the tally restarts.
+    await engine.db.meta.put({ key: 'resolved', value: { mine: 2, theirs: 1 } });
+    fetch.mockClear();
+    await engine.beacon();
+    const sent = fetch.mock.calls.find((c) => String(c[0]).endsWith('/sync/beacon'));
+    expect(JSON.parse(sent![1]!.body as string).resolved).toEqual({ mine: 2, theirs: 1 });
+    expect(await engine.client.resolvedSinceBeacon()).toEqual({ mine: 0, theirs: 0 });
     engine.stop();
   });
 });

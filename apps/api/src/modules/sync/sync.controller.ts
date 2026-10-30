@@ -48,7 +48,7 @@ export class SyncController {
   @Post('beacon')
   @HttpCode(204)
   @Can('attendance.read')
-  beacon(@Body() body: SyncBeaconDto) {
-    this.sync.beacon(body);
+  async beacon(@Body() body: SyncBeaconDto) {
+    await this.sync.beacon(body);
   }
 }

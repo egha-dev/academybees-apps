@@ -179,4 +179,11 @@ export const SyncBeaconSchema = z.object({
   conflicts: z.number().int().min(0).max(100_000),
   oldestPendingAgeSec: z.number().int().min(0).max(31_536_000).nullable(),
   storagePersisted: z.boolean().nullable(),
+  /** Conflicts this device resolved since its last beacon, per student choice (counts only). */
+  resolved: z
+    .object({
+      mine: z.number().int().min(0).max(10_000),
+      theirs: z.number().int().min(0).max(10_000),
+    })
+    .optional(),
 });

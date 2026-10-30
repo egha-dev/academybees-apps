@@ -174,6 +174,13 @@ describe('notifications and nudges', () => {
     const read = await send(teacher, 'post', '/notifications/read', { all: true });
     expect(read.status, JSON.stringify(read.body)).toBe(200);
     expect((await get(teacher, '/notifications/unread')).body.count).toBe(0);
+    const { rows: events } = await su.query<{ properties: { count: number; all: boolean } }>(
+      `SELECT payload->'properties' AS properties FROM outbox_event
+        WHERE type = 'analytics.event' AND tenant_id = $1
+          AND payload->>'name' = 'notification.read'`,
+      [a.id],
+    );
+    expect(events.map((e) => e.properties.all)).toEqual([true]);
     expect((await send(teacher, 'post', '/notifications/read', {})).status).toBe(400);
     const other = await signIn(b, b.user.email);
     const theirs = (await get(other, '/notifications')).body.items as { link: string | null }[];
