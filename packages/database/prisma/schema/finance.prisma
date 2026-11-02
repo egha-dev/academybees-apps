@@ -1,0 +1,503 @@
+// Academy finance (Phase 7; ADR-010, ADR-018, ADR-033, ADR-038, ARCHITECTURE §12, C-137…C-146).
+// Money is `amountMinor Int` + `currency`; calendar facts are `date` in the academy's timezone.
+// Actor columns (`…ById`) hold membership ids; every money action is also in the audit log.
+// Separate from AcademyBee's own SaaS billing (Phase 13), which gets its own tables and series.
+
+enum FeeCycle {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  ANNUAL
+  CUSTOM
+
+  @@map("fee_cycle")
+}
+
+enum FeeRecordStatus {
+  ACTIVE
+  ARCHIVED
+
+  @@map("fee_record_status")
+}
+
+/// A fee plan (PRD v2 §19): components charged every cycle.
+model FeePlan {
+  id          String          @id @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name        String          @db.VarChar(120)
+  cycle       FeeCycle
+  /// CUSTOM cycles: months per cycle.
+  cycleMonths Int?            @map("cycle_months") @db.SmallInt
+  currency    String          @default("INR") @db.Char(3)
+  status      FeeRecordStatus @default(ACTIVE)
+  version     Int             @default(1)
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  components  FeeComponent[]
+  assignments FeeAssignment[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, status, name])
+  @@map("fee_plan")
+}
+
+model FeeComponent {
+  id          String   @id @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  planId      String   @map("plan_id") @db.Uuid
+  plan        FeePlan  @relation(fields: [tenantId, planId], references: [tenantId, id], onDelete: Cascade)
+  name        String   @db.VarChar(120)
+  amountMinor Int      @map("amount_minor")
+  taxable     Boolean  @default(true)
+  sortOrder   Int      @default(0) @map("sort_order") @db.SmallInt
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([tenantId, planId, sortOrder])
+  @@map("fee_component")
+}
+
+enum DiscountKind {
+  PERCENT
+  FIXED
+
+  @@map("discount_kind")
+}
+
+/// A student on a fee plan from a date (G-04, G-27): the student's own discount, instalments.
+model FeeAssignment {
+  id             String          @id @db.Uuid
+  tenantId       String          @map("tenant_id") @db.Uuid
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branchId       String          @map("branch_id") @db.Uuid
+  branch         Branch          @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  studentId      String          @map("student_id") @db.Uuid
+  student        Student         @relation(fields: [tenantId, studentId], references: [tenantId, id], onDelete: Restrict)
+  planId         String          @map("plan_id") @db.Uuid
+  plan           FeePlan         @relation(fields: [tenantId, planId], references: [tenantId, id], onDelete: Restrict)
+  /// Optional: the batch this fee is for (Batch Fees tab, G-27 transfers).
+  batchId        String?         @map("batch_id") @db.Uuid
+  batch          Batch?          @relation(fields: [tenantId, batchId], references: [tenantId, id], onDelete: Restrict)
+  startsOn       DateTime        @map("starts_on") @db.Date
+  endsOn         DateTime?       @map("ends_on") @db.Date
+  discountKind   DiscountKind?   @map("discount_kind")
+  /// PERCENT: basis points (1000 = 10%); FIXED: minor units per cycle.
+  discountValue  Int?            @map("discount_value")
+  discountReason String?         @map("discount_reason") @db.VarChar(200)
+  /// Split each cycle's fee into this many invoices (G-04), or null.
+  instalments    Int?            @db.SmallInt
+  status         FeeRecordStatus @default(ACTIVE)
+  createdById    String          @map("created_by_id") @db.Uuid
+  version        Int             @default(1)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  invoices Invoice[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, studentId, status])
+  @@index([tenantId, planId])
+  @@index([tenantId, batchId])
+  @@map("fee_assignment")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+  /// C-141: closed with a balance left unpaid, with a reason.
+  WRITTEN_OFF
+
+  @@map("invoice_status")
+}
+
+enum InvoiceKind {
+  REGULAR
+  ONE_TIME
+  OPENING_BALANCE
+  LATE_FEE
+  INSTALMENT
+
+  @@map("invoice_kind")
+}
+
+/// An invoice to one student (C-138). Numbered at issue (C-142); immutable once issued except
+/// for its payment totals and status (corrections go through credit, refund or write-off).
+model Invoice {
+  id                 String         @id @db.Uuid
+  tenantId           String         @map("tenant_id") @db.Uuid
+  tenant             Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branchId           String         @map("branch_id") @db.Uuid
+  branch             Branch         @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  studentId          String         @map("student_id") @db.Uuid
+  student            Student        @relation(fields: [tenantId, studentId], references: [tenantId, id], onDelete: Restrict)
+  assignmentId       String?        @map("assignment_id") @db.Uuid
+  assignment         FeeAssignment? @relation(fields: [tenantId, assignmentId], references: [tenantId, id], onDelete: Restrict)
+  kind               InvoiceKind
+  status             InvoiceStatus  @default(DRAFT)
+  /// `{prefix}/{FY}/{seq:05}`, assigned at issue.
+  number             String?        @db.VarChar(40)
+  cycleStart         DateTime?      @map("cycle_start") @db.Date
+  cycleEnd           DateTime?      @map("cycle_end") @db.Date
+  /// Instalment n of `instalmentOf` (G-04).
+  instalmentNo       Int?           @map("instalment_no") @db.SmallInt
+  instalmentOf       Int?           @map("instalment_of") @db.SmallInt
+  issueDate          DateTime?      @map("issue_date") @db.Date
+  dueDate            DateTime       @map("due_date") @db.Date
+  currency           String         @default("INR") @db.Char(3)
+  subtotalMinor      Int            @default(0) @map("subtotal_minor")
+  discountMinor      Int            @default(0) @map("discount_minor")
+  taxMinor           Int            @default(0) @map("tax_minor")
+  totalMinor         Int            @default(0) @map("total_minor")
+  paidMinor          Int            @default(0) @map("paid_minor")
+  creditAppliedMinor Int            @default(0) @map("credit_applied_minor")
+  writtenOffMinor    Int            @default(0) @map("written_off_minor")
+  /// C-19: set nightly while overdue.
+  overdueSince       DateTime?      @map("overdue_since") @db.Date
+  /// What the issued document shows (academy, student, lines, tax), frozen at issue.
+  snapshot           Json?
+  note               String?        @db.VarChar(500)
+  closeReason        String?        @map("close_reason") @db.VarChar(500)
+  closedAt           DateTime?      @map("closed_at") @db.Timestamptz(3)
+  closedById         String?        @map("closed_by_id") @db.Uuid
+  createdById        String?        @map("created_by_id") @db.Uuid
+  version            Int            @default(1)
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  lines       InvoiceLine[]
+  allocations PaymentAllocation[]
+  credits     CreditEntry[]
+  documents   FinanceDocument[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, number])
+  @@index([tenantId, status, dueDate])
+  @@index([tenantId, studentId, dueDate])
+  @@index([tenantId, assignmentId, cycleStart])
+  @@index([tenantId, createdAt, id])
+  @@map("invoice")
+}
+
+enum InvoiceLineKind {
+  CHARGE
+  DISCOUNT
+  TAX
+
+  @@map("invoice_line_kind")
+}
+
+model InvoiceLine {
+  id          String          @id @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  invoiceId   String          @map("invoice_id") @db.Uuid
+  invoice     Invoice         @relation(fields: [tenantId, invoiceId], references: [tenantId, id], onDelete: Cascade)
+  kind        InvoiceLineKind
+  label       String          @db.VarChar(200)
+  quantity    Int             @default(1) @db.SmallInt
+  unitMinor   Int             @map("unit_minor")
+  /// Signed: charges and tax positive, discounts negative.
+  amountMinor Int             @map("amount_minor")
+  taxable     Boolean         @default(true)
+  sortOrder   Int             @default(0) @map("sort_order") @db.SmallInt
+
+  @@index([tenantId, invoiceId, sortOrder])
+  @@map("invoice_line")
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  BANK_TRANSFER
+  CHEQUE
+  CARD_POS
+  ONLINE_GATEWAY
+
+  @@map("payment_method")
+}
+
+enum PaymentSource {
+  STAFF_RECORDED
+  PARENT_REPORTED
+  GATEWAY
+
+  @@map("payment_source")
+}
+
+enum PaymentStatus {
+  INITIATED
+  PENDING
+  CONFIRMED
+  FAILED
+  PARTIALLY_REFUNDED
+  REFUNDED
+
+  @@map("payment_status")
+}
+
+/// Money received for a student (ADR-038). Only the server sets CONFIRMED (§12.1): on accepting
+/// a staff-recorded payment, on `payment.verify`, or on a verified gateway event.
+model Payment {
+  id                String        @id @db.Uuid
+  tenantId          String        @map("tenant_id") @db.Uuid
+  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branchId          String        @map("branch_id") @db.Uuid
+  branch            Branch        @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  studentId         String        @map("student_id") @db.Uuid
+  student           Student       @relation(fields: [tenantId, studentId], references: [tenantId, id], onDelete: Restrict)
+  method            PaymentMethod
+  source            PaymentSource
+  status            PaymentStatus
+  amountMinor       Int           @map("amount_minor")
+  refundedMinor     Int           @default(0) @map("refunded_minor")
+  currency          String        @default("INR") @db.Char(3)
+  /// UTR, bank reference, cheque number, POS or gateway transaction id.
+  reference         String?       @db.VarChar(80)
+  chequeBank        String?       @map("cheque_bank") @db.VarChar(80)
+  chequeDate        DateTime?     @map("cheque_date") @db.Date
+  paidOn            DateTime      @map("paid_on") @db.Date
+  /// `{prefix}/{FY}/{seq:05}`, assigned at confirmation.
+  receiptNumber     String?       @map("receipt_number") @db.VarChar(40)
+  /// Optional screenshot in the private bucket (parent-reported UPI).
+  evidenceKey       String?       @map("evidence_key") @db.VarChar(300)
+  note              String?       @db.VarChar(500)
+  /// Offline cash: the sync op id (C-146), unique per academy.
+  clientRef         String?       @map("client_ref") @db.Uuid
+  /// A reference already used by another payment (soft duplicate-UTR warning, ADR-038).
+  duplicateFlag     Boolean       @default(false) @map("duplicate_flag")
+  recordedById      String?       @map("recorded_by_id") @db.Uuid
+  /// The hub user who reported it (PARENT_REPORTED).
+  reportedByUserId  String?       @map("reported_by_user_id") @db.Uuid
+  verifiedById      String?       @map("verified_by_id") @db.Uuid
+  verifiedAt        DateTime?     @map("verified_at") @db.Timestamptz(3)
+  rejectionReason   String?       @map("rejection_reason") @db.VarChar(500)
+  confirmedAt       DateTime?     @map("confirmed_at") @db.Timestamptz(3)
+  providerAccountId String?       @map("provider_account_id") @db.Uuid
+  providerOrderId   String?       @map("provider_order_id") @db.VarChar(100)
+  version           Int           @default(1)
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  allocations PaymentAllocation[]
+  refunds     Refund[]
+  credits     CreditEntry[]
+  documents   FinanceDocument[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, receiptNumber])
+  @@unique([tenantId, clientRef])
+  @@index([tenantId, status, createdAt])
+  @@index([tenantId, studentId, paidOn])
+  @@index([tenantId, reference])
+  @@map("payment")
+}
+
+/// Part of a payment applied to an invoice; append-only. Sum per payment ≤ its amount.
+model PaymentAllocation {
+  id          String   @id @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  paymentId   String   @map("payment_id") @db.Uuid
+  payment     Payment  @relation(fields: [tenantId, paymentId], references: [tenantId, id], onDelete: Restrict)
+  invoiceId   String   @map("invoice_id") @db.Uuid
+  invoice     Invoice  @relation(fields: [tenantId, invoiceId], references: [tenantId, id], onDelete: Restrict)
+  amountMinor Int      @map("amount_minor")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([tenantId, paymentId])
+  @@index([tenantId, invoiceId])
+  @@map("payment_allocation")
+}
+
+/// A manual refund (G-30): reason, method and reference; append-only.
+model Refund {
+  id           String        @id @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  paymentId    String        @map("payment_id") @db.Uuid
+  payment      Payment       @relation(fields: [tenantId, paymentId], references: [tenantId, id], onDelete: Restrict)
+  amountMinor  Int           @map("amount_minor")
+  method       PaymentMethod
+  reference    String?       @db.VarChar(80)
+  reason       String        @db.VarChar(500)
+  refundedOn   DateTime      @map("refunded_on") @db.Date
+  recordedById String        @map("recorded_by_id") @db.Uuid
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([tenantId, paymentId])
+  @@map("refund")
+}
+
+enum CreditEntryKind {
+  /// Money received beyond what was allocated.
+  OVERPAYMENT
+  /// Credit used on an invoice (negative).
+  APPLIED
+  /// Credit paid back (negative).
+  REFUNDED
+  MANUAL
+
+  @@map("credit_entry_kind")
+}
+
+/// A student's credit balance is the sum of these (G-04); append-only.
+model CreditEntry {
+  id          String          @id @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  studentId   String          @map("student_id") @db.Uuid
+  student     Student         @relation(fields: [tenantId, studentId], references: [tenantId, id], onDelete: Restrict)
+  kind        CreditEntryKind
+  /// Signed: credit in positive, used or refunded negative.
+  amountMinor Int             @map("amount_minor")
+  paymentId   String?         @map("payment_id") @db.Uuid
+  payment     Payment?        @relation(fields: [tenantId, paymentId], references: [tenantId, id], onDelete: Restrict)
+  invoiceId   String?         @map("invoice_id") @db.Uuid
+  invoice     Invoice?        @relation(fields: [tenantId, invoiceId], references: [tenantId, id], onDelete: Restrict)
+  /// Over-payments from offline cash wait for an accountant's look (C-146).
+  needsReview Boolean         @default(false) @map("needs_review")
+  note        String?         @db.VarChar(500)
+  createdById String?         @map("created_by_id") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([tenantId, studentId, createdAt])
+  @@map("credit_entry")
+}
+
+enum NumberKind {
+  INVOICE
+  RECEIPT
+
+  @@map("number_kind")
+}
+
+/// Server-side numbering (ADR-018, C-142): one row per academy, kind and fiscal year, locked
+/// while a number is taken.
+model NumberSequence {
+  tenantId   String     @map("tenant_id") @db.Uuid
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  kind       NumberKind
+  /// e.g. `2026-27`.
+  fiscalYear String     @map("fiscal_year") @db.VarChar(9)
+  prefix     String     @db.VarChar(12)
+  lastValue  Int        @default(0) @map("last_value")
+  updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([tenantId, kind, fiscalYear])
+  @@map("number_sequence")
+}
+
+enum GatewayMode {
+  TEST
+  LIVE
+
+  @@map("gateway_mode")
+}
+
+enum GatewayAccountStatus {
+  PENDING
+  CONNECTED
+  DISABLED
+
+  @@map("gateway_account_status")
+}
+
+/// The academy's own gateway account (G-01, ADR-033). Secrets are envelope-encrypted, never
+/// logged or returned. `accountRef` addresses webhooks, so it is unique across academies.
+model TenantPaymentAccount {
+  id                String               @id @db.Uuid
+  tenantId          String               @map("tenant_id") @db.Uuid
+  tenant            Tenant               @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  provider          String               @db.VarChar(20)
+  accountRef        String               @unique @map("account_ref") @db.VarChar(64)
+  mode              GatewayMode
+  status            GatewayAccountStatus @default(PENDING)
+  credentialsCipher String               @map("credentials_cipher")
+  webhookCipher     String               @map("webhook_cipher")
+  connectedAt       DateTime?            @map("connected_at") @db.Timestamptz(3)
+  verifiedAt        DateTime?            @map("verified_at") @db.Timestamptz(3)
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  events GatewayEvent[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, status])
+  @@map("tenant_payment_account")
+}
+
+/// A verified gateway webhook, stored once (ADR-018): a replay finds the row and does nothing.
+model GatewayEvent {
+  id              String               @id @db.Uuid
+  tenantId        String               @map("tenant_id") @db.Uuid
+  accountId       String               @map("account_id") @db.Uuid
+  account         TenantPaymentAccount @relation(fields: [tenantId, accountId], references: [tenantId, id], onDelete: Restrict)
+  provider        String               @db.VarChar(20)
+  providerEventId String               @map("provider_event_id") @db.VarChar(100)
+  type            String               @db.VarChar(60)
+  payload         Json
+  paymentId       String?              @map("payment_id") @db.Uuid
+  receivedAt      DateTime             @default(now()) @map("received_at") @db.Timestamptz(3)
+  processedAt     DateTime?            @map("processed_at") @db.Timestamptz(3)
+
+  @@unique([provider, providerEventId])
+  @@index([tenantId, receivedAt])
+  @@map("gateway_event")
+}
+
+enum DocumentKind {
+  INVOICE
+  RECEIPT
+
+  @@map("document_kind")
+}
+
+enum DocumentStatus {
+  PENDING
+  READY
+  FAILED
+
+  @@map("document_status")
+}
+
+/// A rendered invoice or receipt PDF in the private bucket (G-18, C-137); immutable once ready.
+model FinanceDocument {
+  id         String         @id @db.Uuid
+  tenantId   String         @map("tenant_id") @db.Uuid
+  kind       DocumentKind
+  invoiceId  String?        @map("invoice_id") @db.Uuid
+  invoice    Invoice?       @relation(fields: [tenantId, invoiceId], references: [tenantId, id], onDelete: Restrict)
+  paymentId  String?        @map("payment_id") @db.Uuid
+  payment    Payment?       @relation(fields: [tenantId, paymentId], references: [tenantId, id], onDelete: Restrict)
+  /// A4 or MOBILE.
+  layout     String         @db.VarChar(10)
+  status     DocumentStatus @default(PENDING)
+  storageKey String?        @map("storage_key") @db.VarChar(300)
+  error      String?        @db.VarChar(200)
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  readyAt    DateTime?      @map("ready_at") @db.Timestamptz(3)
+
+  shareLinks ShareLink[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, invoiceId])
+  @@index([tenantId, paymentId])
+  @@map("finance_document")
+}
+
+/// A signed, expiring, revocable link to a document (G-18). Only the token's hash is stored.
+model ShareLink {
+  id          String          @id @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  documentId  String          @map("document_id") @db.Uuid
+  document    FinanceDocument @relation(fields: [tenantId, documentId], references: [tenantId, id], onDelete: Restrict)
+  tokenHash   String          @unique @map("token_hash") @db.Char(64)
+  expiresAt   DateTime        @map("expires_at") @db.Timestamptz(3)
+  revokedAt   DateTime?       @map("revoked_at") @db.Timestamptz(3)
+  createdById String          @map("created_by_id") @db.Uuid
+  openCount   Int             @default(0) @map("open_count")
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([tenantId, documentId])
+  @@map("share_link")
+}

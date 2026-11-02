@@ -149,6 +149,9 @@ describe('RLS coverage (ADR-005)', () => {
       audit_log: ['platform_insert', 'tenant_isolation'],
       membership: ['own_memberships', 'tenant_isolation'],
       invitation: ['tenant_isolation', 'token_lookup'],
+      // Phase 7: only drafts can be deleted (ARCHITECTURE §12.1).
+      invoice: ['invoice_delete_drafts', 'tenant_isolation'],
+      invoice_line: ['invoice_line_delete_drafts', 'tenant_isolation'],
     };
     for (const table of tables)
       expect(byTable.get(table), table).toEqual(SPECIAL[table] ?? ['tenant_isolation']);

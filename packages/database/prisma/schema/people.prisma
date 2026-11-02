@@ -63,12 +63,16 @@ model Student {
   createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  healthNote StudentHealthNote?
-  parents    ParentStudent[]
-  consents   ConsentRecord[]
-  enrolments BatchEnrolment[]
-  intents    NotificationIntent[]
-  attendance Attendance[]
+  healthNote     StudentHealthNote?
+  parents        ParentStudent[]
+  consents       ConsentRecord[]
+  enrolments     BatchEnrolment[]
+  intents        NotificationIntent[]
+  attendance     Attendance[]
+  feeAssignments FeeAssignment[]
+  invoices       Invoice[]
+  payments       Payment[]
+  credits        CreditEntry[]
 
   @@unique([tenantId, admissionNo])
   @@unique([tenantId, id])

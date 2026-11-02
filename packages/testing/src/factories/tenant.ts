@@ -354,6 +354,91 @@ async function insertPeopleAndScheduling(
      VALUES ($1, $2, $3, 'ATTENDANCE_NOT_TAKEN', $4, now())`,
     [newId(), t.id, membershipId, `fixture:${pastSessionId}`],
   );
+  // Finance (Phase 7): a closed 2019-20 history in every finance table — an ended fee plan, a
+  // paid invoice, a payment that overpaid by ₹500 then refunded it, documents and a share link,
+  // a disabled gateway account and its event — so today's numbering and generation are untouched.
+  const planId = newId();
+  const assignmentId = newId();
+  const invoiceId = newId();
+  const paymentId = newId();
+  const accountId = newId();
+  const documentId = newId();
+  await q(
+    `INSERT INTO fee_plan (id, tenant_id, name, cycle, status, updated_at)
+     VALUES ($1, $2, 'Fixture plan 2019', 'MONTHLY', 'ARCHIVED', now())`,
+    [planId, t.id],
+  );
+  await q(
+    `INSERT INTO fee_component (id, tenant_id, plan_id, name, amount_minor) VALUES ($1, $2, $3, 'Tuition', 100000)`,
+    [newId(), t.id, planId],
+  );
+  await q(
+    `INSERT INTO fee_assignment (id, tenant_id, branch_id, student_id, plan_id, starts_on, ends_on,
+       status, created_by_id, updated_at)
+     VALUES ($1, $2, $3, $4, $5, DATE '2020-01-01', DATE '2020-01-31', 'ARCHIVED', $6, now())`,
+    [assignmentId, t.id, branchId, f.studentId, planId, membershipId],
+  );
+  await q(
+    `INSERT INTO invoice (id, tenant_id, branch_id, student_id, assignment_id, kind, status, number,
+       cycle_start, cycle_end, issue_date, due_date, subtotal_minor, total_minor, paid_minor, updated_at)
+     VALUES ($1, $2, $3, $4, $5, 'REGULAR', 'PAID', 'INV/2019-20/00001', DATE '2020-01-01',
+             DATE '2020-01-31', DATE '2019-12-27', DATE '2020-01-10', 100000, 100000, 100000, now())`,
+    [invoiceId, t.id, branchId, f.studentId, assignmentId],
+  );
+  await q(
+    `INSERT INTO invoice_line (id, tenant_id, invoice_id, kind, label, unit_minor, amount_minor)
+     VALUES ($1, $2, $3, 'CHARGE', 'Tuition', 100000, 100000)`,
+    [newId(), t.id, invoiceId],
+  );
+  await q(
+    `INSERT INTO payment (id, tenant_id, branch_id, student_id, method, source, status, amount_minor,
+       refunded_minor, paid_on, receipt_number, recorded_by_id, confirmed_at, updated_at)
+     VALUES ($1, $2, $3, $4, 'CASH', 'STAFF_RECORDED', 'PARTIALLY_REFUNDED', 150000, 50000,
+             DATE '2020-01-05', 'RCT/2019-20/00001', $5, TIMESTAMPTZ '2020-01-05 06:00Z', now())`,
+    [paymentId, t.id, branchId, f.studentId, membershipId],
+  );
+  await q(
+    `INSERT INTO payment_allocation (id, tenant_id, payment_id, invoice_id, amount_minor)
+     VALUES ($1, $2, $3, $4, 100000)`,
+    [newId(), t.id, paymentId, invoiceId],
+  );
+  await q(
+    `INSERT INTO credit_entry (id, tenant_id, student_id, kind, amount_minor, payment_id)
+     VALUES ($1, $2, $3, 'OVERPAYMENT', 50000, $4), ($5, $2, $3, 'REFUNDED', -50000, $4)`,
+    [newId(), t.id, f.studentId, paymentId, newId()],
+  );
+  await q(
+    `INSERT INTO refund (id, tenant_id, payment_id, amount_minor, method, reason, refunded_on, recorded_by_id)
+     VALUES ($1, $2, $3, 50000, 'CASH', 'Overpaid', DATE '2020-01-06', $4)`,
+    [newId(), t.id, paymentId, membershipId],
+  );
+  await q(
+    `INSERT INTO number_sequence (tenant_id, kind, fiscal_year, prefix, last_value, updated_at)
+     VALUES ($1, 'INVOICE', '2019-20', 'INV', 1, now()), ($1, 'RECEIPT', '2019-20', 'RCT', 1, now())`,
+    [t.id],
+  );
+  await q(
+    `INSERT INTO tenant_payment_account (id, tenant_id, provider, account_ref, mode, status,
+       credentials_cipher, webhook_cipher, updated_at)
+     VALUES ($1, $2, 'simulator', $3, 'TEST', 'DISABLED', 'fixture', 'fixture', now())`,
+    [accountId, t.id, `fixture-${t.id}`],
+  );
+  await q(
+    `INSERT INTO gateway_event (id, tenant_id, account_id, provider, provider_event_id, type, payload, processed_at)
+     VALUES ($1, $2, $3, 'simulator', $4, 'payment.captured', '{}', now())`,
+    [newId(), t.id, accountId, `fixture-${t.id}`],
+  );
+  await q(
+    `INSERT INTO finance_document (id, tenant_id, kind, payment_id, layout, status, storage_key, ready_at)
+     VALUES ($1, $2, 'RECEIPT', $3, 'A4', 'READY', $4, now())`,
+    [documentId, t.id, paymentId, `t/${t.id}/finance/${documentId}.pdf`],
+  );
+  await q(
+    `INSERT INTO share_link (id, tenant_id, document_id, token_hash, expires_at, revoked_at, created_by_id)
+     VALUES ($1, $2, $3, encode(sha256(gen_random_uuid()::text::bytea), 'hex'),
+             TIMESTAMPTZ '2020-01-12 00:00Z', TIMESTAMPTZ '2020-01-06 00:00Z', $4)`,
+    [newId(), t.id, documentId, membershipId],
+  );
   // An earlier (replaced) logo: every tenant table has fixture rows (media_file, C-97).
   const mediaId = newId();
   await q(
