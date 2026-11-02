@@ -155,7 +155,7 @@ Each slice: branch `p7/<slice>` from the latest `main` → PR with the DoD check
 - **`SessionsService.plannedDates`:** class counts from the weekly pattern and holidays, for `PRORATE_SESSIONS`.
 - **`FeeEffectsService`:** `GET /fee-assignments/effects` (preview), `POST /fee-assignments/:id/switch` (`NEXT_CYCLE` or `PRORATE`). The UI joins the transfer and status dialogs in S8.
 - **`OpeningBalancesService`:** `POST /opening-balances`, and `/opening-balances/import` (template, upload, preview, commit, problems CSV) on its own queue; index `invoice_one_opening_balance`.
-- **Tests:** `invoice-generation.int.spec.ts` (16), `opening-balances.int.spec.ts` (6, including the G-02 500-row acceptance), `domain/cycles.spec.ts`, `domain/opening-balance.spec.ts`.
+- **Tests:** `invoice-generation.int.spec.ts` (18), `opening-balances.int.spec.ts` (6, including the G-02 500-row acceptance), `domain/cycles.spec.ts`, `domain/opening-balance.spec.ts`.
 
 ### S4 `p7/payments-api` — record, verify, allocate, refund
 - **7.12 Record payment (staff):**

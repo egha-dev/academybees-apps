@@ -468,6 +468,58 @@ describe('invoice generation', () => {
       expect(rows[1]).toMatchObject({ credit_applied_minor: 50_000 });
     });
 
+    it('another academy can neither preview nor move these fees', async () => {
+      const dearer = await newPlan('MONTHLY', [150_000]);
+      const student = await newStudent();
+      const id = await assign(student);
+      await run();
+      const other = await signIn(b, b.user.email);
+      const preview = await http()
+        .get(`/api/v1/fee-assignments/effects?studentId=${student}&change=LEFT`)
+        .set('Host', other.host)
+        .set('Cookie', other.cookie);
+      expect(preview.status).toBe(404);
+      const moved = await http()
+        .post(`/api/v1/fee-assignments/${id}/switch`)
+        .set('Host', other.host)
+        .set('Cookie', other.cookie)
+        .set('x-csrf-token', other.csrf)
+        .set('Idempotency-Key', crypto.randomUUID())
+        .send({ version: 1, toPlanId: dearer, date: '2030-06-16', mode: 'PRORATE' });
+      expect(moved.status).toBe(404);
+      const row = await su.query<{ ends_on: string | null; version: number }>(
+        'SELECT ends_on, version FROM fee_assignment WHERE id = $1',
+        [id],
+      );
+      expect(row.rows[0]).toEqual({ ends_on: null, version: 1 });
+      const credit = await su.query('SELECT 1 FROM credit_entry WHERE student_id = $1', [student]);
+      expect(credit.rows).toEqual([]);
+    });
+
+    it('needs fee.manage to move a fee', async () => {
+      const dearer = await newPlan('MONTHLY', [150_000]);
+      const student = await newStudent();
+      const id = await assign(student);
+      const email = `receptionist-${a.slug}@example.test`;
+      await addMemberFixture(urls.migrator, a.id, {
+        email,
+        roleKey: 'receptionist',
+        grants: Object.entries(ROLE_TEMPLATES.receptionist.grants).map(([capability, scope]) => ({
+          capability,
+          scope,
+        })),
+      });
+      const reception = await signIn(a, email);
+      const moved = await http()
+        .post(`/api/v1/fee-assignments/${id}/switch`)
+        .set('Host', reception.host)
+        .set('Cookie', reception.cookie)
+        .set('x-csrf-token', reception.csrf)
+        .set('Idempotency-Key', crypto.randomUUID())
+        .send({ version: 1, toPlanId: dearer, date: '2030-06-16', mode: 'NEXT_CYCLE' });
+      expect(moved.status).toBe(403);
+    });
+
     it('refuses a switch when a later cycle is already billed', async () => {
       const other = await newPlan('MONTHLY', [200_000]);
       const student = await newStudent();
