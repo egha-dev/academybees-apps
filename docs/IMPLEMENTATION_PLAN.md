@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-10-16 · Current phase: **Phase 6 — Attendance + Offline Sync (🟨 in progress since 2026-10-16)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`) · Phase 4 ✅ 2026-10-11 (tag `phase-4`) · Phase 5 ✅ 2026-10-16 (tag `phase-5`)
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-11-02 · Current phase: **Phase 7 — Finance (⬜ not started)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`) · Phase 4 ✅ 2026-10-11 (tag `phase-4`) · Phase 5 ✅ 2026-10-16 (tag `phase-5`) · Phase 6 ✅ 2026-11-02 (tag `phase-6`; **M1 Academy Alpha**)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -17,7 +17,7 @@
 | 3 | Academy Provisioning + Onboarding | ✅ 2026-10-09 | Provisioning Console slice; Plans/Entitlements/Trial (G-25); minimal People & Scheduling create commands; legal acceptance (G-06) | C-02, C-03, C-08, C-09, C-85…C-98, ADR-028/034 |
 | 4 | Students + Parents + Teachers | ✅ 2026-10-11 | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
 | 5 | Courses + Batches + Timetable | ✅ 2026-10-16 | Owner Today v1; terminology; holidays (G-03); transfer (G-27) | ADR-024/029/037 |
-| 6 | Attendance + Offline Sync | 🟨 | Teacher PWA core; outbox → in-app notifications; teacher nudge (G-16) | ADR-016/017, C-04, C-06 |
+| 6 | Attendance + Offline Sync | ✅ 2026-11-02 | Teacher PWA core; outbox → in-app notifications; teacher nudge (G-16) | ADR-016/017, C-04, C-06 |
 | 7 | Finance | ⬜ | Onboarding fee step; fee-reminder intents (in-app); **all payment methods enabled without a gateway (G-30)**; gateway-ready provider layer + simulator (G-01); fee rules (G-04); opening balances (G-02); share receipts (G-18) | ADR-010/018/033/038, C-08, C-18, C-19, C-24, C-26 |
 | **7P** | **Pilot Readiness Pack** | ⬜ | Parent Core **as the multi-academy Family Hub** (from 11, G-31); help & support (G-10); consent live (G-06); activation dashboard (G-09); demo academy (G-13); pilot runbook (G-29) | C-21, C-23 |
 | 8 | CRM | ⬜ | Public enquiry form; academy public page (G-19) | C-10, C-12 |
@@ -792,7 +792,7 @@ Phase 2 is **not** started.
 
 **Goal.** A teacher can take attendance in seconds, online or offline, and it reaches the server exactly once. This is AcademyBee's differentiator.
 **Refs.** PRD v2 §7–13, §18, v3 §10–11, v2.1 §18.6, §18.8; UX §12, §14, §24, §29; ARCHITECTURE §11; ADR-016, ADR-017.
-**Status.** 🟨 started 2026-10-16 (`phase-6-start` = `8cbe035`). Approved slice plan: [`docs/plans/phase-6.md`](plans/phase-6.md) (decisions C-124…C-131).
+**Status.** ✅ 2026-11-02 — PO acceptance recorded below (started 2026-10-16, `phase-6-start` = `8cbe035`; closed with tag `phase-6`). Approved slice plan: [`docs/plans/phase-6.md`](plans/phase-6.md) (decisions C-124…C-136).
 
 **Slices (each = one PR, ADR-041)**
 
@@ -807,7 +807,8 @@ Phase 2 is **not** started.
 | S7 | `p6/notifications` | 6.20 notification centre, 6.21 G-16 nudge, 6.22 Phase 5 review lows L1–L5 | ✅ #95 |
 | S8 | `p6/journey-e2e` | 6.23 exit E2E, 6.24 flag removal + docs + real-phone checklist; Phase 0 review M5/L8 (sync runner) | ✅ #96 |
 | Gate | `p6/gate` | P6-3 fixes: E2E never skips near midnight, missing analytics events (C-134), runbook aligned with Part F | ✅ #97 |
-| Review | `p6/review` | P6-4 fixes: H1, H2, M1–M3, M5–M7, L5–L7, L9; M4 partly (C-135) | 🟨 PR |
+| Review | `p6/review` | P6-4 fixes: H1, H2, M1–M3, M5–M7, L5–L7, L9; M4 partly (C-135) | ✅ #98 |
+| Close | `p6/po-notices` | C-136 (absence notices stored until 7P), exit notes | ✅ #99 |
 
 
 **Scope**
@@ -827,6 +828,64 @@ Phase 2 is **not** started.
 - Performance smoke: bulk write of a 60-student session < 300 ms p95 locally.
 
 **Exit gate.** Common gate incl. offline suite; real-phone test on Android Chrome and iOS Safari (installed PWA) with airplane mode; **M1 Academy Alpha**.
+
+**Exit notes (2026-11-02 — Phase 6 ✅, M1 Academy Alpha)**
+
+*PO acceptance.* **Accepted by the Product Owner on 2026-11-02** ("close Phase 6"), after the gate (P6-3) and the independent review (P6-4) fixes were on staging (`222c185`). The PO decided that absence notices stay stored until 7P (C-136). The real-phone checklist (`docs/runbooks/phase-6-real-phones.md`) was handed to the PO; no per-step results were reported here.
+
+*Delivered.*
+- **Attendance** (ADR-017, C-126…C-130):
+  - versioned marks per class and student, append-only history;
+  - a whole roll call saves atomically under the class-row lock;
+  - conflicts are detected per student and resolved by the user;
+  - the first roll call completes the class;
+  - 48 h teacher edit window (a queued change must be made in it) and 7-day offline acceptance; `attendance.edit_past` beyond;
+  - absence and late notices for parents stored in the same transaction and voided on correction (delivered from 7P).
+- **Offline sync** (ADR-016):
+  - a `sync_operation` ledger makes each op exactly once (50 concurrent pushes → one row);
+  - push / bootstrap / pull with removal by absence;
+  - per-class ordering, including after transient failures; `401 MEMBERSHIP_REVOKED` wipes the device;
+  - beacon metrics.
+  - Client (`packages/sync`): Dexie v2, `SyncClient`, `SyncEngine`, a hardened runner (timeouts, recovery under the Web Lock), conflict resolve, Try again, Discard.
+- **Teacher PWA** (C-06, C-124):
+  - Today, Classes, Attendance (Mark all present, 48 px toggles), Students, Sync Center, More;
+  - local-first shells cached by the service worker, so they open offline after a reload or restart;
+  - status line in records; sign-out guard on every page; flag removed.
+- **Owners and admins** (C-131, C-132):
+  - Owner Today completion and "Attendance not taken" (G-16);
+  - `/attendance` overview, `/attendance/take` and `/attendance/sync`;
+  - Attendance tabs on the Batch Workspace and Student 360 with percentages.
+- **Notifications** (C-04, G-16): in-app `Notification`, the bell and `/notifications`; a teacher nudge 30 minutes after a class without a roll call (job every 10 minutes).
+- **Phase 5 lows L1–L5 fixed** (C-123); **Phase 0 review M5/L8 fixed** (C-133).
+- **Analytics** (counts only): `attendance.marked`, `sync.pushed`, `sync.conflict_resolved`, `notification.read`.
+- **Seeds (local/CI):** two weeks of roll calls in demo-a.
+
+*Pinned toolchain.* Unchanged (no new dependencies; `fake-indexeddb` added to web dev dependencies from the existing catalog entry).
+
+*Deviations, each recorded before or while coding.* C-124…C-136. The main ones:
+- **C-124:** local-first teacher shells;
+- **C-125:** Dexie domain tables as v2;
+- **C-127:** percentages computed on read (no summary tables);
+- **C-128:** intents written in the attendance transaction;
+- **C-129:** no STARTED status;
+- **C-131:** staff use the teacher screen and queue;
+- **C-132:** roll calls older than 7 days are shown, not edited, from screens;
+- **ARCHITECTURE §11.3:** no `BLOCKED` status; whole-set snapshots instead of tombstones; revocation is a 401.
+
+*Known limitations.*
+- **Before 7P:** a real pilot register and timetable (A10); per-child consent on every hub/LINKED read (C-110 M2).
+- **Staging deploy workflow:** "Deploy staging" fails with an invalid `RAILWAY_TOKEN` after migrating. Staging still serves the latest `main` by another path that wasn't confirmed and that may not wait for migrations. Renew the token (PO, `staging-variables.md` §G) before the next schema change.
+- **Deferred review items (C-135):**
+  - M4: snapshot paging, needed above ~500 students;
+  - L1: empty classes stay "not taken"; L2: late corrections create notices (both 7P);
+  - L3: windows as a setting; L4: nudge audit noise (Phase 15); L8: separators (Phase L);
+  - L10, L11: backlog.
+- **iPhone offline** is proven only on a real phone (Playwright's WebKit runs the online path).
+- **Route budget:** Phase 6 pages are 183.7–190.0 KB of 200 KB.
+
+*Release flags (ADR-041).*
+- `p6-teacher-pwa` (added in S4) was **removed in S8**.
+- Still defined: `p1-hub-placeholder` (PO, remove 7P, expires 2027-06-30).
 
 **Gate (P6-3, 2026-10-30, `main` = `192fcf4`; staging serving `192fcf4`).**
 - **Exit E2E:** `attendance-journey.spec.ts` passes on desktop Chromium, Android Chromium and iPhone WebKit (PR #96 run). The Chromium runs include the offline correction, the reload, one sync, and one absent and one late intent.
