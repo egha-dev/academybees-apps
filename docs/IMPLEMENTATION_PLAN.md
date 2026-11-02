@@ -1,6 +1,6 @@
 # AcademyBee — Implementation Plan
 
-> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-11-02 · Current phase: **Phase 7 — Finance (⬜ not started)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`) · Phase 4 ✅ 2026-10-11 (tag `phase-4`) · Phase 5 ✅ 2026-10-16 (tag `phase-5`) · Phase 6 ✅ 2026-11-02 (tag `phase-6`; **M1 Academy Alpha**)
+> Status: **Baseline v1.5** (incorporates PRD v3.2 Addendum incl. G-30 payments, G-31 Family Hub, G-32 multilingual; slice workflow ADR-041; P-00 orientation decisions C-29…C-41, OD-14/19/20/21) · Last updated: 2026-11-02 · Current phase: **Phase 7 — Finance (🟨 in progress since 2026-11-02)** · Phase 0 ✅ 2026-10-01 (tag `phase-0`) · Phase 1 ✅ 2026-10-02 (tag `phase-1`) · Phase 2 ✅ 2026-10-07 (tag `phase-2`; **M0 Foundation Release**) · Phase 3 ✅ 2026-10-09 (tag `phase-3`) · Phase 4 ✅ 2026-10-11 (tag `phase-4`) · Phase 5 ✅ 2026-10-16 (tag `phase-5`) · Phase 6 ✅ 2026-11-02 (tag `phase-6`; **M1 Academy Alpha**)
 > Build order is the Product Owner's 17-phase sequence (DECISIONS C-01) plus **Phase 7P — Pilot Readiness Pack** (C-21). `G-xx` = gap requirement from `docs/PRD_ADDENDUM_v3.2.md`. Items pulled forward to satisfy dependencies are marked **⤴ pulled forward** with their decision reference.
 > A phase is DONE only when its exit gate and the Common Phase Gate (§2) pass. Never mark a phase complete because screens render.
 > Work lands on `main` in small **slices** (1–5 tasks per PR, auto-merged when CI is green) behind release flags; a phase starts with tag `phase-<id>-start` and closes with tag `phase-<id>` (ADR-041).
@@ -18,7 +18,7 @@
 | 4 | Students + Parents + Teachers | ✅ 2026-10-11 | Command palette, Global Add, activity timeline; import (G-02); full profile (G-05); consent (G-06); parent invites into the Family Hub, Join QR poster, Join requests queue (G-31) | ADR-026/027/034/036/039, C-22 |
 | 5 | Courses + Batches + Timetable | ✅ 2026-10-16 | Owner Today v1; terminology; holidays (G-03); transfer (G-27) | ADR-024/029/037 |
 | 6 | Attendance + Offline Sync | ✅ 2026-11-02 | Teacher PWA core; outbox → in-app notifications; teacher nudge (G-16) | ADR-016/017, C-04, C-06 |
-| 7 | Finance | ⬜ | Onboarding fee step; fee-reminder intents (in-app); **all payment methods enabled without a gateway (G-30)**; gateway-ready provider layer + simulator (G-01); fee rules (G-04); opening balances (G-02); share receipts (G-18) | ADR-010/018/033/038, C-08, C-18, C-19, C-24, C-26 |
+| 7 | Finance | 🟨 | Onboarding fee step; fee-reminder intents (in-app); **all payment methods enabled without a gateway (G-30)**; gateway-ready provider layer + simulator (G-01); fee rules (G-04); opening balances (G-02); share receipts (G-18) | ADR-010/018/033/038, C-08, C-18, C-19, C-24, C-26 |
 | **7P** | **Pilot Readiness Pack** | ⬜ | Parent Core **as the multi-academy Family Hub** (from 11, G-31); help & support (G-10); consent live (G-06); activation dashboard (G-09); demo academy (G-13); pilot runbook (G-29) | C-21, C-23 |
 | 8 | CRM | ⬜ | Public enquiry form; academy public page (G-19) | C-10, C-12 |
 | 9 | Learning | ⬜ | Teacher learning tab; offline drafts/notes; file storage | ADR-021 |
@@ -919,6 +919,22 @@ Phase 2 is **not** started.
 
 **Goal.** Invoice → payment → receipt is authoritative, auditable and impossible to double-count.
 **Refs.** PRD v2 §19, §30, v3 §9, §12; UX §13, §29; ARCHITECTURE §12; ADR-010, ADR-018; OD-02, OD-10.
+**Status.** 🟨 started 2026-11-02 (`phase-7-start` = `9267fd3`). Approved slice plan: [`docs/plans/phase-7.md`](plans/phase-7.md) (decisions C-137…C-146).
+
+**Slices (each = one PR, ADR-041)**
+
+| Slice | Branch | Tasks | State |
+| --- | --- | --- | --- |
+| S1 | `p7/finance-core` | 7.1 plan + decisions, 7.2 finance schema + RLS, 7.3 money, state machines, numbering | 🟨 PR |
+| S2 | `p7/fees-api` | 7.4 fee plans/assignments + policy scope, 7.5 Settings → Payments API, 7.6 cross-tenant | ⬜ |
+| S3 | `p7/invoices-api` | 7.7 invoices, 7.8 generation job, 7.9 overdue + late fees, 7.10 G-27 effects, 7.11 opening balances | ⬜ |
+| S4 | `p7/payments-api` | 7.12 record + allocate, 7.13 verify queue + cheques + UTR, 7.14 hub reported payments (flag `p7-hub-payments`), 7.15 refunds | ⬜ |
+| S5 | `p7/provider-layer` | 7.16 providers + simulator, 7.17 tenant accounts, 7.18 webhooks + reconciliation | ⬜ |
+| S6 | `p7/documents` | 7.19 templates, 7.20 PDF job (C-137), 7.21 share links | ⬜ |
+| S7 | `p7/finance-settings-ui` | 7.22 Settings → Payments, 7.23 fee plans, 7.24 onboarding Fee Setup (flag `p7-finance`) | ⬜ |
+| S8 | `p7/finance-ui` | 7.25 dashboard, 7.26 invoices, 7.27 Collect drawer, 7.28 payments + verify + refunds, 7.29 tabs, Today, Global Add | ⬜ |
+| S9 | `p7/offline-cash` | 7.30 Dexie v3 + `payment.recordCash`, 7.31 reminder intents | ⬜ |
+| S10 | `p7/journey-e2e` | 7.32 exit E2E, 7.33 flag removal + docs | ⬜ |
 
 **Scope**
 - Fee plans (monthly/quarterly/half-yearly/annual/custom, components), student fee assignments with discounts (percent/fixed, validity), recurring invoice generation job + manual invoice, invoice issue/cancel, `NumberSequence` numbering, optional tax config (OD-10).
