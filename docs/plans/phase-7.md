@@ -91,6 +91,32 @@ Each slice: branch `p7/<slice>` from the latest `main` → PR with the DoD check
 - **7.6 Cross-tenant registry** entries for every endpoint.
 - **Tests:** CRUD plus scope; settings validation; a bad VPA; prefix locked once used.
 
+*As built (S1, #100):*
+- **Schema:** migration `20261102090000_finance`, 14 tables.
+- **`080-finance.sql`:**
+  - allocations, refunds, credit entries and gateway events are append-only (gateway events may only get `processed_at` / `payment_id`);
+  - only DRAFT invoices and their lines can be deleted (restrictive RLS policies);
+  - CHECKs: invoice totals (`total = subtotal − discount + tax`; settled ≤ total; numbered ⇔ not draft); payment shape (confirmed ⇔ `confirmed_at`; cheque and UPI/bank/card need a reference; parent-reported needs the hub user);
+  - the duplicate-reference guard (unique per method unless the earlier payment failed);
+  - `invoice_one_per_cycle` (generation idempotency).
+- **Fixtures:** a closed 2019-20 history in every new table.
+- **Domain:** `money.ts` (half-up, largest-remainder splits, instalments, proration, GST exclusive/inclusive on discounted lines, oldest-first allocation), `invoice.state.ts`, `payment.state.ts`, `numbering.ts`.
+- **Tests:** 16 unit, including fast-check properties; database integration 499.
+- **Also:** the tenant client's query hook casts its arguments once (TS2590 with the larger schema).
+
+*As built (S2):*
+- **Contracts `finance.ts`:** fee plans, assignments (with a discount or instalments), `FinanceSettingsSchema` with C-139…C-143 defaults, `upiLink()` shared by API and web; VPA, GSTIN and IFSC validation.
+- **`modules/finance`:**
+  - `FeePlansService` (academy-wide; components replaced whole; versioned; audited);
+  - `FeeAssignmentsService` (listed students or a batch's roster on the start date; branch scope via the copied `branchId`; LEFT/COMPLETED refused; never on one plan twice over the same dates);
+  - `FinanceSettingsService` (sections replace stored ones; prefixes lock once a number is taken in the fiscal year; gateway status; the UPI preview).
+  - `StudentsService.forFees` in people.
+- **Endpoints:**
+  - `GET/POST /fee-plans`, `GET/PATCH /fee-plans/:id`;
+  - `GET/POST /fee-assignments`, `GET/PATCH /fee-assignments/:id`;
+  - `GET /settings/finance` (`fee.read`), `PATCH /settings/finance` (`academy.settings.manage`, owner: academy-wide settings aren't for a branch-scoped accountant).
+- **Tests:** `fees.int.spec.ts` (4); cross-tenant registry entries for every new endpoint; contracts unit (4).
+
 ### S3 `p7/invoices-api` — invoices, generation, rules
 - **7.7 Invoices:**
   - draft / manual / issue (number, snapshot, credit auto-apply) / cancel (no confirmed payments) / write-off (C-141);
