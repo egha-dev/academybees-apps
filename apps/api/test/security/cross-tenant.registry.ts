@@ -755,6 +755,41 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     ...(method === 'GET' ? {} : { idempotent: true, body: { version: 1, mapping: {} } }),
     spoof: { skip: 'import.int.spec.ts › roles and academies' },
   })),
+  // Fee effects (Phase 7 S3b): another academy's attempts are in the dedicated test.
+  ...(
+    [
+      ['GET', '/api/v1/fee-assignments/effects', null, 'fee.read'],
+      ['POST', '/api/v1/fee-assignments/:id/switch', 'fee-assignment', 'fee.manage'],
+    ] as const
+  ).map(([method, path, fixture, capability]) => ({
+    method,
+    path,
+    ...(fixture ? { params: { id: fixture } } : {}),
+    session: true,
+    capability,
+    spoof: {
+      skip: 'invoice-generation.int.spec.ts › another academy can neither preview nor move',
+    },
+  })),
+  // Opening balances (Phase 7 S3b): another academy's students and jobs are exercised end to end.
+  ...(
+    [
+      ['POST', '/api/v1/opening-balances', null],
+      ['GET', '/api/v1/opening-balances/import/template', null],
+      ['POST', '/api/v1/opening-balances/import', null],
+      ['GET', '/api/v1/opening-balances/import/:id', 'missing-import'],
+      ['POST', '/api/v1/opening-balances/import/:id/commit', 'missing-import'],
+      ['GET', '/api/v1/opening-balances/import/:id/errors.csv', 'missing-import'],
+    ] as const
+  ).map(([method, path, fixture]) => ({
+    method,
+    path,
+    ...(fixture ? { params: { id: fixture } } : {}),
+    session: true,
+    capability: 'invoice.create',
+    ...(method === 'GET' ? {} : { idempotent: true, body: { version: 1 } }),
+    spoof: { skip: 'opening-balances.int.spec.ts › another academy' },
+  })),
   // Student photos (Phase 4 S5): need private storage; covered by student-photo.int.spec.ts.
   ...(
     [

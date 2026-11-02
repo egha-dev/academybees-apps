@@ -1,6 +1,6 @@
 # P7-1 · Phase 7 — Finance: plan
 
-> **Approved by the PO on 2026-11-02** (`phase-7-start` = `9267fd3`). Decisions C-137…C-146 recorded in DECISIONS.md.
+> **Approved by the PO on 2026-11-02** (`phase-7-start` = `9267fd3`). Decisions C-137…C-146 recorded in DECISIONS.md; C-147…C-149 added in S3b.
 
 ## Context
 
@@ -147,6 +147,15 @@ Each slice: branch `p7/<slice>` from the latest `main` → PR with the DoD check
 - **i18n:** a `finance` namespace; line labels the server writes come from it.
 - **Fixed before merge:** issuing deleted the draft's lines after flipping the status, which the delete policy would silently refuse, duplicating lines. Lines now go first; the test checks one set of lines.
 - **Tests:** `invoices.int.spec.ts` (11): draft → issue; replay keeps one number; 12 concurrent issues → 12 numbers; concurrent credit; GST frozen at issue; write-off; cancel refused after payment; overdue run; late fees once; roles; keyset; another academy. Registry entries for all 10 endpoints.
+
+*As built (S3b; C-147…C-149):*
+- **`domain/cycles.ts`:** cycles lined up with April, custom cycles from the assignment's start; which cycles are due; due dates; mid-cycle share; one cycle's invoices with discounts and instalments that always add back up (property tests).
+- **`InvoiceGenerationService`** in the daily finance job: pages through active assignments, one transaction per assignment so a bad row can't stop the rest; run twice → billed once; a cancelled invoice isn't remade; `invoice.generated` analytics.
+- **`student.status_changed_on`** (migration `20261102150000`): someone back from a pause mid-cycle is billed as a joiner.
+- **`SessionsService.plannedDates`:** class counts from the weekly pattern and holidays, for `PRORATE_SESSIONS`.
+- **`FeeEffectsService`:** `GET /fee-assignments/effects` (preview), `POST /fee-assignments/:id/switch` (`NEXT_CYCLE` or `PRORATE`). The UI joins the transfer and status dialogs in S8.
+- **`OpeningBalancesService`:** `POST /opening-balances`, and `/opening-balances/import` (template, upload, preview, commit, problems CSV) on its own queue; index `invoice_one_opening_balance`.
+- **Tests:** `invoice-generation.int.spec.ts` (18), `opening-balances.int.spec.ts` (6, including the G-02 500-row acceptance), `domain/cycles.spec.ts`, `domain/opening-balance.spec.ts`.
 
 ### S4 `p7/payments-api` — record, verify, allocate, refund
 - **7.12 Record payment (staff):**

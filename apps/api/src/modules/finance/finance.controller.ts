@@ -1,11 +1,16 @@
 import {
   CloseInvoiceSchema,
+  CommitImportSchema,
   CreateFeeAssignmentsSchema,
+  CreateOpeningBalanceSchema,
+  ImportJobSchema,
   CreateFeePlanSchema,
   CreateInvoiceSchema,
   FeeAssignmentListQuerySchema,
   FeeAssignmentListSchema,
   FeeAssignmentSchema,
+  FeeEffectsQuerySchema,
+  FeeEffectsSchema,
   FeePlanListQuerySchema,
   FeePlanListSchema,
   FeePlanSchema,
@@ -16,6 +21,8 @@ import {
   InvoiceVersionQuerySchema,
   InvoiceVersionSchema,
   LateFeeSuggestionListSchema,
+  SwitchFeeAssignmentResultSchema,
+  SwitchFeeAssignmentSchema,
   UpdateFeeAssignmentSchema,
   UpdateFeePlanSchema,
   UpdateInvoiceSchema,
@@ -26,18 +33,24 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
+  Req,
+  Res,
 } from '@nestjs/common';
+import type { Request, Response } from 'express';
 
 import { Idempotent } from '../../core/idempotency/idempotent.js';
 import { Can } from '../../core/rbac/can.decorator.js';
 import { createZodDto, ZodResponse } from '../../core/validation/zod-dto.js';
 import { FeeAssignmentsService } from './fee-assignments.service.js';
+import { FeeEffectsService } from './fee-effects.service.js';
+import { OpeningBalancesService } from './opening-balances.service.js';
 import { FeePlansService } from './fee-plans.service.js';
 import { FinanceSettingsService } from './finance-settings.service.js';
 import { InvoicesService } from './invoices.service.js';
@@ -48,6 +61,10 @@ class UpdateFeePlanDto extends createZodDto(UpdateFeePlanSchema) {}
 class FeeAssignmentListQueryDto extends createZodDto(FeeAssignmentListQuerySchema) {}
 class CreateFeeAssignmentsDto extends createZodDto(CreateFeeAssignmentsSchema) {}
 class UpdateFeeAssignmentDto extends createZodDto(UpdateFeeAssignmentSchema) {}
+class CreateOpeningBalanceDto extends createZodDto(CreateOpeningBalanceSchema) {}
+class CommitImportDto extends createZodDto(CommitImportSchema) {}
+class FeeEffectsQueryDto extends createZodDto(FeeEffectsQuerySchema) {}
+class SwitchFeeAssignmentDto extends createZodDto(SwitchFeeAssignmentSchema) {}
 class UpdateFinanceSettingsDto extends createZodDto(UpdateFinanceSettingsSchema) {}
 class InvoiceListQueryDto extends createZodDto(InvoiceListQuerySchema) {}
 class CreateInvoiceDto extends createZodDto(CreateInvoiceSchema) {}
@@ -97,7 +114,10 @@ export class FeePlansController {
 /** Students on fee plans (G-04, G-27). */
 @Controller({ path: 'fee-assignments', version: '1' })
 export class FeeAssignmentsController {
-  constructor(private readonly assignments: FeeAssignmentsService) {}
+  constructor(
+    private readonly assignments: FeeAssignmentsService,
+    private readonly effects: FeeEffectsService,
+  ) {}
 
   @Get()
   @Can('fee.read')
@@ -115,6 +135,14 @@ export class FeeAssignmentsController {
     return this.assignments.create(body);
   }
 
+  /** What a transfer or status change would do to this student's fees (G-27). */
+  @Get('effects')
+  @Can('fee.read')
+  @ZodResponse(FeeEffectsSchema)
+  preview(@Query() query: FeeEffectsQueryDto) {
+    return this.effects.preview(query);
+  }
+
   @Get(':id')
   @Can('fee.read')
   @ZodResponse(FeeAssignmentSchema)
@@ -127,6 +155,15 @@ export class FeeAssignmentsController {
   @ZodResponse(FeeAssignmentSchema)
   update(@Param('id', Id) id: string, @Body() body: UpdateFeeAssignmentDto) {
     return this.assignments.update(id, body);
+  }
+
+  @Post(':id/switch')
+  @Can('fee.manage')
+  @Idempotent()
+  @HttpCode(200)
+  @ZodResponse(SwitchFeeAssignmentResultSchema)
+  switchPlan(@Param('id', Id) id: string, @Body() body: SwitchFeeAssignmentDto) {
+    return this.effects.switchPlan(id, body);
   }
 }
 
@@ -238,5 +275,81 @@ export class InvoicesController {
   @ZodResponse(InvoiceSchema)
   lateFee(@Param('id', Id) id: string) {
     return this.invoices.applyLateFee(id);
+  }
+}
+
+/** Dues from before AcademyBee (G-02): one at a time, or from a spreadsheet (ADR-036). */
+@Controller({ path: 'opening-balances', version: '1' })
+export class OpeningBalancesController {
+  constructor(private readonly balances: OpeningBalancesService) {}
+
+  @Post()
+  @Can('invoice.create')
+  @Idempotent()
+  @HttpCode(201)
+  @ZodResponse(InvoiceSchema)
+  create(@Body() body: CreateOpeningBalanceDto) {
+    return this.balances.create(body);
+  }
+
+  @Get('import/template')
+  @Can('invoice.create')
+  template(@Res() res: Response): void {
+    res
+      .status(200)
+      .set({
+        'content-type': 'text/csv; charset=utf-8',
+        'content-disposition': 'attachment; filename="opening-balances-template.csv"',
+        'cache-control': 'no-store',
+      })
+      .send(this.balances.template());
+  }
+
+  /** Raw file bytes; the file name travels in `x-file-name` (URI-encoded). */
+  @Post('import')
+  @Can('invoice.create')
+  @Idempotent()
+  @HttpCode(201)
+  @ZodResponse(ImportJobSchema)
+  upload(@Req() req: Request, @Headers('x-file-name') fileName: string | undefined) {
+    const bytes = req.body instanceof Uint8Array ? req.body : new Uint8Array();
+    let name = 'opening-balances';
+    try {
+      name = decodeURIComponent(fileName ?? name);
+    } catch {
+      // keep the default
+    }
+    return this.balances.upload(bytes, name);
+  }
+
+  @Get('import/:id')
+  @Can('invoice.create')
+  @ZodResponse(ImportJobSchema)
+  get(@Param('id', Id) id: string) {
+    return this.balances.get(id);
+  }
+
+  @Post('import/:id/commit')
+  @Can('invoice.create')
+  @Idempotent()
+  @HttpCode(200)
+  @ZodResponse(ImportJobSchema)
+  commit(@Param('id', Id) id: string, @Body() body: CommitImportDto) {
+    return this.balances.commit(id, body.version);
+  }
+
+  /** Rows that weren't imported, with the problem in words (CSV, formula-safe). */
+  @Get('import/:id/errors.csv')
+  @Can('invoice.create')
+  async errors(@Param('id', Id) id: string, @Res() res: Response): Promise<void> {
+    const report = await this.balances.errorReport(id);
+    res
+      .status(200)
+      .set({
+        'content-type': 'text/csv; charset=utf-8',
+        'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(report.fileName)}`,
+        'cache-control': 'no-store',
+      })
+      .send(report.csv);
   }
 }

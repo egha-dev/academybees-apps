@@ -5,3 +5,13 @@ export { ParentsService } from './parents.service.js';
 export { PeopleModule } from './people.module.js';
 export { PeopleService } from './people.service.js';
 export { StudentsService } from './students.service.js';
+export { ImportService } from './import/import.service.js';
+export {
+  csvCell,
+  detectType,
+  INVALID_DATE,
+  normaliseHeader,
+  parseDate,
+  parseRows,
+  UnreadableFileError,
+} from './import/parse.js';

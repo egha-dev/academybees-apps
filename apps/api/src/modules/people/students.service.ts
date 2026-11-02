@@ -322,7 +322,13 @@ export class StudentsService {
       // Moving back into a seat counts against the plan's limit (ADR-028).
       if (!SEATED.has(row.status) && SEATED.has(input.status))
         await this.entitlements.assertWithinLimit('students', 1, tx);
-      await this.bumpVersion(tx, id, input.version, { status: input.status });
+      const tenant = await tx.tenant.findFirst({ select: { timezone: true } });
+      await this.bumpVersion(tx, id, input.version, {
+        status: input.status,
+        statusChangedOn: new Date(
+          `${localDate(new Date(), tenant?.timezone ?? 'Asia/Kolkata')}T00:00:00Z`,
+        ),
+      });
       await this.audit.record(
         {
           action: 'student.status_changed',
@@ -449,6 +455,53 @@ export class StudentsService {
     });
     if (rows.length !== unique.length) throw new DomainError('NOT_FOUND', 'student');
     return rows;
+  }
+
+  /** Students by admission number in the caller's scope; a spreadsheet's way of naming them. */
+  async byAdmissionNos(db: Pick<TransactionClient, 'student'>, numbers: readonly string[]) {
+    return db.student.findMany({
+      where: {
+        AND: [
+          { admissionNo: { in: [...new Set(numbers)] } },
+          this.scope('student.read'),
+          { archivedAt: null },
+        ],
+      },
+      select: { id: true, branchId: true, fullName: true, admissionNo: true, status: true },
+    });
+  }
+
+  /**
+   * For the academy's own billing job (no caller, so no scope; the tenant-bound client still
+   * limits it to this academy): each student's status, and who shares a primary parent (C-138).
+   */
+  async billingFacts(db: Pick<TransactionClient, 'student'>, ids: readonly string[]) {
+    const rows = await db.student.findMany({
+      where: { id: { in: [...new Set(ids)] }, archivedAt: null },
+      select: { id: true, status: true, statusChangedOn: true },
+    });
+    return new Map(
+      rows.map((r) => [
+        r.id,
+        {
+          status: r.status,
+          statusChangedOn: r.statusChangedOn?.toISOString().slice(0, 10) ?? null,
+        },
+      ]),
+    );
+  }
+
+  /** Every active student with their primary parent, for the sibling discount (C-138). */
+  async primaryParentLinks(db: Pick<TransactionClient, 'parentStudent'>) {
+    const rows = await db.parentStudent.findMany({
+      where: { isPrimaryContact: true, student: { status: 'ACTIVE', archivedAt: null } },
+      select: { parentId: true, studentId: true, student: { select: { admissionDate: true } } },
+    });
+    return rows.map((r) => ({
+      parentId: r.parentId,
+      studentId: r.studentId,
+      admissionDate: r.student.admissionDate.toISOString().slice(0, 10),
+    }));
   }
 
   /** The student exists in the caller's `student.read` scope (for sub-resources), else 404. */

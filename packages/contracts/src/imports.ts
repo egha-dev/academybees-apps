@@ -48,6 +48,8 @@ export const IMPORT_ISSUES = [
   'invalid_value',
   'unknown_batch',
   'duplicate_in_file',
+  'invalid_amount',
+  'unknown_student',
 ] as const;
 export type ImportIssue = (typeof IMPORT_ISSUES)[number];
 

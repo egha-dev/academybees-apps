@@ -919,7 +919,7 @@ Phase 2 is **not** started.
 
 **Goal.** Invoice → payment → receipt is authoritative, auditable and impossible to double-count.
 **Refs.** PRD v2 §19, §30, v3 §9, §12; UX §13, §29; ARCHITECTURE §12; ADR-010, ADR-018; OD-02, OD-10.
-**Status.** 🟨 started 2026-11-02 (`phase-7-start` = `9267fd3`). Approved slice plan: [`docs/plans/phase-7.md`](plans/phase-7.md) (decisions C-137…C-146).
+**Status.** 🟨 started 2026-11-02 (`phase-7-start` = `9267fd3`). Approved slice plan: [`docs/plans/phase-7.md`](plans/phase-7.md) (decisions C-137…C-149).
 
 **Slices (each = one PR, ADR-041)**
 
@@ -927,8 +927,8 @@ Phase 2 is **not** started.
 | --- | --- | --- | --- |
 | S1 | `p7/finance-core` | 7.1 plan + decisions, 7.2 finance schema + RLS, 7.3 money, state machines, numbering | ✅ #100 |
 | S2 | `p7/fees-api` | 7.4 fee plans/assignments + policy scope, 7.5 Settings → Payments API, 7.6 cross-tenant | ✅ #101 |
-| S3 | `p7/invoices-api` | 7.7 invoices, 7.9 overdue + late fees | 🟨 PR |
-| S3b | `p7/invoice-generation` | 7.8 generation job, 7.10 G-27 effects, 7.11 opening balances | ⬜ |
+| S3 | `p7/invoices-api` | 7.7 invoices, 7.9 overdue + late fees | ✅ #102 |
+| S3b | `p7/invoice-generation` | 7.8 generation job, 7.10 G-27 effects, 7.11 opening balances (C-147…C-149) | 🟨 PR |
 | S4 | `p7/payments-api` | 7.12 record + allocate, 7.13 verify queue + cheques + UTR, 7.14 hub reported payments (flag `p7-hub-payments`), 7.15 refunds | ⬜ |
 | S5 | `p7/provider-layer` | 7.16 providers + simulator, 7.17 tenant accounts, 7.18 webhooks + reconciliation | ⬜ |
 | S6 | `p7/documents` | 7.19 templates, 7.20 PDF job (C-137), 7.21 share links | ⬜ |

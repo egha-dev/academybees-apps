@@ -577,7 +577,9 @@
       "invalid_relationship": "Use Mother, Father, Guardian, Grandparent or Other",
       "invalid_value": "Not a value this field accepts",
       "unknown_batch": "No batch with this name at the academy",
-      "duplicate_in_file": "Same student appears earlier in the file"
+      "duplicate_in_file": "Same student appears earlier in the file",
+      "invalid_amount": "Not an amount (use a number above zero, like 12500 or 12,500.50)",
+      "unknown_student": "No student with this admission number"
     },
     "report": {
       "row": "Row",

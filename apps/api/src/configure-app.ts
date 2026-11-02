@@ -39,9 +39,9 @@ export function configureApp(app: INestApplication, config: ApiConfig): void {
       limit: '3mb',
     }),
   );
-  // Student import files (G-02, C-101): the service checks the 5 MB limit and the real type.
+  // Student and opening-balance import files (G-02, C-101): the service checks the 5 MB limit and the real type.
   express.use(
-    /^\/api\/v1\/students\/import$/,
+    /^\/api\/v1\/(students\/import|opening-balances\/import)$/,
     raw({
       type: [
         'text/csv',

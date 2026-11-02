@@ -9,6 +9,7 @@ import type { RequestContext } from '../../core/context/request-context.js';
 import { TENANT_DB } from '../../core/database/database.module.js';
 import { DomainError } from '../../core/errors/domain-error.js';
 import { scopedWhere } from '../../core/rbac/scope.js';
+import { plannedSessions } from './domain/generate.js';
 import { batchPolicy, sessionPolicy } from './scheduling.policy.js';
 
 export const SESSION_SELECT = {
@@ -104,6 +105,72 @@ export class SessionsService {
     capability: 'timetable.read' | 'session.manage' | 'attendance.read' | 'attendance.mark',
   ): Prisma.ClassSessionWhereInput {
     return scopedWhere(this.cls, capability, sessionPolicy);
+  }
+
+  /**
+   * The dates a batch's weekly slots give over a date range, skipping holidays (for billing by
+   * classes, C-147). Worked out from the pattern because classes are only materialised 28 days
+   * ahead (C-112), so a cycle may not have its rows yet.
+   */
+  async plannedDates(
+    db: Pick<TransactionClient, 'scheduleRule' | 'holiday' | 'batch'>,
+    batchId: string,
+    from: string,
+    to: string,
+  ): Promise<string[]> {
+    const batch = await db.batch.findFirst({
+      where: { id: batchId },
+      select: { branchId: true, startsOn: true, endsOn: true },
+    });
+    if (!batch) return [];
+    const start = new Date(`${from}T00:00:00Z`);
+    const end = new Date(`${to}T00:00:00Z`);
+    const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
+    const [rules, holidays] = await Promise.all([
+      db.scheduleRule.findMany({
+        where: {
+          batchId,
+          effectiveFrom: { lte: end },
+          OR: [{ effectiveTo: null }, { effectiveTo: { gte: start } }],
+        },
+        select: {
+          id: true,
+          teacherId: true,
+          weekday: true,
+          startMinute: true,
+          endMinute: true,
+          effectiveFrom: true,
+          effectiveTo: true,
+        },
+      }),
+      db.holiday.findMany({
+        where: { removedAt: null, startDate: { lte: end }, endDate: { gte: start } },
+        select: { startDate: true, endDate: true, branchId: true },
+      }),
+    ]);
+    const days = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
+    return plannedSessions(
+      rules.map((r) => ({
+        id: r.id,
+        batchId,
+        branchId: batch.branchId,
+        teacherId: r.teacherId,
+        weekday: r.weekday,
+        startMinute: r.startMinute,
+        endMinute: r.endMinute,
+        effectiveFrom: iso(r.effectiveFrom)!,
+        effectiveTo: iso(r.effectiveTo),
+        batchStartsOn: iso(batch.startsOn),
+        batchEndsOn: iso(batch.endsOn),
+      })),
+      holidays.map((h) => ({
+        startDate: iso(h.startDate)!,
+        endDate: iso(h.endDate)!,
+        branchId: h.branchId,
+      })),
+      // Past classes count too: the epoch means none is skipped as already started.
+      { from, days, timeZone: 'UTC', now: new Date(0) },
+    ).map((s) => s.date);
   }
 
   /**

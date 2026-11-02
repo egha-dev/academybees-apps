@@ -138,7 +138,7 @@ export class ImportService {
   }
 
   async get(id: string): Promise<ImportJob> {
-    const job = await this.db.importJob.findFirst({ where: { id } });
+    const job = await this.db.importJob.findFirst({ where: { id, kind: 'STUDENTS' } });
     if (!job) throw new DomainError('NOT_FOUND', 'import');
     const rows = (job.rows as StoredRow[]) ?? [];
     const attention = [
@@ -166,7 +166,7 @@ export class ImportService {
 
   /** Match columns differently, then validate again (fast: at most 2,000 rows). */
   async setMapping(id: string, version: number, mapping: ImportMapping): Promise<ImportJob> {
-    const job = await this.db.importJob.findFirst({ where: { id } });
+    const job = await this.db.importJob.findFirst({ where: { id, kind: 'STUDENTS' } });
     if (!job) throw new DomainError('NOT_FOUND', 'import');
     if (job.status !== 'PREVIEW_READY')
       throw new DomainError('INVALID_STATE_TRANSITION', `import ${job.status}`);
@@ -203,7 +203,7 @@ export class ImportService {
   }
 
   async commit(id: string, version: number): Promise<ImportJob> {
-    const job = await this.db.importJob.findFirst({ where: { id } });
+    const job = await this.db.importJob.findFirst({ where: { id, kind: 'STUDENTS' } });
     if (!job) throw new DomainError('NOT_FOUND', 'import');
     if (job.status !== 'PREVIEW_READY')
       throw new DomainError('INVALID_STATE_TRANSITION', `import ${job.status}`);
@@ -225,7 +225,7 @@ export class ImportService {
 
   /** CSV of the rows that weren't imported, with the problem in words (C-101: formula-safe). */
   async errorReport(id: string): Promise<{ fileName: string; csv: string }> {
-    const job = await this.db.importJob.findFirst({ where: { id } });
+    const job = await this.db.importJob.findFirst({ where: { id, kind: 'STUDENTS' } });
     if (!job) throw new DomainError('NOT_FOUND', 'import');
     const t = createServerTranslator('people');
     const mapping = job.mapping as ImportMapping;
@@ -259,7 +259,7 @@ export class ImportService {
   // ── Job steps (run by ImportProcessor inside the academy's context) ──────────────────────
 
   async processParse(id: string): Promise<void> {
-    const job = await this.db.importJob.findFirst({ where: { id } });
+    const job = await this.db.importJob.findFirst({ where: { id, kind: 'STUDENTS' } });
     if (!job || job.status !== 'UPLOADED' || !job.fileKey) return;
     await this.db.importJob.update({ where: { id }, data: { status: 'VALIDATING' } });
     try {
@@ -303,7 +303,7 @@ export class ImportService {
   }
 
   async processCommit(id: string): Promise<void> {
-    const job = await this.db.importJob.findFirst({ where: { id } });
+    const job = await this.db.importJob.findFirst({ where: { id, kind: 'STUDENTS' } });
     if (!job || job.status !== 'COMMITTING') return;
     const tenant = await this.db.tenant.findFirst({ select: { timezone: true } });
     const branch = await this.db.branch.findFirst({
@@ -615,7 +615,7 @@ export class ImportService {
   }
 
   /** Files and parsed rows of this academy's expired jobs are removed (C-101). */
-  private async purgeExpired(): Promise<void> {
+  async purgeExpired(): Promise<void> {
     const expired = await this.db.importJob.findMany({
       where: {
         expiresAt: { lt: new Date() },

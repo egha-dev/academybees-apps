@@ -433,7 +433,12 @@ export class InvoicesService {
    * the academy's own job): totals recomputed from the lines under today's tax settings, the
    * next number, what the document will say frozen, and the student's credit applied (C-140).
    */
-  async issueIn(tx: TransactionClient, id: string, version: number): Promise<void> {
+  async issueIn(
+    tx: TransactionClient,
+    id: string,
+    version: number,
+    datedOn?: string,
+  ): Promise<void> {
     const row = await tx.invoice.findFirst({ where: { id }, select: DETAIL });
     if (!row) throw new DomainError('NOT_FOUND', 'invoice');
     if (row.status !== 'DRAFT') throw this.notInStatus(row.status);
@@ -477,7 +482,7 @@ export class InvoicesService {
       data: {
         status,
         number,
-        issueDate: at(today),
+        issueDate: at(datedOn ?? today),
         subtotalMinor: computed.subtotalMinor,
         discountMinor: computed.discountMinor,
         taxMinor: computed.taxMinor,
@@ -516,6 +521,21 @@ export class InvoicesService {
   /** One student's credit moves one at a time (C-140): held until the transaction ends. */
   private async lockCredit(tx: TransactionClient, studentId: string) {
     await tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtext(${`credit:${studentId}`}))`;
+  }
+
+  /** Add to a student's credit, in step with anything using it (a fee adjustment, G-27). */
+  async addCredit(
+    tx: TransactionClient,
+    input: {
+      tenantId: string;
+      studentId: string;
+      amountMinor: number;
+      note: string;
+      createdById: string | null;
+    },
+  ): Promise<void> {
+    await this.lockCredit(tx, input.studentId);
+    await tx.creditEntry.create({ data: { id: newId(), kind: 'MANUAL', ...input } });
   }
 
   /** The student's credit balance: the sum of the append-only ledger. */

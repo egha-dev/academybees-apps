@@ -18,12 +18,13 @@ import { TENANT_DB } from '../../core/database/database.module.js';
 import { bullConnection } from '../../core/redis/bull-connection.js';
 import { TenantContext } from '../../core/tenant/tenant-context.service.js';
 import { FINANCE_DAILY_QUEUE, type FinanceDailyJob } from './finance-daily.queue.js';
+import { InvoiceGenerationService } from './invoice-generation.service.js';
 import { InvoicesService } from './invoices.service.js';
 
 /**
  * One academy's nightly finance run, in the API process with its tenant context; the academy
- * must still be active (CLAUDE §9: jobs re-check state). Overdue marking now; invoice generation
- * joins it in S3b.
+ * must still be active (CLAUDE §9: jobs re-check state). Overdue marking, then billing the cycles
+ * that are due; both are safe to run twice.
  */
 @Injectable()
 export class FinanceDailyProcessor implements OnApplicationBootstrap, OnApplicationShutdown {
@@ -37,6 +38,7 @@ export class FinanceDailyProcessor implements OnApplicationBootstrap, OnApplicat
     private readonly cls: ClsService<RequestContext>,
     private readonly context: TenantContext,
     private readonly invoices: InvoicesService,
+    private readonly generation: InvoiceGenerationService,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -50,17 +52,23 @@ export class FinanceDailyProcessor implements OnApplicationBootstrap, OnApplicat
     );
   }
 
-  async process(job: Job<FinanceDailyJob>, now = new Date()): Promise<{ overdue: number }> {
+  async process(
+    job: Job<FinanceDailyJob>,
+    now = new Date(),
+  ): Promise<{ overdue: number; generated: number; failed: number }> {
     const { tenantId } = job.data;
     return this.context.run(tenantId, async () => {
       this.cls.set('actor', { type: 'SYSTEM' });
-      return this.db.$transaction(async (tx) => {
+      const today = await this.db.$transaction(async (tx) => {
         const tenant = await tx.tenant.findFirst({ select: { status: true, timezone: true } });
-        if (tenant?.status !== 'ACTIVE') return { overdue: 0 };
-        const overdue = await this.invoices.markOverdue(tx, localDate(now, tenant.timezone));
-        if (overdue) this.logger.log({ tenantId, overdue }, 'Invoices marked overdue');
-        return { overdue };
+        return tenant?.status === 'ACTIVE' ? localDate(now, tenant.timezone) : null;
       });
+      if (!today) return { overdue: 0, generated: 0, failed: 0 };
+      const { generated, failed } = await this.generation.run(today);
+      const overdue = await this.db.$transaction((tx) => this.invoices.markOverdue(tx, today));
+      if (overdue) this.logger.log({ tenantId, overdue }, 'Invoices marked overdue');
+      if (failed) this.logger.warn({ tenantId, failed }, 'Some fee assignments were not billed');
+      return { overdue, generated, failed };
     });
   }
 

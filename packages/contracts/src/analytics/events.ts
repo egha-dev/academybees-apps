@@ -302,6 +302,12 @@ export const ANALYTICS_EVENTS = {
       lines: z.number().int().min(0).max(100),
     }),
   }),
+  'invoice.generated': defineAnalyticsEvent({
+    name: 'invoice.generated',
+    version: 1,
+    description: 'The nightly run billed fee assignments (Phase 7). A count only.',
+    properties: z.strictObject({ count: z.number().int().min(0).max(1_000_000) }),
+  }),
   'session.cancelled': defineAnalyticsEvent({
     name: 'session.cancelled',
     version: 1,
