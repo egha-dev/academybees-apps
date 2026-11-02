@@ -293,6 +293,15 @@ export const ANALYTICS_EVENTS = {
       all: z.boolean(),
     }),
   }),
+  'invoice.issued': defineAnalyticsEvent({
+    name: 'invoice.issued',
+    version: 1,
+    description: 'An invoice was issued (Phase 7). Kind and line count only.',
+    properties: z.strictObject({
+      kind: z.enum(['REGULAR', 'ONE_TIME', 'OPENING_BALANCE', 'LATE_FEE', 'INSTALMENT']),
+      lines: z.number().int().min(0).max(100),
+    }),
+  }),
   'session.cancelled': defineAnalyticsEvent({
     name: 'session.cancelled',
     version: 1,

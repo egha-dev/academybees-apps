@@ -134,6 +134,20 @@ Each slice: branch `p7/<slice>` from the latest `main` → PR with the DoD check
   - import of 500 rows with 20 bad → 480 plus a report, re-upload → no duplicates;
   - cross-tenant.
 
+*As built (S3; split from S3b `p7/invoice-generation`, which has 7.8, 7.10 and 7.11, to keep each PR reviewable):*
+- **`InvoicesService`:**
+  - drafts: create, change, delete (the database allows deletes on drafts only);
+  - **issue:** totals recomputed from the lines under today's tax settings; number from `nextNumber` (row lock, rollback returns the number); frozen `snapshot`; credit applied; `invoice.issued` analytics; audit;
+  - **cancel** when no money was received (also from PARTIALLY_PAID or PAID settled by credit alone, ARCHITECTURE §12.1), credit returned to the student;
+  - **write-off** (C-141);
+  - keyset list (`OPEN`, `OVERDUE`, kind, student); detail with lines.
+- **Credit:** a transaction-scoped advisory lock per student, so two invoices issued together never spend the same credit.
+- **Nightly run:** the platform job `daily-finance` (03:00 IST, one job per ACTIVE academy) → `FinanceDailyProcessor` in the API (re-checks ACTIVE) → `markOverdue` sets and clears `overdue_since`. Overdue itself stays derived (C-19).
+- **Late fees (C-140):** `GET /invoices/late-fee-suggestions` charges nothing; `POST /invoices/:id/late-fee` creates and issues a separate `LATE_FEE` invoice linked by `for_invoice_id` (migration `20261102120000_invoice_late_fee_link`, at most one live per invoice).
+- **i18n:** a `finance` namespace; line labels the server writes come from it.
+- **Fixed before merge:** issuing deleted the draft's lines after flipping the status, which the delete policy would silently refuse, duplicating lines. Lines now go first; the test checks one set of lines.
+- **Tests:** `invoices.int.spec.ts` (11): draft → issue; replay keeps one number; 12 concurrent issues → 12 numbers; concurrent credit; GST frozen at issue; write-off; cancel refused after payment; overdue run; late fees once; roles; keyset; another academy. Registry entries for all 10 endpoints.
+
 ### S4 `p7/payments-api` — record, verify, allocate, refund
 - **7.12 Record payment (staff):**
   - Cash, UPI (UTR), Bank transfer, Card-on-POS → CONFIRMED by the server; Cheque → PENDING;

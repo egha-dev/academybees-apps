@@ -662,6 +662,40 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     capability,
     spoof: { skip: 'fees.int.spec.ts › another academy’s plans, assignments and settings' },
   })),
+  // Invoices (Phase 7 S3). The list and detail probe another academy directly; writes are covered
+  // with another academy's ids in invoices.int.spec.ts.
+  { method: 'GET', path: '/api/v1/invoices', session: true, capability: 'invoice.read' },
+  {
+    method: 'GET',
+    path: '/api/v1/invoices/:id',
+    params: { id: 'invoice' },
+    session: true,
+    capability: 'invoice.read',
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/invoices/late-fee-suggestions',
+    session: true,
+    capability: 'invoice.read',
+  },
+  ...(
+    [
+      ['POST', '/api/v1/invoices', null, 'invoice.create'],
+      ['PATCH', '/api/v1/invoices/:id', 'invoice', 'invoice.create'],
+      ['DELETE', '/api/v1/invoices/:id', 'invoice', 'invoice.create'],
+      ['POST', '/api/v1/invoices/:id/issue', 'invoice', 'invoice.issue'],
+      ['POST', '/api/v1/invoices/:id/cancel', 'invoice', 'invoice.cancel'],
+      ['POST', '/api/v1/invoices/:id/write-off', 'invoice', 'invoice.cancel'],
+      ['POST', '/api/v1/invoices/:id/late-fee', 'invoice', 'invoice.issue'],
+    ] as const
+  ).map(([method, path, fixture, capability]) => ({
+    method,
+    path,
+    ...(fixture ? { params: { id: fixture } } : {}),
+    session: true,
+    capability,
+    spoof: { skip: 'invoices.int.spec.ts › another academy’s invoices and students are 404' },
+  })),
   // Offline sync (Phase 6 S2). Bootstrap is probed directly; push (another academy's class →
   // REJECTED NOT_FOUND), pull and the beacon are covered in sync.int.spec.ts.
   {

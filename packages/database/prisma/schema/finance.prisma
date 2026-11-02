@@ -145,6 +145,8 @@ model Invoice {
   /// Instalment n of `instalmentOf` (G-04).
   instalmentNo       Int?           @map("instalment_no") @db.SmallInt
   instalmentOf       Int?           @map("instalment_of") @db.SmallInt
+  /// LATE_FEE: the overdue invoice it is for (one late fee per invoice, C-140).
+  forInvoiceId       String?        @map("for_invoice_id") @db.Uuid
   issueDate          DateTime?      @map("issue_date") @db.Date
   dueDate            DateTime       @map("due_date") @db.Date
   currency           String         @default("INR") @db.Char(3)

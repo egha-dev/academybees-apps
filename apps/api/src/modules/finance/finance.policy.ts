@@ -36,3 +36,20 @@ export const feePlanPolicy = definePolicy<Prisma.FeePlanWhereInput, Record<strin
     return scope === 'TENANT' || scope === 'BRANCH';
   },
 });
+
+/** Invoices follow the branch they were issued in; parents read through the hub (C-144). */
+export const invoicePolicy = definePolicy<Prisma.InvoiceWhereInput, { branchId: string }>({
+  resource: 'Invoice',
+  where(scope, ctx) {
+    if (scope === 'TENANT') return {};
+    if (scope === 'BRANCH')
+      return ctx.branchIds.length === 0 ? {} : { branchId: { in: [...ctx.branchIds] } };
+    return null;
+  },
+  can(scope, ctx, row) {
+    if (scope === 'TENANT') return true;
+    if (scope === 'BRANCH')
+      return ctx.branchIds.length === 0 || ctx.branchIds.includes(row.branchId);
+    return false;
+  },
+});

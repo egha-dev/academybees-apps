@@ -29,7 +29,9 @@ describe('invoice lifecycle (ARCHITECTURE §12.1, C-19, C-141)', () => {
     'ISSUED write_off WRITTEN_OFF',
     'PARTIALLY_PAID settle PARTIALLY_PAID',
     'PARTIALLY_PAID settle PAID',
+    'PARTIALLY_PAID cancel CANCELLED',
     'PARTIALLY_PAID write_off WRITTEN_OFF',
+    'PAID cancel CANCELLED',
   ]);
   it('allows exactly the listed transitions (every combination checked)', () => {
     for (const from of INVOICE_STATUSES)
@@ -39,8 +41,8 @@ describe('invoice lifecycle (ARCHITECTURE §12.1, C-19, C-141)', () => {
             allowed.has(`${from} ${event} ${to}`) ? to : null,
           );
   });
-  it('paid, cancelled and written-off invoices are final', () => {
-    for (const from of ['PAID', 'CANCELLED', 'WRITTEN_OFF'] as const)
+  it('cancelled and written-off invoices are final', () => {
+    for (const from of ['CANCELLED', 'WRITTEN_OFF'] as const)
       for (const event of events)
         for (const to of INVOICE_STATUSES) expect(nextInvoice(from, event, to)).toBeNull();
   });

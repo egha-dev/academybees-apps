@@ -111,3 +111,12 @@ ALTER TABLE finance_document ADD CONSTRAINT finance_document_shape CHECK (
 DROP INDEX IF EXISTS finance_document_one;
 CREATE UNIQUE INDEX finance_document_one ON finance_document
   (tenant_id, kind, COALESCE(invoice_id, payment_id), layout);
+
+-- A late fee names the overdue invoice it is for, and there is at most one live one (C-140).
+ALTER TABLE invoice DROP CONSTRAINT IF EXISTS invoice_late_fee_link;
+ALTER TABLE invoice ADD CONSTRAINT invoice_late_fee_link CHECK (
+  (kind = 'LATE_FEE') = (for_invoice_id IS NOT NULL)
+);
+DROP INDEX IF EXISTS invoice_one_late_fee;
+CREATE UNIQUE INDEX invoice_one_late_fee ON invoice (tenant_id, for_invoice_id)
+  WHERE for_invoice_id IS NOT NULL AND status <> 'CANCELLED';
