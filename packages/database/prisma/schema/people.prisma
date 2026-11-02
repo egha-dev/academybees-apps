@@ -57,6 +57,8 @@ model Student {
   /// Values for this academy's CustomFieldDefinitions, keyed by field key.
   customFields     Json          @default("{}") @map("custom_fields")
   status           StudentStatus @default(ACTIVE)
+  /// Academy-local date of the last status change: a student back mid-cycle is billed as a joiner (C-147).
+  statusChangedOn  DateTime?     @map("status_changed_on") @db.Date
   archivedAt       DateTime?     @map("archived_at") @db.Timestamptz(3)
   createdById      String?       @map("created_by_id") @db.Uuid
   version          Int           @default(1)

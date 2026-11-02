@@ -1,5 +1,27 @@
 {
   "lines": {
-    "lateFee": "Late fee for {number}"
+    "lateFee": "Late fee for {number}",
+    "discount": "Discount",
+    "siblingDiscount": "Sibling discount"
+  },
+  "notes": {
+    "prorated": "Charged for {used} of {of} in this period",
+    "planSwitched": "Unused share of the old plan, on moving to a new one"
+  },
+  "openingBalance": {
+    "line": "Opening balance",
+    "fields": {
+      "admissionNo": "Admission number",
+      "amount": "Amount due",
+      "asOf": "As of",
+      "note": "Note"
+    },
+    "report": {
+      "row": "Row",
+      "student": "Admission number",
+      "column": "Column",
+      "problem": "Problem",
+      "exists": "This student already has an opening balance, so the row was skipped"
+    }
   }
 }

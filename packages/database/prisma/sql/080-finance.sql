@@ -120,3 +120,8 @@ ALTER TABLE invoice ADD CONSTRAINT invoice_late_fee_link CHECK (
 DROP INDEX IF EXISTS invoice_one_late_fee;
 CREATE UNIQUE INDEX invoice_one_late_fee ON invoice (tenant_id, for_invoice_id)
   WHERE for_invoice_id IS NOT NULL AND status <> 'CANCELLED';
+
+-- At most one live opening balance per student (G-02): a re-uploaded file can't bill dues twice.
+DROP INDEX IF EXISTS invoice_one_opening_balance;
+CREATE UNIQUE INDEX invoice_one_opening_balance ON invoice (tenant_id, student_id)
+  WHERE kind = 'OPENING_BALANCE' AND status <> 'CANCELLED';

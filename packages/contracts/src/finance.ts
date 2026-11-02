@@ -452,3 +452,84 @@ export const LateFeeSuggestionListSchema = z.object({
   rule: z.object({ afterDays: z.number().int(), amountMinor: z.number().int() }).nullable(),
   items: z.array(LateFeeSuggestionSchema),
 });
+
+// ── What a transfer or status change does to fees (G-27) ─────────────────────────────────
+
+export const FEE_CHANGES = ['ON_HOLD', 'COMPLETED', 'LEFT', 'ACTIVE', 'TRANSFER'] as const;
+export const FeeEffectsQuerySchema = z
+  .object({
+    studentId: z.uuid(),
+    change: z.enum(FEE_CHANGES),
+    /** When it takes effect; today if left out. */
+    date: CalendarDateSchema.optional(),
+    /** TRANSFER: the batch being left. */
+    fromBatchId: z.uuid().optional(),
+  })
+  .refine((v) => v.change !== 'TRANSFER' || v.fromBatchId, {
+    path: ['fromBatchId'],
+    message: 'required_for_transfer',
+  });
+export type FeeEffectsQuery = z.infer<typeof FeeEffectsQuerySchema>;
+
+/**
+ * - `PAUSES`: nothing billed from the next cycle while on hold;
+ * - `STOPS`: nothing billed any more;
+ * - `RESUMES`: billing restarts, this cycle under the mid-cycle rule;
+ * - `SWITCHABLE`: this fee belongs to the batch being left, so it can move to a new plan;
+ * - `UNCHANGED`: carries on as it is.
+ */
+export const FEE_EFFECTS = ['PAUSES', 'STOPS', 'RESUMES', 'SWITCHABLE', 'UNCHANGED'] as const;
+export const FeeEffectsSchema = z.object({
+  /** Still owed on open invoices: a change never removes it. */
+  openBalanceMinor: z.number().int(),
+  creditMinor: z.number().int(),
+  items: z.array(
+    z.object({
+      assignmentId: z.uuid(),
+      planName: z.string(),
+      batchId: z.uuid().nullable(),
+      effect: z.enum(FEE_EFFECTS),
+      cycleStart: CalendarDateSchema,
+      cycleEnd: CalendarDateSchema,
+      nextCycleStart: CalendarDateSchema,
+      /** Invoiced for the cycle holding the date. */
+      billedMinor: z.number().int(),
+      /** The share of that billed for the days from the date on. */
+      unusedMinor: z.number().int(),
+    }),
+  ),
+});
+export type FeeEffects = z.infer<typeof FeeEffectsSchema>;
+
+/**
+ * Move a fee to another plan (G-27). `NEXT_CYCLE`: the old plan runs to the end of this cycle.
+ * `PRORATE`: the new plan starts on the date, under the mid-cycle rule, and the unused share of
+ * what the old plan billed for this cycle becomes credit.
+ */
+export const SwitchFeeAssignmentSchema = z.object({
+  version: Version,
+  toPlanId: z.uuid(),
+  toBatchId: z.uuid().nullable().optional(),
+  date: CalendarDateSchema,
+  mode: z.enum(['NEXT_CYCLE', 'PRORATE']),
+});
+export type SwitchFeeAssignment = z.infer<typeof SwitchFeeAssignmentSchema>;
+export const SwitchFeeAssignmentResultSchema = z.object({
+  assignment: FeeAssignmentSchema,
+  creditedMinor: z.number().int(),
+});
+export type SwitchFeeAssignmentResult = z.infer<typeof SwitchFeeAssignmentResultSchema>;
+
+// ── Opening balances (G-02) ──────────────────────────────────────────────────────────────
+
+/** Dues from before AcademyBee: one `OPENING_BALANCE` invoice per student, dated the cut-over. */
+export const CreateOpeningBalanceSchema = z.object({
+  studentId: z.uuid(),
+  amountMinor: AmountMinorSchema.min(1),
+  /** The cut-over date; today if left out. */
+  asOf: CalendarDateSchema.optional(),
+  note: z.string().trim().max(500).nullable().optional(),
+});
+export type CreateOpeningBalance = z.infer<typeof CreateOpeningBalanceSchema>;
+export const OPENING_BALANCE_FIELDS = ['admissionNo', 'amount', 'asOf', 'note'] as const;
+export type OpeningBalanceField = (typeof OPENING_BALANCE_FIELDS)[number];
