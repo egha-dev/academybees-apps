@@ -62,6 +62,7 @@ Staging has academies and users but no students or batches.
 For each row, ✅ or ❌. For any ❌, send the phone model, OS version, browser version and a screenshot of the screen and its status line. Mention anything that felt slow or confusing even if it passed: the teacher phone flow is the product's core (UX §12).
 
 Known limits, not failures:
+- Absence and late notices for parents are stored, not shown to staff (C-136); parents see them from 7P.
 - The first visit must be online (the phone downloads the teacher's classes).
 - iOS only syncs while the app is open.
 - Classes older than 7 days can't be edited from the phone (C-130, C-132).

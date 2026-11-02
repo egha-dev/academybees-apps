@@ -1,6 +1,6 @@
 # P6-1 · Phase 6 — Attendance + Offline Sync: plan
 
-> **Approved by the PO on 2026-10-16** (`phase-6-start` = `8cbe035`). Decisions C-124…C-131 recorded in DECISIONS.md.
+> **Approved by the PO on 2026-10-16** (`phase-6-start` = `8cbe035`). Decisions C-124…C-136 recorded in DECISIONS.md. **Phase 6 ✅ 2026-11-02** (tag `phase-6`); exit notes in IMPLEMENTATION_PLAN.
 
 ## Context
 
