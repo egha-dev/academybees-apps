@@ -72,6 +72,12 @@ export type PeopleFixture = {
   ruleId: string;
   sessionId: string;
   admissionNo: string;
+  /** Finance (Phase 7): a closed 2019-20 history — an archived plan and assignment, a paid
+   * invoice, and a payment that overpaid and refunded the rest. */
+  feePlanId: string;
+  feeAssignmentId: string;
+  invoiceId: string;
+  paymentId: string;
 };
 
 /**
@@ -212,6 +218,10 @@ async function insertPeopleAndScheduling(
     ruleId: newId(),
     sessionId: newId(),
     admissionNo: 'ADM-0001',
+    feePlanId: newId(),
+    feeAssignmentId: newId(),
+    invoiceId: newId(),
+    paymentId: newId(),
   };
   const q = (sql: string, params: unknown[]) => client.query(sql, params);
   await q(
@@ -357,10 +367,7 @@ async function insertPeopleAndScheduling(
   // Finance (Phase 7): a closed 2019-20 history in every finance table — an ended fee plan, a
   // paid invoice, a payment that overpaid by ₹500 then refunded it, documents and a share link,
   // a disabled gateway account and its event — so today's numbering and generation are untouched.
-  const planId = newId();
-  const assignmentId = newId();
-  const invoiceId = newId();
-  const paymentId = newId();
+  const { feePlanId: planId, feeAssignmentId: assignmentId, invoiceId, paymentId } = f;
   const accountId = newId();
   const documentId = newId();
   await q(

@@ -618,6 +618,50 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     capability,
     spoof: { skip: 'attendance.int.spec.ts › another academy’s classes and marks are 404' },
   })),
+  // Finance (Phase 7 S2): fee plans, assignments and Settings → Payments. Reads probe another
+  // academy's records directly; versioned edits and assignment writes are covered with another
+  // academy's ids in fees.int.spec.ts.
+  { method: 'GET', path: '/api/v1/fee-plans', session: true, capability: 'fee.read' },
+  {
+    method: 'POST',
+    path: '/api/v1/fee-plans',
+    session: true,
+    capability: 'fee.manage',
+    idempotent: true,
+    body: { name: 'Cross plan', cycle: 'MONTHLY', components: [{ name: 'Fee', amountMinor: 100 }] },
+    spoof: 'status',
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/fee-plans/:id',
+    params: { id: 'fee-plan' },
+    session: true,
+    capability: 'fee.read',
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/fee-assignments/:id',
+    params: { id: 'fee-assignment' },
+    session: true,
+    capability: 'fee.read',
+  },
+  { method: 'GET', path: '/api/v1/settings/finance', session: true, capability: 'fee.read' },
+  ...(
+    [
+      ['PATCH', '/api/v1/fee-plans/:id', 'fee-plan', 'fee.manage'],
+      ['GET', '/api/v1/fee-assignments', null, 'fee.read'],
+      ['POST', '/api/v1/fee-assignments', null, 'fee.manage'],
+      ['PATCH', '/api/v1/fee-assignments/:id', 'fee-assignment', 'fee.manage'],
+      ['PATCH', '/api/v1/settings/finance', null, 'academy.settings.manage'],
+    ] as const
+  ).map(([method, path, fixture, capability]) => ({
+    method,
+    path,
+    ...(fixture ? { params: { id: fixture } } : {}),
+    session: true,
+    capability,
+    spoof: { skip: 'fees.int.spec.ts › another academy’s plans, assignments and settings' },
+  })),
   // Offline sync (Phase 6 S2). Bootstrap is probed directly; push (another academy's class →
   // REJECTED NOT_FOUND), pull and the beacon are covered in sync.int.spec.ts.
   {
