@@ -432,6 +432,23 @@ export class StudentsService {
     return row;
   }
 
+  /**
+   * For finance (Phase 7): these students' branch, status and name, within the caller's
+   * `student.read` scope; any missing or out of scope → 404 (no partial answers).
+   */
+  async forFees(
+    db: Pick<TransactionClient, 'student'>,
+    ids: readonly string[],
+  ): Promise<{ id: string; branchId: string; status: string; fullName: string }[]> {
+    const unique = [...new Set(ids)];
+    const rows = await db.student.findMany({
+      where: { AND: [{ id: { in: unique } }, this.scope('student.read'), { archivedAt: null }] },
+      select: { id: true, branchId: true, status: true, fullName: true },
+    });
+    if (rows.length !== unique.length) throw new DomainError('NOT_FOUND', 'student');
+    return rows;
+  }
+
   /** The student exists in the caller's `student.read` scope (for sub-resources), else 404. */
   async assertReadable(id: string): Promise<{ tenantId: string }> {
     const row = await this.db.student.findFirst({

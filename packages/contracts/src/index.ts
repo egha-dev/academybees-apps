@@ -30,3 +30,4 @@ export * from './onboarding.js';
 export * from './schedule-time.js';
 export * from './media.js';
 export * from './brand.js';
+export * from './finance.js';

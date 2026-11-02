@@ -925,8 +925,8 @@ Phase 2 is **not** started.
 
 | Slice | Branch | Tasks | State |
 | --- | --- | --- | --- |
-| S1 | `p7/finance-core` | 7.1 plan + decisions, 7.2 finance schema + RLS, 7.3 money, state machines, numbering | 🟨 PR |
-| S2 | `p7/fees-api` | 7.4 fee plans/assignments + policy scope, 7.5 Settings → Payments API, 7.6 cross-tenant | ⬜ |
+| S1 | `p7/finance-core` | 7.1 plan + decisions, 7.2 finance schema + RLS, 7.3 money, state machines, numbering | ✅ #100 |
+| S2 | `p7/fees-api` | 7.4 fee plans/assignments + policy scope, 7.5 Settings → Payments API, 7.6 cross-tenant | 🟨 PR |
 | S3 | `p7/invoices-api` | 7.7 invoices, 7.8 generation job, 7.9 overdue + late fees, 7.10 G-27 effects, 7.11 opening balances | ⬜ |
 | S4 | `p7/payments-api` | 7.12 record + allocate, 7.13 verify queue + cheques + UTR, 7.14 hub reported payments (flag `p7-hub-payments`), 7.15 refunds | ⬜ |
 | S5 | `p7/provider-layer` | 7.16 providers + simulator, 7.17 tenant accounts, 7.18 webhooks + reconciliation | ⬜ |
