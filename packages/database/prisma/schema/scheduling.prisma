@@ -67,11 +67,12 @@ model Batch {
   createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  teachers   BatchTeacher[]
-  enrolments BatchEnrolment[]
-  rules      ScheduleRule[]
-  sessions   ClassSession[]
-  attendance Attendance[]
+  teachers       BatchTeacher[]
+  enrolments     BatchEnrolment[]
+  rules          ScheduleRule[]
+  sessions       ClassSession[]
+  attendance     Attendance[]
+  feeAssignments FeeAssignment[]
 
   @@unique([tenantId, id])
   @@index([tenantId, branchId, status])

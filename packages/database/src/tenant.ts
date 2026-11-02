@@ -455,7 +455,11 @@ export function createTenantBoundClient(
         $allOperations({ model, operation, args, query }) {
           const tenantId = getTenantId();
           requireTenantFor(model, operation, tenantId);
-          return query(tenantId === undefined ? args : scopeArgs(model, operation, args, tenantId));
+          // Called through a plain signature: the union of every model's arguments is too complex
+          // for TypeScript to represent (TS2590), and these args are forwarded as they are.
+          const run = query as unknown as (a: Args) => Promise<unknown>;
+          const input = args as Args;
+          return run(tenantId === undefined ? input : scopeArgs(model, operation, input, tenantId));
         },
       },
     },
