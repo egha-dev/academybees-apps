@@ -844,7 +844,7 @@ Phase 2 is **not** started.
 - **Staging:** `health/live` reports release `192fcf4`; database and Redis are up; the Phase 6 service worker and routes are served. **But the last two "Deploy staging" runs failed with "Invalid RAILWAY_TOKEN"** after migrating, yet staging serves `192fcf4`: the workflow did not deploy it, and how it got there is unverified (a manual deploy or a Railway GitHub link?). The token needs renewing before the next merge deploys by itself (PO, `staging-variables.md` §G).
 - **Open for the PO:**
   - the real-phone test (`docs/runbooks/phase-6-real-phones.md`);
-  - Part F's "an absent student creates a notification (visible to the owner now)": absence and late notices are **stored** for parents (C-128) but **not shown to staff** anywhere, which matches this plan's scope ("stored; parents see them from 7P"). Your call: accept as stored, or add a staff view.
+  - Part F's "an absent student creates a notification (visible to the owner now)": absence and late notices are **stored** for parents (C-128) and not shown to staff. **PO decision 2026-11-02 (C-136): accepted as stored until 7P.**
 
 **Independent review (P6-4, 2026-10-30).** No critical findings.
 - **Fixed in the review PR (C-135):**
