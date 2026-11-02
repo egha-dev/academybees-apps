@@ -439,11 +439,13 @@ export class StudentsService {
   async forFees(
     db: Pick<TransactionClient, 'student'>,
     ids: readonly string[],
-  ): Promise<{ id: string; branchId: string; status: string; fullName: string }[]> {
+  ): Promise<
+    { id: string; branchId: string; status: string; fullName: string; admissionNo: string }[]
+  > {
     const unique = [...new Set(ids)];
     const rows = await db.student.findMany({
       where: { AND: [{ id: { in: unique } }, this.scope('student.read'), { archivedAt: null }] },
-      select: { id: true, branchId: true, status: true, fullName: true },
+      select: { id: true, branchId: true, status: true, fullName: true, admissionNo: true },
     });
     if (rows.length !== unique.length) throw new DomainError('NOT_FOUND', 'student');
     return rows;

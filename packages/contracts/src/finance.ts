@@ -313,3 +313,142 @@ export function upiLink(input: {
   if (input.note) params.set('tn', input.note.slice(0, 50));
   return `upi://pay?${params.toString().replace(/\+/g, '%20')}`;
 }
+
+// ── Invoices (ARCHITECTURE §12.1, C-19, C-138, C-141, C-142) ───────────────────────────────
+
+export const INVOICE_STATUSES = [
+  'DRAFT',
+  'ISSUED',
+  'PARTIALLY_PAID',
+  'PAID',
+  'CANCELLED',
+  'WRITTEN_OFF',
+] as const;
+export const InvoiceStatusSchema = z.enum(INVOICE_STATUSES);
+export type InvoiceStatus = z.infer<typeof InvoiceStatusSchema>;
+export const INVOICE_KINDS = [
+  'REGULAR',
+  'ONE_TIME',
+  'OPENING_BALANCE',
+  'LATE_FEE',
+  'INSTALMENT',
+] as const;
+export const InvoiceKindSchema = z.enum(INVOICE_KINDS);
+
+export const InvoiceLineSchema = z.object({
+  id: z.uuid(),
+  kind: z.enum(['CHARGE', 'DISCOUNT', 'TAX']),
+  label: z.string(),
+  quantity: z.number().int(),
+  unitMinor: z.number().int(),
+  /** Signed: discounts negative. */
+  amountMinor: z.number().int(),
+  taxable: z.boolean(),
+});
+
+export const InvoiceSummarySchema = z.object({
+  id: z.uuid(),
+  number: z.string().nullable(),
+  kind: InvoiceKindSchema,
+  status: InvoiceStatusSchema,
+  studentId: z.uuid(),
+  studentName: z.string(),
+  issueDate: CalendarDateSchema.nullable(),
+  dueDate: CalendarDateSchema,
+  cycleStart: CalendarDateSchema.nullable(),
+  cycleEnd: CalendarDateSchema.nullable(),
+  currency: CurrencySchema,
+  totalMinor: z.number().int(),
+  paidMinor: z.number().int(),
+  creditAppliedMinor: z.number().int(),
+  writtenOffMinor: z.number().int(),
+  balanceMinor: z.number().int(),
+  /** C-19: derived — open, past due (academy-local), with a balance. */
+  overdue: z.boolean(),
+  version: z.number().int(),
+});
+export type InvoiceSummary = z.infer<typeof InvoiceSummarySchema>;
+
+export const InvoiceSchema = InvoiceSummarySchema.extend({
+  assignmentId: z.uuid().nullable(),
+  forInvoiceId: z.uuid().nullable(),
+  instalmentNo: z.number().int().nullable(),
+  instalmentOf: z.number().int().nullable(),
+  subtotalMinor: z.number().int(),
+  discountMinor: z.number().int(),
+  taxMinor: z.number().int(),
+  overdueSince: CalendarDateSchema.nullable(),
+  note: z.string().nullable(),
+  closeReason: z.string().nullable(),
+  lines: z.array(InvoiceLineSchema),
+  createdAt: z.iso.datetime(),
+});
+export type Invoice = z.infer<typeof InvoiceSchema>;
+
+export const InvoicePageSchema = z.object({
+  items: z.array(InvoiceSummarySchema),
+  nextCursor: z.string().nullable(),
+});
+export const InvoiceListQuerySchema = z.object({
+  /** OPEN = issued or partly paid; OVERDUE = open and past due. */
+  status: z.enum([...INVOICE_STATUSES, 'OPEN', 'OVERDUE']).optional(),
+  studentId: z.uuid().optional(),
+  kind: InvoiceKindSchema.optional(),
+  cursor: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+export const InvoiceChargeInputSchema = z.object({
+  label: z.string().trim().min(1).max(200),
+  /** Per unit; the line is `quantity × amountMinor`. */
+  amountMinor: AmountMinorSchema,
+  quantity: z.number().int().min(1).max(999).default(1),
+  taxable: z.boolean().default(true),
+});
+export const InvoiceDiscountInputSchema = z.object({
+  label: z.string().trim().min(1).max(200),
+  amountMinor: AmountMinorSchema.min(1),
+});
+
+/** A manual invoice: one-time fees (admission, kit, exam, event) or a regular one by hand. */
+export const CreateInvoiceSchema = z.object({
+  studentId: z.uuid(),
+  kind: z.enum(['REGULAR', 'ONE_TIME']).default('ONE_TIME'),
+  dueDate: CalendarDateSchema,
+  charges: z.array(InvoiceChargeInputSchema).min(1).max(30),
+  discounts: z.array(InvoiceDiscountInputSchema).max(10).default([]),
+  note: z.string().trim().max(500).optional(),
+  /** Issue at once (numbered, sent); otherwise it stays a draft. */
+  issue: z.boolean().default(false),
+});
+export type CreateInvoice = z.infer<typeof CreateInvoiceSchema>;
+
+/** Drafts only: replace any part. */
+export const UpdateInvoiceSchema = z.object({
+  version: Version,
+  dueDate: CalendarDateSchema.optional(),
+  charges: z.array(InvoiceChargeInputSchema).min(1).max(30).optional(),
+  discounts: z.array(InvoiceDiscountInputSchema).max(10).optional(),
+  note: z.string().trim().max(500).nullable().optional(),
+});
+export type UpdateInvoice = z.infer<typeof UpdateInvoiceSchema>;
+
+export const InvoiceVersionSchema = z.object({ version: Version });
+export const InvoiceVersionQuerySchema = z.object({ version: z.coerce.number().int().min(1) });
+/** Cancel (nothing paid) or write off (C-141): a reason is required. */
+export const CloseInvoiceSchema = z.object({
+  version: Version,
+  reason: z.string().trim().min(3).max(500),
+});
+
+/** Overdue invoices that have passed the academy's late-fee threshold (C-140). */
+export const LateFeeSuggestionSchema = z.object({
+  invoice: InvoiceSummarySchema,
+  daysOverdue: z.number().int(),
+  amountMinor: z.number().int(),
+});
+export const LateFeeSuggestionListSchema = z.object({
+  /** Null when the academy has no late fee set. */
+  rule: z.object({ afterDays: z.number().int(), amountMinor: z.number().int() }).nullable(),
+  items: z.array(LateFeeSuggestionSchema),
+});

@@ -7,6 +7,7 @@ import { ProvisioningService } from './academies/provisioning.service.js';
 import { SlugAvailabilityService } from './academies/slug-availability.service.js';
 import { SessionGenerationScheduler } from './jobs/session-generation.scheduler.js';
 import { PlatformDb } from './platform-db.js';
+import { FinanceModule } from '../modules/finance/index.js';
 import { NotificationsModule } from '../modules/notifications/index.js';
 import { SchedulingModule } from '../modules/scheduling/index.js';
 
@@ -15,7 +16,7 @@ import { SchedulingModule } from '../modules/scheduling/index.js';
  * Phase 3: the provisioning console slice (C-02); the full console is Phase 14.
  */
 @Module({
-  imports: [SchedulingModule, NotificationsModule],
+  imports: [SchedulingModule, NotificationsModule, FinanceModule],
   controllers: [AcademiesController],
   providers: [
     PlatformDb,

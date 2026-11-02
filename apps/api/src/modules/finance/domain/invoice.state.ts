@@ -17,7 +17,7 @@ export type InvoiceEvent =
   | 'issue'
   /** Payments, credit or a write-off changed what is settled; the target comes from amounts. */
   | 'settle'
-  /** Only with nothing paid; credit used on it goes back to the student. */
+  /** Only with no money received; credit used on it goes back to the student (§12.1). */
   | 'cancel'
   /** C-141: closed with a balance, with a reason. */
   | 'write_off';
@@ -29,11 +29,14 @@ const ALLOWED: Record<InvoiceStatus, Partial<Record<InvoiceEvent, readonly Invoi
     cancel: ['CANCELLED'],
     write_off: ['WRITTEN_OFF'],
   },
+  // Partly or fully settled by credit alone can still be cancelled: the service checks that no
+  // money was received.
   PARTIALLY_PAID: {
     settle: ['PARTIALLY_PAID', 'PAID'],
+    cancel: ['CANCELLED'],
     write_off: ['WRITTEN_OFF'],
   },
-  PAID: {},
+  PAID: { cancel: ['CANCELLED'] },
   CANCELLED: {},
   WRITTEN_OFF: {},
 };

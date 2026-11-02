@@ -1,6 +1,8 @@
 import {
+  CloseInvoiceSchema,
   CreateFeeAssignmentsSchema,
   CreateFeePlanSchema,
+  CreateInvoiceSchema,
   FeeAssignmentListQuerySchema,
   FeeAssignmentListSchema,
   FeeAssignmentSchema,
@@ -8,13 +10,21 @@ import {
   FeePlanListSchema,
   FeePlanSchema,
   FinanceSettingsResponseSchema,
+  InvoiceListQuerySchema,
+  InvoicePageSchema,
+  InvoiceSchema,
+  InvoiceVersionQuerySchema,
+  InvoiceVersionSchema,
+  LateFeeSuggestionListSchema,
   UpdateFeeAssignmentSchema,
   UpdateFeePlanSchema,
+  UpdateInvoiceSchema,
   UpdateFinanceSettingsSchema,
 } from '@academybee/contracts';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -30,6 +40,7 @@ import { createZodDto, ZodResponse } from '../../core/validation/zod-dto.js';
 import { FeeAssignmentsService } from './fee-assignments.service.js';
 import { FeePlansService } from './fee-plans.service.js';
 import { FinanceSettingsService } from './finance-settings.service.js';
+import { InvoicesService } from './invoices.service.js';
 
 class FeePlanListQueryDto extends createZodDto(FeePlanListQuerySchema) {}
 class CreateFeePlanDto extends createZodDto(CreateFeePlanSchema) {}
@@ -38,6 +49,12 @@ class FeeAssignmentListQueryDto extends createZodDto(FeeAssignmentListQuerySchem
 class CreateFeeAssignmentsDto extends createZodDto(CreateFeeAssignmentsSchema) {}
 class UpdateFeeAssignmentDto extends createZodDto(UpdateFeeAssignmentSchema) {}
 class UpdateFinanceSettingsDto extends createZodDto(UpdateFinanceSettingsSchema) {}
+class InvoiceListQueryDto extends createZodDto(InvoiceListQuerySchema) {}
+class CreateInvoiceDto extends createZodDto(CreateInvoiceSchema) {}
+class UpdateInvoiceDto extends createZodDto(UpdateInvoiceSchema) {}
+class InvoiceVersionDto extends createZodDto(InvoiceVersionSchema) {}
+class CloseInvoiceDto extends createZodDto(CloseInvoiceSchema) {}
+class InvoiceVersionQueryDto extends createZodDto(InvoiceVersionQuerySchema) {}
 
 const Id = new ParseUUIDPipe({ version: '7' });
 
@@ -134,5 +151,92 @@ export class FinanceSettingsController {
   @ZodResponse(FinanceSettingsResponseSchema)
   update(@Body() body: UpdateFinanceSettingsDto) {
     return this.settings.update(body);
+  }
+}
+
+/** Invoices (ARCHITECTURE §12.1): every change is idempotent, versioned and audited. */
+@Controller({ path: 'invoices', version: '1' })
+export class InvoicesController {
+  constructor(private readonly invoices: InvoicesService) {}
+
+  @Get()
+  @Can('invoice.read')
+  @ZodResponse(InvoicePageSchema)
+  list(@Query() query: InvoiceListQueryDto) {
+    return this.invoices.list(query);
+  }
+
+  @Post()
+  @Can('invoice.create')
+  @Idempotent()
+  @HttpCode(201)
+  @ZodResponse(InvoiceSchema)
+  create(@Body() body: CreateInvoiceDto) {
+    return this.invoices.create(body);
+  }
+
+  @Get('late-fee-suggestions')
+  @Can('invoice.read')
+  @ZodResponse(LateFeeSuggestionListSchema)
+  lateFeeSuggestions() {
+    return this.invoices.lateFeeSuggestions();
+  }
+
+  @Get(':id')
+  @Can('invoice.read')
+  @ZodResponse(InvoiceSchema)
+  get(@Param('id', Id) id: string) {
+    return this.invoices.get(id);
+  }
+
+  @Patch(':id')
+  @Can('invoice.create')
+  @ZodResponse(InvoiceSchema)
+  update(@Param('id', Id) id: string, @Body() body: UpdateInvoiceDto) {
+    return this.invoices.update(id, body);
+  }
+
+  @Delete(':id')
+  @Can('invoice.create')
+  @HttpCode(204)
+  async remove(@Param('id', Id) id: string, @Query() query: InvoiceVersionQueryDto) {
+    await this.invoices.remove(id, query.version);
+  }
+
+  @Post(':id/issue')
+  @Can('invoice.issue')
+  @Idempotent()
+  @HttpCode(200)
+  @ZodResponse(InvoiceSchema)
+  issue(@Param('id', Id) id: string, @Body() body: InvoiceVersionDto) {
+    return this.invoices.issue(id, body.version);
+  }
+
+  @Post(':id/cancel')
+  @Can('invoice.cancel')
+  @Idempotent()
+  @HttpCode(200)
+  @ZodResponse(InvoiceSchema)
+  cancel(@Param('id', Id) id: string, @Body() body: CloseInvoiceDto) {
+    return this.invoices.cancel(id, body);
+  }
+
+  @Post(':id/write-off')
+  @Can('invoice.cancel')
+  @Idempotent()
+  @HttpCode(200)
+  @ZodResponse(InvoiceSchema)
+  writeOff(@Param('id', Id) id: string, @Body() body: CloseInvoiceDto) {
+    return this.invoices.writeOff(id, body);
+  }
+
+  /** Staff approve a suggested late fee (C-140): needs both creating and issuing. */
+  @Post(':id/late-fee')
+  @Can('invoice.issue')
+  @Idempotent()
+  @HttpCode(201)
+  @ZodResponse(InvoiceSchema)
+  lateFee(@Param('id', Id) id: string) {
+    return this.invoices.applyLateFee(id);
   }
 }
