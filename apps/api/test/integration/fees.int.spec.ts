@@ -119,7 +119,7 @@ describe('fees and payment settings', () => {
       assignedCount: 0,
       version: 1,
     });
-    expect(made.body.components.map((c: { name: string }) => c.name)).toEqual([
+    expect((made.body.components as { name: string }[]).map((c) => c.name)).toEqual([
       'Tuition',
       'Materials',
     ]);
@@ -188,7 +188,7 @@ describe('fees and payment settings', () => {
       startsOn: '2026-12-01',
     });
     expect(batch.status, JSON.stringify(batch.body)).toBe(201);
-    expect(batch.body.items.map((x: { studentId: string }) => x.studentId)).toEqual([
+    expect((batch.body.items as { studentId: string }[]).map((x) => x.studentId)).toEqual([
       a.people.studentId,
     ]);
     expect((await get(owner, `/fee-plans/${p.id}`)).body.assignedCount).toBe(2);
