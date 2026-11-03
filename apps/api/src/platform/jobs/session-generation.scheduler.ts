@@ -13,7 +13,7 @@ import { AuditService } from '../../core/audit/audit.service.js';
 import { API_CONFIG } from '../../core/config/config.module.js';
 import type { ApiConfig } from '../../core/config/config.schema.js';
 import { bullConnection } from '../../core/redis/bull-connection.js';
-import { FinanceDailyQueue } from '../../modules/finance/index.js';
+import { FinanceDailyQueue, ReconciliationQueue } from '../../modules/finance/index.js';
 import { AttendanceNudgeQueue } from '../../modules/notifications/index.js';
 import { SessionGenerationQueue } from '../../modules/scheduling/index.js';
 import { PlatformDb } from '../platform-db.js';
@@ -26,6 +26,9 @@ export const DAILY_FINANCE_JOB = 'daily-finance';
 /** Every 10 minutes: teachers reminded 30 minutes after a class without a roll call (G-16). */
 export const ATTENDANCE_NUDGES_JOB = 'attendance-nudges';
 const NUDGE_EVERY_MS = 10 * 60_000;
+/** Every hour: academies with a gateway account compare it with their books (§12.3). */
+export const PAYMENT_RECONCILIATION_JOB = 'payment-reconciliation';
+const RECONCILE_EVERY_MS = 60 * 60_000;
 /** 02:00 in India, when no class is running. */
 const DAILY_PATTERN = { pattern: '0 2 * * *', tz: 'Asia/Kolkata' } as const;
 const FINANCE_PATTERN = { pattern: '0 3 * * *', tz: 'Asia/Kolkata' } as const;
@@ -48,6 +51,7 @@ export class SessionGenerationScheduler implements OnApplicationBootstrap, OnApp
     private readonly generation: SessionGenerationQueue,
     private readonly nudges: AttendanceNudgeQueue,
     private readonly finance: FinanceDailyQueue,
+    private readonly reconciliation: ReconciliationQueue,
     private readonly audit: AuditService,
   ) {}
 
@@ -71,6 +75,14 @@ export class SessionGenerationScheduler implements OnApplicationBootstrap, OnApp
         opts: { removeOnComplete: { count: 30 }, removeOnFail: { count: 30 } },
       },
     );
+    await this.queue.upsertJobScheduler(
+      PAYMENT_RECONCILIATION_JOB,
+      { every: RECONCILE_EVERY_MS },
+      {
+        name: PAYMENT_RECONCILIATION_JOB,
+        opts: { removeOnComplete: { count: 30 }, removeOnFail: { count: 30 } },
+      },
+    );
     this.worker = new Worker(
       PLATFORM_JOBS_QUEUE,
       async (job) => {
@@ -78,6 +90,7 @@ export class SessionGenerationScheduler implements OnApplicationBootstrap, OnApp
         if (job.name === 'manual-sessions') return this.queueAll('manual', true);
         if (job.name === ATTENDANCE_NUDGES_JOB) return this.queueNudges();
         if (job.name === DAILY_FINANCE_JOB) return this.queueFinance();
+        if (job.name === PAYMENT_RECONCILIATION_JOB) return this.queueReconciliation();
         throw new Error(`Unknown platform job: ${job.name}`);
       },
       { connection: this.connection, concurrency: 1 },
@@ -139,6 +152,30 @@ export class SessionGenerationScheduler implements OnApplicationBootstrap, OnApp
       metadata: { academies: academies.length },
     });
     return academies.length;
+  }
+
+  /** Queue the hourly gateway check for academies that have ever had an account. */
+  async queueReconciliation(now = new Date()): Promise<number> {
+    let db;
+    try {
+      db = this.platform.db;
+    } catch {
+      return 0;
+    }
+    const accounts = await db.tenantPaymentAccount.findMany({
+      distinct: ['tenantId'],
+      select: { tenantId: true },
+    });
+    const slot = now.toISOString().slice(0, 13);
+    for (const a of accounts) await this.reconciliation.add({ tenantId: a.tenantId }, slot);
+    await this.audit.record({
+      tenantId: null,
+      action: 'platform.payment_reconciliation_queued',
+      entityType: 'Platform',
+      entityId: 'payment-reconciliation',
+      metadata: { academies: accounts.length },
+    });
+    return accounts.length;
   }
 
   /** Queue the attendance nudge check for every active academy (one job per 10-minute slot). */

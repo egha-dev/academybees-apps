@@ -883,10 +883,10 @@ Settings → Payments: UPI ID + payee name + QR preview (works now); bank detail
 Parent taps Pay online (shown only when a gateway is connected) ──▶ POST /hub/academies/:slug/invoices/:id/pay (Idempotency-Key)
   └─ server creates Payment(INITIATED) → provider order → Payment(PENDING) → returns checkout params
 Checkout completes in browser ──▶ UI shows "Payment processing…" (never "successful")
-Provider webhook (to the academy's own account route) ──▶ verify signature with that tenant's secret → GatewayEvent (unique providerEventId) → Payment CONFIRMED
+Provider webhook (to the academy's own account route) ──▶ look up the account (C-156) → verify signature with that tenant's secret → GatewayEvent (unique per tenant, provider and event id) → Payment CONFIRMED
   └─ allocate → invoice status → receipt number → outbox: receipt.generate, notify.parent
-UI polls /payments/:id (or SSE) → shows "Payment confirmed · Receipt R/2026-27/00042"
-Reconciliation job (hourly/daily) ──▶ provider settlements vs Payments → exceptions list
+UI polls /hub/academies/:slug/payments/:id → shows "Payment confirmed · Receipt RCT/2026-27/00042"
+Reconciliation job (hourly, C-158) ──▶ asks about payments still PENDING after 15 min, then provider settlements vs Payments → exceptions list
 ```
 
 `PaymentProvider` interface (create order, verify webhook, fetch status, refund, fetch settlements). Adapters: `ManualProvider` (production default now), `SimulatorProvider` (local/CI/staging/demo only — config validation refuses it in production; drives E2E of this whole flow), `RazorpayProvider` (Phase G, OD-02). **Merchant-of-record rule (PRD v3.2 G-01):** each academy's online payments go to the academy's own connected gateway account; AcademyBee never receives or settles academy fee money. Academies without a gateway show UPI ID/QR and staff record payments manually (never labelled "online"). AcademyBee's SaaS billing (Phase 13) uses a separate platform gateway configuration.

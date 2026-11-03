@@ -89,7 +89,7 @@ ANALYTICS_HASH_SALT=${{shared.ANALYTICS_HASH_SALT}}
 PLATFORM_ROOT_DOMAIN=${{shared.PLATFORM_ROOT_DOMAIN}}
 COOKIE_MODE=secure
 CUSTOM_DOMAINS_ENABLED=false
-PAYMENT_PROVIDERS=manual
+PAYMENT_PROVIDERS=manual,simulator
 ```
 
 **Media (Phase 3, C-97).** Logos and favicons go to the Cloudflare R2 bucket `academybees-media-staging`, which has the public domain `media.staging.academybees.com` and r2.dev turned off. That bucket holds **public branding only**; private media has its own bucket without a public domain (below). Add these variables on `api` only. Seal the two keys (Railway → variable → ⋯ → Seal).

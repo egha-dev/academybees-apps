@@ -146,6 +146,7 @@ describe('RLS coverage (ADR-005)', () => {
     const SPECIAL: Record<string, string[]> = {
       ...IDENTITY_POLICIES,
       tenant_domain: ['host_lookup', 'tenant_isolation'],
+      tenant_payment_account: ['tenant_isolation', 'webhook_lookup'],
       audit_log: ['platform_insert', 'tenant_isolation'],
       membership: ['own_memberships', 'tenant_isolation'],
       invitation: ['tenant_isolation', 'token_lookup'],
@@ -171,7 +172,7 @@ describe('RLS coverage (ADR-005)', () => {
       expect(r.cmd).toBe('INSERT');
     // Lookups and the Family Hub membership listing only read.
     for (const r of rows.filter((x) =>
-      ['token_lookup', 'own_memberships', 'user_select'].includes(x.policyname),
+      ['token_lookup', 'own_memberships', 'user_select', 'webhook_lookup'].includes(x.policyname),
     ))
       expect(r.cmd, `${r.tablename}.${r.policyname}`).toBe('SELECT');
   });

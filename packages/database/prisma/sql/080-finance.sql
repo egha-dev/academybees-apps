@@ -136,3 +136,24 @@ ALTER TABLE notification_intent ADD CONSTRAINT notification_intent_subject CHECK
   OR (kind IN ('ATTENDANCE_ABSENT', 'ATTENDANCE_LATE') AND session_id IS NOT NULL)
   OR (kind IN ('PAYMENT_CONFIRMED', 'PAYMENT_REJECTED') AND holiday_id IS NULL AND session_id IS NULL)
 );
+
+-- Gateway orders (ADR-033, C-156): an account's order id names one payment.
+DROP INDEX IF EXISTS payment_gateway_order;
+CREATE UNIQUE INDEX payment_gateway_order ON payment (tenant_id, provider_account_id, provider_order_id)
+  WHERE provider_order_id IS NOT NULL;
+-- At most one live gateway account per academy (C-156).
+DROP INDEX IF EXISTS tenant_payment_account_one_live;
+CREATE UNIQUE INDEX tenant_payment_account_one_live ON tenant_payment_account (tenant_id)
+  WHERE status <> 'DISABLED';
+
+-- A webhook names its account before any academy is known (ADR-033). Like the host lookup (C-51):
+-- only outside an academy context, only the one row whose exact reference was given, and
+-- $lookupPaymentAccount selects its tenant and provider alone.
+DROP POLICY IF EXISTS webhook_lookup ON tenant_payment_account;
+CREATE POLICY webhook_lookup ON tenant_payment_account FOR SELECT TO ab_app USING (
+  ab_current_tenant() IS NULL
+  AND account_ref = NULLIF(current_setting('app.lookup_account_ref', true), '')
+);
+
+-- Exceptions are worked, never deleted.
+REVOKE DELETE, TRUNCATE ON reconciliation_exception FROM ab_app;

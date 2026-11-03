@@ -347,6 +347,64 @@ describe('tenant isolation (ADR-005)', () => {
     });
   });
 
+  describe('webhook account lookup (ADR-033, C-156)', () => {
+    const ref = () => `lookup-${newId()}`;
+    async function account(tenantId: string, accountRef: string) {
+      const su = new pg.Client({ connectionString: urls.superuser });
+      await su.connect();
+      await su.query(
+        `INSERT INTO tenant_payment_account
+           (id, tenant_id, provider, account_ref, mode, status, credentials_cipher, webhook_cipher, updated_at)
+         VALUES ($1, $2, 'simulator', $3, 'TEST', 'DISABLED', 'sealed-a', 'sealed-b', now())`,
+        [newId(), tenantId, accountRef],
+      );
+      await su.end();
+    }
+
+    it('names the academy and provider, and nothing else', async () => {
+      const accountRef = ref();
+      await account(a.id, accountRef);
+      expect(await db.$lookupPaymentAccount(accountRef)).toEqual({
+        tenantId: a.id,
+        provider: 'simulator',
+      });
+      expect(await db.$lookupPaymentAccount('no-such-account')).toBeNull();
+    });
+
+    it('is refused inside a tenant context', async () => {
+      await expect(asTenant(a.id, () => db.$lookupPaymentAccount('x'))).rejects.toThrow(
+        /before a tenant context/,
+      );
+    });
+
+    it('the GUC exposes only that one row, reads only, and not under an academy', async () => {
+      const [mine, other] = [ref(), ref()];
+      await account(a.id, mine);
+      await account(b.id, other);
+      await app.query('BEGIN');
+      try {
+        await app.query(`SELECT set_config('app.lookup_account_ref', $1, true)`, [mine]);
+        const seen = await app.query<{ account_ref: string }>(
+          `SELECT account_ref FROM tenant_payment_account`,
+        );
+        expect(seen.rows.map((r) => r.account_ref)).toEqual([mine]);
+        const changed = await app.query(
+          `UPDATE tenant_payment_account SET status = 'CONNECTED' WHERE account_ref = $1`,
+          [mine],
+        );
+        expect(changed.rowCount).toBe(0);
+        await app.query(`SELECT set_config('app.tenant_id', $1, true)`, [b.id]);
+        const underB = await app.query<{ account_ref: string }>(
+          `SELECT account_ref FROM tenant_payment_account WHERE account_ref = $1`,
+          [mine],
+        );
+        expect(underB.rows).toHaveLength(0);
+      } finally {
+        await app.query('ROLLBACK');
+      }
+    });
+  });
+
   describe('host lookup (C-51)', () => {
     it('resolves exactly the requested hostname', async () => {
       const row = await db.$lookupTenantDomain(a.slug);

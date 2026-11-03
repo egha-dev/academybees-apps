@@ -731,6 +731,36 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     capability,
     spoof: { skip: 'payments.int.spec.ts › another academy’s payments and students are 404' },
   })),
+  // Online payments (Phase 7 S5): the gateway card and exceptions read the caller's own academy;
+  // another academy's exception is covered in online-payments.int.spec.ts.
+  {
+    method: 'GET',
+    path: '/api/v1/settings/finance/gateway',
+    session: true,
+    capability: 'fee.read',
+  },
+  ...(
+    [
+      ['POST', '/api/v1/settings/finance/gateway/simulator', 'academy.settings.manage'],
+      ['DELETE', '/api/v1/settings/finance/gateway', 'academy.settings.manage'],
+      ['POST', '/api/v1/reconciliation/exceptions/:id/resolve', 'finance.reconcile'],
+    ] as const
+  ).map(([method, path, capability]) => ({
+    method,
+    path,
+    ...(path.includes(':id') ? { params: { id: 'missing-import' } } : {}),
+    session: true,
+    capability,
+    spoof: {
+      skip: 'online-payments.int.spec.ts › exceptions are listed and resolved by finance.reconcile; another academy can’t see or resolve one',
+    },
+  })),
+  {
+    method: 'GET',
+    path: '/api/v1/reconciliation/exceptions',
+    session: true,
+    capability: 'finance.reconcile',
+  },
   // Offline sync (Phase 6 S2). Bootstrap is probed directly; push (another academy's class →
   // REJECTED NOT_FOUND), pull and the beacon are covered in sync.int.spec.ts.
   {

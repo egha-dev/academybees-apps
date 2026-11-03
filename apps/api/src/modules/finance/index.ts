@@ -6,3 +6,4 @@ export { FinanceDailyQueue } from './finance-daily.queue.js';
 export { FinanceSettingsService } from './finance-settings.service.js';
 export { InvoicesService } from './invoices.service.js';
 export { PaymentsService } from './payments.service.js';
+export { ReconciliationQueue } from './reconciliation.queue.js';

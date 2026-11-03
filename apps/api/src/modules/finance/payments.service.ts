@@ -27,7 +27,12 @@ import { assertInScope, scopedWhere } from '../../core/rbac/scope.js';
 import { StudentsService } from '../people/index.js';
 import { nextInvoice, settledStatus } from './domain/invoice.state.js';
 import { allocate, balanceOf, refundSources } from './domain/money.js';
-import { afterRefund, initialStatus, nextPayment } from './domain/payment.state.js';
+import {
+  afterRefund,
+  initialStatus,
+  nextPayment,
+  type PaymentStatus,
+} from './domain/payment.state.js';
 import { invoicePolicy, paymentPolicy } from './finance.policy.js';
 import { FinanceSettingsService } from './finance-settings.service.js';
 import { nextNumber } from './invoice-numbers.js';
@@ -557,8 +562,112 @@ export class PaymentsService {
     });
   }
 
+  /**
+   * A gateway said this payment succeeded (a verified webhook or a status fetch, §12.3). The
+   * caller holds the payment's lock and has read its status. No staff member is involved, so
+   * nothing here reads a membership.
+   */
+  async confirmFromGateway(
+    tx: TransactionClient,
+    p: {
+      id: string;
+      tenantId: string;
+      studentId: string;
+      status: PaymentStatus;
+      amountMinor: number;
+      allocateTo: string[];
+    },
+    providerPaymentId: string | null,
+  ): Promise<void> {
+    if (!nextPayment(p.status, 'confirm', 'CONFIRMED')) throw this.notInStatus(p.status);
+    await tx.payment.update({
+      where: { id: p.id },
+      data: {
+        status: 'CONFIRMED',
+        confirmedAt: new Date(),
+        reference: providerPaymentId,
+        version: { increment: 1 },
+      },
+    });
+    const applied = await this.applyAndNumber(tx, {
+      id: p.id,
+      tenantId: p.tenantId,
+      studentId: p.studentId,
+      amountMinor: p.amountMinor,
+      allocateTo: p.allocateTo,
+      needsReview: false,
+      actorId: null,
+    });
+    await this.audit.record(
+      {
+        action: 'finance.payment_confirmed',
+        entityType: 'Payment',
+        entityId: p.id,
+        before: { status: 'PENDING' },
+        after: { status: 'CONFIRMED', method: 'ONLINE_GATEWAY', ...applied },
+      },
+      tx,
+    );
+    await tx.notificationIntent.createMany({
+      data: [
+        {
+          id: newId(),
+          tenantId: p.tenantId,
+          kind: 'PAYMENT_CONFIRMED',
+          studentId: p.studentId,
+          payload: {
+            paymentId: p.id,
+            amountMinor: p.amountMinor,
+            receiptNumber: applied.receiptNumber,
+          },
+        },
+      ],
+    });
+  }
+
+  /** A gateway said this payment failed: nothing was applied, so there is nothing to undo. */
+  async failFromGateway(
+    tx: TransactionClient,
+    p: {
+      id: string;
+      tenantId: string;
+      studentId: string;
+      status: PaymentStatus;
+      amountMinor: number;
+    },
+    reason: string,
+  ): Promise<void> {
+    if (!nextPayment(p.status, 'fail', 'FAILED')) throw this.notInStatus(p.status);
+    await tx.payment.update({
+      where: { id: p.id },
+      data: { status: 'FAILED', rejectionReason: reason, version: { increment: 1 } },
+    });
+    await this.audit.record(
+      {
+        action: 'finance.payment_rejected',
+        entityType: 'Payment',
+        entityId: p.id,
+        before: { status: 'PENDING' },
+        after: { status: 'FAILED', method: 'ONLINE_GATEWAY' },
+        metadata: { reason },
+      },
+      tx,
+    );
+    await tx.notificationIntent.createMany({
+      data: [
+        {
+          id: newId(),
+          tenantId: p.tenantId,
+          kind: 'PAYMENT_REJECTED',
+          studentId: p.studentId,
+          payload: { paymentId: p.id, amountMinor: p.amountMinor, reason },
+        },
+      ],
+    });
+  }
+
   /** Held until the transaction ends: a second verify or refund waits, then sees what this did. */
-  private async lockPayment(tx: TransactionClient, id: string) {
+  async lockPayment(tx: TransactionClient, id: string) {
     await tx.$queryRaw`SELECT id FROM payment WHERE id = ${id}::uuid FOR UPDATE`;
   }
 

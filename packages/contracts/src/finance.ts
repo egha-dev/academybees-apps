@@ -697,3 +697,81 @@ export const ReportedPaymentSchema = z.object({
   createdAt: z.string(),
 });
 export type ReportedPayment = z.infer<typeof ReportedPaymentSchema>;
+
+// ── Online payments (Phase 7 S5; G-01, ADR-033, ADR-038, C-155…C-158) ───────────────────────────
+
+/** An academy's gateway account as staff see it: never its credentials or webhook secret. */
+export const GatewayAccountSchema = z.object({
+  provider: z.string(),
+  mode: z.enum(['TEST', 'LIVE']),
+  status: z.enum(['PENDING', 'CONNECTED', 'DISABLED']),
+  /** Where the gateway sends events; the reference is not a secret. */
+  webhookPath: z.string(),
+  connectedAt: z.string().nullable(),
+});
+export type GatewayAccount = z.infer<typeof GatewayAccountSchema>;
+
+/** `POST /hub/academies/:slug/invoices/:id/pay`: the balance unless a smaller amount is given. */
+export const StartOnlinePaymentSchema = z.object({ amountMinor: PaidAmount.optional() });
+export type StartOnlinePayment = z.infer<typeof StartOnlinePaymentSchema>;
+/** The UI says "Payment processing…" from here until the server has confirmed it. */
+export const OnlinePaymentStartedSchema = z.object({
+  paymentId: z.uuid(),
+  status: z.literal('PENDING'),
+  amountMinor: z.number().int(),
+  currency: CurrencySchema,
+  provider: z.string(),
+  checkout: z.record(z.string(), z.string()),
+});
+export type OnlinePaymentStarted = z.infer<typeof OnlinePaymentStartedSchema>;
+
+/** What a parent polls for their own payment, reported or online. */
+export const HubPaymentStatusSchema = z.object({
+  id: z.uuid(),
+  status: PaymentStatusSchema,
+  amountMinor: z.number().int(),
+  currency: CurrencySchema,
+  receiptNumber: z.string().nullable(),
+  rejectionReason: z.string().nullable(),
+});
+export type HubPaymentStatus = z.infer<typeof HubPaymentStatusSchema>;
+
+export const RECONCILIATION_KINDS = [
+  'UNKNOWN_ORDER',
+  'AMOUNT_MISMATCH',
+  'PAID_AFTER_FAILED',
+  'STUCK_PENDING',
+  'SETTLEMENT_MISMATCH',
+] as const;
+export const ReconciliationExceptionSchema = z.object({
+  id: z.uuid(),
+  kind: z.enum(RECONCILIATION_KINDS),
+  paymentId: z.uuid().nullable(),
+  reference: z.string(),
+  details: z.record(z.string(), z.union([z.string(), z.number(), z.null()])),
+  status: z.enum(['OPEN', 'RESOLVED']),
+  resolution: z.string().nullable(),
+  resolvedAt: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type ReconciliationException = z.infer<typeof ReconciliationExceptionSchema>;
+export const ReconciliationPageSchema = z.object({
+  items: z.array(ReconciliationExceptionSchema),
+  nextCursor: z.string().nullable(),
+});
+export const ReconciliationListQuerySchema = z.object({
+  status: z.enum(['OPEN', 'RESOLVED']).default('OPEN'),
+  cursor: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+export const ResolveExceptionSchema = z.object({ resolution: z.string().trim().min(3).max(500) });
+
+/**
+ * The simulator's checkout (never in production): how it ends, and how the webhook behaves.
+ * `NONE` leaves the event undelivered, for the reconciliation job to find (a missed webhook).
+ */
+export const SimulateCheckoutSchema = z.object({
+  outcome: z.enum(['SUCCESS', 'FAILURE']),
+  delivery: z.enum(['ONCE', 'TWICE', 'NONE']).default('ONCE'),
+});
+export type SimulateCheckout = z.infer<typeof SimulateCheckoutSchema>;

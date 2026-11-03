@@ -25,7 +25,20 @@ import { InvoicesService } from './invoices.service.js';
 import { OpeningBalancesProcessor } from './opening-balances.processor.js';
 import { OpeningBalancesQueue } from './opening-balances.queue.js';
 import { OpeningBalancesService } from './opening-balances.service.js';
+import { PaymentAccountsService } from './payment-accounts.service.js';
 import { PaymentsService } from './payments.service.js';
+import { ManualProvider } from './providers/manual.provider.js';
+import { PaymentProviderRegistry } from './providers/provider-registry.js';
+import { SimulatorProvider } from './providers/simulator.provider.js';
+import { ReconciliationProcessor } from './reconciliation.processor.js';
+import { ReconciliationQueue } from './reconciliation.queue.js';
+import { ReconciliationService } from './reconciliation.service.js';
+import {
+  GatewayAccountController,
+  PaymentWebhooksController,
+  ReconciliationController,
+} from './online-payments.controller.js';
+import { OnlinePaymentsService } from './online-payments.service.js';
 
 /**
  * Academy finance (Phase 7; ARCHITECTURE §12, ADR-018, ADR-038): fee plans, assignments and the
@@ -41,6 +54,9 @@ import { PaymentsService } from './payments.service.js';
     OpeningBalancesController,
     PaymentsController,
     HubPaymentsController,
+    PaymentWebhooksController,
+    GatewayAccountController,
+    ReconciliationController,
   ],
   providers: [
     FeePlansService,
@@ -56,6 +72,14 @@ import { PaymentsService } from './payments.service.js';
     FinanceDailyProcessor,
     PaymentsService,
     HubPaymentsService,
+    ManualProvider,
+    SimulatorProvider,
+    PaymentProviderRegistry,
+    PaymentAccountsService,
+    OnlinePaymentsService,
+    ReconciliationService,
+    ReconciliationQueue,
+    ReconciliationProcessor,
   ],
   exports: [
     FeePlansService,
@@ -64,6 +88,7 @@ import { PaymentsService } from './payments.service.js';
     InvoicesService,
     PaymentsService,
     FinanceDailyQueue,
+    ReconciliationQueue,
   ],
 })
 export class FinanceModule {}

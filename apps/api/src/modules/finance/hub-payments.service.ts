@@ -1,10 +1,14 @@
 import {
+  type HubPaymentStatus,
   localDate,
   MEDIA_PURPOSES,
   newId,
+  type OnlinePaymentStarted,
   type ReportedPayment,
   type ReportPayment,
+  type SimulateCheckout,
   sniffImage,
+  type StartOnlinePayment,
 } from '@academybee/contracts';
 import type { TenantBoundClient, TransactionClient } from '@academybee/database';
 import { Inject, Injectable } from '@nestjs/common';
@@ -18,13 +22,16 @@ import { DomainError } from '../../core/errors/domain-error.js';
 import { FeatureFlagService } from '../../core/flags/feature-flag.service.js';
 import { stripImageMetadata } from '../../core/media/image-metadata.js';
 import { MediaStorage } from '../../core/media/media-storage.js';
-import { RateLimiter } from '../../core/rate-limit/rate-limiter.service.js';
+import { RateLimiter, type RateRule } from '../../core/rate-limit/rate-limiter.service.js';
 import { TenantContext } from '../../core/tenant/tenant-context.service.js';
 import { NotificationsService } from '../notifications/index.js';
 import { HubLinkService, ParentAccessService } from '../people/index.js';
+import { OnlinePaymentsService } from './online-payments.service.js';
 import { PaymentsService } from './payments.service.js';
 
 const RULE = { name: 'hub-report-payment', limit: 20, windowSeconds: 3600 } as const;
+/** Polling a payment's status every few seconds is normal. */
+const POLL_RULE = { name: 'hub-poll-payment', limit: 120, windowSeconds: 60 } as const;
 const PURPOSE = 'payment.evidence' as const;
 const notFound = () => new DomainError('NOT_FOUND', 'invoice');
 
@@ -48,6 +55,7 @@ export class HubPaymentsService {
     private readonly flags: FeatureFlagService,
     private readonly rate: RateLimiter,
     private readonly payments: PaymentsService,
+    private readonly online: OnlinePaymentsService,
     private readonly notifications: NotificationsService,
     private readonly storage: MediaStorage,
     private readonly audit: AuditService,
@@ -60,9 +68,13 @@ export class HubPaymentsService {
   }
 
   /** Run in the academy's context, for a parent with `payment.report` there, with the flag on. */
-  private async inAcademy<T>(slug: string, work: (userId: string) => Promise<T>): Promise<T> {
+  private async inAcademy<T>(
+    slug: string,
+    work: (userId: string) => Promise<T>,
+    rule: RateRule = RULE,
+  ): Promise<T> {
     const userId = this.userId();
-    await this.rate.consume(RULE, userId);
+    await this.rate.consume(rule, userId);
     const tenantId = await this.link.academy(slug);
     if (!tenantId) throw notFound();
     return this.context.run(tenantId, async () => {
@@ -134,6 +146,72 @@ export class HubPaymentsService {
       paidOn,
       createdAt: new Date().toISOString(),
     };
+  }
+
+  /** Pay online (G-01): only with a connected gateway, for a child this parent may act for. */
+  async payOnline(
+    slug: string,
+    invoiceId: string,
+    input: StartOnlinePayment,
+  ): Promise<OnlinePaymentStarted> {
+    return this.inAcademy(slug, async (userId) => {
+      const invoice = await this.db.invoice.findFirst({
+        where: { id: invoiceId, status: { not: 'DRAFT' } },
+        select: { studentId: true },
+      });
+      if (!invoice || !(await this.parents.mayActForChild(this.db, userId, invoice.studentId)))
+        throw notFound();
+      return this.online.start({ invoiceId, amountMinor: input.amountMinor, userId });
+    });
+  }
+
+  /** Their own payment, reported or online: what the UI polls ("never successful" until here). */
+  async status(slug: string, paymentId: string): Promise<HubPaymentStatus> {
+    return this.inAcademy(
+      slug,
+      async (userId) => {
+        const row = await this.ownPayment(userId, paymentId);
+        return {
+          id: paymentId,
+          status: row.status,
+          amountMinor: row.amountMinor,
+          currency: row.currency,
+          receiptNumber: row.receiptNumber,
+          rejectionReason: row.rejectionReason,
+        };
+      },
+      POLL_RULE,
+    );
+  }
+
+  /** The simulator's checkout, on the parent's own payment. 404 wherever it isn't enabled. */
+  async simulateCheckout(
+    slug: string,
+    paymentId: string,
+    input: SimulateCheckout,
+  ): Promise<HubPaymentStatus> {
+    await this.inAcademy(slug, async (userId) => {
+      await this.ownPayment(userId, paymentId);
+      await this.online.simulateCheckout(paymentId, input);
+    });
+    return this.status(slug, paymentId);
+  }
+
+  private async ownPayment(userId: string, paymentId: string) {
+    const row = await this.db.payment.findFirst({
+      where: { id: paymentId, reportedByUserId: userId },
+      select: {
+        studentId: true,
+        status: true,
+        amountMinor: true,
+        currency: true,
+        receiptNumber: true,
+        rejectionReason: true,
+      },
+    });
+    if (!row || !(await this.parents.mayActForChild(this.db, userId, row.studentId)))
+      throw notFound();
+    return row;
   }
 
   /** Optional screenshot on their own report, while it still waits (G-30). */

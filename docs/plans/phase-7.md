@@ -1,6 +1,6 @@
 # P7-1 · Phase 7 — Finance: plan
 
-> **Approved by the PO on 2026-11-02** (`phase-7-start` = `9267fd3`). Decisions C-137…C-146 recorded in DECISIONS.md; C-147…C-149 added in S3b; C-150…C-154 in S4.
+> **Approved by the PO on 2026-11-02** (`phase-7-start` = `9267fd3`). Decisions C-137…C-146 recorded in DECISIONS.md; C-147…C-149 added in S3b; C-150…C-154 in S4; C-155…C-159 in S5.
 
 ## Context
 
@@ -195,6 +195,13 @@ Each slice: branch `p7/<slice>` from the latest `main` → PR with the DoD check
   - credentials absent from logs and responses (log-scan test);
   - production boot with the simulator fails.
 
+*As built (S5; C-155…C-159):*
+- `providers/`: `PaymentProvider`, `ManualProvider`, `SimulatorProvider` (its "bank" is Redis; HMAC-SHA256 over the raw bytes), `PaymentProviderRegistry` (only what `PAYMENT_PROVIDERS` names).
+- `payment-accounts.service.ts`: `GET`/`DELETE /settings/finance/gateway`, `POST …/simulator`. Secrets are sealed at rest and opened only at call time.
+- `online-payments.service.ts`: `start`, `receive` (webhook), `applyGatewayOutcome` (shared with the status fetch), `giveUp`, `simulateCheckout`. Hub routes: `POST …/invoices/:id/pay`, `GET …/payments/:id`, `POST …/payments/:id/simulate-checkout`. `PaymentsService.confirmFromGateway` and `failFromGateway` share the one allocation and receipt path.
+- `reconciliation.{service,queue,processor}.ts`, `GET /reconciliation/exceptions`, `POST …/:id/resolve`; hourly platform fan-out. `$lookupPaymentAccount` and the `webhook_lookup` policy. Migration `…_gateway_reconciliation`.
+- The log scan spies on the Nest logger and also searches responses, `gateway_event` and `audit_log`. Pino's own stream isn't captured; its request serializer logs only method, URL and host, so webhook headers and bodies never reach it.
+
 ### S6 `p7/documents` — receipts and invoices as documents
 - **7.19 HTML templates** (A4 and mobile):
   - academy branding, number, GSTIN, lines, discount and tax lines, paid and balance;
@@ -300,7 +307,7 @@ Each slice: branch `p7/<slice>` from the latest `main` → PR with the DoD check
 ## Your inputs
 
 - **A10:** the pilots' real fee structures (plans, one-time fees, sibling rules), to tune the defaults in C-139/C-140.
-- **Staging:** add `PAYMENTS_SIMULATOR=on` in Railway (C-145) and renew `RAILWAY_TOKEN` (the deploy workflow still fails).
+- **Staging:** set `PAYMENT_PROVIDERS=manual,simulator` in Railway (C-155, corrects C-145) and renew `RAILWAY_TOKEN` (the deploy workflow still fails).
 - **OD-13:** legal confirmation of the merchant-of-record model before go-live (not needed to build).
 
 ## How I'll prove the exit gate (P7-3)

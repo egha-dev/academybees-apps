@@ -10,6 +10,8 @@ import type { TenantBoundClient, TransactionClient } from '@academybee/database'
 import { Inject, Injectable } from '@nestjs/common';
 
 import { AuditService } from '../../core/audit/audit.service.js';
+import { API_CONFIG } from '../../core/config/config.module.js';
+import type { ApiConfig } from '../../core/config/config.schema.js';
 import { TENANT_DB } from '../../core/database/database.module.js';
 import { DomainError } from '../../core/errors/domain-error.js';
 import { fiscalYearOf } from './domain/numbering.js';
@@ -24,6 +26,7 @@ import { fiscalYearOf } from './domain/numbering.js';
 export class FinanceSettingsService {
   constructor(
     @Inject(TENANT_DB) private readonly db: TenantBoundClient,
+    @Inject(API_CONFIG) private readonly config: ApiConfig,
     private readonly audit: AuditService,
   ) {}
 
@@ -87,7 +90,8 @@ export class FinanceSettingsService {
     const [locked, gateway] = await Promise.all([
       this.prefixesLocked(db),
       db.tenantPaymentAccount.findFirst({
-        where: { status: 'CONNECTED' },
+        // A provider this deployment doesn't run is not connected, whatever the row says.
+        where: { status: 'CONNECTED', provider: { in: [...this.config.PAYMENT_PROVIDERS] } },
         select: { provider: true },
       }),
     ]);
