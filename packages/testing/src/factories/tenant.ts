@@ -436,6 +436,11 @@ async function insertPeopleAndScheduling(
     [newId(), t.id, accountId, `fixture-${t.id}`],
   );
   await q(
+    `INSERT INTO reconciliation_exception (id, tenant_id, account_id, kind, reference, dedupe_key)
+     VALUES ($1, $2, $3, 'UNKNOWN_ORDER', 'fixture-order', 'UNKNOWN_ORDER:fixture-order')`,
+    [newId(), t.id, accountId],
+  );
+  await q(
     `INSERT INTO finance_document (id, tenant_id, kind, payment_id, layout, status, storage_key, ready_at)
      VALUES ($1, $2, 'RECEIPT', $3, 'A4', 'READY', $4, now())`,
     [documentId, t.id, paymentId, `t/${t.id}/finance/${documentId}.pdf`],

@@ -21,6 +21,11 @@ export function configureApp(app: INestApplication, config: ApiConfig): void {
   // Request context first, then body parsing (so parse errors still carry a request ID).
   const cls = new ClsMiddleware(clsMiddlewareOptions(config));
   express.use(cls.use.bind(cls));
+  // Gateway webhooks are verified over their exact bytes (ADR-033), so they skip the JSON parser.
+  express.use(
+    /^\/api\/v1\/webhooks\/payments\/[a-z]+\/[A-Za-z0-9_-]+$/,
+    raw({ type: () => true, limit: '256kb' }),
+  );
   express.useBodyParser('json', { limit: '1mb' });
   // Branding images arrive as raw bytes (C-97), on the two upload routes only (review L3): other
   // routes never buffer a binary body. The service checks each purpose's own limit.

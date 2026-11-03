@@ -101,7 +101,7 @@ export const ApiConfigSchema = z
       .enum(['true', 'false'])
       .default('false')
       .transform((v) => v === 'true'),
-    /** Payment providers enabled in this deployment (ADR-038). */
+    /** Payment providers enabled in this deployment (ADR-038, C-155): `manual` always, `simulator` never in production. */
     PAYMENT_PROVIDERS: csv.pipe(z.array(z.enum(PAYMENT_PROVIDERS)).min(1)).default(['manual']),
     /** Release-flag override cache; 0 in E2E so a flipped flag applies immediately. */
     FLAGS_CACHE_MS: z.coerce.number().int().min(0).max(300_000).default(30_000),

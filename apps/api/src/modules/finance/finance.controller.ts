@@ -1,4 +1,8 @@
 import {
+  HubPaymentStatusSchema,
+  OnlinePaymentStartedSchema,
+  SimulateCheckoutSchema,
+  StartOnlinePaymentSchema,
   ConfirmPaymentSchema,
   PaymentEvidenceLinkSchema,
   PaymentListQuerySchema,
@@ -94,6 +98,8 @@ class ConfirmPaymentDto extends createZodDto(ConfirmPaymentSchema) {}
 class RejectPaymentDto extends createZodDto(RejectPaymentSchema) {}
 class RefundPaymentDto extends createZodDto(RefundPaymentSchema) {}
 class ReportPaymentDto extends createZodDto(ReportPaymentSchema) {}
+class StartOnlinePaymentDto extends createZodDto(StartOnlinePaymentSchema) {}
+class SimulateCheckoutDto extends createZodDto(SimulateCheckoutSchema) {}
 
 const Id = new ParseUUIDPipe({ version: '7' });
 
@@ -464,6 +470,39 @@ export class HubPaymentsController {
   @ZodResponse(ReportedPaymentSchema)
   report(@Param('slug') slug: string, @Param('id', Id) id: string, @Body() body: ReportPaymentDto) {
     return this.hub.report(slug, id, body);
+  }
+
+  @Post(':slug/invoices/:id/pay')
+  @SignedIn()
+  @Idempotent()
+  @HttpCode(201)
+  @ZodResponse(OnlinePaymentStartedSchema)
+  pay(
+    @Param('slug') slug: string,
+    @Param('id', Id) id: string,
+    @Body() body: StartOnlinePaymentDto,
+  ) {
+    return this.hub.payOnline(slug, id, body);
+  }
+
+  @Get(':slug/payments/:id')
+  @SignedIn()
+  @ZodResponse(HubPaymentStatusSchema)
+  status(@Param('slug') slug: string, @Param('id', Id) id: string) {
+    return this.hub.status(slug, id);
+  }
+
+  /** The simulator's checkout page calls this; 404 wherever the simulator isn't enabled. */
+  @Post(':slug/payments/:id/simulate-checkout')
+  @SignedIn()
+  @HttpCode(200)
+  @ZodResponse(HubPaymentStatusSchema)
+  simulate(
+    @Param('slug') slug: string,
+    @Param('id', Id) id: string,
+    @Body() body: SimulateCheckoutDto,
+  ) {
+    return this.hub.simulateCheckout(slug, id, body);
   }
 
   @Put(':slug/reported-payments/:id/evidence')

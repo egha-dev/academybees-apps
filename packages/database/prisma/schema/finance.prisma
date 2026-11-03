@@ -289,6 +289,7 @@ model Payment {
   refunds     Refund[]
   credits     CreditEntry[]
   documents   FinanceDocument[]
+  exceptions  ReconciliationException[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, receiptNumber])
@@ -430,7 +431,8 @@ model TenantPaymentAccount {
   createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  events GatewayEvent[]
+  events     GatewayEvent[]
+  exceptions ReconciliationException[]
 
   @@unique([tenantId, id])
   @@index([tenantId, status])
@@ -451,9 +453,58 @@ model GatewayEvent {
   receivedAt      DateTime             @default(now()) @map("received_at") @db.Timestamptz(3)
   processedAt     DateTime?            @map("processed_at") @db.Timestamptz(3)
 
-  @@unique([provider, providerEventId])
+  /// Per academy: one academy's signed events can never collide with another's ids.
+  @@unique([tenantId, provider, providerEventId])
   @@index([tenantId, receivedAt])
   @@map("gateway_event")
+}
+
+enum ReconciliationKind {
+  /// A signed event names an order this account never made.
+  UNKNOWN_ORDER
+  /// The gateway's amount differs from the payment's; not confirmed.
+  AMOUNT_MISMATCH
+  /// The gateway says paid, but the payment had already failed: money with no receipt.
+  PAID_AFTER_FAILED
+  /// Still pending a day later: the gateway has no answer.
+  STUCK_PENDING
+  /// A settlement line that doesn't match a confirmed payment.
+  SETTLEMENT_MISMATCH
+
+  @@map("reconciliation_kind")
+}
+
+enum ReconciliationStatus {
+  OPEN
+  RESOLVED
+
+  @@map("reconciliation_status")
+}
+
+/// Something between the gateway and our books that a person must look at (`finance.reconcile`).
+model ReconciliationException {
+  id           String               @id @db.Uuid
+  tenantId     String               @map("tenant_id") @db.Uuid
+  accountId    String               @map("account_id") @db.Uuid
+  account      TenantPaymentAccount @relation(fields: [tenantId, accountId], references: [tenantId, id], onDelete: Restrict)
+  paymentId    String?              @map("payment_id") @db.Uuid
+  payment      Payment?             @relation(fields: [tenantId, paymentId], references: [tenantId, id], onDelete: Restrict)
+  kind         ReconciliationKind
+  /// The gateway's order or settlement reference.
+  reference    String               @db.VarChar(100)
+  /// Amounts and statuses as seen on each side; no credentials or contact details.
+  details      Json                 @default("{}")
+  /// The same problem found again (every hour) stays one row.
+  dedupeKey    String               @map("dedupe_key") @db.VarChar(200)
+  status       ReconciliationStatus @default(OPEN)
+  resolvedById String?              @map("resolved_by_id") @db.Uuid
+  resolvedAt   DateTime?            @map("resolved_at") @db.Timestamptz(3)
+  resolution   String?              @db.VarChar(500)
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([tenantId, dedupeKey])
+  @@index([tenantId, status, id])
+  @@map("reconciliation_exception")
 }
 
 enum DocumentKind {

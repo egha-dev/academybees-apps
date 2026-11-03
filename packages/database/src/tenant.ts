@@ -503,6 +503,24 @@ export function createTenantBoundClient(
         return row;
       },
       /**
+       * Which academy a webhook's account belongs to, before any tenant is known (ADR-033, under
+       * the narrow `webhook_lookup` policy). Only its tenant and provider; never its secrets.
+       */
+      async $lookupPaymentAccount(
+        accountRef: string,
+      ): Promise<{ tenantId: string; provider: string } | null> {
+        if (getTenantId() !== undefined)
+          throw new Error('Account lookup runs before a tenant context exists');
+        const [, row] = await base.$transaction([
+          base.$executeRaw`SELECT set_config('app.lookup_account_ref', ${accountRef}, true)`,
+          base.tenantPaymentAccount.findUnique({
+            where: { accountRef },
+            select: { tenantId: true, provider: true },
+          }),
+        ]);
+        return row;
+      },
+      /**
        * The current user's own ACTIVE memberships, outside any academy context — the first step of
        * the Family Hub fan-out (ADR-039). RLS `own_memberships` shows only rows whose user_id is
        * `app.user_id` and only while no tenant is set; each academy is then read in its own context.
@@ -528,6 +546,7 @@ export function createTenantBoundClient(
  */
 export type TenantBoundClient = PrismaClient & {
   $lookupTenantDomain(lookupKey: string): Promise<ResolvedDomainRow | null>;
+  $lookupPaymentAccount(accountRef: string): Promise<{ tenantId: string; provider: string } | null>;
   $listOwnMemberships(): Promise<{ tenantId: string }[]>;
   $withLookup<T>(
     lookup: { identifier?: string; token?: string },
