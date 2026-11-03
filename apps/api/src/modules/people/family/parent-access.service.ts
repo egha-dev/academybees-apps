@@ -318,6 +318,36 @@ export class ParentAccessService {
     await this.memberships.invalidate(input.tenantId, input.userId);
   }
 
+  /**
+   * C-144, C-110 M2: this user is a parent of this child with current hub consent — the parent's
+   * latest record for that child is a FAMILY_HUB grant including `service`. The hub's money
+   * routes ask this per child; a withdrawn consent or an unlinked child answers false.
+   */
+  async mayActForChild(
+    db: Pick<TransactionClient, 'parent' | 'consentRecord'>,
+    userId: string,
+    studentId: string,
+  ): Promise<boolean> {
+    const parents = await db.parent.findMany({
+      where: { userId, status: 'ACTIVE', children: { some: { studentId } } },
+      select: { id: true },
+    });
+    for (const parent of parents) {
+      const latest = await db.consentRecord.findFirst({
+        where: { parentId: parent.id, studentId },
+        orderBy: { recordedAt: 'desc' },
+        select: { action: true, channel: true, purposes: true },
+      });
+      if (
+        latest?.action === 'GRANT' &&
+        latest.channel === 'FAMILY_HUB' &&
+        latest.purposes.includes('service')
+      )
+        return true;
+    }
+    return false;
+  }
+
   private async isActiveMember(tenantId: string, userId: string): Promise<boolean> {
     const m = await this.db.membership.findFirst({
       where: { userId, tenantId, status: 'ACTIVE' },

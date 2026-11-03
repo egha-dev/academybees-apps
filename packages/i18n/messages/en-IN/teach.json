@@ -172,7 +172,8 @@
     "unread": "New",
     "open": "Open",
     "kinds": {
-      "ATTENDANCE_NOT_TAKEN": "Attendance not taken for {batch} at {start} on {date}"
+      "ATTENDANCE_NOT_TAKEN": "Attendance not taken for {batch} at {start} on {date}",
+      "PAYMENT_REPORTED": "A parent reported a payment for {student}. Check it and confirm or reject it."
     },
     "loadFailed": "We couldn't load your notifications. Check your connection, then reload the page."
   }

@@ -12,6 +12,8 @@ export const MEDIA_PURPOSES = {
   'branding.favicon': { visibility: 'PUBLIC', maxBytes: 512 * 1024, area: 'branding' },
   /** A student's photo (G-05): private, consent-gated (`photos` purpose), every view audited. */
   'student.photo': { visibility: 'PRIVATE', maxBytes: 2 * 1024 * 1024, area: 'students' },
+  /** A parent's screenshot of a UPI payment (G-30): shows bank details, so it stays private. */
+  'payment.evidence': { visibility: 'PRIVATE', maxBytes: 5 * 1024 * 1024, area: 'payments' },
 } as const satisfies Record<
   string,
   { visibility: 'PUBLIC' | 'PRIVATE'; maxBytes: number; area: string }

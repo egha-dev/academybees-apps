@@ -1,6 +1,7 @@
 {
   "lines": {
     "lateFee": "Late fee for {number}",
+    "bounceCharge": "Bounced cheque charge for {reference}",
     "discount": "Discount",
     "siblingDiscount": "Sibling discount"
   },

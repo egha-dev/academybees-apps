@@ -1,6 +1,6 @@
 # P7-1 · Phase 7 — Finance: plan
 
-> **Approved by the PO on 2026-11-02** (`phase-7-start` = `9267fd3`). Decisions C-137…C-146 recorded in DECISIONS.md; C-147…C-149 added in S3b.
+> **Approved by the PO on 2026-11-02** (`phase-7-start` = `9267fd3`). Decisions C-137…C-146 recorded in DECISIONS.md; C-147…C-149 added in S3b; C-150…C-154 in S4.
 
 ## Context
 
@@ -176,6 +176,11 @@ Each slice: branch `p7/<slice>` from the latest `main` → PR with the DoD check
   - receipt numbers unique and sequential under concurrency;
   - a client can't set CONFIRMED; refund without the capability → 403;
   - cross-tenant 404; IDOR on hub (other child, no consent → 404).
+
+*As built (S4; C-150…C-154):*
+- `payments.service.ts`: `recordCash`, `record`, `recordIn` (shared with S9's offline cash), `confirm`, `reject`, `refund`, `evidenceLink`. One confirmation path locks the invoices, allocates, puts the rest in credit, then takes the receipt number last. Lock order: payment → invoices by id → credit → receipt number.
+- `hub-payments.service.ts`: `POST /hub/academies/:slug/invoices/:id/reported-payments` and `PUT …/reported-payments/:id/evidence`, behind `p7-hub-payments`. `ParentAccessService.mayActForChild` is the per-child consent check (C-144).
+- Migration `…_payments_reversals_intents`: `payment.allocate_to`, `payment_allocation.refund_id` (signed), notification kinds. `NotificationsService.notifyHolders`.
 
 ### S5 `p7/provider-layer` — gateway-ready, simulator
 - **7.16** `PaymentProvider` (create order, verify webhook, fetch status, refund, settlements); `ManualProvider` (default); `SimulatorProvider` (C-145); config validation fails production boot.

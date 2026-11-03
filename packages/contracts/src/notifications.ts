@@ -6,7 +6,7 @@ import { cursorPageSchema } from './pagination.js';
  * In-app notifications for staff (Phase 6; C-04, C-128). The text comes from the catalogue by
  * `kind` with `params`; `link` opens what it is about.
  */
-export const NOTIFICATION_KINDS = ['ATTENDANCE_NOT_TAKEN'] as const;
+export const NOTIFICATION_KINDS = ['ATTENDANCE_NOT_TAKEN', 'PAYMENT_REPORTED'] as const;
 export const NotificationKindSchema = z.enum(NOTIFICATION_KINDS);
 
 export const NotificationSchema = z.object({

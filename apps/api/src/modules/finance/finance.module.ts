@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { MediaModule } from '../../core/media/media.module.js';
+import { NotificationsModule } from '../notifications/index.js';
 import { PeopleModule } from '../people/index.js';
 import { SchedulingModule } from '../scheduling/index.js';
 import { FeeAssignmentsService } from './fee-assignments.service.js';
@@ -10,30 +11,36 @@ import {
   FeeAssignmentsController,
   FeePlansController,
   FinanceSettingsController,
+  HubPaymentsController,
   InvoicesController,
   OpeningBalancesController,
+  PaymentsController,
 } from './finance.controller.js';
 import { FinanceDailyProcessor } from './finance-daily.processor.js';
 import { FinanceDailyQueue } from './finance-daily.queue.js';
 import { FinanceSettingsService } from './finance-settings.service.js';
+import { HubPaymentsService } from './hub-payments.service.js';
 import { InvoiceGenerationService } from './invoice-generation.service.js';
 import { InvoicesService } from './invoices.service.js';
 import { OpeningBalancesProcessor } from './opening-balances.processor.js';
 import { OpeningBalancesQueue } from './opening-balances.queue.js';
 import { OpeningBalancesService } from './opening-balances.service.js';
+import { PaymentsService } from './payments.service.js';
 
 /**
  * Academy finance (Phase 7; ARCHITECTURE §12, ADR-018, ADR-038): fee plans, assignments and the
  * payment settings now; invoices, payments, documents and the provider layer join in S3–S6.
  */
 @Module({
-  imports: [PeopleModule, SchedulingModule, MediaModule],
+  imports: [PeopleModule, SchedulingModule, MediaModule, NotificationsModule],
   controllers: [
     FeePlansController,
     FeeAssignmentsController,
     FinanceSettingsController,
     InvoicesController,
     OpeningBalancesController,
+    PaymentsController,
+    HubPaymentsController,
   ],
   providers: [
     FeePlansService,
@@ -47,12 +54,15 @@ import { OpeningBalancesService } from './opening-balances.service.js';
     OpeningBalancesProcessor,
     FinanceDailyQueue,
     FinanceDailyProcessor,
+    PaymentsService,
+    HubPaymentsService,
   ],
   exports: [
     FeePlansService,
     FeeAssignmentsService,
     FinanceSettingsService,
     InvoicesService,
+    PaymentsService,
     FinanceDailyQueue,
   ],
 })

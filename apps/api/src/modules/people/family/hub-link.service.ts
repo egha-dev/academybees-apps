@@ -227,7 +227,7 @@ export class HubLinkService {
   }
 
   /** The academy for a slug, if it exists and is open; null otherwise (never an error). */
-  private async academy(slug: string): Promise<string | null> {
+  async academy(slug: string): Promise<string | null> {
     const normalized = slug.trim().toLowerCase();
     if (!/^[a-z0-9-]{3,42}$/.test(normalized)) return null;
     const resolved = await this.resolver.resolve(tenantHost(normalized, this.root));

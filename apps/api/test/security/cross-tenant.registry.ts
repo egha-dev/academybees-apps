@@ -696,6 +696,41 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     capability,
     spoof: { skip: 'invoices.int.spec.ts › another academy’s invoices and students are 404' },
   })),
+  // Payments (Phase 7 S4). The list and detail probe another academy directly; the screenshot and
+  // writes are covered with another academy's ids in their specs.
+  { method: 'GET', path: '/api/v1/payments', session: true, capability: 'payment.read' },
+  {
+    method: 'GET',
+    path: '/api/v1/payments/:id',
+    params: { id: 'payment' },
+    session: true,
+    capability: 'payment.read',
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/payments/:id/evidence',
+    params: { id: 'payment' },
+    session: true,
+    capability: 'payment.verify',
+    // The fixture payment has no screenshot, so there is no 200 to spoof towards.
+    spoof: { skip: 'hub-payments.int.spec.ts › another academy can’t read a screenshot' },
+  },
+  ...(
+    [
+      ['POST', '/api/v1/payments/cash', null, 'payment.record_cash'],
+      ['POST', '/api/v1/payments', null, 'payment.record_offline'],
+      ['POST', '/api/v1/payments/:id/confirm', 'payment', 'payment.verify'],
+      ['POST', '/api/v1/payments/:id/reject', 'payment', 'payment.verify'],
+      ['POST', '/api/v1/payments/:id/refund', 'payment', 'payment.refund'],
+    ] as const
+  ).map(([method, path, fixture, capability]) => ({
+    method,
+    path,
+    ...(fixture ? { params: { id: fixture } } : {}),
+    session: true,
+    capability,
+    spoof: { skip: 'payments.int.spec.ts › another academy’s payments and students are 404' },
+  })),
   // Offline sync (Phase 6 S2). Bootstrap is probed directly; push (another academy's class →
   // REJECTED NOT_FOUND), pull and the beacon are covered in sync.int.spec.ts.
   {

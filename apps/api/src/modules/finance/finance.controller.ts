@@ -1,4 +1,15 @@
 import {
+  ConfirmPaymentSchema,
+  PaymentEvidenceLinkSchema,
+  PaymentListQuerySchema,
+  PaymentPageSchema,
+  PaymentSchema,
+  RecordCashPaymentSchema,
+  RecordPaymentSchema,
+  RefundPaymentSchema,
+  RejectPaymentSchema,
+  ReportedPaymentSchema,
+  ReportPaymentSchema,
   CloseInvoiceSchema,
   CommitImportSchema,
   CreateFeeAssignmentsSchema,
@@ -39,6 +50,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   Res,
@@ -46,14 +58,17 @@ import {
 import type { Request, Response } from 'express';
 
 import { Idempotent } from '../../core/idempotency/idempotent.js';
-import { Can } from '../../core/rbac/can.decorator.js';
+import { Can, SignedIn } from '../../core/rbac/can.decorator.js';
+import { HubHost } from '../../core/tenant/host-policy.js';
 import { createZodDto, ZodResponse } from '../../core/validation/zod-dto.js';
 import { FeeAssignmentsService } from './fee-assignments.service.js';
 import { FeeEffectsService } from './fee-effects.service.js';
 import { OpeningBalancesService } from './opening-balances.service.js';
 import { FeePlansService } from './fee-plans.service.js';
 import { FinanceSettingsService } from './finance-settings.service.js';
+import { HubPaymentsService } from './hub-payments.service.js';
 import { InvoicesService } from './invoices.service.js';
+import { PaymentsService } from './payments.service.js';
 
 class FeePlanListQueryDto extends createZodDto(FeePlanListQuerySchema) {}
 class CreateFeePlanDto extends createZodDto(CreateFeePlanSchema) {}
@@ -72,6 +87,13 @@ class UpdateInvoiceDto extends createZodDto(UpdateInvoiceSchema) {}
 class InvoiceVersionDto extends createZodDto(InvoiceVersionSchema) {}
 class CloseInvoiceDto extends createZodDto(CloseInvoiceSchema) {}
 class InvoiceVersionQueryDto extends createZodDto(InvoiceVersionQuerySchema) {}
+class PaymentListQueryDto extends createZodDto(PaymentListQuerySchema) {}
+class RecordCashPaymentDto extends createZodDto(RecordCashPaymentSchema) {}
+class RecordPaymentDto extends createZodDto(RecordPaymentSchema) {}
+class ConfirmPaymentDto extends createZodDto(ConfirmPaymentSchema) {}
+class RejectPaymentDto extends createZodDto(RejectPaymentSchema) {}
+class RefundPaymentDto extends createZodDto(RefundPaymentSchema) {}
+class ReportPaymentDto extends createZodDto(ReportPaymentSchema) {}
 
 const Id = new ParseUUIDPipe({ version: '7' });
 
@@ -351,5 +373,103 @@ export class OpeningBalancesController {
         'cache-control': 'no-store',
       })
       .send(report.csv);
+  }
+}
+
+/**
+ * Money received (ADR-038). Nothing here takes a status: confirmation is the server's decision
+ * on accepting a staff record, or `payment.verify` on a waiting one.
+ */
+@Controller({ path: 'payments', version: '1' })
+export class PaymentsController {
+  constructor(private readonly payments: PaymentsService) {}
+
+  @Get()
+  @Can('payment.read')
+  @ZodResponse(PaymentPageSchema)
+  list(@Query() query: PaymentListQueryDto) {
+    return this.payments.list(query);
+  }
+
+  @Post('cash')
+  @Can('payment.record_cash')
+  @Idempotent()
+  @HttpCode(201)
+  @ZodResponse(PaymentSchema)
+  recordCash(@Body() body: RecordCashPaymentDto) {
+    return this.payments.recordCash(body);
+  }
+
+  @Post()
+  @Can('payment.record_offline')
+  @Idempotent()
+  @HttpCode(201)
+  @ZodResponse(PaymentSchema)
+  record(@Body() body: RecordPaymentDto) {
+    return this.payments.record(body);
+  }
+
+  @Get(':id')
+  @Can('payment.read')
+  @ZodResponse(PaymentSchema)
+  get(@Param('id', Id) id: string) {
+    return this.payments.get(id);
+  }
+
+  @Get(':id/evidence')
+  @Can('payment.verify')
+  @ZodResponse(PaymentEvidenceLinkSchema)
+  evidence(@Param('id', Id) id: string) {
+    return this.payments.evidenceLink(id);
+  }
+
+  @Post(':id/confirm')
+  @Can('payment.verify')
+  @Idempotent()
+  @HttpCode(200)
+  @ZodResponse(PaymentSchema)
+  confirm(@Param('id', Id) id: string, @Body() body: ConfirmPaymentDto) {
+    return this.payments.confirm(id, body.version);
+  }
+
+  @Post(':id/reject')
+  @Can('payment.verify')
+  @Idempotent()
+  @HttpCode(200)
+  @ZodResponse(PaymentSchema)
+  reject(@Param('id', Id) id: string, @Body() body: RejectPaymentDto) {
+    return this.payments.reject(id, body);
+  }
+
+  @Post(':id/refund')
+  @Can('payment.refund')
+  @Idempotent()
+  @HttpCode(200)
+  @ZodResponse(PaymentSchema)
+  refund(@Param('id', Id) id: string, @Body() body: RefundPaymentDto) {
+    return this.payments.refund(id, body);
+  }
+}
+
+/** A parent's "I've paid" on the Family Hub (G-30, C-144); behind `p7-hub-payments` until 7P. */
+@Controller({ path: 'hub/academies', version: '1' })
+@HubHost()
+export class HubPaymentsController {
+  constructor(private readonly hub: HubPaymentsService) {}
+
+  @Post(':slug/invoices/:id/reported-payments')
+  @SignedIn()
+  @Idempotent()
+  @HttpCode(201)
+  @ZodResponse(ReportedPaymentSchema)
+  report(@Param('slug') slug: string, @Param('id', Id) id: string, @Body() body: ReportPaymentDto) {
+    return this.hub.report(slug, id, body);
+  }
+
+  @Put(':slug/reported-payments/:id/evidence')
+  @SignedIn()
+  @HttpCode(204)
+  async evidence(@Param('slug') slug: string, @Param('id', Id) id: string, @Req() req: Request) {
+    await this.hub.attachEvidence(slug, id, req.body);
   }
 }

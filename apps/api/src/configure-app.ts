@@ -39,6 +39,14 @@ export function configureApp(app: INestApplication, config: ApiConfig): void {
       limit: '3mb',
     }),
   );
+  // A parent's payment screenshot (G-30): private, ≤ 5 MB, checked by its bytes in the service.
+  express.use(
+    /^\/api\/v1\/hub\/academies\/[a-z0-9-]+\/reported-payments\/[0-9a-f-]{36}\/evidence$/,
+    raw({
+      type: ['image/png', 'image/jpeg', 'image/webp', 'application/octet-stream'],
+      limit: '6mb',
+    }),
+  );
   // Student and opening-balance import files (G-02, C-101): the service checks the 5 MB limit and the real type.
   express.use(
     /^\/api\/v1\/(students\/import|opening-balances\/import)$/,

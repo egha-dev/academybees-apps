@@ -250,6 +250,9 @@ enum NotificationIntentKind {
   SESSION_CANCELLED_HOLIDAY
   ATTENDANCE_ABSENT
   ATTENDANCE_LATE
+  /// A payment the parent reported was confirmed or rejected (ADR-038); no contact details.
+  PAYMENT_CONFIRMED
+  PAYMENT_REJECTED
 
   @@map("notification_intent_kind")
 }

@@ -519,19 +519,25 @@ export class InvoicesService {
   }
 
   /** One student's credit moves one at a time (C-140): held until the transaction ends. */
-  private async lockCredit(tx: TransactionClient, studentId: string) {
+  async lockCredit(tx: TransactionClient, studentId: string) {
     await tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtext(${`credit:${studentId}`}))`;
   }
 
-  /** Add to a student's credit, in step with anything using it (a fee adjustment, G-27). */
+  /**
+   * Add to a student's credit, in step with anything using it: a fee adjustment (G-27) or what
+   * is left of a payment after its invoices (`OVERPAYMENT`, naming the payment).
+   */
   async addCredit(
     tx: TransactionClient,
     input: {
       tenantId: string;
       studentId: string;
       amountMinor: number;
-      note: string;
+      note?: string | null;
       createdById: string | null;
+      kind?: 'MANUAL' | 'OVERPAYMENT';
+      paymentId?: string;
+      needsReview?: boolean;
     },
   ): Promise<void> {
     await this.lockCredit(tx, input.studentId);

@@ -856,10 +856,10 @@ Payment:  INITIATED ──gateway order created──▶ PENDING ──webhook/v
 
 - Transitions are implemented once in a pure domain module (`finance/domain/*.state.ts`) with exhaustive unit tests; the DB stores status and every transition writes `AuditLog`.
 - **No endpoint lets a client set `CONFIRMED`.** Confirmation comes only from (a) a staff member with `payment.verify` verifying a reported payment or clearing a cheque, (b) the server accepting a staff-recorded cash/UPI/bank payment, or (c) later, a signature-verified gateway webhook / server-side status fetch.
-- Allocations: `PaymentAllocation(paymentId, invoiceId, amountMinor)`; sum of allocations ≤ payment amount; invoice `paidMinor` recomputed in the same transaction under `SELECT … FOR UPDATE` on the invoice.
+- Allocations: `PaymentAllocation(paymentId, invoiceId, amountMinor)`; net sum of allocations ≤ payment amount; invoice `paidMinor` moves in the same transaction under `SELECT … FOR UPDATE` on the invoice. Allocation is at confirmation, never before (C-151). Lock order everywhere: payment → invoices by id → the student's credit → receipt number.
 - Invoice and receipt numbers: `NumberSequence` row lock per `(tenantId, kind, fiscalYear)`; format `{prefix}/{FY}/{seq:05}` (configurable prefix). Numbers are assigned at **issue** (invoice) and **confirmation** (receipt), never on the client.
 - Receipts: HTML template rendered to PDF by headless Chromium in the worker (correct Indic script shaping, embedded Noto fonts, tenant document language or bilingual, ADR-040), stored in object storage, served by short-lived signed URL.
-- Refunds: online (needs connectivity), `payment.refund`, reason required, recorded manually with method + reference in this release; gateway refund API in Phase G; append-only.
+- Refunds: online (needs connectivity), `payment.refund`, reason required, recorded manually with method + reference in this release; gateway refund API in Phase G; append-only. A refund draws on the payment's unused credit, then reopens the invoices it paid, newest first, with negative allocation rows (C-150).
 
 ### 12.2 Current release: payments without a gateway (PRD v3.2 G-30, ADR-038)
 

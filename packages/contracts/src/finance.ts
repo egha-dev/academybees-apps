@@ -533,3 +533,167 @@ export const CreateOpeningBalanceSchema = z.object({
 export type CreateOpeningBalance = z.infer<typeof CreateOpeningBalanceSchema>;
 export const OPENING_BALANCE_FIELDS = ['admissionNo', 'amount', 'asOf', 'note'] as const;
 export type OpeningBalanceField = (typeof OPENING_BALANCE_FIELDS)[number];
+
+// ── Payments (Phase 7 S4; ADR-038, C-150) ──────────────────────────────────────────────────────
+
+export const PAYMENT_SOURCES = ['STAFF_RECORDED', 'PARENT_REPORTED', 'GATEWAY'] as const;
+export const PaymentSourceSchema = z.enum(PAYMENT_SOURCES);
+export const PAYMENT_STATUSES = [
+  'INITIATED',
+  'PENDING',
+  'CONFIRMED',
+  'FAILED',
+  'PARTIALLY_REFUNDED',
+  'REFUNDED',
+] as const;
+export const PaymentStatusSchema = z.enum(PAYMENT_STATUSES);
+export type PaymentStatus = z.infer<typeof PaymentStatusSchema>;
+
+/** A UTR, bank reference or cheque number: spaces dropped and upper-cased, so copies compare equal. */
+export const PaymentReferenceSchema = z
+  .string()
+  .transform((v) => v.replace(/\s+/g, '').toUpperCase())
+  .pipe(z.string().regex(/^[A-Z0-9/-]{4,80}$/, 'invalid_reference'));
+
+const PaidAmount = AmountMinorSchema.min(1);
+
+const RecordPaymentBase = z.object({
+  studentId: z.uuid(),
+  amountMinor: PaidAmount,
+  /** The day the money came; defaults to today at the academy. */
+  paidOn: CalendarDateSchema.optional(),
+  /** Invoices it is for, in order; left out = oldest due first. Anything left over is credit. */
+  invoiceIds: z.array(z.uuid()).min(1).max(50).optional(),
+  note: z.string().trim().max(500).optional(),
+});
+
+/** `POST /payments/cash` (`payment.record_cash`). The server confirms it on acceptance. */
+export const RecordCashPaymentSchema = RecordPaymentBase;
+export type RecordCashPayment = z.infer<typeof RecordCashPaymentSchema>;
+
+/** `POST /payments` (`payment.record_offline`): a cheque waits for clearing, the others confirm. */
+export const RecordPaymentSchema = RecordPaymentBase.extend({
+  method: z.enum(['UPI', 'BANK_TRANSFER', 'CARD_POS', 'CHEQUE']),
+  reference: PaymentReferenceSchema,
+  chequeBank: z.string().trim().min(2).max(80).optional(),
+  chequeDate: CalendarDateSchema.optional(),
+}).superRefine((v, ctx) => {
+  if (v.method !== 'CHEQUE') return;
+  if (!v.chequeBank) ctx.addIssue({ code: 'custom', path: ['chequeBank'], message: 'required' });
+  if (!v.chequeDate) ctx.addIssue({ code: 'custom', path: ['chequeDate'], message: 'required' });
+});
+export type RecordPayment = z.infer<typeof RecordPaymentSchema>;
+
+export const PaymentSummarySchema = z.object({
+  id: z.uuid(),
+  studentId: z.uuid(),
+  studentName: z.string(),
+  method: PaymentMethodSchema,
+  source: PaymentSourceSchema,
+  status: PaymentStatusSchema,
+  amountMinor: z.number().int(),
+  refundedMinor: z.number().int(),
+  currency: CurrencySchema,
+  reference: z.string().nullable(),
+  chequeBank: z.string().nullable(),
+  chequeDate: CalendarDateSchema.nullable(),
+  paidOn: CalendarDateSchema,
+  /** Assigned at confirmation, never before. */
+  receiptNumber: z.string().nullable(),
+  /** The same reference is on a payment of another method (ADR-038): look before confirming. */
+  duplicateFlag: z.boolean(),
+  hasEvidence: z.boolean(),
+  invoiceIds: z.array(z.uuid()),
+  note: z.string().nullable(),
+  rejectionReason: z.string().nullable(),
+  confirmedAt: z.string().nullable(),
+  createdAt: z.string(),
+  version: z.number().int(),
+});
+export type PaymentSummary = z.infer<typeof PaymentSummarySchema>;
+
+export const PaymentSchema = PaymentSummarySchema.extend({
+  /** What it paid off, net of refunds. */
+  allocations: z.array(
+    z.object({
+      invoiceId: z.uuid(),
+      invoiceNumber: z.string().nullable(),
+      amountMinor: z.number().int(),
+    }),
+  ),
+  /** The part that became the student's credit, net of refunds. */
+  creditMinor: z.number().int(),
+  refunds: z.array(
+    z.object({
+      id: z.uuid(),
+      amountMinor: z.number().int(),
+      method: PaymentMethodSchema,
+      reference: z.string().nullable(),
+      reason: z.string(),
+      refundedOn: CalendarDateSchema,
+    }),
+  ),
+});
+export type Payment = z.infer<typeof PaymentSchema>;
+
+export const PaymentPageSchema = z.object({
+  items: z.array(PaymentSummarySchema),
+  nextCursor: z.string().nullable(),
+});
+/** `status=PENDING` is the Verify payments queue, oldest first; other lists are newest first. */
+export const PaymentListQuerySchema = z.object({
+  status: PaymentStatusSchema.optional(),
+  studentId: z.uuid().optional(),
+  method: PaymentMethodSchema.optional(),
+  source: PaymentSourceSchema.optional(),
+  cursor: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+/** Confirm a reported payment or clear a cheque (`payment.verify`). */
+export const ConfirmPaymentSchema = z.object({ version: Version });
+/** Reject a reported payment or bounce a cheque (`payment.verify`). */
+export const RejectPaymentSchema = z.object({
+  version: Version,
+  reason: z.string().trim().min(3).max(500),
+  /** Cheques only (G-30): billed as its own invoice; needs `invoice.create` and `invoice.issue`. */
+  bounceChargeMinor: PaidAmount.optional(),
+});
+export type RejectPayment = z.infer<typeof RejectPaymentSchema>;
+
+/** `POST /payments/:id/refund` (`payment.refund`): recorded by hand until Phase G (G-30). */
+export const RefundPaymentSchema = z
+  .object({
+    version: Version,
+    amountMinor: PaidAmount,
+    method: z.enum(STAFF_METHODS),
+    reference: PaymentReferenceSchema.optional(),
+    reason: z.string().trim().min(3).max(500),
+  })
+  .refine((v) => v.method === 'CASH' || v.reference !== undefined, {
+    path: ['reference'],
+    message: 'required',
+  });
+export type RefundPayment = z.infer<typeof RefundPaymentSchema>;
+
+export const PaymentEvidenceLinkSchema = z.object({ url: z.string(), expiresAt: z.string() });
+
+/** The parent's "I've paid" (G-30): a UTR for a staff member to check. */
+export const ReportPaymentSchema = z.object({
+  reference: PaymentReferenceSchema,
+  amountMinor: PaidAmount,
+  paidOn: CalendarDateSchema.optional(),
+});
+export type ReportPayment = z.infer<typeof ReportPaymentSchema>;
+/** The parent sees "Awaiting academy confirmation" while this is PENDING; no receipt yet. */
+export const ReportedPaymentSchema = z.object({
+  id: z.uuid(),
+  invoiceId: z.uuid(),
+  status: z.literal('PENDING'),
+  amountMinor: z.number().int(),
+  currency: CurrencySchema,
+  reference: z.string(),
+  paidOn: CalendarDateSchema,
+  createdAt: z.string(),
+});
+export type ReportedPayment = z.infer<typeof ReportedPaymentSchema>;

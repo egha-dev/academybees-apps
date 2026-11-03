@@ -27,10 +27,13 @@ describe('invoice lifecycle (ARCHITECTURE §12.1, C-19, C-141)', () => {
     'ISSUED settle PAID',
     'ISSUED cancel CANCELLED',
     'ISSUED write_off WRITTEN_OFF',
+    'PARTIALLY_PAID settle ISSUED',
     'PARTIALLY_PAID settle PARTIALLY_PAID',
     'PARTIALLY_PAID settle PAID',
     'PARTIALLY_PAID cancel CANCELLED',
     'PARTIALLY_PAID write_off WRITTEN_OFF',
+    'PAID settle ISSUED',
+    'PAID settle PARTIALLY_PAID',
     'PAID cancel CANCELLED',
   ]);
   it('allows exactly the listed transitions (every combination checked)', () => {

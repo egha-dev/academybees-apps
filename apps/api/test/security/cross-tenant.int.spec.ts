@@ -116,6 +116,8 @@ describe('cross-tenant suite', () => {
         return a.people.sessionId;
       case 'invoice':
         return a.people.invoiceId;
+      case 'payment':
+        return a.people.paymentId;
       case 'fee-plan':
         return a.people.feePlanId;
       case 'fee-assignment':
