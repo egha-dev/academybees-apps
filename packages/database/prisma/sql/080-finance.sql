@@ -83,7 +83,9 @@ CREATE UNIQUE INDEX payment_unique_reference ON payment (tenant_id, method, refe
   WHERE reference IS NOT NULL AND status <> 'FAILED';
 
 ALTER TABLE payment_allocation DROP CONSTRAINT IF EXISTS payment_allocation_shape;
-ALTER TABLE payment_allocation ADD CONSTRAINT payment_allocation_shape CHECK (amount_minor > 0);
+ALTER TABLE payment_allocation ADD CONSTRAINT payment_allocation_shape CHECK (
+  amount_minor <> 0 AND (amount_minor < 0) = (refund_id IS NOT NULL)
+);
 
 ALTER TABLE refund DROP CONSTRAINT IF EXISTS refund_shape;
 ALTER TABLE refund ADD CONSTRAINT refund_shape CHECK (amount_minor > 0);
@@ -125,3 +127,12 @@ CREATE UNIQUE INDEX invoice_one_late_fee ON invoice (tenant_id, for_invoice_id)
 DROP INDEX IF EXISTS invoice_one_opening_balance;
 CREATE UNIQUE INDEX invoice_one_opening_balance ON invoice (tenant_id, student_id)
   WHERE kind = 'OPENING_BALANCE' AND status <> 'CANCELLED';
+
+-- Payment outcomes for parents (ADR-038) are about a payment, named in the payload: no holiday or
+-- class. Each kind says what it needs, so a new kind must be added here on purpose.
+ALTER TABLE notification_intent DROP CONSTRAINT IF EXISTS notification_intent_subject;
+ALTER TABLE notification_intent ADD CONSTRAINT notification_intent_subject CHECK (
+  (kind = 'SESSION_CANCELLED_HOLIDAY' AND holiday_id IS NOT NULL)
+  OR (kind IN ('ATTENDANCE_ABSENT', 'ATTENDANCE_LATE') AND session_id IS NOT NULL)
+  OR (kind IN ('PAYMENT_CONFIRMED', 'PAYMENT_REJECTED') AND holiday_id IS NULL AND session_id IS NULL)
+);

@@ -1,5 +1,6 @@
 import {
   ATTENDANCE_NUDGE_MINUTES,
+  type Capability,
   localDate,
   newId,
   type Notification,
@@ -89,6 +90,47 @@ export class NotificationsService {
         });
       return { count: updated.count };
     });
+  }
+
+  /**
+   * Tell every active member who can act on it in that branch (once each, by dedupe key), inside
+   * the caller's transaction: a reported payment waits for someone with `payment.verify` (G-30).
+   */
+  async notifyHolders(
+    tx: TransactionClient,
+    input: {
+      tenantId: string;
+      branchId: string;
+      capability: Capability;
+      kind: 'PAYMENT_REPORTED';
+      params: Record<string, string | number>;
+      link: string;
+      dedupeKey: string;
+    },
+  ): Promise<number> {
+    const { capability, ...note } = input;
+    const members = await tx.membership.findMany({
+      where: {
+        status: 'ACTIVE',
+        roles: { some: { role: { permissions: { some: { capability } } } } },
+        OR: [{ branchIds: { isEmpty: true } }, { branchIds: { has: input.branchId } }],
+      },
+      select: { id: true },
+    });
+    if (!members.length) return 0;
+    const created = await tx.notification.createMany({
+      data: members.map((m) => ({
+        id: newId(),
+        tenantId: note.tenantId,
+        recipientId: m.id,
+        kind: note.kind,
+        params: note.params,
+        link: note.link,
+        dedupeKey: `${note.dedupeKey}:${m.id}`,
+      })),
+      skipDuplicates: true,
+    });
+    return created.count;
   }
 
   /**

@@ -30,13 +30,13 @@ const ALLOWED: Record<InvoiceStatus, Partial<Record<InvoiceEvent, readonly Invoi
     write_off: ['WRITTEN_OFF'],
   },
   // Partly or fully settled by credit alone can still be cancelled: the service checks that no
-  // money was received.
+  // money was received. A refund settles backwards (C-150): what it gave back is owed again.
   PARTIALLY_PAID: {
-    settle: ['PARTIALLY_PAID', 'PAID'],
+    settle: ['ISSUED', 'PARTIALLY_PAID', 'PAID'],
     cancel: ['CANCELLED'],
     write_off: ['WRITTEN_OFF'],
   },
-  PAID: { cancel: ['CANCELLED'] },
+  PAID: { settle: ['ISSUED', 'PARTIALLY_PAID'], cancel: ['CANCELLED'] },
   CANCELLED: {},
   WRITTEN_OFF: {},
 };

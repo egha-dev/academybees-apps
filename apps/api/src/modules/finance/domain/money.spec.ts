@@ -9,6 +9,7 @@ import {
   mulDivHalfUp,
   percentOf,
   prorate,
+  refundSources,
   splitByWeights,
   splitInstalments,
 } from './money.js';
@@ -153,5 +154,32 @@ describe('money (ADR-010: integer minor units, half-up)', () => {
     expect(
       balanceOf({ totalMinor: 1000, paidMinor: 300, creditAppliedMinor: 200, writtenOffMinor: 0 }),
     ).toBe(500);
+  });
+});
+
+describe('refundSources (C-150)', () => {
+  const applied = [
+    { invoiceId: 'newer', amountMinor: 300 },
+    { invoiceId: 'older', amountMinor: 500 },
+  ];
+  it('takes unused credit first', () => {
+    expect(refundSources(100, 200, applied)).toEqual({
+      fromCreditMinor: 100,
+      reversals: [],
+      shortMinor: 0,
+    });
+  });
+  it('then reverses invoices, newest first', () => {
+    expect(refundSources(600, 200, applied)).toEqual({
+      fromCreditMinor: 200,
+      reversals: [
+        { invoiceId: 'newer', amountMinor: 300 },
+        { invoiceId: 'older', amountMinor: 100 },
+      ],
+      shortMinor: 0,
+    });
+  });
+  it('says how much is short when the credit is already spent', () => {
+    expect(refundSources(1000, 0, applied).shortMinor).toBe(200);
   });
 });

@@ -82,6 +82,8 @@ import { TeachersService } from './teachers.service.js';
     CustomFieldsService,
     EnrolmentsService,
     ImportService,
+    HubLinkService,
+    ParentAccessService,
   ],
 })
 export class PeopleModule {}

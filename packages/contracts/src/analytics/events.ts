@@ -308,6 +308,27 @@ export const ANALYTICS_EVENTS = {
     description: 'The nightly run billed fee assignments (Phase 7). A count only.',
     properties: z.strictObject({ count: z.number().int().min(0).max(1_000_000) }),
   }),
+  'payment.recorded': defineAnalyticsEvent({
+    name: 'payment.recorded',
+    version: 1,
+    description: 'A payment was recorded or reported (Phase 7). Method and source only.',
+    properties: z.strictObject({
+      method: z.enum(['CASH', 'UPI', 'BANK_TRANSFER', 'CHEQUE', 'CARD_POS', 'ONLINE_GATEWAY']),
+      source: z.enum(['STAFF_RECORDED', 'PARENT_REPORTED', 'GATEWAY']),
+    }),
+  }),
+  'payment.verified': defineAnalyticsEvent({
+    name: 'payment.verified',
+    version: 1,
+    description: 'Staff confirmed or rejected a waiting payment (Phase 7). The outcome only.',
+    properties: z.strictObject({ outcome: z.enum(['CONFIRMED', 'REJECTED']) }),
+  }),
+  'refund.recorded': defineAnalyticsEvent({
+    name: 'refund.recorded',
+    version: 1,
+    description: 'A refund was recorded (Phase 7). Whether it was partial only.',
+    properties: z.strictObject({ partial: z.boolean() }),
+  }),
   'session.cancelled': defineAnalyticsEvent({
     name: 'session.cancelled',
     version: 1,

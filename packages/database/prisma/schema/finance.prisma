@@ -268,6 +268,8 @@ model Payment {
   note              String?       @db.VarChar(500)
   /// Offline cash: the sync op id (C-146), unique per academy.
   clientRef         String?       @map("client_ref") @db.Uuid
+  /// Invoices this payment is for, in order; empty = oldest due first. Applied at confirmation.
+  allocateTo        String[]      @default([]) @map("allocate_to") @db.Uuid
   /// A reference already used by another payment (soft duplicate-UTR warning, ADR-038).
   duplicateFlag     Boolean       @default(false) @map("duplicate_flag")
   recordedById      String?       @map("recorded_by_id") @db.Uuid
@@ -297,7 +299,8 @@ model Payment {
   @@map("payment")
 }
 
-/// Part of a payment applied to an invoice; append-only. Sum per payment ≤ its amount.
+/// Part of a payment applied to an invoice; append-only. A refund that reopens the invoice adds
+/// a negative row naming the refund (C-150). Net sum per payment ≤ its amount.
 model PaymentAllocation {
   id          String   @id @db.Uuid
   tenantId    String   @map("tenant_id") @db.Uuid
@@ -305,7 +308,10 @@ model PaymentAllocation {
   payment     Payment  @relation(fields: [tenantId, paymentId], references: [tenantId, id], onDelete: Restrict)
   invoiceId   String   @map("invoice_id") @db.Uuid
   invoice     Invoice  @relation(fields: [tenantId, invoiceId], references: [tenantId, id], onDelete: Restrict)
+  /// Signed: applied positive, reversed by `refundId` negative.
   amountMinor Int      @map("amount_minor")
+  refundId    String?  @map("refund_id") @db.Uuid
+  refund      Refund?  @relation(fields: [tenantId, refundId], references: [tenantId, id], onDelete: Restrict)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@index([tenantId, paymentId])
@@ -327,6 +333,9 @@ model Refund {
   recordedById String        @map("recorded_by_id") @db.Uuid
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 
+  allocations PaymentAllocation[]
+
+  @@unique([tenantId, id])
   @@index([tenantId, paymentId])
   @@map("refund")
 }

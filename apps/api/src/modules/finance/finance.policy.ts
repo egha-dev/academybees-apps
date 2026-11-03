@@ -53,3 +53,20 @@ export const invoicePolicy = definePolicy<Prisma.InvoiceWhereInput, { branchId: 
     return false;
   },
 });
+
+/** Payments follow their student's branch; a parent's report goes through the hub (C-144). */
+export const paymentPolicy = definePolicy<Prisma.PaymentWhereInput, { branchId: string }>({
+  resource: 'Payment',
+  where(scope, ctx) {
+    if (scope === 'TENANT') return {};
+    if (scope === 'BRANCH')
+      return ctx.branchIds.length === 0 ? {} : { branchId: { in: [...ctx.branchIds] } };
+    return null;
+  },
+  can(scope, ctx, row) {
+    if (scope === 'TENANT') return true;
+    if (scope === 'BRANCH')
+      return ctx.branchIds.length === 0 || ctx.branchIds.includes(row.branchId);
+    return false;
+  },
+});

@@ -175,3 +175,25 @@ export function allocate(
   }
   return { allocations, leftoverMinor: left };
 }
+
+/**
+ * Where a refund comes from (C-150): first the payment's unused credit, then what it paid on
+ * invoices, newest first, which reopens them. `shortMinor` is what can't be sourced because the
+ * credit has already been spent.
+ */
+export function refundSources(
+  refundMinor: number,
+  creditAvailableMinor: number,
+  applied: { invoiceId: string; amountMinor: number }[],
+): {
+  fromCreditMinor: number;
+  reversals: { invoiceId: string; amountMinor: number }[];
+  shortMinor: number;
+} {
+  const fromCreditMinor = Math.min(refundMinor, Math.max(creditAvailableMinor, 0));
+  const { allocations, leftoverMinor } = allocate(
+    refundMinor - fromCreditMinor,
+    applied.map((a) => ({ id: a.invoiceId, balanceMinor: a.amountMinor })),
+  );
+  return { fromCreditMinor, reversals: allocations, shortMinor: leftoverMinor };
+}

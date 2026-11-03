@@ -89,6 +89,7 @@ model SyncOperation {
 
 enum NotificationKind {
   ATTENDANCE_NOT_TAKEN
+  PAYMENT_REPORTED
 
   @@map("notification_kind")
 }

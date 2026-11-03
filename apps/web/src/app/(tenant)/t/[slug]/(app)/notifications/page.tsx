@@ -66,6 +66,7 @@ export default async function NotificationsPage() {
               batch: p.batch ?? '',
               start: p.start ?? '',
               date: p.date ? formatDate(p.date, { style: 'medium' }) : '',
+              student: p.student ?? '',
             });
             return (
               <Box
