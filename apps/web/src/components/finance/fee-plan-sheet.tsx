@@ -208,7 +208,9 @@ export function PlanSheet({
                 </Box>
               </Stack>
             </Box>
-            <Text data-testid="plan-total">{fill(labels.total, { amount: majorText(total) })}</Text>
+            <Box data-testid="plan-total">
+              <Text>{fill(labels.total, { amount: majorText(total) })}</Text>
+            </Box>
             <Stack direction="row" spacing={2}>
               <Button type="submit" loading={busy} disabled={!online}>
                 {labels.save}

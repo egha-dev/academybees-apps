@@ -7,6 +7,7 @@ import { getTranslations } from 'next-intl/server';
 
 import { loadOnboarding, onboardingOwner } from '@/components/onboarding/owner.server';
 import { stepName } from '@/components/onboarding/step-name';
+import { SAVED_STEPS } from '@academybee/contracts';
 import { StepProgress } from '@/components/onboarding/step-progress';
 import { academyName, hostContext } from '@/lib/host-context.server';
 import { homeFor } from '@/lib/session.server';
@@ -33,7 +34,7 @@ export default async function WelcomePage() {
   // Finished: the academy's home, never `/` (which a stale gate could send back here, review H1).
   if (state.completed) redirect(homeFor(owner.me));
   const academy = academyName(context) ?? '';
-  const total = 7;
+  const total = SAVED_STEPS.length;
   const done = Object.values(state.steps).filter((s) => s.status !== 'pending').length;
   const term = state.terminology;
   return (

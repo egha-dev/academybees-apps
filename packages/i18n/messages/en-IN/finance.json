@@ -45,7 +45,7 @@
     "discount": "Discount",
     "tax": "{label} ({rate}%)",
     "taxIncluded": "Includes {label} of {amount} at {rate}%",
-    "total": "Total: ₹{amount}",
+    "total": "Total",
     "creditApplied": "Credit applied",
     "balance": "Balance due at issue",
     "balanceNote": "Payments made after this invoice was issued appear on their own receipts.",
