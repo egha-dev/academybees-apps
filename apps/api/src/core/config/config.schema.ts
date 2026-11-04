@@ -54,6 +54,11 @@ export const ApiConfigSchema = z
     TRUSTED_PROXY_IPS: csv,
     TRUSTED_PROXY_SECRET: z.string().min(16, 'must be at least 16 characters'),
     /** Root domain academy subdomains live under (C-52); defaults to `localhost` in local/ci only. */
+    /** Where people reach the web app; share links are built from these (G-18). */
+    WEB_PUBLIC_PROTOCOL: z.enum(['http', 'https']).default('https'),
+    WEB_PUBLIC_PORT: z.coerce.number().int().positive().optional(),
+    /** The browser that prints documents (C-137); empty uses Playwright's own, for local and CI. */
+    CHROMIUM_PATH: z.string().optional(),
     PLATFORM_ROOT_DOMAIN: z
       .string()
       .trim()

@@ -279,6 +279,8 @@ model Payment {
   verifiedAt        DateTime?     @map("verified_at") @db.Timestamptz(3)
   rejectionReason   String?       @map("rejection_reason") @db.VarChar(500)
   confirmedAt       DateTime?     @map("confirmed_at") @db.Timestamptz(3)
+  /// What the receipt says, frozen at confirmation with its number (G-18); never changes.
+  snapshot          Json?
   providerAccountId String?       @map("provider_account_id") @db.Uuid
   providerOrderId   String?       @map("provider_order_id") @db.VarChar(100)
   version           Int           @default(1)

@@ -24,6 +24,7 @@ import { DomainError } from '../../core/errors/domain-error.js';
 import { assertInScope, scopedWhere } from '../../core/rbac/scope.js';
 import { StudentsService } from '../people/index.js';
 import { isOverdue, nextInvoice, settledStatus } from './domain/invoice.state.js';
+import { academyOnDocuments } from './documents/document-snapshot.js';
 import { balanceOf, computeInvoice, type TaxConfig } from './domain/money.js';
 import { invoicePolicy } from './finance.policy.js';
 import { FinanceSettingsService } from './finance-settings.service.js';
@@ -489,9 +490,10 @@ export class InvoicesService {
         totalMinor: computed.totalMinor,
         creditAppliedMinor: credit,
         snapshot: {
-          academy: { name },
+          academy: await academyOnDocuments(tx, name),
           student: { name: row.student.fullName, admissionNo: row.student.admissionNo },
           tax: settings.tax,
+          payTo: { upi: settings.upi, bank: settings.bank },
           lines: lines.map((l) => ({
             kind: l.kind,
             label: l.label,

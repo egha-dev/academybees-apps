@@ -188,6 +188,36 @@ catalogs:
     '@fontsource-variable/inter':
       specifier: 5.3.0
       version: 5.3.0
+    '@fontsource/noto-sans':
+      specifier: 5.3.0
+      version: 5.3.0
+    '@fontsource/noto-sans-bengali':
+      specifier: 5.3.0
+      version: 5.3.0
+    '@fontsource/noto-sans-devanagari':
+      specifier: 5.3.0
+      version: 5.3.0
+    '@fontsource/noto-sans-gujarati':
+      specifier: 5.3.0
+      version: 5.3.0
+    '@fontsource/noto-sans-gurmukhi':
+      specifier: 5.3.0
+      version: 5.3.0
+    '@fontsource/noto-sans-kannada':
+      specifier: 5.3.0
+      version: 5.3.0
+    '@fontsource/noto-sans-malayalam':
+      specifier: 5.3.0
+      version: 5.3.0
+    '@fontsource/noto-sans-oriya':
+      specifier: 5.3.0
+      version: 5.3.0
+    '@fontsource/noto-sans-tamil':
+      specifier: 5.3.0
+      version: 5.3.0
+    '@fontsource/noto-sans-telugu':
+      specifier: 5.3.0
+      version: 5.3.0
     '@formatjs/icu-messageformat-parser':
       specifier: 3.5.18
       version: 3.5.18
@@ -386,6 +416,9 @@ catalogs:
     papaparse:
       specifier: 5.5.2
       version: 5.5.2
+    pdfjs-dist:
+      specifier: 6.4.299
+      version: 6.4.299
     pg:
       specifier: 8.23.0
       version: 8.23.0
@@ -398,6 +431,9 @@ catalogs:
     pino-pretty:
       specifier: 13.1.3
       version: 13.1.3
+    playwright-core:
+      specifier: 1.63.0
+      version: 1.63.0
     posthog-node:
       specifier: 5.54.1
       version: 5.54.1
@@ -514,6 +550,36 @@ importers:
       '@academybee/tenant':
         specifier: workspace:*
         version: link:../../packages/tenant
+      '@fontsource/noto-sans':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource/noto-sans-bengali':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource/noto-sans-devanagari':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource/noto-sans-gujarati':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource/noto-sans-gurmukhi':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource/noto-sans-kannada':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource/noto-sans-malayalam':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource/noto-sans-oriya':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource/noto-sans-tamil':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource/noto-sans-telugu':
+        specifier: 'catalog:'
+        version: 5.3.0
       '@nestjs/common':
         specifier: 'catalog:'
         version: 12.1.2(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0)
@@ -556,6 +622,9 @@ importers:
       pino-http:
         specifier: 'catalog:'
         version: 11.0.0
+      playwright-core:
+        specifier: 'catalog:'
+        version: 1.63.0
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -605,6 +674,9 @@ importers:
       fast-check:
         specifier: 'catalog:'
         version: 4.10.2
+      pdfjs-dist:
+        specifier: 'catalog:'
+        version: 6.4.299
       pg:
         specifier: 'catalog:'
         version: 8.23.0
@@ -1781,6 +1853,36 @@ packages:
   '@fontsource-variable/inter@5.3.0':
     resolution: {integrity: sha512-OupL48va4JNofb97w6NYeF9S7W/kHNKM0Er8Dem5nqi4jeOLrVJDoE8tZEpnMJmtkvNbB1EIPPwHcdkF6b1oUA==}
 
+  '@fontsource/noto-sans-bengali@5.3.0':
+    resolution: {integrity: sha512-EFBMU0UvzyFSc1ERK369zfqEu6DMRuWmCQ2+2ahhQTQAIDPEyN1UYlQdQeFkheu2DWG2hfdwrhiLlGFl2sSr/A==}
+
+  '@fontsource/noto-sans-devanagari@5.3.0':
+    resolution: {integrity: sha512-7khYmipS/5KAUUmrO1DKir8yL8XI00d0+ZE9BqbS8XF1jzObv6CpPOk3UeYxF+Pvi8bx9bBvprBCOcbx/eQWTQ==}
+
+  '@fontsource/noto-sans-gujarati@5.3.0':
+    resolution: {integrity: sha512-vTIzI/j4B6FTQ8LV+0e8Ozp8eXNMHWWD8fsVvfaUjhD6w/TPDugOss88k3eMzDcR5lR+XxQCKgUd6V8qRROjtg==}
+
+  '@fontsource/noto-sans-gurmukhi@5.3.0':
+    resolution: {integrity: sha512-kORmHl4RCqVsPwDPgWxCHWUETSnI+6m6aPsJmGf7K3PJorPKHUZesABxhZcsnYVZkKS/4abE3QgJgjuhWpA13g==}
+
+  '@fontsource/noto-sans-kannada@5.3.0':
+    resolution: {integrity: sha512-mcZlaZfzFIwrjah3hze5W6JnFMk8+bXtw0aKOneeuM/sadyV/F6nIgFiJc9/d9yHeecpVfANt+dWf8VSXDf+3Q==}
+
+  '@fontsource/noto-sans-malayalam@5.3.0':
+    resolution: {integrity: sha512-JVWpPkzNkbZTLradEAu8y5dDCgDsPLzvJrY1mEtt0NGG095aPyfhpTmq+wnGBBhvNRU9WEeATGI/w/YocbjQsg==}
+
+  '@fontsource/noto-sans-oriya@5.3.0':
+    resolution: {integrity: sha512-nl5R08M+PHfiRJNdlxy5mPDpeFzKa16p14MprNsSKJn7QyJtU3PZ2CHi3x/9vzw05ox+In9i8BmVnPRrK4R/jg==}
+
+  '@fontsource/noto-sans-tamil@5.3.0':
+    resolution: {integrity: sha512-webid7fyBljiIEJ1hXuey48vCUe2Oq3/EwYjo6XBtXItO9FoUmqy0bEnXA5iE++iC324BTI8QMy80SYtDheCzA==}
+
+  '@fontsource/noto-sans-telugu@5.3.0':
+    resolution: {integrity: sha512-D5AD91Ok2wURk6Vf4sOe2KA3nf0M7qePboNVuvJbguOqLAplh3cGkEIX1qi9u1Jjcz9QWblQ5BbTXI/c+QjB9Q==}
+
+  '@fontsource/noto-sans@5.3.0':
+    resolution: {integrity: sha512-fBCog2PY7DiVVTEEqtI/Qdinx/knobHYfoGpjFXdfBX5RoJaBp1Prw2G75p0OIsdlMZg3cLo0c+YbIUYOxnQJw==}
+
   '@formatjs/ecma402-abstract@2.3.6':
     resolution: {integrity: sha512-HJnTFeRM2kVFVr5gr5kH1XP6K0JcJtE7Lzvtr3FS/so5f1kpsqqqxy5JF+FRaO6H2qmcMfAUIox7AJteieRtVw==}
 
@@ -2185,6 +2287,81 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  '@napi-rs/canvas-android-arm64@1.1.0':
+    resolution: {integrity: sha512-mKrSmRyhWK4q699Q1xthbZIZi7JBvLtsRNnOZAeFaLPOFT1yo8y82aRC2nNZbXTGJXU7fVDONgGQPr0vo3kerw==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [android]
+
+  '@napi-rs/canvas-darwin-arm64@1.1.0':
+    resolution: {integrity: sha512-iqwST4g0oH+x8VCpBIYh+MYokv/mVvkM+v9oJGB0d9A3P2qBh42ogJlVyWq9SpPCrAjS7tplMb1D3OIfxl+utw==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@napi-rs/canvas-darwin-x64@1.1.0':
+    resolution: {integrity: sha512-jkeA8eVTxDum03LTvc32YJ28F6KB1U0gYwnWMfOAUQZvWWEh/kvONby4iWGJx3+Tw45UqMGMXjtw2GKNVZDhVg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@napi-rs/canvas-linux-arm-gnueabihf@1.1.0':
+    resolution: {integrity: sha512-Y4YkKG1ijoqkgUdTEEBNG4k+2BK5bR5jGL6S56YxCXYPwGfUd5nED8/74xyc7z+bpixPasCjSYoP3xYPOIGNxw==}
+    engines: {node: '>= 10'}
+    cpu: [arm]
+    os: [linux]
+
+  '@napi-rs/canvas-linux-arm64-gnu@1.1.0':
+    resolution: {integrity: sha512-dE/XthqYkiWcBVtKFlZbUXwAYfDuQGqDWixznipJNmevLGpprNnTVQZyftm1RZJudkIOn2EkzYZDMMETM08Row==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@napi-rs/canvas-linux-arm64-musl@1.1.0':
+    resolution: {integrity: sha512-DqZ/CMcHlhU56pPjv9AP0h3U7MFQ5LzC1HzMyRMotL+PFsJmZJA/ziApPYVyyz78DaVLhI8t3So3ztqtijbYpg==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@napi-rs/canvas-linux-riscv64-gnu@1.1.0':
+    resolution: {integrity: sha512-kJ7m5n2VffxWXM5QGa5lfq8ZN4LdOJEoz3aAJAmIqYvKiZw1gRdXqpucnRXsF6D9nLYiiIlevaAtAclR7c5ilg==}
+    engines: {node: '>= 10'}
+    cpu: [riscv64]
+    os: [linux]
+    libc: [glibc]
+
+  '@napi-rs/canvas-linux-x64-gnu@1.1.0':
+    resolution: {integrity: sha512-uQ9JuJlRhQdHyttcMWOiwLkfIqkqaB0YFUVe835LUe12THt2b51HXkTItq0fxWT1jdhUPX2ylWZ1walkJyD6GQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@napi-rs/canvas-linux-x64-musl@1.1.0':
+    resolution: {integrity: sha512-has4CPPAkkCac/LZ13VAw5p+MJLdaKVoyrhumN/A7uJd6960xYkJNDZgUebyxiha82AFzXx6RV+QJg5qGG079g==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@napi-rs/canvas-win32-arm64-msvc@1.1.0':
+    resolution: {integrity: sha512-MJnktLKNijmXqdjTughHDZ9TDLZ9uUm2hvFXqaOqn0+w7lphXFnft6bpSgQAc9U1exc20UGIBlzGu9+kiCj9Ag==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@napi-rs/canvas-win32-x64-msvc@1.1.0':
+    resolution: {integrity: sha512-08575bFk7iiadxap4h+JxgGut9xDCHAGum6wh0eInN53zEMImkmEHi5MushX2FOmNO7qRNX7BPiDC5ZYBwHeEg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+
+  '@napi-rs/canvas@1.1.0':
+    resolution: {integrity: sha512-k+ph/D8H9GS8ZZ48okvHrKeJynkqAA1kMUZRuzRWNlQUDHXngq7oRaWMZBdmSfd9ZhVy9bwNKei/7wMboI/uMg==}
+    engines: {node: '>= 10'}
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     resolution: {integrity: sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ==}
@@ -6834,6 +7011,10 @@ packages:
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
 
+  pdfjs-dist@6.4.299:
+    resolution: {integrity: sha512-AVl138zALtfaAPvADulE0PZThbYzCBS79nL4pOSL/6Sm/4AH5A21BD9VHt97OlCuzJuCpmeZtAtkinisF4Vb1g==}
+    engines: {node: '>=22.13.0 || >=24'}
+
   pend@1.2.0:
     resolution: {integrity: sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg==}
 
@@ -8983,6 +9164,26 @@ snapshots:
 
   '@fontsource-variable/inter@5.3.0': {}
 
+  '@fontsource/noto-sans-bengali@5.3.0': {}
+
+  '@fontsource/noto-sans-devanagari@5.3.0': {}
+
+  '@fontsource/noto-sans-gujarati@5.3.0': {}
+
+  '@fontsource/noto-sans-gurmukhi@5.3.0': {}
+
+  '@fontsource/noto-sans-kannada@5.3.0': {}
+
+  '@fontsource/noto-sans-malayalam@5.3.0': {}
+
+  '@fontsource/noto-sans-oriya@5.3.0': {}
+
+  '@fontsource/noto-sans-tamil@5.3.0': {}
+
+  '@fontsource/noto-sans-telugu@5.3.0': {}
+
+  '@fontsource/noto-sans@5.3.0': {}
+
   '@formatjs/ecma402-abstract@2.3.6':
     dependencies:
       '@formatjs/fast-memoize': 2.2.7
@@ -9361,6 +9562,54 @@ snapshots:
       react-is: 19.3.0
     optionalDependencies:
       '@types/react': 19.3.0
+
+  '@napi-rs/canvas-android-arm64@1.1.0':
+    optional: true
+
+  '@napi-rs/canvas-darwin-arm64@1.1.0':
+    optional: true
+
+  '@napi-rs/canvas-darwin-x64@1.1.0':
+    optional: true
+
+  '@napi-rs/canvas-linux-arm-gnueabihf@1.1.0':
+    optional: true
+
+  '@napi-rs/canvas-linux-arm64-gnu@1.1.0':
+    optional: true
+
+  '@napi-rs/canvas-linux-arm64-musl@1.1.0':
+    optional: true
+
+  '@napi-rs/canvas-linux-riscv64-gnu@1.1.0':
+    optional: true
+
+  '@napi-rs/canvas-linux-x64-gnu@1.1.0':
+    optional: true
+
+  '@napi-rs/canvas-linux-x64-musl@1.1.0':
+    optional: true
+
+  '@napi-rs/canvas-win32-arm64-msvc@1.1.0':
+    optional: true
+
+  '@napi-rs/canvas-win32-x64-msvc@1.1.0':
+    optional: true
+
+  '@napi-rs/canvas@1.1.0':
+    optionalDependencies:
+      '@napi-rs/canvas-android-arm64': 1.1.0
+      '@napi-rs/canvas-darwin-arm64': 1.1.0
+      '@napi-rs/canvas-darwin-x64': 1.1.0
+      '@napi-rs/canvas-linux-arm-gnueabihf': 1.1.0
+      '@napi-rs/canvas-linux-arm64-gnu': 1.1.0
+      '@napi-rs/canvas-linux-arm64-musl': 1.1.0
+      '@napi-rs/canvas-linux-riscv64-gnu': 1.1.0
+      '@napi-rs/canvas-linux-x64-gnu': 1.1.0
+      '@napi-rs/canvas-linux-x64-musl': 1.1.0
+      '@napi-rs/canvas-win32-arm64-msvc': 1.1.0
+      '@napi-rs/canvas-win32-x64-msvc': 1.1.0
+    optional: true
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
@@ -14177,6 +14426,10 @@ snapshots:
   path-type@4.0.0: {}
 
   pathe@2.0.3: {}
+
+  pdfjs-dist@6.4.299:
+    optionalDependencies:
+      '@napi-rs/canvas': 1.1.0
 
   pend@1.2.0: {}
 

@@ -731,6 +731,57 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
     capability,
     spoof: { skip: 'payments.int.spec.ts › another academy’s payments and students are 404' },
   })),
+  // Documents (Phase 7 S6): a fixture has no real file to sign, so routes needing one point at the
+  // real test; the link lists read the caller's own academy.
+  ...(
+    [
+      ['invoices', 'invoice', 'invoice.read'],
+      ['payments', 'payment', 'receipt.read'],
+    ] as const
+  ).flatMap(([base, fixture, capability]) => [
+    ...(
+      [
+        ['GET', `/api/v1/${base}/:id/documents/:layout`],
+        ['POST', `/api/v1/${base}/:id/documents/:layout`],
+        ['POST', `/api/v1/${base}/:id/documents/:layout/share-links`],
+      ] as const
+    ).map(([method, path]) => ({
+      method,
+      path,
+      params: { id: fixture, layout: 'layout-a4' },
+      session: true,
+      capability,
+      spoof: {
+        skip: 'documents.int.spec.ts › another academy can’t reach a document or its links',
+      },
+    })),
+    {
+      method: 'GET' as const,
+      path: `/api/v1/${base}/:id/share-links`,
+      params: { id: fixture },
+      session: true,
+      capability,
+    },
+    {
+      method: 'POST' as const,
+      path: `/api/v1/${base}/:id/share-links/:linkId/revoke`,
+      params: { id: fixture, linkId: 'missing-import' },
+      session: true,
+      capability,
+      spoof: {
+        skip: 'documents.int.spec.ts › another academy can’t reach a document or its links',
+      },
+    },
+  ]),
+  // A shared document (public; the token is the credential, and finds nothing on another host).
+  {
+    method: 'GET',
+    path: '/api/v1/share/:token',
+    params: { token: 'missing-import' },
+    spoof: {
+      skip: 'documents.int.spec.ts › revoked, expired, tampered, another academy’s host or a cancelled invoice: all 404',
+    },
+  },
   // Online payments (Phase 7 S5): the gateway card and exceptions read the caller's own academy;
   // another academy's exception is covered in online-payments.int.spec.ts.
   {

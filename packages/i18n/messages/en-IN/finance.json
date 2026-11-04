@@ -24,5 +24,47 @@
       "problem": "Problem",
       "exists": "This student already has an opening balance, so the row was skipped"
     }
+  },
+  "document": {
+    "invoiceTitle": "Invoice",
+    "receiptTitle": "Receipt",
+    "gstin": "GSTIN: {gstin}",
+    "billedTo": "Billed to",
+    "receivedFrom": "Received from",
+    "admissionNo": "Admission no. {number}",
+    "number": "Number",
+    "issued": "Issued on",
+    "due": "Due on",
+    "paidOn": "Paid on",
+    "method": "Method",
+    "reference": "Reference",
+    "item": "Item",
+    "quantity": "Qty",
+    "amount": "Amount",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "tax": "{label} ({rate}%)",
+    "taxIncluded": "Includes {label} of {amount} at {rate}%",
+    "total": "Total",
+    "creditApplied": "Credit applied",
+    "balance": "Balance due at issue",
+    "balanceNote": "Payments made after this invoice was issued appear on their own receipts.",
+    "amountReceived": "Amount received",
+    "appliedTo": "Applied to",
+    "invoiceBalance": "Balance after this payment",
+    "toCredit": "Kept as credit",
+    "payTo": "How to pay",
+    "upi": "UPI: {vpa} ({payee})",
+    "bank": "{bankName} · {accountName} · A/c {accountNumber} · IFSC {ifsc}",
+    "receiptNote": "This receipt confirms the payment above. Any correction is made by a refund or a credit, not by changing this receipt.",
+    "methods": {
+      "CASH": "Cash",
+      "UPI": "UPI",
+      "BANK_TRANSFER": "Bank transfer",
+      "CHEQUE": "Cheque",
+      "CARD_POS": "Card",
+      "ONLINE_GATEWAY": "Online"
+    },
+    "shareMessage": "{kind, select, INVOICE {Invoice} other {Receipt}} {number} from {academy}: {url} (this link works until {expires})"
   }
 }

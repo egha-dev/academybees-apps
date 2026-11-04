@@ -1,6 +1,6 @@
 # P7-1 · Phase 7 — Finance: plan
 
-> **Approved by the PO on 2026-11-02** (`phase-7-start` = `9267fd3`). Decisions C-137…C-146 recorded in DECISIONS.md; C-147…C-149 added in S3b; C-150…C-154 in S4; C-155…C-159 in S5.
+> **Approved by the PO on 2026-11-02** (`phase-7-start` = `9267fd3`). Decisions C-137…C-146 recorded in DECISIONS.md; C-147…C-149 added in S3b; C-150…C-154 in S4; C-155…C-159 in S5; C-160, C-161 in S6.
 
 ## Context
 
@@ -216,6 +216,11 @@ Each slice: branch `p7/<slice>` from the latest `main` → PR with the DoD check
   - link expiry, revocation and tampering;
   - documents never change after issue;
   - cross-tenant.
+
+*As built (S6; C-160, C-161):*
+- `documents/`: `document-snapshot.ts` (invoice and receipt shapes), `document-template.ts` (escaped HTML, A4 and MOBILE), `document-fonts.ts` (`@fontsource` Noto), `pdf-renderer.ts` (one shared browser, closed after 60 s idle), `documents.{queue,processor,service,controller}.ts`.
+- Routes under `/invoices/:id` (`invoice.read`) and `/payments/:id` (`receipt.read`): `GET`/`POST documents/:layout`, `POST documents/:layout/share-links`, `GET share-links`, `POST share-links/:linkId/revoke`. Public: `GET /share/:token`.
+- Migration `…_receipt_snapshot` (`payment.snapshot`); triggers in `080-finance.sql`; `share_link` updates limited to `revoked_at` and `open_count`. CI's integration job installs Chromium; the API image adds `chromium` and `font-noto`.
 
 ### S7 `p7/finance-settings-ui` — setup screens (flag `p7-finance`)
 - **7.22 Settings → Payments:** UPI ID + payee + live QR preview, bank details, methods, tax, prefixes, fee rules; the "Online gateway — not connected yet" card.

@@ -90,6 +90,7 @@ describe('log safety (review L1, L2)', () => {
     expect(logSafeUrl('/api/v1/invitations/abc?token=secret&email=a@b.co')).toBe(
       '/api/v1/invitations/abc',
     );
+    expect(logSafeUrl('/api/v1/share/abc123?x=1')).toBe('/api/v1/share/[redacted]');
     expect(logSafeUrl(undefined)).toBeUndefined();
   });
 });

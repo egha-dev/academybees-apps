@@ -133,7 +133,8 @@ export function safeLogObject<T>(value: T, depth = 0): T {
 
 /** A request URL for logs: the path only — query strings can carry tokens or contact data (L2). */
 export function logSafeUrl(url: string | undefined): string | undefined {
-  return url?.split('?')[0];
+  // A share link's token is the credential (G-18), and it sits in the path.
+  return url?.split('?')[0]?.replace(/(\/share\/)[^/]+/, '$1[redacted]');
 }
 
 /** True when a string looks like an email address or a phone number. */
