@@ -101,7 +101,16 @@ export const ANALYTICS_EVENTS = {
     version: 1,
     description: 'An academy owner saved or skipped a guided-setup step (UX v1.1 §5).',
     properties: z.strictObject({
-      step: z.enum(['profile', 'type', 'course', 'teacher', 'batch', 'students', 'timetable']),
+      step: z.enum([
+        'profile',
+        'type',
+        'course',
+        'teacher',
+        'batch',
+        'students',
+        'timetable',
+        'fees',
+      ]),
       skipped: z.boolean(),
     }),
   }),
@@ -109,7 +118,7 @@ export const ANALYTICS_EVENTS = {
     name: 'onboarding.completed',
     version: 1,
     description: 'An academy finished the guided setup and opened (C-87).',
-    properties: z.strictObject({ skippedSteps: z.number().int().min(0).max(7) }),
+    properties: z.strictObject({ skippedSteps: z.number().int().min(0).max(8) }),
   }),
   'student.created': defineAnalyticsEvent({
     name: 'student.created',

@@ -12,7 +12,8 @@ describe('onboarding steps (UX v1.1 §5, C-08)', () => {
   it('goes through the steps in order and ends on Ready', () => {
     expect(nextOnboardingStep('profile')).toBe('type');
     expect(nextOnboardingStep('teacher')).toBe('batch');
-    expect(nextOnboardingStep('timetable')).toBe('ready');
+    expect(nextOnboardingStep('timetable')).toBe('fees');
+    expect(nextOnboardingStep('fees')).toBe('ready');
   });
 
   it('accepts Indian mobile numbers as typed and stores E.164', () => {

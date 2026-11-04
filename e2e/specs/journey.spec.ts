@@ -111,6 +111,8 @@ test('create an academy in the console, onboard its owner, open it, suspend, rea
   await save(o);
   await expect(o).toHaveURL(academyUrl('/onboarding/timetable'));
   await save(o);
+  await expect(o).toHaveURL(academyUrl('/onboarding/fees'));
+  await o.getByRole('button', { name: 'Skip for now' }).click();
   await expect(o).toHaveURL(academyUrl('/onboarding/ready'));
   await expect(o.getByRole('heading', { level: 1 })).toHaveText(`Gurushethra ${tag} is ready`);
 

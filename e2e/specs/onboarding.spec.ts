@@ -107,7 +107,7 @@ test('the owner accepts the terms, is welcomed and sets up the academy step by s
   await second.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 15_000 });
   await second.waitForLoadState('networkidle');
   await second.goto(url('/welcome'));
-  await expect(second.getByText('4 of 7 steps done')).toBeVisible();
+  await expect(second.getByText('4 of 8 steps done')).toBeVisible();
   await second.getByRole('link', { name: 'Continue setup' }).click();
   await expect(second).toHaveURL(url('/onboarding/batch'));
   await other.close();
@@ -131,10 +131,22 @@ test('the owner accepts the terms, is welcomed and sets up the academy step by s
   await expectNoA11yViolations(page);
   await page.getByRole('button', { name: 'Save and continue' }).click();
 
+  // Fee Setup (C-08): one plan and, optionally, how parents pay.
+  await expect(page).toHaveURL(url('/onboarding/fees'));
+  await expectNoA11yViolations(page);
+  await page.getByLabel('Fee name').fill('Monthly tuition');
+  await page.getByLabel('Amount (₹)').fill('1,500');
+  await page.getByLabel('UPI ID (optional)').fill('not-a-upi-id');
+  await page.getByRole('button', { name: 'Save and continue' }).click();
+  await expect(page.getByText('Enter a UPI ID like name@bank.')).toBeVisible();
+  await page.getByLabel('UPI ID (optional)').fill('setupmusic@okbank');
+  await page.getByLabel('Name shown when paying').fill('Setup Music School');
+  await page.getByRole('button', { name: 'Save and continue' }).click();
+
   // Ready: what was set up, and the next classes.
   await expect(page).toHaveURL(url('/onboarding/ready'));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Setup Music School is ready');
-  await expect(page.getByRole('list', { name: 'Setup progress' }).getByText('Done')).toHaveCount(7);
+  await expect(page.getByRole('list', { name: 'Setup progress' }).getByText('Done')).toHaveCount(8);
   await expect(page.getByRole('heading', { name: 'Next classes' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Open my academy' })).toBeEnabled();
   await expectNoA11yViolations(page);

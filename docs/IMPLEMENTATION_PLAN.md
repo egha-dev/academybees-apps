@@ -931,8 +931,8 @@ Phase 2 is **not** started.
 | S3b | `p7/invoice-generation` | 7.8 generation job, 7.10 G-27 effects, 7.11 opening balances (C-147…C-149) | ✅ #103 |
 | S4 | `p7/payments-api` | 7.12 record + allocate, 7.13 verify queue + cheques + UTR, 7.14 hub reported payments (flag `p7-hub-payments`), 7.15 refunds (C-150…C-154) | ✅ #104 |
 | S5 | `p7/provider-layer` | 7.16 providers + simulator, 7.17 tenant accounts, 7.18 webhooks + reconciliation (C-155…C-159) | ✅ #105 |
-| S6 | `p7/documents` | 7.19 templates, 7.20 PDF job (C-137), 7.21 share links (C-160, C-161) | 🟨 PR |
-| S7 | `p7/finance-settings-ui` | 7.22 Settings → Payments, 7.23 fee plans, 7.24 onboarding Fee Setup (flag `p7-finance`) | ⬜ |
+| S6 | `p7/documents` | 7.19 templates, 7.20 PDF job (C-137), 7.21 share links (C-160, C-161) | ✅ #106 |
+| S7 | `p7/finance-settings-ui` | 7.22 Settings → Payments, 7.23 fee plans, 7.24 onboarding Fee Setup (flag `p7-finance`, C-162) | 🟨 PR |
 | S8 | `p7/finance-ui` | 7.25 dashboard, 7.26 invoices, 7.27 Collect drawer, 7.28 payments + verify + refunds, 7.29 tabs, Today, Global Add | ⬜ |
 | S9 | `p7/offline-cash` | 7.30 Dexie v3 + `payment.recordCash`, 7.31 reminder intents | ⬜ |
 | S10 | `p7/journey-e2e` | 7.32 exit E2E, 7.33 flag removal + docs | ⬜ |

@@ -96,6 +96,21 @@ export async function stepLabels(terms: Terminology, academy: string): Promise<S
       endAfterStart: t('timetable.endAfterStart'),
       upcoming: t('timetable.upcoming'),
     },
+    fees: {
+      planName: t('fees.planName'),
+      amount: t('fees.amount'),
+      cycle: t('fees.cycle'),
+      vpa: t('fees.vpa'),
+      vpaHint: t('fees.vpaHint'),
+      payeeName: t('fees.payeeName'),
+      invalidVpa: t('fees.invalidVpa'),
+      cycles: {
+        MONTHLY: t('fees.cycles.MONTHLY'),
+        QUARTERLY: t('fees.cycles.QUARTERLY'),
+        HALF_YEARLY: t('fees.cycles.HALF_YEARLY'),
+        ANNUAL: t('fees.cycles.ANNUAL'),
+      },
+    },
     days: [1, 2, 3, 4, 5, 6, 7].map((d) => t(`days.d${d}` as 'days.d1')),
   };
 }

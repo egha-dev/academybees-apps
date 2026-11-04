@@ -82,6 +82,24 @@ export class FinanceSettingsService {
     });
   }
 
+  /** The onboarding Fee Setup step (C-08): just the UPI ID, inside its transaction. */
+  async setUpiFromSetup(tx: TransactionClient, upi: FinanceSettings['upi']): Promise<void> {
+    const { settings, version } = await this.current(tx);
+    const updated = await tx.tenantSettings.updateMany({
+      where: { version },
+      data: { finance: { ...settings, upi }, version: { increment: 1 } },
+    });
+    if (updated.count !== 1) throw new DomainError('VERSION_CONFLICT');
+    await this.audit.record(
+      {
+        action: 'finance.settings_changed',
+        entityType: 'TenantSettings',
+        metadata: { sections: ['upi'] },
+      },
+      tx,
+    );
+  }
+
   private async respond(
     settings: FinanceSettings,
     version: number,

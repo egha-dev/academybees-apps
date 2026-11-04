@@ -11,6 +11,7 @@ import { StatusBadge } from '@academybee/ui/components/display';
 import { Box, Stack } from '@academybee/ui/components/layout';
 import { Text } from '@academybee/ui/components/text';
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
@@ -22,6 +23,7 @@ import { ReadyActions } from '@/components/onboarding/ready-actions';
 import { stepName } from '@/components/onboarding/step-name';
 import { StepProgress } from '@/components/onboarding/step-progress';
 import { apiServerGet } from '@/lib/api.server';
+import { flagEnabled } from '@/lib/flags.server';
 import { academyName, hostContext } from '@/lib/host-context.server';
 import { homeFor } from '@/lib/session.server';
 
@@ -52,6 +54,9 @@ export default async function StepPage({ params }: { params: Promise<{ step: str
   const parsed = OnboardingStepSchema.safeParse(raw);
   if (!parsed.success) notFound();
   const step: OnboardingStep = parsed.data;
+  // Behind `p7-finance` until S10: without it, Timetable leads straight to Ready.
+  if (step === 'fees' && !(await flagEnabled('p7-finance', (await headers()).get('host') ?? '')))
+    redirect('/onboarding/ready');
   const owner = await onboardingOwner();
   if (owner.state !== 'signed-in') return null;
   const [state, t, { context }, peopleT] = await Promise.all([
@@ -163,6 +168,7 @@ export default async function StepPage({ params }: { params: Promise<{ step: str
     batch: { title: t('batch.title', { term: terms.batch }), body: t('batch.body') },
     students: { title: t('students.title'), body: t('students.body') },
     timetable: { title: t('timetable.title'), body: t('timetable.body') },
+    fees: { title: t('fees.title'), body: t('fees.body') },
   };
   return (
     <Stack spacing={6}>

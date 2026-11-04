@@ -66,5 +66,204 @@
       "ONLINE_GATEWAY": "Online"
     },
     "shareMessage": "{kind, select, INVOICE {Invoice} other {Receipt}} {number} from {academy}: {url} (this link works until {expires})"
+  },
+  "ui": {
+    "loading": {
+      "settings": "Loading payment settings",
+      "plans": "Loading fee plans"
+    },
+    "errors": {
+      "invalidVpa": "Enter a UPI ID like name@bank.",
+      "invalidIfsc": "Enter an 11-character IFSC, like HDFC0001234.",
+      "invalidAccount": "Enter 6 to 20 digits.",
+      "invalidGstin": "Enter a 15-character GSTIN.",
+      "invalidPrefix": "Use up to 12 capital letters, digits or hyphens.",
+      "prefixInUse": "This prefix has already been used this year, so it stays until April.",
+      "required": "Fill this in.",
+      "invalidAmount": "Enter an amount like 1,500 or 1,500.50.",
+      "invalidNumber": "Enter a number in the allowed range.",
+      "fixFields": "Check the highlighted fields.",
+      "alreadyAssigned": "Someone here is already on this plan for these dates.",
+      "noStudents": "Nobody is enrolled there on that date.",
+      "studentInactive": "Someone here has left or finished, so they can't be put on a plan.",
+      "beforeStart": "The end date can't be before the start date."
+    },
+    "settings": {
+      "metaTitle": "Payments",
+      "title": "Payments",
+      "body": "How parents pay you. The money goes straight to you; AcademyBee never holds it.",
+      "readOnly": "Only the owner can change these.",
+      "save": "Save changes",
+      "saved": "Payment settings saved",
+      "upi": {
+        "title": "UPI",
+        "body": "Shown on invoices and to parents, with a QR code.",
+        "vpa": "UPI ID",
+        "payeeName": "Name shown when paying",
+        "qrAlt": "QR code for paying {payee} by UPI",
+        "qrHint": "Scan with any UPI app to check it shows the right name."
+      },
+      "bank": {
+        "title": "Bank details",
+        "body": "Printed on invoices for bank transfers.",
+        "accountName": "Account name",
+        "accountNumber": "Account number",
+        "ifsc": "IFSC",
+        "bankName": "Bank name"
+      },
+      "methods": {
+        "title": "Ways you accept payment",
+        "body": "Staff can record only the ones switched on.",
+        "CASH": "Cash",
+        "UPI": "UPI",
+        "BANK_TRANSFER": "Bank transfer",
+        "CHEQUE": "Cheque",
+        "CARD_POS": "Card machine"
+      },
+      "tax": {
+        "title": "Tax",
+        "body": "Only if you charge GST. AcademyBee prints it; filing stays with you.",
+        "enabled": "Charge tax on fees",
+        "gstin": "GSTIN",
+        "rate": "Rate (%)",
+        "mode": "Your fee amounts",
+        "exclusive": "Don't include tax (it's added on top)",
+        "inclusive": "Already include tax",
+        "label": "Tax name"
+      },
+      "prefixes": {
+        "title": "Invoice and receipt numbers",
+        "body": "Numbers look like INV/2026-27/00042 and restart each April.",
+        "INVOICE": "Invoice prefix",
+        "RECEIPT": "Receipt prefix",
+        "locked": "Already used this year"
+      },
+      "rules": {
+        "title": "Fee rules",
+        "midCycle": "When someone joins mid-way through a billing period",
+        "FULL": "Charge the full fee",
+        "PRORATE_DAYS": "Charge for the days left",
+        "PRORATE_SESSIONS": "Charge for the classes left",
+        "NEXT_CYCLE": "Start from the next period",
+        "autoCredit": "Use a student's credit automatically on new invoices",
+        "generateDaysBefore": "Create invoices this many days before a period starts",
+        "dueDay": "Fees are due on this day of the period",
+        "sibling": "Sibling discount",
+        "siblingNone": "None",
+        "siblingPercent": "A percentage",
+        "siblingFixed": "A fixed amount",
+        "siblingValue": "Discount for second and later children",
+        "lateFee": "Suggest a late fee",
+        "lateFeeAfter": "Days overdue before suggesting it",
+        "lateFeeAmount": "Late fee (₹)",
+        "lateFeeHint": "You approve each one; nothing is charged by itself."
+      },
+      "gateway": {
+        "title": "Online gateway",
+        "notConnected": "Not connected yet",
+        "connected": "Connected ({provider})",
+        "body": "Parents can pay you by UPI now. Paying online through your own gateway account comes later, and you don't need it to collect fees."
+      }
+    },
+    "plans": {
+      "metaTitle": "Fees",
+      "title": "Fees",
+      "body": "What you charge, and who pays it.",
+      "add": "New fee plan",
+      "edit": "Edit",
+      "archive": "Archive",
+      "restore": "Restore",
+      "archiveTitle": "Archive {plan}?",
+      "archiveBody": "Nobody new can be put on it. {count, plural, =0 {} one {The # student already on it keeps being billed until you end their time on it.} other {The # students already on it keep being billed until you end their time on it.}}",
+      "archived": "Fee plan archived",
+      "restored": "Fee plan restored",
+      "archivedTitle": "Archived",
+      "saved": "Fee plan saved",
+      "empty": {
+        "title": "No fee plans yet",
+        "body": "Add what you charge, like monthly tuition, then put students on it."
+      },
+      "emptyReadOnly": "Fee plans will appear here once they're added.",
+      "name": "Plan name",
+      "cycle": "Billed",
+      "cycleMonths": "Every how many months",
+      "componentsLegend": "What it's made of",
+      "componentName": "Item",
+      "componentAmount": "Amount (₹)",
+      "taxable": "Taxable",
+      "addComponent": "Add an item",
+      "removeComponent": "Remove {name}",
+      "total": "Total: {amount}",
+      "perCycle": {
+        "MONTHLY": "per month",
+        "QUARTERLY": "per quarter",
+        "HALF_YEARLY": "per six months",
+        "ANNUAL": "per year",
+        "CUSTOM": "every {months} months"
+      },
+      "cycles": {
+        "MONTHLY": "Every month",
+        "QUARTERLY": "Every quarter",
+        "HALF_YEARLY": "Every six months",
+        "ANNUAL": "Every year",
+        "CUSTOM": "Custom"
+      },
+      "students": "{count, plural, =0 {No students yet} one {# student} other {# students}}",
+      "changeNote": "Changes apply to invoices made from now on. Invoices already issued stay as they are.",
+      "close": "Close",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "assign": {
+      "open": "Add students",
+      "title": "Add students to {plan}",
+      "who": "Who",
+      "wholeBatch": "Everyone in a batch",
+      "oneStudent": "One student",
+      "batch": "Batch",
+      "search": "Search students",
+      "searchHint": "Type at least 2 letters of a name or admission number.",
+      "noMatch": "No students match.",
+      "student": "Student",
+      "selectNone": "Choose…",
+      "startsOn": "Starts on",
+      "endsOn": "Ends on (optional)",
+      "discountKind": "Discount",
+      "discountNone": "None",
+      "discountPercent": "A percentage",
+      "discountFixed": "A fixed amount per period",
+      "discountValue": "Discount",
+      "discountReason": "Reason for the discount (optional)",
+      "instalments": "Split each invoice into instalments",
+      "instalmentsNone": "No, one payment",
+      "instalmentsCount": "{count} instalments",
+      "save": "Add to plan",
+      "saved": "Added to the plan"
+    },
+    "assignments": {
+      "title": "On this plan",
+      "empty": "Nobody is on this plan yet.",
+      "from": "From {date}",
+      "until": "until {date}",
+      "discount": "Discount: {value}",
+      "instalments": "{count} instalments",
+      "end": "End this",
+      "endOn": "Last day on this plan",
+      "endSave": "End",
+      "ended": "Updated",
+      "back": "All fee plans",
+      "notFoundTitle": "This fee plan isn't available",
+      "notFoundBody": "It may have been removed."
+    },
+    "oneTime": {
+      "open": "One-time fee",
+      "title": "Charge a one-time fee",
+      "body": "For things like an exam fee or a uniform. The invoice is issued straight away.",
+      "label": "What it's for",
+      "amount": "Amount (₹)",
+      "dueDate": "Due on",
+      "save": "Issue invoice",
+      "saved": "Invoice issued"
+    }
   }
 }

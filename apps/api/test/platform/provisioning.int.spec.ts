@@ -74,7 +74,7 @@ describe('provisioning an academy', () => {
         email: `owner-${slug}@example.test`,
         invitation: { status: 'PENDING' },
       },
-      onboarding: { currentStep: 'profile', completedSteps: 0, totalSteps: 7, completedAt: null },
+      onboarding: { currentStep: 'profile', completedSteps: 0, totalSteps: 8, completedAt: null },
       domains: [{ host: `${slug}.localhost`, role: 'PRIMARY', kind: 'SUBDOMAIN' }],
     });
     const id = res.body.id as string;

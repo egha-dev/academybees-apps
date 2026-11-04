@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { type ChangeEvent, type FormEvent, type ReactNode, useMemo, useRef, useState } from 'react';
 
 import { api } from '@/lib/api';
+import { majorText, minorFromText } from '@/components/finance/money-input';
 import { useOnline } from '@/lib/use-online';
 
 /** Every string the forms show, formatted on the server (terms filled in, G-32). */
@@ -78,6 +79,10 @@ export type StepFormLabels = {
     | 'upcoming',
     string
   >;
+  fees: Record<
+    'planName' | 'amount' | 'cycle' | 'vpa' | 'vpaHint' | 'payeeName' | 'invalidVpa',
+    string
+  > & { cycles: Record<'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'ANNUAL', string> };
   days: string[];
 };
 
@@ -150,6 +155,13 @@ export function StepForm({ step, state, previous, skippable, logo, labels }: Pro
   const [slots, setSlots] = useState(
     v.timetable.slots.length ? v.timetable.slots : [{ weekday: 1, start: '17:00', end: '18:00' }],
   );
+  const [fees, setFees] = useState({
+    planName: v.fees?.planName ?? '',
+    amount: v.fees ? majorText(v.fees.amountMinor) : '',
+    cycle: v.fees?.cycle ?? 'MONTHLY',
+    vpa: v.fees?.upi?.vpa ?? '',
+    payeeName: v.fees?.upi?.payeeName ?? v.profile.name,
+  });
 
   const zones = useMemo(() => {
     const all =
@@ -197,6 +209,14 @@ export function StepForm({ step, state, previous, skippable, logo, labels }: Pro
         };
       case 'timetable':
         return { slots };
+      case 'fees':
+        return {
+          planName: fees.planName,
+          // An unreadable amount fails validation on the field rather than saving as nothing.
+          amountMinor: minorFromText(fees.amount) ?? 0,
+          cycle: fees.cycle,
+          upi: fees.vpa.trim() ? { vpa: fees.vpa, payeeName: fees.payeeName } : null,
+        };
     }
   }
 
@@ -212,9 +232,11 @@ export function StepForm({ step, state, previous, skippable, logo, labels }: Pro
             ? labels.errors.invalidPhone
             : /email/i.test(last)
               ? labels.errors.invalidEmail
-              : d.issue === 'end_before_start'
-                ? labels.timetable.endAfterStart
-                : labels.errors.invalid;
+              : last === 'vpa'
+                ? labels.fees.invalidVpa
+                : d.issue === 'end_before_start'
+                  ? labels.timetable.endAfterStart
+                  : labels.errors.invalid;
     }
     return out;
   }
@@ -563,6 +585,65 @@ export function StepForm({ step, state, previous, skippable, logo, labels }: Pro
                 helperText={labels.batch.capacityHint}
               />
             </Field>
+          </Stack>
+        );
+      case 'fees':
+        return (
+          <Stack spacing={4}>
+            <Field>
+              <TextField
+                label={labels.fees.planName}
+                name="planName"
+                value={fees.planName}
+                onChange={(x) => setFees({ ...fees, planName: x })}
+                required
+                error={f('planName')}
+              />
+            </Field>
+            <Field>
+              <TextField
+                label={labels.fees.amount}
+                name="amount"
+                inputMode="numeric"
+                value={fees.amount}
+                onChange={(x) => setFees({ ...fees, amount: x })}
+                required
+                error={f('amountMinor')}
+              />
+            </Field>
+            <Field>
+              <Select
+                label={labels.fees.cycle}
+                value={fees.cycle}
+                onChange={(x) => setFees({ ...fees, cycle: x as typeof fees.cycle })}
+                options={(['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'ANNUAL'] as const).map((c) => ({
+                  value: c,
+                  label: labels.fees.cycles[c],
+                }))}
+              />
+            </Field>
+            <Field>
+              <TextField
+                label={labels.fees.vpa}
+                name="vpa"
+                value={fees.vpa}
+                onChange={(x) => setFees({ ...fees, vpa: x })}
+                error={f('upi.vpa')}
+                helperText={labels.fees.vpaHint}
+              />
+            </Field>
+            {fees.vpa.trim() && (
+              <Field>
+                <TextField
+                  label={labels.fees.payeeName}
+                  name="payeeName"
+                  value={fees.payeeName}
+                  onChange={(x) => setFees({ ...fees, payeeName: x })}
+                  required
+                  error={f('upi.payeeName')}
+                />
+              </Field>
+            )}
           </Stack>
         );
       case 'students':

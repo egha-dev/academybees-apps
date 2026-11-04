@@ -144,10 +144,36 @@ describe('onboarding', () => {
         { weekday: 4, start: '17:00', end: '18:00' },
       ],
     });
-    expect(st.currentStep).toBe('ready');
+    expect(st.currentStep).toBe('fees');
     expect(st.values.timetable.slots).toHaveLength(2);
     expect(st.values.timetable.sessionCount).toBeGreaterThanOrEqual(3);
     expect(st.values.timetable.upcoming[0]).toMatchObject({ start: '17:00', end: '18:00' });
+    st = await save(s, 'fees', {
+      planName: 'Monthly tuition',
+      amountMinor: 150_000,
+      cycle: 'MONTHLY',
+      upi: { vpa: 'gurushethra@okbank', payeeName: 'Gurushethra' },
+    });
+    expect(st.currentStep).toBe('ready');
+    expect(st.values.fees).toMatchObject({
+      planName: 'Monthly tuition',
+      amountMinor: 150_000,
+      upi: { vpa: 'gurushethra@okbank' },
+    });
+    // Going back edits the plan it made instead of adding another (C-08).
+    st = await save(s, 'fees', {
+      planName: 'Tuition',
+      amountMinor: 200_000,
+      cycle: 'QUARTERLY',
+      upi: null,
+    });
+    const plans = await http().get('/api/v1/fee-plans').set('Host', s.host).set('Cookie', s.cookie);
+    expect(plans.body.items).toHaveLength(1);
+    expect(plans.body.items[0]).toMatchObject({
+      name: 'Tuition',
+      cycle: 'QUARTERLY',
+      totalMinor: 200_000,
+    });
 
     // Sessions: academy-local 17:00 = 11:30 UTC; students enrolled; owner teaches.
     const sessions = await su.query(

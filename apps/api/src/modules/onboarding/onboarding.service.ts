@@ -27,6 +27,7 @@ import { EntitlementService } from '../../core/entitlements/entitlement.service.
 import { DomainError } from '../../core/errors/domain-error.js';
 import { TenantResolver } from '../../core/tenant/tenant-resolver.service.js';
 import { PeopleService } from '../people/index.js';
+import { FeePlansService, FinanceSettingsService } from '../finance/index.js';
 import { SchedulingService } from '../scheduling/index.js';
 import { InvitationsService } from '../team/index.js';
 
@@ -66,6 +67,8 @@ export class OnboardingService {
     private readonly audit: AuditService,
     private readonly analytics: AnalyticsService,
     private readonly resolver: TenantResolver,
+    private readonly feePlans: FeePlansService,
+    private readonly financeSettings: FinanceSettingsService,
   ) {}
 
   async state(): Promise<OnboardingState> {
@@ -87,41 +90,58 @@ export class OnboardingService {
     const batchId = str(refs('batch').batchId);
     const studentIds = list(refs('students').studentIds);
     const parentIds = list(refs('students').parentIds);
-    const [course, teacher, batch, students, parents, timetable] = await Promise.all([
-      courseId
-        ? db.course.findFirst({
-            where: { id: courseId },
-            select: { name: true, description: true },
-          })
-        : null,
-      teacherId
-        ? db.teacher.findFirst({
-            where: { id: teacherId },
-            select: {
-              fullName: true,
-              email: true,
-              membershipId: true,
-              invitation: { select: { acceptedAt: true, revokedAt: true } },
-            },
-          })
-        : null,
-      batchId
-        ? db.batch.findFirst({ where: { id: batchId }, select: { name: true, capacity: true } })
-        : null,
-      studentIds.length
-        ? db.student.findMany({
-            where: { id: { in: studentIds } },
-            select: { id: true, fullName: true, admissionNo: true },
-          })
-        : [],
-      parentIds.length
-        ? db.parent.findMany({
-            where: { id: { in: parentIds.filter(Boolean) } },
-            select: { id: true, fullName: true, phone: true },
-          })
-        : [],
-      batchId ? this.scheduling.timetable(db, batchId, tenant.timezone) : null,
-    ]);
+    const feePlanId = str(refs('fees').planId);
+    const [course, teacher, batch, students, parents, timetable, feePlan, finance] =
+      await Promise.all([
+        courseId
+          ? db.course.findFirst({
+              where: { id: courseId },
+              select: { name: true, description: true },
+            })
+          : null,
+        teacherId
+          ? db.teacher.findFirst({
+              where: { id: teacherId },
+              select: {
+                fullName: true,
+                email: true,
+                membershipId: true,
+                invitation: { select: { acceptedAt: true, revokedAt: true } },
+              },
+            })
+          : null,
+        batchId
+          ? db.batch.findFirst({ where: { id: batchId }, select: { name: true, capacity: true } })
+          : null,
+        studentIds.length
+          ? db.student.findMany({
+              where: { id: { in: studentIds } },
+              select: { id: true, fullName: true, admissionNo: true },
+            })
+          : [],
+        parentIds.length
+          ? db.parent.findMany({
+              where: { id: { in: parentIds.filter(Boolean) } },
+              select: { id: true, fullName: true, phone: true },
+            })
+          : [],
+        batchId ? this.scheduling.timetable(db, batchId, tenant.timezone) : null,
+        feePlanId
+          ? db.feePlan.findFirst({
+              where: { id: feePlanId },
+              select: {
+                name: true,
+                cycle: true,
+                components: {
+                  select: { amountMinor: true },
+                  take: 1,
+                  orderBy: { sortOrder: 'asc' },
+                },
+              },
+            })
+          : null,
+        this.financeSettings.current(db),
+      ]);
     const byId = new Map(students.map((s) => [s.id, s]));
     const parentById = new Map(parents.map((p) => [p.id, p]));
 
@@ -173,6 +193,15 @@ export class OnboardingService {
           ];
         }),
         timetable: timetable ?? { slots: [], upcoming: [], sessionCount: 0 },
+        fees:
+          feePlan && feePlan.cycle !== 'CUSTOM'
+            ? {
+                planName: feePlan.name,
+                amountMinor: feePlan.components[0]?.amountMinor ?? 0,
+                cycle: feePlan.cycle,
+                upi: finance.settings.upi,
+              }
+            : null,
       },
     };
   }
@@ -315,7 +344,20 @@ export class OnboardingService {
         return this.students(tx, data as StepInput<'students'>, refs, ctx);
       case 'timetable':
         return this.timetable(tx, data as StepInput<'timetable'>, refs, ctx);
+      case 'fees':
+        return this.fees(tx, data as StepInput<'fees'>, refs);
     }
+  }
+
+  /** One plan and the UPI ID (C-08). Saved settings stay if the owner leaves UPI for later. */
+  private async fees(tx: TransactionClient, d: StepInput<'fees'>, refs: Refs): Promise<Refs> {
+    const planId = await this.feePlans.saveFromSetup(tx, str(refs.planId), {
+      name: d.planName,
+      cycle: d.cycle,
+      amountMinor: d.amountMinor,
+    });
+    if (d.upi) await this.financeSettings.setUpiFromSetup(tx, d.upi);
+    return { planId };
   }
 
   private async profile(tx: TransactionClient, d: StepInput<'profile'>, ctx: Ctx): Promise<Refs> {
