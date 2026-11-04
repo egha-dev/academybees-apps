@@ -80,7 +80,7 @@ export default async function FeesPage() {
             <Box component="li" key={p.id}>
               <Card
                 title={p.name}
-                subtitle={`${formatMoney(p.totalMinor, p.currency, { compact: true })} ${
+                subtitle={`${formatMoney(p.totalMinor, p.currency)} ${
                   p.cycle === 'CUSTOM'
                     ? t('perCycle.CUSTOM', { months: String(p.cycleMonths ?? '') })
                     : t(`perCycle.${p.cycle}`)

@@ -1,6 +1,7 @@
 // Loaded lazily by finance-lazy.tsx (no 'use client', C-80).
 import { type FeePlan, FEE_CYCLES } from '@academybee/contracts';
 import type { Messages } from '@academybee/i18n';
+import { formatMoney } from '@academybee/i18n/format';
 import { Button } from '@academybee/ui/components/actions';
 import { InlineAlert } from '@academybee/ui/components/alert';
 import { CheckboxGroup } from '@academybee/ui/components/checkboxes';
@@ -209,7 +210,9 @@ export function PlanSheet({
               </Stack>
             </Box>
             <Box data-testid="plan-total">
-              <Text>{fill(labels.total, { amount: majorText(total) })}</Text>
+              <Text>
+                {fill(labels.total, { amount: formatMoney(total, plan?.currency ?? 'INR') })}
+              </Text>
             </Box>
             <Stack direction="row" spacing={2}>
               <Button type="submit" loading={busy} disabled={!online}>

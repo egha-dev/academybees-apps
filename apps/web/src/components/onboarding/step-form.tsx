@@ -232,7 +232,7 @@ export function StepForm({ step, state, previous, skippable, logo, labels }: Pro
             ? labels.errors.invalidPhone
             : /email/i.test(last)
               ? labels.errors.invalidEmail
-              : d.issue === 'invalid_vpa'
+              : last === 'vpa'
                 ? labels.fees.invalidVpa
                 : d.issue === 'end_before_start'
                   ? labels.timetable.endAfterStart

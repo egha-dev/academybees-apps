@@ -193,7 +193,7 @@
       "taxable": "Taxable",
       "addComponent": "Add an item",
       "removeComponent": "Remove {name}",
-      "total": "Total: ₹{amount}",
+      "total": "Total: {amount}",
       "perCycle": {
         "MONTHLY": "per month",
         "QUARTERLY": "per quarter",

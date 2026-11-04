@@ -69,7 +69,7 @@ export default async function FeePlanPage({ params }: { params: Promise<{ id: st
   const canManage = holds(me, 'fee.manage');
   const zone = academyTimeZone(context) ?? 'Asia/Kolkata';
   const today = localDate(new Date(), zone);
-  const money = (minor: number) => formatMoney(minor, plan.currency, { compact: true });
+  const money = (minor: number) => formatMoney(minor, plan.currency);
   return (
     <Stack spacing={6}>
       <Box component="a" href="/fees" sx={{ color: 'ab.textSecondary', fontSize: 14 }}>
