@@ -773,6 +773,15 @@ export const CROSS_TENANT_ROUTES: CrossTenantRoute[] = [
       },
     },
   ]),
+  // A shared document (public; the token is the credential, and finds nothing on another host).
+  {
+    method: 'GET',
+    path: '/api/v1/share/:token',
+    params: { token: 'missing-import' },
+    spoof: {
+      skip: 'documents.int.spec.ts › revoked, expired, tampered, another academy’s host or a cancelled invoice: all 404',
+    },
+  },
   // Online payments (Phase 7 S5): the gateway card and exceptions read the caller's own academy;
   // another academy's exception is covered in online-payments.int.spec.ts.
   {
