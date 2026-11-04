@@ -123,7 +123,7 @@ catalog:
   # QR codes for TOTP enrolment (C-73) and later the Join QR poster (G-31)
   qrcode: 1.5.4
   '@types/qrcode': 1.5.6
-  nodemailer: 10.0.13
+  nodemailer: 10.1.4
   aws4fetch: 1.0.20
   '@vitest/coverage-v8': 5.0.3
   unplugin-swc: 2.0.0
