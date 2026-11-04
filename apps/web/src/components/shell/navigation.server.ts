@@ -1,7 +1,10 @@
 import 'server-only';
 
 import { type MeResponse, DEFAULT_TERMINOLOGY, type Terminology } from '@academybee/contracts';
+import { headers } from 'next/headers';
 import { getTranslations } from 'next-intl/server';
+
+import { flagEnabled } from '@/lib/flags.server';
 
 import type { ShellNavGroup, ShellNavItem } from './academy-shell';
 
@@ -128,6 +131,13 @@ export async function navigationFor(
         ]
       : []),
   ];
+  // MONEY (UX §8), behind `p7-finance` until S10.
+  const finance = can('fee.read')
+    ? await flagEnabled('p7-finance', (await headers()).get('host') ?? '')
+    : false;
+  const money: ShellNavItem[] = finance
+    ? [{ key: 'fees', label: t('fees'), href: '/fees', icon: 'fees' }]
+    : [];
   const academy: ShellNavItem[] = [
     ...(can('team.read')
       ? [{ key: 'team', label: t('team'), href: '/settings/team', icon: 'team' } as const]
@@ -150,6 +160,7 @@ export async function navigationFor(
     groups: [
       { key: 'home', label: t('groups.home'), items: today },
       { key: 'run', label: t('groups.run'), items: run },
+      { key: 'money', label: t('groups.money'), items: money },
       { key: 'academy', label: t('groups.academy'), items: academy },
       account,
     ],

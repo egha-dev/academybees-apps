@@ -19,7 +19,8 @@
     "batch": "First {term, select, class {class} group {group} other {batch}}",
     "students": "First students",
     "timetable": "Timetable",
-    "ready": "Ready"
+    "ready": "Ready",
+    "fees": "Fees"
   },
   "legal": {
     "metaTitle": "Before you start",
@@ -146,5 +147,23 @@
     "alreadyMember": "That person is already part of {academy}.",
     "offline": "You're offline. Setup needs a connection.",
     "generic": "That didn't save. Try again; if it keeps failing, reload the page."
+  },
+  "fees": {
+    "title": "What do you charge?",
+    "body": "Add your main fee. You can add more plans and put students on them later.",
+    "planName": "Fee name",
+    "planNamePlaceholder": "Monthly tuition",
+    "amount": "Amount (₹)",
+    "cycle": "Billed",
+    "vpa": "UPI ID (optional)",
+    "vpaHint": "Parents pay this directly; the money goes straight to you.",
+    "payeeName": "Name shown when paying",
+    "invalidVpa": "Enter a UPI ID like name@bank.",
+    "cycles": {
+      "MONTHLY": "Every month",
+      "QUARTERLY": "Every quarter",
+      "HALF_YEARLY": "Every six months",
+      "ANNUAL": "Every year"
+    }
   }
 }

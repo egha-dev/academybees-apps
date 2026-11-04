@@ -2,10 +2,11 @@ import { z } from 'zod';
 
 import { AcademyTypeSchema, TerminologySchema } from './academy-types.js';
 import { ONBOARDING_STEPS, OnboardingStepSchema } from './console.js';
+import { VpaSchema } from './vpa.js';
 
 /**
  * Guided setup (UX v1.1 §4–5, C-08, C-92): Profile → Type → Course → Teacher → Batch → Students →
- * Timetable → Ready. Every step except Profile and Type may be skipped; each save persists at once
+ * Timetable → Fees → Ready. Every step except Profile and Type may be skipped; each save persists at once
  * so the owner can leave and resume on any device. Saving a step again edits what it created.
  */
 export const SAVED_STEPS = ONBOARDING_STEPS.filter((s) => s !== 'ready') as readonly Exclude<
@@ -85,6 +86,13 @@ export const SlotSchema = z
   .object({ weekday: z.number().int().min(1).max(7), start: Time, end: Time })
   .refine((s) => s.end > s.start, { message: 'end_before_start', path: ['end'] });
 export const TimetableStepSchema = z.object({ slots: z.array(SlotSchema).min(1).max(14) });
+/** One fee plan and, if they have it to hand, the UPI ID parents pay to (C-08). */
+export const FeesStepSchema = z.object({
+  planName: Name,
+  amountMinor: z.number().int().min(1).max(1_000_000_000),
+  cycle: z.enum(['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'ANNUAL']),
+  upi: z.object({ vpa: VpaSchema, payeeName: Name }).nullable().default(null),
+});
 
 export const STEP_SCHEMAS = {
   profile: ProfileStepSchema,
@@ -94,6 +102,7 @@ export const STEP_SCHEMAS = {
   batch: BatchStepSchema,
   students: StudentsStepSchema,
   timetable: TimetableStepSchema,
+  fees: FeesStepSchema,
 } as const satisfies Record<SavedStep, z.ZodType>;
 export type StepInput<S extends SavedStep> = z.infer<(typeof STEP_SCHEMAS)[S]>;
 
@@ -159,6 +168,14 @@ export const OnboardingStateSchema = z.object({
       upcoming: z.array(z.object({ date: z.string(), start: z.string(), end: z.string() })),
       sessionCount: z.number().int(),
     }),
+    fees: z
+      .object({
+        planName: z.string(),
+        amountMinor: z.number().int(),
+        cycle: z.enum(['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'ANNUAL']),
+        upi: z.object({ vpa: z.string(), payeeName: z.string() }).nullable(),
+      })
+      .nullable(),
   }),
 });
 export type OnboardingState = z.infer<typeof OnboardingStateSchema>;

@@ -1,6 +1,8 @@
 import { Box } from '@academybee/ui/components/layout';
+import { headers } from 'next/headers';
 import { getTranslations } from 'next-intl/server';
 
+import { flagEnabled } from '@/lib/flags.server';
 import { academyTerms } from '@/lib/terms.server';
 
 /**
@@ -10,9 +12,14 @@ import { academyTerms } from '@/lib/terms.server';
 export async function SettingsTabs({
   current,
 }: {
-  current: 'academy' | 'branding' | 'fields' | 'courses' | 'parentApp' | 'privacy';
+  current: 'academy' | 'branding' | 'fields' | 'courses' | 'payments' | 'parentApp' | 'privacy';
 }) {
-  const [t, terms] = await Promise.all([getTranslations('academy.tabs'), academyTerms()]);
+  const [t, terms, h] = await Promise.all([
+    getTranslations('academy.tabs'),
+    academyTerms(),
+    headers(),
+  ]);
+  const payments = await flagEnabled('p7-finance', h.get('host') ?? '');
   const tabs = [
     { key: 'academy', href: '/settings/academy', label: t('academy') },
     { key: 'branding', href: '/settings/branding', label: t('branding') },
@@ -20,6 +27,8 @@ export async function SettingsTabs({
     { key: 'fields', href: '/settings/custom-fields', label: t('fields') },
     // Phase 5: courses and their levels.
     { key: 'courses', href: '/settings/courses', label: t('courses', { course: terms.course }) },
+    // Phase 7: how the academy is paid.
+    ...(payments ? [{ key: 'payments', href: '/settings/payments', label: t('payments') }] : []),
     { key: 'parentApp', href: '/settings/parent-app', label: t('parentApp') },
     { key: 'privacy', href: '/settings/privacy', label: t('privacy') },
   ];

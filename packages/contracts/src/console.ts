@@ -50,6 +50,7 @@ export const ONBOARDING_STEPS = [
   'batch',
   'students',
   'timetable',
+  'fees',
   'ready',
 ] as const;
 export const OnboardingStepSchema = z.enum(ONBOARDING_STEPS);

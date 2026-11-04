@@ -6,7 +6,8 @@
     "fields": "Custom fields",
     "parentApp": "Parent app",
     "privacy": "Privacy notice",
-    "courses": "{course, select, program {Programs} other {Courses}}"
+    "courses": "{course, select, program {Programs} other {Courses}}",
+    "payments": "Payments"
   },
   "settings": {
     "metaTitle": "Academy",

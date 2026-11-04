@@ -141,6 +141,40 @@ export class FeePlansService {
     return this.get(id);
   }
 
+  /**
+   * The onboarding Fee Setup step (C-08): one plan with one component, inside its transaction.
+   * Saving the step again edits the plan it made.
+   */
+  async saveFromSetup(
+    tx: TransactionClient,
+    existingId: string | undefined,
+    input: { name: string; cycle: CreateFeePlan['cycle']; amountMinor: number },
+  ): Promise<string> {
+    const tenantId = this.cls.get('tenantId')!;
+    const components = [{ name: input.name, amountMinor: input.amountMinor, taxable: true }];
+    const existing = existingId
+      ? await tx.feePlan.findFirst({ where: { id: existingId }, select: { id: true } })
+      : null;
+    const id = existing?.id ?? newId();
+    if (existing)
+      await tx.feePlan.update({
+        where: { id },
+        data: { name: input.name, cycle: input.cycle, version: { increment: 1 } },
+      });
+    else await tx.feePlan.create({ data: { id, tenantId, name: input.name, cycle: input.cycle } });
+    await this.replaceComponents(tx, tenantId, id, components);
+    await this.audit.record(
+      {
+        action: existing ? 'finance.fee_plan_changed' : 'finance.fee_plan_created',
+        entityType: 'FeePlan',
+        entityId: id,
+        after: input,
+      },
+      tx,
+    );
+    return id;
+  }
+
   private async replaceComponents(
     tx: TransactionClient,
     tenantId: string,

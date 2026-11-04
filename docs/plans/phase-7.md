@@ -1,6 +1,6 @@
 # P7-1 · Phase 7 — Finance: plan
 
-> **Approved by the PO on 2026-11-02** (`phase-7-start` = `9267fd3`). Decisions C-137…C-146 recorded in DECISIONS.md; C-147…C-149 added in S3b; C-150…C-154 in S4; C-155…C-159 in S5; C-160, C-161 in S6.
+> **Approved by the PO on 2026-11-02** (`phase-7-start` = `9267fd3`). Decisions C-137…C-146 recorded in DECISIONS.md; C-147…C-149 added in S3b; C-150…C-154 in S4; C-155…C-159 in S5; C-160, C-161 in S6; C-162 in S7.
 
 ## Context
 
@@ -227,6 +227,8 @@ Each slice: branch `p7/<slice>` from the latest `main` → PR with the DoD check
 - **7.23 Fee plans:** list and editor (components, cycles); assign plans to students and batches with a discount; one-time fees and instalments.
 - **7.24 Onboarding Fee Setup step** (optional, skippable, C-08): one plan plus the UPI ID.
 - **Tests:** E2E settings → plan → assignment; axe; budgets.
+
+*As built (S7; C-162):* `/settings/payments` (one form saved with the settings version; read-only without `academy.settings.manage`; live QR from `upiLink`), `/fees` (plans, New plan and One-time fee sheets), `/fees/[id]` (items, students on it, Add students by batch or one student, End, Archive/Restore). Onboarding has the optional `fees` step (one plan, optional UPI); while `p7-finance` is off the step redirects to Ready, and the progress still counts it (production isn't deployed; the flag goes in S10). `VpaSchema` moved to `contracts/src/vpa.ts` to break an import cycle.
 
 ### S8 `p7/finance-ui` — daily money screens (flag `p7-finance`)
 - **7.25 Finance Dashboard** (UX §13): Collected · Pending · Overdue · trend · Needs attention (verify queue, cheques, overdue, late-fee suggestions, reconciliation exceptions).

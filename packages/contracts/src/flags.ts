@@ -26,6 +26,13 @@ export const FEATURE_FLAGS = {
     expiresOn: '2027-06-30',
     defaults: { local: true, ci: true, staging: false, production: false },
   },
+  'p7-finance': {
+    description:
+      'The finance screens: Settings → Payments, Fees and the onboarding Fee Setup step (C-08). On for internal environments until the exit journey passes in S10 — remove then. Off: the pages and links are absent.',
+    owner: 'PO',
+    expiresOn: '2027-03-31',
+    defaults: { local: true, ci: true, staging: true, production: false },
+  },
   'p7-hub-payments': {
     description:
       'Parents report UPI payments from the Family Hub (G-30, C-144). Off in production until the Parent Core UI ships in Phase 7P — remove then. Off: the route answers 404.',

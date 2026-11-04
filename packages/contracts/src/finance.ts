@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { CalendarDateSchema } from './students.js';
+import { VpaSchema } from './vpa.js';
 
 /**
  * Academy finance contracts (Phase 7; PRD v2 §19, G-04, G-30, ADR-038, C-137…C-146). Money is
@@ -182,12 +183,8 @@ export type PaymentMethod = z.infer<typeof PaymentMethodSchema>;
 /** Methods staff can record or switch off (the gateway is Phase G). */
 export const STAFF_METHODS = ['CASH', 'UPI', 'BANK_TRANSFER', 'CHEQUE', 'CARD_POS'] as const;
 
-/** A UPI ID (virtual payment address): `name@bank`. */
-export const VpaSchema = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .regex(/^[a-z0-9.\-_]{2,256}@[a-z][a-z0-9]{1,63}$/, 'invalid_vpa');
+export { VpaSchema };
+
 export const GstinSchema = z
   .string()
   .trim()

@@ -19,7 +19,11 @@ describe('feature flag registry', () => {
   it('lists expired flags', () => {
     expect(expiredFeatureFlags('2026-10-01')).toEqual([]);
     expect(expiredFeatureFlags('2027-01-31')).toEqual([]);
-    expect(expiredFeatureFlags('2027-07-01')).toEqual(['p1-hub-placeholder', 'p7-hub-payments']);
+    expect(expiredFeatureFlags('2027-07-01')).toEqual([
+      'p1-hub-placeholder',
+      'p7-finance',
+      'p7-hub-payments',
+    ]);
   });
 
   it('recognises registered keys only', () => {
