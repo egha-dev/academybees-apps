@@ -323,6 +323,12 @@ export const ANALYTICS_EVENTS = {
     description: 'Staff confirmed or rejected a waiting payment (Phase 7). The outcome only.',
     properties: z.strictObject({ outcome: z.enum(['CONFIRMED', 'REJECTED']) }),
   }),
+  'document.shared': defineAnalyticsEvent({
+    name: 'document.shared',
+    version: 1,
+    description: 'A share link was made for a receipt or invoice (Phase 7). Its kind only.',
+    properties: z.object({ kind: z.enum(['INVOICE', 'RECEIPT']) }).strict(),
+  }),
   'refund.recorded': defineAnalyticsEvent({
     name: 'refund.recorded',
     version: 1,

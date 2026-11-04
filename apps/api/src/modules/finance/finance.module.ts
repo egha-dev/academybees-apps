@@ -25,6 +25,15 @@ import { InvoicesService } from './invoices.service.js';
 import { OpeningBalancesProcessor } from './opening-balances.processor.js';
 import { OpeningBalancesQueue } from './opening-balances.queue.js';
 import { OpeningBalancesService } from './opening-balances.service.js';
+import {
+  InvoiceDocumentsController,
+  ReceiptDocumentsController,
+  ShareLinkController,
+} from './documents/documents.controller.js';
+import { DocumentsProcessor } from './documents/documents.processor.js';
+import { DocumentsQueue } from './documents/documents.queue.js';
+import { DocumentsService } from './documents/documents.service.js';
+import { PdfRenderer } from './documents/pdf-renderer.js';
 import { PaymentAccountsService } from './payment-accounts.service.js';
 import { PaymentsService } from './payments.service.js';
 import { ManualProvider } from './providers/manual.provider.js';
@@ -57,6 +66,9 @@ import { OnlinePaymentsService } from './online-payments.service.js';
     PaymentWebhooksController,
     GatewayAccountController,
     ReconciliationController,
+    InvoiceDocumentsController,
+    ReceiptDocumentsController,
+    ShareLinkController,
   ],
   providers: [
     FeePlansService,
@@ -80,6 +92,10 @@ import { OnlinePaymentsService } from './online-payments.service.js';
     ReconciliationService,
     ReconciliationQueue,
     ReconciliationProcessor,
+    DocumentsService,
+    DocumentsQueue,
+    DocumentsProcessor,
+    PdfRenderer,
   ],
   exports: [
     FeePlansService,

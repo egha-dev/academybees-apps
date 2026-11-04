@@ -27,6 +27,7 @@ import { assertInScope, scopedWhere } from '../../core/rbac/scope.js';
 import { StudentsService } from '../people/index.js';
 import { nextInvoice, settledStatus } from './domain/invoice.state.js';
 import { allocate, balanceOf, refundSources } from './domain/money.js';
+import { academyOnDocuments, type ReceiptSnapshot } from './documents/document-snapshot.js';
 import {
   afterRefund,
   initialStatus,
@@ -99,6 +100,7 @@ const toSummary = (r: Row): PaymentSummary => ({
 /** A row locked for a money change: read after the lock, so balances are the committed ones. */
 type LockedInvoice = {
   id: string;
+  number: string | null;
   status: 'ISSUED' | 'PARTIALLY_PAID' | 'PAID' | 'WRITTEN_OFF' | 'CANCELLED' | 'DRAFT';
   due_date: Date;
   total_minor: number;
@@ -509,7 +511,38 @@ export class PaymentsService {
       localDate: await this.today(tx),
       prefix: settings.prefixes.RECEIPT,
     });
-    await tx.payment.update({ where: { id: p.id }, data: { receiptNumber } });
+    // Frozen here, with the number: the receipt says this for ever (G-18).
+    const frozen = await tx.payment.findFirstOrThrow({
+      where: { id: p.id },
+      select: {
+        method: true,
+        reference: true,
+        paidOn: true,
+        currency: true,
+        student: { select: { fullName: true, admissionNo: true } },
+      },
+    });
+    const zone = await tx.tenant.findFirstOrThrow({ select: { name: true } });
+    const snapshot: ReceiptSnapshot = {
+      academy: await academyOnDocuments(tx, zone.name),
+      gstin: settings.tax?.gstin ?? null,
+      student: { name: frozen.student.fullName, admissionNo: frozen.student.admissionNo },
+      method: frozen.method,
+      reference: frozen.reference,
+      paidOn: frozen.paidOn.toISOString().slice(0, 10),
+      currency: frozen.currency,
+      amountMinor: p.amountMinor,
+      creditMinor: leftoverMinor,
+      allocations: allocations.map((a) => {
+        const inv = locked.find((i) => i.id === a.invoiceId)!;
+        return {
+          invoiceNumber: inv.number ?? '',
+          amountMinor: a.amountMinor,
+          balanceAfterMinor: balanceOfLocked(inv) - a.amountMinor,
+        };
+      }),
+    };
+    await tx.payment.update({ where: { id: p.id }, data: { receiptNumber, snapshot } });
     return {
       receiptNumber,
       allocatedMinor: p.amountMinor - leftoverMinor,
@@ -523,7 +556,7 @@ export class PaymentsService {
    */
   private lockOpenInvoices(tx: TransactionClient, studentId: string, only: string[]) {
     return tx.$queryRaw<LockedInvoice[]>`
-      SELECT id, status, due_date, total_minor, paid_minor, credit_applied_minor, written_off_minor
+      SELECT id, number, status, due_date, total_minor, paid_minor, credit_applied_minor, written_off_minor
         FROM invoice
        WHERE student_id = ${studentId}::uuid AND status IN ('ISSUED', 'PARTIALLY_PAID')
          AND (${only.length === 0} OR id = ANY(${only}::uuid[]))
@@ -858,7 +891,7 @@ export class PaymentsService {
         .filter(([, amountMinor]) => amountMinor > 0)
         .map(([invoiceId, amountMinor]) => ({ invoiceId, amountMinor }));
       const invoices = await tx.$queryRaw<LockedInvoice[]>`
-        SELECT id, status, due_date, total_minor, paid_minor, credit_applied_minor, written_off_minor
+        SELECT id, number, status, due_date, total_minor, paid_minor, credit_applied_minor, written_off_minor
           FROM invoice WHERE id = ANY(${applied.map((a) => a.invoiceId)}::uuid[])
          ORDER BY id FOR UPDATE`;
 

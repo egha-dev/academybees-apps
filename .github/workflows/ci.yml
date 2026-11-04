@@ -71,6 +71,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: pull container images
         run: docker pull -q postgres:17-alpine && docker pull -q redis:7-alpine
+      # Receipts and invoices print with real Chromium (C-137).
+      - name: install Chromium
+        timeout-minutes: 10
+        run: |
+          for attempt in 1 2 3; do
+            timeout 240 pnpm --filter @academybee/api exec playwright-core install --with-deps chromium && exit 0
+            echo "::warning::browser install attempt $attempt failed or timed out; retrying"
+            sleep 10
+          done
+          exit 1
       # Testcontainers: real Postgres with the ab_* roles, migrations and grants (includes the drift check).
       - run: pnpm test:integration
 

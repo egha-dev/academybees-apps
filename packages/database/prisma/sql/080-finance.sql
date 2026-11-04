@@ -157,3 +157,34 @@ CREATE POLICY webhook_lookup ON tenant_payment_account FOR SELECT TO ab_app USIN
 
 -- Exceptions are worked, never deleted.
 REVOKE DELETE, TRUNCATE ON reconciliation_exception FROM ab_app;
+
+-- Documents never change after issue (G-18, C-160). A snapshot is written once, a rendered
+-- document stays as it is, and a share link can only be opened or revoked.
+CREATE OR REPLACE FUNCTION ab_keep_snapshot() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF OLD.snapshot IS NOT NULL AND NEW.snapshot IS DISTINCT FROM OLD.snapshot THEN
+    RAISE EXCEPTION 'a document snapshot never changes' USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS invoice_keep_snapshot ON invoice;
+CREATE TRIGGER invoice_keep_snapshot BEFORE UPDATE OF snapshot ON invoice
+  FOR EACH ROW EXECUTE FUNCTION ab_keep_snapshot();
+DROP TRIGGER IF EXISTS payment_keep_snapshot ON payment;
+CREATE TRIGGER payment_keep_snapshot BEFORE UPDATE OF snapshot ON payment
+  FOR EACH ROW EXECUTE FUNCTION ab_keep_snapshot();
+
+CREATE OR REPLACE FUNCTION ab_keep_ready_document() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF OLD.status = 'READY' THEN
+    RAISE EXCEPTION 'a rendered document never changes' USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS finance_document_keep_ready ON finance_document;
+-- AFTER, so row security answers first for a row moved to another academy.
+CREATE TRIGGER finance_document_keep_ready AFTER UPDATE ON finance_document
+  FOR EACH ROW EXECUTE FUNCTION ab_keep_ready_document();
+
+REVOKE UPDATE ON share_link FROM ab_app;
+GRANT UPDATE (revoked_at, open_count) ON share_link TO ab_app;

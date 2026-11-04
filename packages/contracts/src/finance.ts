@@ -775,3 +775,34 @@ export const SimulateCheckoutSchema = z.object({
   delivery: z.enum(['ONCE', 'TWICE', 'NONE']).default('ONCE'),
 });
 export type SimulateCheckout = z.infer<typeof SimulateCheckoutSchema>;
+
+// ── Documents and share links (Phase 7 S6; G-18, C-137, C-160) ───────────────────────────────────
+
+export const DocumentLayoutSchema = z.enum(['A4', 'MOBILE']);
+export type DocumentLayout = z.infer<typeof DocumentLayoutSchema>;
+
+/** A rendered invoice or receipt. `url` lasts 5 minutes; the UI shows "Preparing…" until READY. */
+export const FinanceDocumentSchema = z.object({
+  layout: DocumentLayoutSchema,
+  status: z.enum(['PENDING', 'READY', 'FAILED']),
+  url: z.string().nullable(),
+});
+export type FinanceDocument = z.infer<typeof FinanceDocumentSchema>;
+
+export const ShareLinkSchema = z.object({
+  id: z.uuid(),
+  layout: DocumentLayoutSchema,
+  expiresAt: z.string(),
+  revokedAt: z.string().nullable(),
+  openCount: z.number().int(),
+  createdAt: z.string(),
+});
+export type ShareLink = z.infer<typeof ShareLinkSchema>;
+export const ShareLinkListSchema = z.object({ items: z.array(ShareLinkSchema) });
+
+/** Only this answer has the link: just its hash is stored. `message` is ready to paste. */
+export const CreatedShareLinkSchema = ShareLinkSchema.extend({
+  url: z.string(),
+  message: z.string(),
+});
+export type CreatedShareLink = z.infer<typeof CreatedShareLinkSchema>;

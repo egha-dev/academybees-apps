@@ -73,6 +73,16 @@ export class MediaStorage {
     }
   }
 
+  /** A public object's bytes, or null: for printing a logo into a document. */
+  async getPublic(key: string): Promise<Uint8Array | null> {
+    try {
+      const res = await this.send('GET', key);
+      return res.ok ? new Uint8Array(await res.arrayBuffer()) : null;
+    } catch {
+      return null;
+    }
+  }
+
   /** Best effort: a leftover object is harmless (its key is never referenced again). */
   async deletePublic(key: string): Promise<void> {
     try {

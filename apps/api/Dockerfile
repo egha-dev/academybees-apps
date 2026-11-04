@@ -31,8 +31,10 @@ FROM ${NODE_IMAGE} AS runner
 ARG RELEASE_SHA=
 ENV RELEASE_SHA=${RELEASE_SHA}
 # tini as PID 1: forwards SIGTERM and reaps children so graceful shutdown works on deploys.
-RUN apk add --no-cache tini
-ENV NODE_ENV=production PORT=4000
+# Chromium prints receipts and invoices (C-137); its fonts are embedded per document (C-160),
+# DejaVu is only the fallback.
+RUN apk add --no-cache tini chromium ttf-dejavu
+ENV NODE_ENV=production PORT=4000 CHROMIUM_PATH=/usr/bin/chromium
 WORKDIR /app
 COPY --from=builder --chown=node:node /prod/api ./
 COPY --from=builder --chown=node:node /repo/.release-sha ./RELEASE_SHA
